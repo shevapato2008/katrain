@@ -440,7 +440,7 @@ async def prepare_staged_games(
         except NameRejected as exc:
             for source_id in {member["source_item_id"] for member in members}:
                 excluded.add(source_id)
-                isolated.append((source_id, str(exc)))
+                isolated.append((source_id, exc.isolation_reason() if exc.diagnostic_ref else str(exc)))
     # A valid review signs its exact finite source_items. Re-review only decisions
     # whose scope was narrowed after another name failed; never copy its signature.
     index = 0
@@ -460,7 +460,7 @@ async def prepare_staged_games(
             except NameRejected as exc:
                 for source_id in {member["source_item_id"] for member in members}:
                     excluded.add(source_id)
-                    isolated.append((source_id, str(exc)))
+                    isolated.append((source_id, exc.isolation_reason() if exc.diagnostic_ref else str(exc)))
                 decisions.pop(index)
                 index = 0
                 continue

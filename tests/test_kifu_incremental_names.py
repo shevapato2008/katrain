@@ -491,7 +491,8 @@ def test_invalid_producer_fails_closed(candidate):
 
 
 def test_rejected_review_fails_closed_after_at_most_one_repair():
-    service, client, calls = mock_service([CANDIDATE, {"decision": "reject"}, CANDIDATE, {"decision": "reject"}])
+    rejected = {"decision": "reject", "reason": "English name is not supported by the supplied evidence"}
+    service, client, calls = mock_service([CANDIDATE, rejected, CANDIDATE, rejected])
 
     async def check():
         async with client:
@@ -502,6 +503,254 @@ def test_rejected_review_fails_closed_after_at_most_one_repair():
     assert len(calls) == 4
     repaired_prompt = json.loads(calls[2].content)["messages"][1]["content"]
     assert "independent review rejected" in repaired_prompt
+
+
+def test_rejection_survives_repair_approval_and_service_recreation(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    stage = Stage(tmp_path)
+    paid, reserved, settled = [], [], []
+    service, client, calls = mock_service(
+        [
+            CANDIDATE,
+            {"decision": "reject", "reason": "English name lacks identity evidence"},
+            CANDIDATE,
+            {"decision": "approve"},
+        ],
+        rejection_audit=stage.save_name_rejection,
+        audit_call=paid.append,
+        reserve_call=lambda amount: reserved.append(amount) or len(reserved),
+        settle_call=lambda reservation, tokens: settled.append((reservation, tokens)) or len(settled) * tokens,
+    )
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("player", "柯洁", [ITEM])
+
+    decision = run(check())
+    recreated = Stage(tmp_path)
+    paths = list((recreated.root / "name-rejections").glob("*.json"))
+    assert len(paths) == 1
+    record = json.loads(paths[0].read_text())
+    assert record["reason_code"] == "semantic_rejection"
+    assert record["reason"] == "English name lacks identity evidence"
+    assert record["source_items"]["value"] == [ITEM]
+    assert (record["kind"], record["key"], record["phase"], record["attempt"]) == ("player", "柯洁", "reviewer", 1)
+    assert record["candidate"]["value"] == CANDIDATE
+    assert record["review"]["value"]["decision"] == "reject"
+    assert record["calls"]["producer"]["request_id"] == "response-1"
+    assert record["calls"]["reviewer"]["request_id"] == "response-2"
+    assert all(len(record["calls"]["reviewer"][field]) == 64 for field in ("prompt_sha256", "output_sha256"))
+    assert record["at"] and record["calls"]["reviewer"]["model"] == "qwen-plus"
+    assert len(calls) == len(paid) == len(reserved) == len(settled) == 4
+    assert all(entry["entity"] == {"kind": "player", "key": "柯洁", "source_items": [ITEM]} for entry in paid)
+    assert "reason" not in decision["review"] and "prompt_sha256" not in decision["producer"]
+    review_prompt = json.loads(json.loads(calls[1].content)["messages"][1]["content"])
+    assert "reason" in review_prompt["review_instructions"]
+    assert "test-secret" not in paths[0].read_text()
+
+
+@pytest.mark.parametrize(
+    "reply, role, code, reason",
+    [
+        ({"decision": "reject"}, "reviewer", "review_reason_missing", "reason"),
+        ({"decision": "reject", "reason": " "}, "reviewer", "review_reason_invalid", "reason"),
+        ({"decision": "reject", "reason": "x" * 501}, "reviewer", "review_reason_invalid", "reason"),
+        ({"decision": "unknown"}, "reviewer", "review_protocol_invalid", "decision"),
+        ({"decision": "approve", "extra": True}, "reviewer", "review_protocol_invalid", "fields"),
+        ({**CANDIDATE, "displays": {}}, "producer", "candidate_validation", "displays"),
+        (
+            {**CANDIDATE, "methods": {lang: [] for lang in CANDIDATE["methods"]}},
+            "producer",
+            "candidate_validation",
+            "methods",
+        ),
+        ({**CANDIDATE, "source_urls": [{}]}, "producer", "candidate_validation", "source URL"),
+        (qwen_reply("{broken", "broken"), "producer", "provider_output_malformed", "invalid"),
+        (
+            httpx.Response(
+                200,
+                json={
+                    "id": "nonfinite",
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+                    "choices": [{"message": {"content": '{"displays": NaN}'}}],
+                },
+            ),
+            "producer",
+            "provider_output_malformed",
+            "invalid",
+        ),
+        (
+            httpx.Response(
+                200,
+                json={
+                    "id": "cut",
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+                    "choices": [{"finish_reason": "length", "message": {"content": "{}"}}],
+                },
+            ),
+            "producer",
+            "provider_output_truncated",
+            "incomplete",
+        ),
+    ],
+)
+def test_rejected_attempts_have_distinct_durable_classification(tmp_path, reply, role, code, reason):
+    from katrain.kifu_ingest.staging import Stage
+
+    responses = [CANDIDATE, reply, CANDIDATE, reply] if role == "reviewer" else [reply, reply]
+    service, client, _ = mock_service(responses, rejection_audit=Stage(tmp_path).save_name_rejection)
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected, match=reason) as caught:
+                await service.translate_and_review("player", "柯洁", [ITEM])
+            return caught.value
+
+    error = run(check())
+    records = [json.loads(path.read_text()) for path in (tmp_path / "name-rejections").glob("*.json")]
+    assert len(records) == 2 and {record["attempt"] for record in records} == {1, 2}
+    assert all(record["reason_code"] == code and record["phase"] == role for record in records)
+    assert error.reason_code == code
+    assert (tmp_path / error.diagnostic_ref).exists()
+
+
+def test_overflowing_json_number_is_diagnosed_before_candidate_validation(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    content = '{"unexpected":1e999}'
+    paid = []
+    service, client, calls = mock_service(
+        [
+            httpx.Response(
+                200,
+                json={
+                    "id": "overflowing-number",
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+                    "choices": [{"message": {"content": content}}],
+                },
+            )
+        ],
+        # Permit the first call, then stop repair before another paid request.
+        max_total_tokens=1024,
+        audit_call=paid.append,
+        rejection_audit=Stage(tmp_path).save_name_rejection,
+    )
+
+    async def check():
+        async with client:
+            with pytest.raises(NameServiceError, match="token budget exhausted"):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    assert len(calls) == len(paid) == 1
+    paths = list((tmp_path / "name-rejections").glob("*.json"))
+    assert len(paths) == 1
+    record = json.loads(paths[0].read_text())
+    assert record["reason_code"] == "provider_output_malformed" and record["phase"] == "producer"
+    assert record["candidate"]["available"] is False
+    assert record["calls"]["producer"]["output"]["value"] == content
+    assert record["calls"]["producer"]["output_sha256"] == sha256(content.encode()).hexdigest()
+
+
+@pytest.mark.parametrize(
+    "review, code, reason",
+    [
+        ({"decision": "reject", "reason": "Narrow scope lacks evidence"}, "semantic_rejection", "Narrow scope"),
+        ({"decision": "reject"}, "review_reason_missing", "reason missing"),
+        ({"decision": "approve", "extra": True}, "review_protocol_invalid", "fields invalid"),
+        (qwen_reply("{broken", "malformed-review"), "provider_output_malformed", "response is invalid"),
+    ],
+)
+def test_narrowed_review_rejection_keeps_reason_and_finite_scope(tmp_path, review, code, reason):
+    from katrain.kifu_ingest.staging import Stage
+
+    second = {**ITEM, "source_item_id": "124"}
+    service, client, calls = mock_service(
+        [CANDIDATE, {"decision": "approve"}, review],
+        rejection_audit=Stage(tmp_path).save_name_rejection,
+    )
+
+    async def check():
+        async with client:
+            decision = await service.translate_and_review("player", "柯洁", [ITEM, second])
+            with pytest.raises(NameRejected, match=reason) as caught:
+                await service.review_existing_decision(decision, [ITEM])
+            return caught.value
+
+    error = run(check())
+    record = json.loads((tmp_path / error.diagnostic_ref).read_text())
+    assert record["reason_code"] == code and record["scope"] == "narrowed"
+    assert record["source_items"]["value"] == [ITEM]
+    assert len(calls) == 3
+
+
+def test_rejection_storage_failure_stops_before_repair_but_keeps_paid_accounting(tmp_path, monkeypatch):
+    from katrain.kifu_ingest.staging import Stage
+
+    stage = Stage(tmp_path)
+    paid, settled = [], []
+
+    def fail_write(path, data):
+        raise OSError("disk unavailable")
+
+    monkeypatch.setattr(stage, "_atomic", fail_write)
+    service, client, calls = mock_service(
+        [CANDIDATE, {"decision": "reject", "reason": "Unverified identity"}],
+        rejection_audit=stage.save_name_rejection,
+        audit_call=paid.append,
+        reserve_call=lambda amount: "reservation",
+        settle_call=lambda reservation, tokens: settled.append(tokens) or sum(settled),
+    )
+
+    async def check():
+        async with client:
+            with pytest.raises(NameServiceError, match="diagnostic storage failed.*Unverified identity"):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    assert len(calls) == len(paid) == len(settled) == 2
+    assert list((tmp_path / "name-rejections").iterdir()) == []
+
+
+def test_malformed_envelope_keeps_available_request_id_without_provider_headers(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    malformed = httpx.Response(200, content="{bad", headers={"x-request-id": "actual-id", "private": "test-secret"})
+    service, client, _ = mock_service([malformed, malformed], rejection_audit=Stage(tmp_path).save_name_rejection)
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    for path in (tmp_path / "name-rejections").glob("*.json"):
+        record = json.loads(path.read_text())
+        assert record["calls"]["producer"]["request_id"] == "actual-id"
+        assert record["calls"]["producer"]["output"]["available"] is False
+        assert record["calls"]["producer"]["output_hash_scope"] == "provider_response"
+        assert "private" not in path.read_text() and "test-secret" not in path.read_text()
+
+
+def test_diagnostic_json_and_final_output_are_bounded_and_mark_truncation(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    candidate = {**CANDIDATE, "extra": "x" * 20000}
+    service, client, _ = mock_service([candidate, candidate], rejection_audit=Stage(tmp_path).save_name_rejection)
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    for path in (tmp_path / "name-rejections").glob("*.json"):
+        assert path.stat().st_size <= 65536
+        record = json.loads(path.read_text())
+        assert record["candidate"]["truncated"] is True and record["candidate"]["value"] is None
+        assert len(record["candidate"]["sha256"]) == 64
+        assert record["calls"]["producer"]["output"]["truncated"] is True
 
 
 @pytest.mark.parametrize("status", [401, 402])

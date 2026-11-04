@@ -817,6 +817,9 @@ class KifuIngestJob(BaseJob):
             async def audit_call(entry):
                 await asyncio.to_thread(ledger.record_call, entry)
 
+            async def rejection_audit(record):
+                return await asyncio.to_thread(stage.save_name_rejection, record)
+
             async def reserve_call(upper_bound):
                 return await asyncio.to_thread(ledger.reserve, upper_bound)
 
@@ -835,6 +838,7 @@ class KifuIngestJob(BaseJob):
                 max_items=max(1, config.KIFU_INGEST_MAX_NEW_NAMES),
                 max_total_tokens=config.KIFU_INGEST_MAX_TOKENS if config.KIFU_INGEST_LLM_ENABLED else 0,
                 audit_call=audit_call,
+                rejection_audit=rejection_audit,
                 reserve_call=reserve_call,
                 settle_call=settle_call,
                 initial_tokens_used=await asyncio.to_thread(ledger.spent),

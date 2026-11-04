@@ -966,6 +966,29 @@ def test_rejected_name_is_quarantined_in_stage_and_journal():
     quarantine_staged_item(Stage(), Store(), "12", "name review rejected")
 
 
+def test_name_rejection_reference_and_reason_survive_journal_error_limit(tmp_path):
+    from katrain.cron.jobs.kifu_ingest import quarantine_staged_item
+    from katrain.kifu_ingest.names import NameRejected
+    from katrain.kifu_ingest.staging import Stage
+
+    stage = Stage(tmp_path)
+    stage.manifest["items"]["12"] = {"external_id": "12", "status": "downloaded", "attempts": 0}
+    record = {"id": "a" * 32, "reason": "The event identity lacks evidence. " * 30}
+    error = NameRejected(record["reason"], reason_code="semantic_rejection")
+    error.diagnostic_ref = stage.save_name_rejection(record)
+    journal = []
+
+    class Store:
+        def advance_item(self, source, source_id, status, **kwargs):
+            journal.append(kwargs["error"][:512])
+
+    quarantine_staged_item(stage, Store(), "12", error.isolation_reason())
+    assert len(journal[0]) <= 512 and error.diagnostic_ref in journal[0]
+    assert "The event identity lacks evidence" in journal[0]
+    assert Stage(tmp_path).manifest["items"]["12"]["last_error"] == journal[0]
+    assert json.loads((tmp_path / error.diagnostic_ref).read_text())["reason"] == record["reason"]
+
+
 def test_frozen_game_journal_reaches_names_ready_without_writing_album_db():
     from katrain.cron.jobs.kifu_ingest import register_frozen_items
 

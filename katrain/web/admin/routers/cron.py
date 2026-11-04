@@ -92,15 +92,15 @@ def list_jobs(request: Request) -> CronJobsResponse:
 
 
 def _controls(request: Request):
-    """Pause state and commands. The control tables may predate a web upgrade: then nothing is paused."""
+    """Read pause state and commands; unreadable controls mean pause state is unknown."""
     try:
         with request.app.state.session_factory() as db:
             controls = {c.job_name: c for c in db.scalars(select(models_db.CronJobControl)).all()}
             waiting = db.scalars(select(models_db.CronJobCommand).where(models_db.CronJobCommand.state == "pending")).all()
             commands = list(waiting) + list(db.scalars(select(models_db.CronJobCommand).order_by(models_db.CronJobCommand.id.desc()).limit(200)).all())
             db.expunge_all()
-    except DBAPIError:
-        return {}, {}, {}
+    except DBAPIError as exc:
+        raise _database_error(exc) from exc
     pending, latest = {}, {}
     for command in sorted(commands, key=lambda c: c.id, reverse=True):
         latest.setdefault(command.job_name, command)

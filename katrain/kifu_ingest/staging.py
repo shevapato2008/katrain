@@ -341,6 +341,29 @@ class Stage:
             finally:
                 os.close(fd)
 
+    def save_name_rejection(self, record):
+        """Persist one bounded diagnostic independently of signed name decisions."""
+        if not isinstance(record, dict) or re.fullmatch(r"[0-9a-f]{32}", record.get("id", "")) is None:
+            raise ValueError("name rejection diagnostic ID invalid")
+        payload = json.dumps(record, ensure_ascii=False, sort_keys=True, allow_nan=False).encode("utf-8")
+        if len(payload) > 65536:
+            raise ValueError("name rejection diagnostic exceeds size limit")
+        directory = self.root / "name-rejections"
+        if directory.is_symlink() or directory.exists() and not directory.is_dir():
+            raise ValueError("name rejection diagnostic directory unsafe")
+        new_directory = not directory.exists()
+        directory.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(directory, 0o700)
+        path = directory / f"{record['id']}.json"
+        self._atomic(path, payload)
+        for durable in (directory, self.root) if new_directory else (directory,):
+            fd = os.open(durable, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        return str(path.relative_to(self.root))
+
     def remember(self, metadata):
         if not isinstance(metadata, dict):
             raise ValueError("metadata must be an object")

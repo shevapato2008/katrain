@@ -19,6 +19,7 @@ def row(**overrides):
         interval_seconds=60,
         enabled=True,
         heartbeat_at=ago(10),
+        process_started_at=ago(20),
         last_started_at=ago(20),
         last_status="success",
         consecutive_failures=0,
@@ -66,8 +67,8 @@ def test_nine_health_states(expected, job):
         (row(enabled=False, last_started_at=None), "disabled"),
         (row(last_started_at=None, last_status="failed"), "pending"),
         (row(last_status="running", last_started_at=ago(601)), "stuck"),
-        (row(last_status="failed", last_started_at=ago(181)), "failed"),
-        (row(last_status="errors", last_started_at=ago(181)), "errors"),
+        (row(last_status="failed", last_started_at=ago(181)), "overdue"),
+        (row(last_status="errors", last_started_at=ago(181)), "overdue"),
         (loop(last_status="failed", loop_iteration_at=ago(301)), "stuck"),
         (loop(last_status="failed", loop_stats={"last_error_at": ago(1).isoformat()}), "failed"),
     ],
@@ -95,6 +96,27 @@ def test_precedence(job, expected):
 )
 def test_strict_time_boundaries(job, expected):
     assert derive_health(job, NOW).state == expected
+
+
+@pytest.mark.parametrize("elapsed, expected", [(180, "pending"), (181, "overdue")])
+def test_never_run_interval_is_overdue_after_process_start_grace(elapsed, expected):
+    job = row(last_started_at=None, last_status=None, process_started_at=ago(elapsed))
+    assert derive_health(job, NOW).state == expected
+
+
+@pytest.mark.parametrize("started", [None, ago(3600)])
+def test_resume_excludes_paused_time_from_overdue_including_before_first_run(started):
+    job = row(last_started_at=started, process_started_at=ago(7200))
+    assert derive_health(job, NOW, resumed_at=ago(179)).state == ("pending" if started is None else "ok")
+    assert derive_health(job, NOW, resumed_at=ago(181)).state == "overdue"
+
+
+def test_manual_pause_precedes_overdue_and_an_old_failure():
+    job = row(last_started_at=ago(3600), last_status="failed")
+    assert derive_health(job, NOW, paused_reason="上游维护中").state == "paused"
+    job.last_started_at = None
+    job.process_started_at = ago(3600)
+    assert derive_health(job, NOW, paused_reason="上游维护中").state == "paused"
 
 
 def test_sqlite_naive_timestamps_and_offset_are_utc_normalized():

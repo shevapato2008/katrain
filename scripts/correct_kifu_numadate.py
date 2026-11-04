@@ -76,7 +76,7 @@ def main(argv=None):
                 "verify/apply requires --plan and --expected-sha256",
             )
             plan = _read(args.plan)
-            correction._validate_plan(plan)
+            correction._validate_plan(plan, require_current_operator=args.action != "verify")
             require(correction.digest(plan) == args.expected_sha256, "reviewed plan SHA mismatch")
             if args.action == "apply":
                 result = correction.apply_correction(engine, plan, expected_sha256=args.expected_sha256)

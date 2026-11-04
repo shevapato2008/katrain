@@ -1084,3 +1084,40 @@ def test_live_name_budget_uses_same_player_language_predicate_as_normal_qualifie
     finally:
         event.remove(correction_engine, "before_cursor_execute", observe)
     assert fetched == []
+
+
+@pytest.mark.parametrize("action,expected_status", [("verify", 0), ("apply", 2)])
+def test_cli_historical_read_pin_does_not_relax_apply(
+    correction_engine, monkeypatch, tmp_path, capsys, action, expected_status
+):
+    """Exercise CLI dispatch against real applied evidence through a test transport."""
+    import json
+    from types import SimpleNamespace
+    from scripts import correct_kifu_numadate as cli
+    from katrain.web.kifu import numadate_canonical_correction as correction
+
+    plan = prepared(correction_engine)
+    receipt = correction.apply_correction(correction_engine, plan, expected_sha256=digest(plan))
+    before = state(correction_engine)
+    path = tmp_path / "approved-private-plan.json"
+    path.write_text(json.dumps(plan, ensure_ascii=False))
+    path.chmod(0o600)
+    # The CLI's production dialect gate is separately tested; this adapter keeps
+    # its branch/readonly transaction and full proof on the disposable fixture DB.
+    transport = SimpleNamespace(
+        dialect=SimpleNamespace(name="postgresql"),
+        url=SimpleNamespace(database=correction.PROD_DATABASE),
+        connect=correction_engine.connect,
+        dispose=lambda: None,
+    )
+    monkeypatch.setattr(cli, "create_engine", lambda *args, **kwargs: transport)
+    monkeypatch.setattr(correction, "operator_code_sha256", lambda: "f" * 64)
+    assert cli.main([action, "--plan", str(path), "--expected-sha256", digest(plan)]) == expected_status
+    output = capsys.readouterr()
+    if action == "verify":
+        assert json.loads(output.out) == receipt
+        assert output.err == ""
+    else:
+        assert output.out == ""
+        assert "refused" in output.err
+    assert state(correction_engine) == before

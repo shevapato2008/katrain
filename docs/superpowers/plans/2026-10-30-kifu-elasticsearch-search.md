@@ -1,5 +1,18 @@
 # Kifu Elasticsearch Search Implementation Plan
 
+> **历史计划 / 2026-11-04 实现对照：** 本文记录 2026-10-30 的设计与执行清单，下面未勾选的框不是当前上线状态。已发布基线为 `fb916f12516dd510080fb736a48a825dc206bc37`（R）。请先读 [R 实现说明与 Chess/Xiangqi 交接](../handoffs/2026-11-04-kifu-elasticsearch-as-built-cross-game.md)；该说明按 R 的实际代码区分已实现、后续变更和未取得证据的验收，替代本文作为当前接口/运维入口，本文保留作历史依据。
+
+| 原计划部分 | R 对照结果 |
+|---|---|
+| Task 1/4：列表契约、PG 当前页补齐 | 已实现；API 默认 20 条、上限 100，精确 total，非空每页含首条 preview；不能把前端 20 条说成 API 硬上限 |
+| Task 2：投影、分类与字段示例 | 已实现；实际字段是 `black_player_id` / `white_player_id`、`player_aliases` / `event_aliases` 等，示例 `player_terms` / `event_terms` 不是 R mapping；以 `search_es.INDEX_MAPPING` 为准 |
+| §0.1：五语赛事分析 | 已实现固定 IK/Kuromoji/Nori/standard 分支；11-02 又加入拼音插件、姓名/赛事拼音字段及有限分类，不再是“姓名完全不分析” |
+| Task 3：全量、alias、容量 | CLI 已实现候选构建/校验/激活及 `--replace`；要求 quiescent/bootstrap 维护窗口，原子 alias 不等于整次重建零停机 |
+| Task 5：增量与恢复 | 已实现原锁、PG commit 后投影、`pending/epoch/ready`、原 journal/receipt 重放、有限 fanout 和删除；不是只同步新增棋谱，也不是跨 PG/ES 强 ACID |
+| Task 6/7：性能验收与退役 | 保留原目标及历史数字；R 代码或本次已有 hourly 证据不证明原 100QPS/每请求≤200ms、全部磁盘清理已完成，不将勾选框补成无依据的通过 |
+
+当前 source path 只作 PG 来源/幂等键，ES 不存 `source_path` 或 SGF；展示来源由 PG 来源关系投影。近期实测的主要成本是名称投影 fanout，不应按新增盘数外推。具体成本、失败窗口、配置缺口和两棋种适配清单均见上述交接。
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 > **执行状态（2026-10-30）：用户已明确恢复实施，并要求完成开发、部署与测试后在当前会话汇报。** 五语资料调研已完成，执行决策现合入第0.1节；资料核对不等于实际安装/切词/性能已通过，必须先在TEST做小样本，再建最终全量索引。原两轮Astra评审是基础方案记录，新增分析配置纳入实施后的独立Astra代码与发布审核，不冒称已获原评审背书。

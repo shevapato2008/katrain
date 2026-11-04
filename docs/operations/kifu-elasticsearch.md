@@ -1,5 +1,7 @@
 # Kifu Elasticsearch operation record
 
+> 2026-11-04: the sections below retain the original rollout requirements and 2026-10-30 baseline, not a completed deployment ledger. The current code baseline is release `fb916f12516dd510080fb736a48a825dc206bc37`. Read the [as-built / cross-game handoff](../superpowers/handoffs/2026-11-04-kifu-elasticsearch-as-built-cross-game.md) for actual fields, publication/recovery behavior, measured hourly costs, and limits of the checked-in deployment examples. Do not replay an old build or retirement step merely because it appears here.
+
 The business database remains PostgreSQL. This release replaces only the library search projection and its prepared PostgreSQL relations. Full SGF, analysis, frozen ranks, receipts and audit journals remain in PG.
 
 ## Release identity and evidence

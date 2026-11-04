@@ -36,9 +36,16 @@ def test_actual_receiver_publication_and_replay_keep_public_api_coverage(tmp_pat
         value = manifest()
         value["games"][0]["origin_path"] = "data/kifu-album/19x19/123.sgf"
         digest = canonical_sha256(value)
-        envelope = {"manifest": value, "manifest_sha256": digest, "test_verification": {
-            "status": "verified", "manifest_sha256": digest, "games": 1,
-            "checks": [{"album_id": 11, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")]}}
+        envelope = {
+            "manifest": value,
+            "manifest_sha256": digest,
+            "test_verification": {
+                "status": "verified",
+                "manifest_sha256": digest,
+                "games": 1,
+                "checks": [{"album_id": 11, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")],
+            },
+        }
         monkeypatch.setattr(orchestration, "_engine", lambda: engine)
         responses = []
         for _ in range(2):
@@ -99,6 +106,136 @@ def _qualified_target(request):
         "request_sha256": canonical_sha256(request),
         "results": ["qualified"] * len(request["instructions"]),
     }
+
+
+def _rank_context_request():
+    return {
+        "operation": "read-rank-publication-context-v1",
+        "manifest_sha256": "a" * 64,
+        "receipt_sha256": "b" * 64,
+    }
+
+
+def test_receive_rank_context_dispatches_only_readonly_resolver(monkeypatch, capsys):
+    from io import StringIO
+    from katrain.kifu_ingest import catalog, orchestration
+    from katrain.web.kifu import historical_rank_repair, search_sync
+
+    request, engine, context = _rank_context_request(), object(), {"version": "kifu-rank-publication-context-v1"}
+    calls = []
+    monkeypatch.setattr(orchestration, "_engine", lambda: engine)
+
+    def resolve(db, manifest_sha256, receipt_sha256):
+        assert db is engine
+        assert (manifest_sha256, receipt_sha256) == (request["manifest_sha256"], request["receipt_sha256"])
+        calls.append("read")
+        return context
+
+    monkeypatch.setattr(catalog, "resolve_rank_publication_context", resolve, raising=False)
+    for module, name in (
+        (orchestration, "publish_manifest"),
+        (orchestration, "check_identity_instructions"),
+        (orchestration, "QwenNameService"),
+        (historical_rank_repair, "_lock_writer"),
+        (search_sync, "sync_mode"),
+    ):
+        monkeypatch.setattr(module, name, lambda *a, **kw: pytest.fail("readonly operation entered writer/provider"))
+    monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(request)))
+    assert orchestration.main(["receive"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"status": "resolved", "context": context}
+    assert calls == ["read"]
+
+
+def test_receive_rank_context_uses_real_repair_authority_without_writes(tmp_path, monkeypatch, capsys):
+    from io import StringIO
+    from katrain.kifu_ingest import catalog, orchestration
+    from katrain.web.kifu import historical_rank_repair, name_batch, search_sync
+    from tests.web_ui.test_kifu_historical_rank_native import (
+        authority_state,
+        make_engine,
+        repaired_legacy_publication,
+    )
+
+    engine = make_engine(tmp_path / "readonly-context.db")
+    try:
+        manifest, receipt, _, _ = repaired_legacy_publication(engine)
+        expected = catalog.resolve_rank_publication_context(
+            engine, canonical_sha256(manifest), canonical_sha256(receipt)
+        )
+        before = authority_state(engine)
+        request = {
+            "operation": "read-rank-publication-context-v1",
+            "manifest_sha256": canonical_sha256(manifest),
+            "receipt_sha256": canonical_sha256(receipt),
+        }
+        monkeypatch.setattr(orchestration, "_engine", lambda: engine)
+        for module, name in (
+            (orchestration, "publish_manifest"),
+            (catalog, "_publication_guard"),
+            (historical_rank_repair, "_lock_writer"),
+            (name_batch, "_locked_write"),
+            (search_sync, "begin_sync"),
+            (orchestration, "QwenNameService"),
+        ):
+            monkeypatch.setattr(module, name, lambda *a, **kw: pytest.fail("read operation entered writer/provider"))
+        monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(request)))
+        assert orchestration.main(["receive"]) == 0
+        assert json.loads(capsys.readouterr().out) == {"status": "resolved", "context": expected}
+        assert len(expected["slots"]) == 2
+        assert authority_state(engine) == before
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        {"path": "/private"},
+        {"rank": "9p"},
+        {"batch_id": 42},
+        {"sql": "SELECT secret"},
+        {"snapshot": {}},
+        {"manifest_sha256": "A" * 64},
+        {"receipt_sha256": "a" * 63},
+        {"receipt_sha256": None},
+        {"manifest_sha256": True},
+    ],
+)
+def test_receive_rank_context_bad_schema_rejected_before_engine(monkeypatch, capsys, damage):
+    from io import StringIO
+    from katrain.kifu_ingest import orchestration
+
+    monkeypatch.setattr(orchestration, "_engine", lambda: pytest.fail("invalid read request opened database"))
+    monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps({**_rank_context_request(), **damage})))
+    assert orchestration.main(["receive"]) == 2
+    assert json.loads(capsys.readouterr().out) == {"status": "error", "error": "rank publication context unavailable"}
+
+
+def test_receive_rank_context_counts_request_whitespace_in_one_kib_budget(monkeypatch, capsys):
+    from io import StringIO
+    from katrain.kifu_ingest import orchestration
+
+    monkeypatch.setattr(orchestration, "_engine", lambda: pytest.fail("oversized read request opened database"))
+    monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(_rank_context_request()) + " " * 1024))
+    assert orchestration.main(["receive"]) == 2
+    assert json.loads(capsys.readouterr().out) == {"status": "error", "error": "rank publication context unavailable"}
+
+
+@pytest.mark.parametrize("failure", ["missing", "oversized"])
+def test_receive_rank_context_errors_are_bounded_and_safe(monkeypatch, capsys, failure):
+    from io import StringIO
+    from katrain.kifu_ingest import catalog, orchestration
+
+    def resolve(*args):
+        if failure == "missing":
+            raise RuntimeError("postgresql://private:password@secret SQL body")
+        return {"private": "x" * (1024 * 1024)}
+
+    monkeypatch.setattr(catalog, "resolve_rank_publication_context", resolve, raising=False)
+    monkeypatch.setattr(orchestration, "_engine", object)
+    monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(_rank_context_request())))
+    assert orchestration.main(["receive"]) == 2
+    assert json.loads(capsys.readouterr().out) == {"status": "error", "error": "rank publication context unavailable"}
 
 
 def test_receive_identity_check_is_read_only_and_publish_envelope_still_works(monkeypatch, capsys):

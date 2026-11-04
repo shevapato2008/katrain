@@ -6,20 +6,21 @@ import type {
   CreateBillingOrder,
 } from "../../../features/membership/types";
 
-export interface PurchaseSelection {
+interface PurchaseSelectionBase {
   sku: CreateBillingOrder["sku"];
-  kind: "membership" | "topup";
-  name: string;
   amountFen: number;
   catalogVersion: string;
-  detail: string;
 }
+export type PurchaseSelection = PurchaseSelectionBase & (
+  | { kind: "membership"; planName: string; termDays: number; weekReportReference: number }
+  | { kind: "topup"; credits: number }
+);
 interface CheckoutState {
   scope: string;
   selection: PurchaseSelection | null;
   order: BillingOrder | null;
   busy: boolean;
-  error: string | null;
+  error: "result_unknown" | "poll_error" | null;
 }
 
 /** Orders and their late responses belong to an account, auth state and environment. */
@@ -96,7 +97,7 @@ export function useMembershipCheckout(
             ? {
                 ...previous,
                 busy: false,
-                error: "订单结果暂未确认，请先查看订单记录，避免重复创建。",
+                error: "result_unknown",
               }
             : previous,
         );
@@ -137,7 +138,7 @@ export function useMembershipCheckout(
           previous?.scope === scope
             ? {
                 ...previous,
-                error: "暂时无法确认付款状态，正在重试。请勿重复付款。",
+                error: "poll_error",
               }
             : previous,
         );

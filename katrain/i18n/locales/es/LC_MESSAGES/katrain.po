@@ -7235,3 +7235,1150 @@ msgstr ""
 
 msgid "baipu:exit_anyway"
 msgstr "Salir de todos modos"
+
+msgid "membership:account_checking"
+msgstr "Comprobando la cuenta"
+
+msgid "membership:account_entry"
+msgstr "Uso, puntos API y ventajas de la membresía"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"Las ventajas de la membresía, la elegibilidad de Free y el saldo de puntos "
+"API se mostrarán al verificar la identidad de la cuenta."
+
+msgid "membership:account_retry"
+msgstr "Reintentar verificación"
+
+msgid "membership:account_unconfirmed"
+msgstr "Estado de la cuenta sin confirmar"
+
+msgid "membership:advanced"
+msgstr "Avanzado"
+
+msgid "membership:advanced_depth_ratio"
+msgstr ""
+"Los informes avanzados consumen aproximadamente {ratio} veces lo que un "
+"informe estándar."
+
+msgid "membership:advanced_depth_rule"
+msgstr ""
+"El consumo de los informes avanzados depende de la profundidad de análisis "
+"del servidor."
+
+msgid "membership:advanced_position_cost"
+msgstr "Avanzado: aprox. {points} puntos/jugada"
+
+msgid "membership:analysis_depth"
+msgstr "Profundidad de análisis"
+
+msgid "membership:api_balance"
+msgstr "Saldo de puntos API"
+
+msgid "membership:api_on_demand"
+msgstr "Análisis API bajo demanda"
+
+msgid "membership:api_prices"
+msgstr "Precios de análisis API"
+
+msgid "membership:api_topup"
+msgstr "Recarga API"
+
+msgid "membership:auth_after_login"
+msgstr "Disponible al iniciar sesión"
+
+msgid "membership:auth_box_login"
+msgstr "Iniciar sesión en la página de la Box"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Inicia sesión en la página principal de SmartBox y vuelve a este módulo "
+"desde el acceso a Go."
+
+msgid "membership:auth_checking_action"
+msgstr "Confirmando"
+
+msgid "membership:auth_checking_description"
+msgstr ""
+"Espera un momento. Continuarás automáticamente al terminar la verificación."
+
+msgid "membership:auth_checking_note"
+msgstr "No se lee el contenido de la cuenta durante la verificación."
+
+msgid "membership:auth_checking_title"
+msgstr "Comprobando el inicio de sesión"
+
+msgid "membership:auth_description"
+msgstr ""
+"Inicia sesión para ver el uso de membresía, los puntos API y los pedidos."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"La sesión ha caducado. Se ha pausado la lectura de datos personales de "
+"membresía y uso. Inicia sesión para continuar."
+
+msgid "membership:auth_expired_title"
+msgstr "Vuelve a iniciar sesión"
+
+msgid "membership:auth_label"
+msgstr "Membresía y uso"
+
+msgid "membership:auth_login_continue"
+msgstr "Iniciar sesión y continuar"
+
+msgid "membership:auth_login_title"
+msgstr "Inicia sesión para ver la membresía y el uso"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"Tras iniciar sesión volverás a esta página, sin tener que buscar de nuevo "
+"cómo acceder."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"La red o el servicio no están disponibles temporalmente. Inténtalo de nuevo."
+" Tus credenciales de acceso se conservarán."
+
+msgid "membership:auth_unavailable_note"
+msgstr "No hace falta cerrar sesión. Reinténtalo cuando vuelva la conexión."
+
+msgid "membership:auth_unavailable_title"
+msgstr "No se puede confirmar la sesión por ahora"
+
+msgid "membership:back_to_play"
+msgstr "Volver a jugar"
+
+msgid "membership:billing_rules"
+msgstr "Reglas de cobro de la membresía y la API"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Se usa primero el cupo de la membresía. Si cualquiera de los dos cupos "
+"restantes no alcanza para completar el análisis, se paga toda la solicitud "
+"con los puntos API disponibles, sin dividir el cobro. Si faltan puntos, hay "
+"que recargar o esperar a que se restablezca el cupo. No se compran puntos ni"
+" se cobra en CNY automáticamente."
+
+msgid "membership:cancel"
+msgstr "Cancelar"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"La renovación comienza al vencer la membresía actual y no restablece el cupo"
+" vigente. La fecha de inicio definitiva será la del recibo del servidor tras"
+" el pago."
+
+msgid "membership:choose_topup"
+msgstr "Elegir importe de recarga"
+
+msgid "membership:close"
+msgstr "Cerrar"
+
+msgid "membership:compare_membership_api"
+msgstr "Comparar membresía y API"
+
+msgid "membership:compare_plans"
+msgstr "Comparar planes"
+
+msgid "membership:compute"
+msgstr "Cómputo"
+
+msgid "membership:confirm_consumption"
+msgstr "Confirmar e iniciar"
+
+msgid "membership:confirm_position"
+msgstr "Confirmar análisis de la posición"
+
+msgid "membership:confirm_purchase"
+msgstr "Confirmar compra"
+
+msgid "membership:confirm_report"
+msgstr "Confirmar creación del informe"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "Usar puntos API, máximo {points}"
+
+msgid "membership:confirming"
+msgstr "Confirmando"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Primero la membresía; si no alcanza, toda la solicitud con puntos API, hasta"
+" {points} puntos"
+
+msgid "membership:countdown_days"
+msgstr "{days} d {hours} h {minutes} min"
+
+msgid "membership:countdown_hours"
+msgstr "{hours} h {minutes} min"
+
+msgid "membership:create_order"
+msgstr "Crear pedido"
+
+msgid "membership:create_report"
+msgstr "Crear informe de la partida"
+
+msgid "membership:creating_order"
+msgstr "Creando…"
+
+msgid "membership:current_plan"
+msgstr "Membresía actual"
+
+msgid "membership:date_pending"
+msgstr "Sin confirmar"
+
+msgid "membership:done"
+msgstr "Listo"
+
+msgid "membership:entitlement_pending"
+msgstr "Ventajas de la cuenta sin confirmar"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Inicia sesión para usar el análisis."
+
+msgid "membership:error_insufficient"
+msgstr ""
+"El cupo de la membresía y los puntos API son insuficientes. Consulta la "
+"página de membresía."
+
+msgid "membership:error_operation_running"
+msgstr "El análisis sigue en curso. Vuelve a consultar más tarde."
+
+msgid "membership:error_position_failed"
+msgstr "El análisis no se ha completado. Inténtalo de nuevo."
+
+msgid "membership:error_position_refunded"
+msgstr ""
+"El análisis no se ha completado. Se ha devuelto lo consumido. Inténtalo de "
+"nuevo."
+
+msgid "membership:error_position_unavailable"
+msgstr "Este servicio no ofrece análisis de posiciones individuales."
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"La cotización ha caducado o no coincide con la solicitud actual. Confirma la"
+" cotización más reciente e inténtalo de nuevo."
+
+msgid "membership:error_quote_failed"
+msgstr "No se pudo obtener la cotización. Inténtalo de nuevo."
+
+msgid "membership:error_report_failed"
+msgstr "No se pudo crear el informe. Inténtalo de nuevo."
+
+msgid "membership:error_report_login_required"
+msgstr "Inicia sesión para crear un informe."
+
+msgid "membership:error_report_missing"
+msgstr "El informe no existe. Actualiza e inténtalo de nuevo."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"El resultado del análisis ha caducado o no está disponible. Vuelve a "
+"analizar."
+
+msgid "membership:error_service_busy"
+msgstr "Hay muchas solicitudes. Inténtalo más tarde."
+
+msgid "membership:error_service_paused"
+msgstr "El servicio de análisis está en pausa. Inténtalo más tarde."
+
+msgid "membership:error_service_unavailable"
+msgstr ""
+"El servicio de análisis no está disponible temporalmente. Inténtalo más "
+"tarde."
+
+msgid "membership:error_verification_required"
+msgstr "Completa la verificación de inicio de sesión e inténtalo de nuevo."
+
+msgid "membership:example_depth"
+msgstr "Profundidad de análisis del ejemplo"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Derecho independiente a {count} informes estándar por semana natural, sujeto"
+" a la verificación de identidad. No es un cupo general de análisis."
+
+msgid "membership:free_pending"
+msgstr "Elegibilidad de Free sin confirmar"
+
+msgid "membership:free_remaining"
+msgstr "Quedan {count} esta semana"
+
+msgid "membership:free_reset_countdown"
+msgstr "Se restablece en {time} · {date} (hora de Pekín)"
+
+msgid "membership:free_unavailable"
+msgstr "Elegibilidad de Free no disponible"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Los informes estándar de Free requieren una identidad verificada. Por ahora "
+"no se muestra cuántos se pueden solicitar. Las membresías de pago no "
+"acumulan el derecho a informes de Free."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Derecho independiente a informes estándar por semana natural"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · Informes estándar de esta semana"
+
+msgid "membership:fulfillment_pending"
+msgstr ""
+"La confirmación de las ventajas está pendiente. Actualiza el uso para "
+"consultarlas."
+
+msgid "membership:full_use_days"
+msgstr "Calculado usando todo el cupo de {days} días"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"El ahorro se calcula usando todo el cupo del período y varía según el uso "
+"real. La renovación comienza al vencer la membresía actual."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"La API no requiere suscripción: 1 CNY = 1 punto. Confirma la cotización del "
+"servidor antes de analizar."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Elige una membresía según tu uso"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr "Misma cantidad de análisis estándar, usando todo el cupo del período."
+
+msgid "membership:galaxy_intro"
+msgstr ""
+"Consulta tu uso de análisis y elige recargas bajo demanda o una membresía."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Si analizas a menudo, la membresía ahorra más"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "Para análisis ocasionales, recarga bajo demanda"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} días"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · Membresía de {days} días"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"Estimación para partidas de 300 jugadas, incluida la posición inicial, "
+"limitada por el cupo restante del período."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "¿Cuánto cuesta una partida de 300 jugadas?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"El cupo semanal se restablece cada lunes a las 00:00, hora de Pekín. El cupo"
+" del período termina al vencer."
+
+msgid "membership:galaxy_tabs"
+msgstr "Secciones de membresía"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"Vence el {date} (hora de Pekín). El restablecimiento del lunes no aumenta el"
+" cupo del período."
+
+msgid "membership:galaxy_title"
+msgstr "Membresía y uso"
+
+msgid "membership:history_unavailable"
+msgstr "Historial de pedidos no disponible"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Acciones de cuenta"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Cuenta, membresía y recargas"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Análisis avanzado"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "Avanzado: {points} puntos; ambos incluyen la posición inicial"
+
+msgid "membership:kiosk_api_balance"
+msgstr "Saldo API"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "Recarga API · Pago por uso"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "Recargar puntos API"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "Puntos API si no alcanza el cupo de membresía"
+
+msgid "membership:kiosk_back"
+msgstr "Volver"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Volver a ajustes"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "Se mostrará al confirmar las ventajas de la cuenta"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Comprueba el importe antes de pagar"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "Elegir {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Sincronizado con la nube"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Comparar membresías"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Confirma primero la cuenta"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Confirma el origen del cobro y la cotización antes de analizar"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Creando pedido…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "{points} puntos abonados"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Saldo API actual"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Ventajas actuales"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Membresía actual"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Previsto de {start} a {end} · Hora de Pekín"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} puntos"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "El derecho a informes gratuitos se verifica en la nube"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Derecho a informes gratuitos pendiente de verificar"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Solo informes estándar, sin cupo general de análisis"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "Quedan {remaining} / {limit} informes"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Verifica primero tu cuenta. El derecho de esta semana se mostrará tras "
+"aprobarse la verificación."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "Con uso frecuente, una membresía puede ahorrar más"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "Más económico que la API usando todo el cupo"
+
+msgid "membership:kiosk_history_error"
+msgstr "El historial de pedidos no se ha sincronizado. Inténtalo más tarde."
+
+msgid "membership:kiosk_member_first"
+msgstr "El análisis usa primero el cupo de membresía"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Primero membresía; si no alcanza, puntos API"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"La membresía comprada empezará al terminar el período ya adquirido. Se "
+"conserva el uso actual. Las fechas definitivas serán las del recibo de pago."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Comprar membresía"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr ""
+"Vigente de {start} a {end} · Hora de Pekín · Este recibo es definitivo"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Servicio de membresía no disponible"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"En el entorno de pruebas, el servidor simula el resultado del pago. Esta "
+"página no inicia pagos ni concede ventajas por sí misma."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Próximo período: {plan} · Desde {date} · Hora de Pekín"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr ""
+"Confirma el origen del cobro y la cotización antes de analizar. No hay "
+"recarga automática."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr ""
+"Esta página no concede ventajas por sí misma. Vuelve a la selección si es "
+"necesario."
+
+msgid "membership:kiosk_no_orders"
+msgstr "Aún no hay pedidos"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Análisis estándar"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "Informe de {moves} jugadas · Estándar: {points} puntos"
+
+msgid "membership:kiosk_not_available"
+msgstr "Aún no disponible"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Confirmación del pedido"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Pedido caducado"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Pedido no completado"
+
+msgid "membership:kiosk_order_history"
+msgstr "Historial de pedidos"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Pedido {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Pedido reembolsado"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Pago confirmado por el servidor"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"El estado del pedido no se ha sincronizado. Se está reintentando; no crees "
+"otro pedido."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"El resultado del pedido no está confirmado. Consulta primero el historial "
+"para evitar pedidos duplicados."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Pedido sin confirmar"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Pedido válido hasta {date} · Hora de Pekín"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Esperando confirmación de pago del servidor"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"Puedes consultar los resultados que ya tienes tantas veces como quieras. El "
+"territorio y las sugerencias de jugadas se incluyen en el mismo resultado."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Confirmado el {date} · Hora de Pekín"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr ""
+"La opción de pago aún no está conectada. Consulta el estado del pedido más "
+"tarde."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr ""
+"Hasta la confirmación no se muestran porcentajes restantes ni se crean "
+"pedidos."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Período pendiente de comprobar"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Cupo del período pendiente de comprobar"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Los precios y las ventajas se mostrarán al confirmar el catálogo."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Catálogo de membresías pendiente de sincronizar"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} informes"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} días"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Válido hasta {date} · Hora de Pekín"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} puntos"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} puntos / jugada"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Los cupos restantes del período y de la semana deben alcanzar ambos para "
+"todo el análisis. Si no, se paga toda la solicitud con puntos API, sin "
+"dividir el cobro. No hay recarga automática en CNY."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "Cómo se cobra la API"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"Un informe de N jugadas incluye la posición inicial: N+1 posiciones en "
+"total. El cobro real se basa en la cotización de la partida antes de "
+"analizar."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"El saldo se muestra con una precisión de {precision} puntos. Cada posición "
+"cuesta {normal} puntos en análisis estándar y {advanced} en avanzado."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Si no hay conexión o se desconoce el cupo, sincroniza primero. Los "
+"resultados ya adquiridos pueden consultarse de nuevo; incluyen territorio y "
+"sugerencias de jugadas."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Solo se puede comprar al confirmar la cuenta y el cupo"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Confirmando el cupo"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Solo se usa la membresía si ambos cupos restantes alcanzan. Si no, se paga "
+"todo el análisis con puntos API, sin dividir el cobro. Confirma el origen y "
+"la cotización antes de analizar. Si faltan puntos, recarga manualmente o "
+"espera al restablecimiento."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Cupos y ahorro de la membresía"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Cupo aún sin confirmar"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"El máximo semanal se estima para informes estándar de {moves} jugadas y está"
+" limitado por el cupo restante del período. Referencia de informes estándar "
+"del período: {references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"La membresía vence al finalizar el período comprado. El cupo semanal se "
+"restablece los lunes a las 00:00, hora de Pekín. Los porcentajes restantes "
+"del período y de la semana se calculan por separado; el uso de análisis en "
+"curso ya está incluido."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Un resultado incluye territorio y sugerencias de jugadas. Volver a "
+"consultarlo no tiene coste adicional. El análisis avanzado consume "
+"{multiplier} veces el cupo del estándar."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"El ahorro frente al análisis estándar API se calcula usando todo el cupo del"
+" período. Si no se agota, el ahorro real varía según el uso. Free solo da "
+"derecho a informes estándar gratuitos, sin cupo general de análisis."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Cupo pendiente de verificar en la nube"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Se está sincronizando de nuevo el uso de la cuenta. El saldo y las ventajas "
+"definitivos son los de la nube."
+
+msgid "membership:kiosk_remaining"
+msgstr "Restante"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Cupo restante sin confirmar"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "Renovar {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"Estimado para {moves} jugadas, limitado por el cupo restante del período; el"
+" avanzado consume aprox. {multiplier} veces lo que el estándar"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Los análisis en curso ya están incluidos"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"Un resultado incluye territorio y sugerencias de jugadas. Volver a "
+"consultarlo no tiene coste adicional."
+
+msgid "membership:kiosk_resync"
+msgstr "Volver a sincronizar"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Volver a elegir"
+
+msgid "membership:kiosk_return_usage"
+msgstr "Volver al uso"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "Ahorro aprox. del {percent} frente a la API"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"El ahorro se calcula usando todo el cupo del período; si no se agota, varía "
+"según el uso real"
+
+msgid "membership:kiosk_select_topup"
+msgstr "Elegir importe de recarga API"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Servicio no disponible"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Error de sincronización"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Sincronización pendiente"
+
+msgid "membership:kiosk_synced"
+msgstr "Sincronizado"
+
+msgid "membership:kiosk_syncing"
+msgstr "Sincronizando"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Sincronizando pedidos…"
+
+msgid "membership:kiosk_term"
+msgstr "Período"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Vencimiento del período · Hora de Pekín"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Porcentaje restante del cupo del período"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Informes estándar · unos {reports} en {days} días"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Entorno de pruebas"
+
+msgid "membership:kiosk_test_order"
+msgstr "Pedido simulado TEST · Sin cobro real"
+
+msgid "membership:kiosk_title"
+msgstr "Membresía y recargas"
+
+msgid "membership:kiosk_topup"
+msgstr "Recargar"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "Recargar {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Catálogo de recargas pendiente de sincronizar"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Se usa primero la membresía si ambos cupos restantes alcanzan. Si no, toda "
+"la solicitud se paga con puntos API."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} puntos"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} puntos"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Sin confirmar"
+
+msgid "membership:kiosk_understood"
+msgstr "Entendido"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Ambos cupos restantes deben alcanzar para el análisis; si no, se paga todo "
+"con puntos API."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "No se puede sincronizar el uso por ahora"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Usado y en análisis: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Confirma primero la identidad de la cuenta"
+
+msgid "membership:kiosk_view_order"
+msgstr "Ver pedido {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "Ver membresías"
+
+msgid "membership:kiosk_week"
+msgstr "Esta semana"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Porcentaje restante del cupo semanal"
+
+msgid "membership:kiosk_week_reports"
+msgstr "Hasta unos {reports} informes por semana"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Se restablece el lunes a las 00:00 · Hora de Pekín"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Informes estándar gratuitos semanales"
+
+msgid "membership:loading"
+msgstr "Cargando membresía y uso…"
+
+msgid "membership:login"
+msgstr "Iniciar sesión"
+
+msgid "membership:login_to_view"
+msgstr "Inicia sesión para ver la membresía y el uso"
+
+msgid "membership:membership_first"
+msgstr "Usar primero el cupo de membresía"
+
+msgid "membership:membership_free_pending_help"
+msgstr ""
+"La membresía y la elegibilidad de Free no están confirmadas. Vuelve a cargar"
+" la página."
+
+msgid "membership:membership_order"
+msgstr "Pedido de membresía"
+
+msgid "membership:next_membership"
+msgstr "{plan} adquirido · Desde {date}"
+
+msgid "membership:no_orders"
+msgstr "Aún no hay pedidos"
+
+msgid "membership:normal"
+msgstr "Estándar"
+
+msgid "membership:normal_position_cost"
+msgstr "Estándar: aprox. {points} puntos/jugada"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "Compra bajo demanda, sin suscripción"
+
+msgid "membership:open"
+msgstr "Ver"
+
+msgid "membership:order_actual_end"
+msgstr "Vencimiento real: {date} (hora de Pekín)"
+
+msgid "membership:order_actual_points"
+msgstr "Abono real: {points} puntos"
+
+msgid "membership:order_actual_start"
+msgstr "Inicio real: {date} (hora de Pekín)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Inicio previsto: {start}; vencimiento previsto: {end} (hora de Pekín). Las "
+"fechas definitivas serán las del recibo de pago."
+
+msgid "membership:order_expired"
+msgstr "Pedido caducado"
+
+msgid "membership:order_expires_at"
+msgstr "Pedido válido hasta {date} (hora de Pekín)."
+
+msgid "membership:order_failed"
+msgstr "Pedido no completado"
+
+msgid "membership:order_history"
+msgstr "Historial de pedidos"
+
+msgid "membership:order_id"
+msgstr "Número de pedido"
+
+msgid "membership:order_paid"
+msgstr "Pagado"
+
+msgid "membership:order_pending"
+msgstr "Esperando el pago"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"No se puede confirmar el pago por ahora. Se está reintentando. No vuelvas a "
+"pagar."
+
+msgid "membership:order_refunded"
+msgstr "Reembolsado"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"El resultado del pedido aún no está confirmado. Consulta primero el "
+"historial para evitar pedidos duplicados."
+
+msgid "membership:order_topup"
+msgstr "Recarga de puntos API"
+
+msgid "membership:payment_account_pending"
+msgstr "Solo se pueden crear pedidos de pago al confirmar la cuenta y el uso."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"El canal de pago aún no está disponible. No pagues a cuentas desconocidas "
+"fuera de esta página."
+
+msgid "membership:payments_disabled"
+msgstr "Pagos aún no disponibles"
+
+msgid "membership:payments_unavailable"
+msgstr ""
+"Los pagos aún no están disponibles. No se pueden crear pedidos de pago por "
+"ahora."
+
+msgid "membership:pending_order_notice"
+msgstr ""
+"Esperando el pago. La página comprobará automáticamente el estado del "
+"servidor."
+
+msgid "membership:plan_pending"
+msgstr "Ventajas de membresía sin confirmar"
+
+msgid "membership:plan_term"
+msgstr "/ {days} días"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} aún no disponible"
+
+msgid "membership:plans"
+msgstr "Membresía"
+
+msgid "membership:points"
+msgstr "Puntos"
+
+msgid "membership:points_amount"
+msgstr "{points} puntos"
+
+msgid "membership:points_exchange_rate"
+msgstr "1 CNY = 1 punto"
+
+msgid "membership:position_cost"
+msgstr "Coste por jugada"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Las posiciones individuales y las partidas completas tienen el mismo precio "
+"unitario. Una partida se cobra por el número de jugadas más la posición "
+"inicial."
+
+msgid "membership:processing"
+msgstr "Procesando…"
+
+msgid "membership:quota"
+msgstr "Cupo de membresía"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"Los porcentajes restantes del período y de la semana se calculan con sus "
+"respectivos cupos. Ambos deben alcanzar para un análisis. Las reservas de "
+"análisis en curso cuentan como uso y se devuelven si fallan."
+
+msgid "membership:quota_expires_in"
+msgstr "Vence en {time}"
+
+msgid "membership:quota_pending"
+msgstr "Cupo sin confirmar"
+
+msgid "membership:quota_recovers_in"
+msgstr "Se restablece en {time}"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Confirmando el cupo actualizado"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"Ambos cupos restantes se calculan por separado y deben alcanzar para un "
+"análisis. Las reservas de análisis en curso están incluidas en el porcentaje"
+" usado y se devuelven si fallan."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"Antes de iniciar se muestran la cotización del servidor y el origen del "
+"cobro. No se puede analizar hasta confirmar la cuenta y el uso. Volver a "
+"consultar resultados ya adquiridos o alternar entre territorio y sugerencias"
+" de jugadas no tiene coste adicional."
+
+msgid "membership:refresh"
+msgstr "Actualizar"
+
+msgid "membership:reload"
+msgstr "Volver a cargar"
+
+msgid "membership:remaining_percent"
+msgstr "Restante: {percent}"
+
+msgid "membership:renew_plan"
+msgstr "Renovar {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"La renovación comienza al vencer la membresía actual y no restablece el uso "
+"ni las reservas vigentes. Antes del pago, las fechas son estimadas; el "
+"período definitivo será el del recibo del servidor tras el pago. Las "
+"membresías de pago no acumulan el derecho a informes estándar de Free."
+
+msgid "membership:report_estimate_limit"
+msgstr ""
+"Estimado para partidas de 300 jugadas, limitado por el cupo restante del "
+"período."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"Incluye la posición inicial: 301 posiciones analizadas en total. El coste "
+"real depende de la cotización del servidor antes de enviar la solicitud."
+
+msgid "membership:retry"
+msgstr "Reintentar"
+
+msgid "membership:savings_approx"
+msgstr "Ahorro aprox. del {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "Ahorro aprox. del {percent} frente a la API"
+
+msgid "membership:select_plan"
+msgstr "Elegir {plan}"
+
+msgid "membership:server_authority"
+msgstr ""
+"El saldo y las ventajas definitivos son los confirmados por el servidor."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"Este servicio aún no ofrece el uso de membresía. Las ventajas y el saldo "
+"están sin confirmar."
+
+msgid "membership:source_free"
+msgstr "Se prevé usar el derecho semanal a informes gratuitos"
+
+msgid "membership:source_membership"
+msgstr "Se prevé usar el cupo de membresía"
+
+msgid "membership:source_owned"
+msgstr "Ya tienes este resultado"
+
+msgid "membership:source_pending"
+msgstr "Origen del cobro sin confirmar"
+
+msgid "membership:source_wallet"
+msgstr "Se prevé usar puntos API"
+
+msgid "membership:stale"
+msgstr "Pendiente de actualizar"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Se muestran los últimos datos cargados. La cuenta y el origen del cobro "
+"deben confirmarse de nuevo. Las compras no están disponibles por ahora."
+
+msgid "membership:synced"
+msgstr "Sincronizado"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Temporalmente no disponible"
+
+msgid "membership:term_remaining"
+msgstr "Restante del período"
+
+msgid "membership:term_report_reference"
+msgstr ""
+"{plan}: referencia de unos {reports} informes estándar por período de {days}"
+" días."
+
+msgid "membership:term_total_reports"
+msgstr "Unos {reports} informes en {days} días"
+
+msgid "membership:test_order_warning"
+msgstr "Pedido simulado TEST, sin cobro real"
+
+msgid "membership:time_pending"
+msgstr "Hora sin confirmar"
+
+msgid "membership:topup_amount"
+msgstr "Recargar {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "Se abonarán {points} puntos"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Se abona tras confirmar el pago. Si no alcanza el cupo de membresía, se usan"
+" los puntos API disponibles. No hay recarga automática."
+
+msgid "membership:topup_option"
+msgstr "{amount}, abono de {points} puntos"
+
+msgid "membership:unavailable"
+msgstr "Aún no disponible"
+
+msgid "membership:unavailable_title"
+msgstr "Membresía y uso no disponibles"
+
+msgid "membership:unconfirmed_help"
+msgstr ""
+"Las ventajas y el saldo de la cuenta no están confirmados. Inténtalo más "
+"tarde."
+
+msgid "membership:usage"
+msgstr "Uso"
+
+msgid "membership:used_and_reserved"
+msgstr "Usado y en análisis: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Válido hasta {date} (hora de Pekín)"
+
+msgid "membership:view_api_topup"
+msgstr "Ver recarga API"
+
+msgid "membership:view_plans"
+msgstr "Ver planes de membresía"
+
+msgid "membership:visits"
+msgstr "{count} visitas de búsqueda"
+
+msgid "membership:week_remaining"
+msgstr "Restante de esta semana"
+
+msgid "membership:weekly_report_reference"
+msgstr "Informes estándar, hasta unos {reports} por semana"
+
+msgid "membership:weekly_reports"
+msgstr "Hasta unos {reports} informes por semana"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "Hasta unos {reports} informes por semana · Aún no disponible"
+
+msgid "membership:weekly_reset_rule"
+msgstr "El cupo semanal se restablece cada lunes a las 00:00, hora de Pekín."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"Si el cupo de membresía no alcanza para todo el análisis, se paga toda la "
+"solicitud con los puntos API disponibles."

@@ -753,21 +753,91 @@ def _incoming_rank_entry(day, rank, item):
     return entry
 
 
+@pytest.mark.parametrize("selected", [(2,), (3,), (2, 3), (3, 2)])
+def test_target_day_original_bare_conflict_refuses_independent_of_repair_part(conn, selected):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "2000-01-06", "6p")
+    game(conn, 2, "2024-11-03", "7段")
+    game(conn, 3, "2024-11-03", "9段")
+    entries = [target(conn, ident) for ident in selected]
+    decisions = h.prepare_rank_decisions(conn, entries, matched_at=MATCHED)["decisions"]
+    for entry, decision in zip(entries, decisions):
+        assert (decision["origin"], decision["display_rank"]) == ("source", entry["album"]["black_rank"])
+        assert decision["basis"] == []
+        assert decision["refusal_reason"] == "incompatible_bare_observation"
+    h.verify_initial_rank_decisions(conn, entries, decisions)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_incoming_target_day_bare_conflict_is_refused_before_first_write(conn, reverse):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "2000-01-06", "6p")
+    entries = [_incoming_rank_entry("2024-11-03", f"{grade}段", str(grade)) for grade in (7, 9)]
+    if reverse:
+        entries.reverse()
+    decisions = h.prepare_rank_decisions(conn, entries, matched_at=MATCHED)["decisions"]
+    for entry, decision in zip(entries, decisions):
+        assert (decision["origin"], decision["display_rank"]) == ("source", entry["album"]["black_rank"])
+        assert decision["refusal_reason"] == "incompatible_bare_observation"
+        assert decision["basis"] == []
+    h.verify_initial_rank_decisions(conn, entries, decisions)
+
+
+@pytest.mark.parametrize("incoming", [False, True])
+@pytest.mark.parametrize("day,rank", [("2024-11-02", "7段"), ("2024-11-03", "9段"), ("2024-11-04", "7段")])
+def test_compatible_progression_equal_day_and_future_keep_type_refinement(conn, incoming, day, rank):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "2000-01-06", "6p")
+    if incoming:
+        other = _incoming_rank_entry(day, rank, "other")
+        entry = _incoming_rank_entry("2024-11-03", "9段", "target")
+    else:
+        other = game(conn, 2, day, rank)
+        entry = game(conn, 3, "2024-11-03", "9段")
+    entries = [other, entry]
+    decision = h.prepare_rank_decisions(conn, entries, matched_at=MATCHED)["decisions"][1]
+    assert (decision["origin"], decision["display_rank"]) == ("historical_type", "9p")
+    assert decision["basis"][0]["raw_date"] == "2000-01-06"
+    h.verify_initial_rank_decisions(conn, [entry], [decision], incoming_targets=entries)
+
+
+def test_incoming_original_bare_conflict_keeps_missing_rank_unknown(conn):
+    from katrain.web.kifu import historical_ranks as h
+
+    game(conn, 1, "2000-01-06", "6p")
+    other = _incoming_rank_entry("2024-11-03", "7段", "other")
+    missing = _incoming_rank_entry("2024-11-03", "", "missing")
+    decisions = h.prepare_rank_decisions(conn, [other, missing], matched_at=MATCHED)["decisions"]
+    assert (decisions[1]["origin"], decisions[1]["display_rank"]) == ("unknown", "")
+    assert decisions[1]["refusal_reason"] == "incompatible_bare_observation"
+    assert decisions[1]["basis"] == []
+    h.verify_initial_rank_decisions(conn, [other, missing], decisions)
+
+
 def test_initial_recheck_rejects_same_incoming_batch_original_contradiction(conn):
     from katrain.web.kifu import historical_ranks as h
 
     game(conn, 1, "1960-01-01", "7p")
     source = _incoming_rank_entry("1967-01-01", "9d", "source")
     missing = _incoming_rank_entry("1967-02-01", "", "missing")
+    frozen_missing = resolve(conn, missing)
+    assert frozen_missing["display_rank"] == "7p"
     decisions = h.prepare_rank_decisions(conn, [source, missing], matched_at=MATCHED)["decisions"]
     assert decisions[0]["display_rank"] == "9d" and decisions[0]["origin"] == "source"
-    assert decisions[1]["display_rank"] == "7p"
+    assert decisions[1]["display_rank"] == "" and decisions[1]["origin"] == "unknown"
+    assert decisions[1]["refusal_reason"] == "typed_boundary" and not decisions[1]["basis"]
+    h.verify_initial_rank_decisions(conn, [source, missing], decisions)
+    # A package that gains the contradictory original after freezing still
+    # fails the strict first-write guard, including legacy source-only slots.
     with pytest.raises(ValueError, match="incoming|qualification|cohort"):
-        h.verify_initial_rank_decisions(conn, [source, missing], decisions)
+        h.verify_initial_rank_decisions(conn, [source, missing], [decisions[0], frozen_missing])
     # Legacy frozen source slots can be supplied solely as disqualifiers,
     # without pretending they carry a new v3 snapshot.
     with pytest.raises(ValueError, match="incoming|qualification|cohort"):
-        h.verify_initial_rank_decisions(conn, [missing], [decisions[1]], incoming_targets=[source, missing])
+        h.verify_initial_rank_decisions(conn, [missing], [frozen_missing], incoming_targets=[source, missing])
 
 
 @pytest.mark.parametrize("day,rank", [("1969-01-01", "9d"), ("1967-01-01", ""), ("1967-01-01", "7p")])
@@ -790,10 +860,14 @@ def test_earlier_incoming_higher_professional_grade_still_blocks_decrease(conn):
     game(conn, 1, "1960-01-01", "7p")
     earlier = _incoming_rank_entry("1950-01-01", "9p", "earlier")
     missing = _incoming_rank_entry("1968-02-01", "", "missing")
+    frozen_missing = resolve(conn, missing)
+    assert frozen_missing["display_rank"] == "7p"
     decisions = h.prepare_rank_decisions(conn, [earlier, missing], matched_at=MATCHED)["decisions"]
-    assert decisions[1]["display_rank"] == "7p"
+    assert decisions[1]["display_rank"] == "" and decisions[1]["origin"] == "unknown"
+    assert decisions[1]["refusal_reason"] == "professional_grade_decrease" and not decisions[1]["basis"]
+    h.verify_initial_rank_decisions(conn, [earlier, missing], decisions)
     with pytest.raises(ValueError, match="incoming.*professional|grade.*decrease"):
-        h.verify_initial_rank_decisions(conn, [earlier, missing], decisions)
+        h.verify_initial_rank_decisions(conn, [earlier, missing], [decisions[0], frozen_missing])
 
 
 def test_root_literals_parse_once_per_body_across_shared_operation(conn, monkeypatch):

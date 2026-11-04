@@ -174,6 +174,449 @@ def validate_rank_report(api, result):
     sync.validate_test_verification(api.manifest, digest, {**result, "manifest_sha256": digest})
 
 
+def supersession_snapshot(api):
+    game = api.manifest["games"][0]
+    snapshot = {
+        "version": "kifu-rank-snapshot-v3",
+        "policy_version": "historical-rank-as-of-v1",
+        "source_ref": {
+            "source_key": game["source_key"],
+            "origin_path": "data/kifu-album/19x19/1.sgf",
+            "sgf_sha256": game["sgf_sha256"],
+            "slot": "black",
+        },
+        "player_ref": game["identities"]["black"],
+        "raw_rank": "9段",
+        "raw_name": game["metadata"]["player_black"],
+        "display_rank": "9段",
+        "rank_value": 9,
+        "rank_system": "dan_unspecified",
+        "origin": "source",
+        "target_date": "2026-10-22",
+        "basis": [],
+        "qualification": None,
+        "refusal_reason": "unusable_identity",
+        "matched_at": "2026-11-03T00:00:00+00:00",
+    }
+    snapshot["content_sha256"] = canonical_sha256(snapshot)
+    return snapshot
+
+
+def supersession_context(api):
+    """A real v3 source decision; only the DB loader may supply its authority."""
+    from katrain.kifu_ingest.ranks import display_rank_for_game_slot
+
+    game, snapshot = api.manifest["games"][0], supersession_snapshot(api)
+    expected = display_rank_for_game_slot(snapshot)
+    context = {
+        "version": "kifu-rank-publication-context-v1",
+        "manifest_sha256": canonical_sha256(api.manifest),
+        "receipt_sha256": canonical_sha256(api.receipt),
+        "database_identity": {"dialect": "sqlite", "database_sha256": "d" * 64},
+        "source_mapping_sha256": canonical_sha256(api.receipt["games"]),
+        "slots": [
+            {
+                **api.receipt["games"][0],
+                "side": "black",
+                "snapshot_id": 11,
+                "original_snapshot_sha256": game["rank_snapshots"]["black"]["content_sha256"],
+                "current_snapshot_sha256": snapshot["content_sha256"],
+                "repair_part_sha256": "a" * 64,
+                "repair_batch_id": 21,
+                "predecessor_after_sha256": "b" * 64,
+                "successor_before_sha256": "b" * 64,
+                "successor_after_sha256": "c" * 64,
+                "expected": expected,
+            }
+        ],
+    }
+    context["content_sha256"] = canonical_sha256(context)
+    return context
+
+
+def show_current_rank(api, context):
+    expected = context["slots"][0]["expected"]
+    for lang in sync.LANGUAGES:
+        api.details[7, lang].update(
+            display_black_rank=expected["rank"],
+            black_rank_origin=expected["rank_origin"],
+            black_rank_source=deepcopy(expected["rank_source"]),
+        )
+    api.listing["items"][0] = deepcopy(api.details[7, "cn"])
+
+
+@pytest.mark.asyncio
+async def test_supersession_keeps_original_report_and_uses_fresh_context_checkpoint(tmp_path):
+    api = rank_api(raw="9段")
+    original = await api.verify(checkpoint_dir=tmp_path)
+    original_copy, manifest, receipt = deepcopy(original), deepcopy(api.manifest), deepcopy(api.receipt)
+    context = supersession_context(api)
+    show_current_rank(api, context)
+    loads = []
+
+    async def loader(manifest_sha, receipt_sha, *, timeout):
+        loads.append((manifest_sha, receipt_sha, timeout))
+        return deepcopy(context)
+
+    api.calls.clear()
+    current = await api.verify(checkpoint_dir=tmp_path, rank_context_loader=loader)
+    assert len(api.calls) == 6  # Original checkpoint is not current API evidence.
+    assert current["status"] == "current_rank_verified"
+    assert current["algorithm"] == sync.CURRENT_RANK_ALGORITHM
+    assert current["rank_context_sha256"] == context["content_sha256"]
+    assert current["rank_publication_context"] == context
+    assert current["target"] == "https://example"
+    assert current["database_identity"] == context["database_identity"]
+    assert len(current["checks"]) == 5 and len(current["public_cards"]) == 1
+    sync.validate_current_rank_verification(api.manifest, api.receipt, current, context, "https://example")
+    with pytest.raises(ValueError, match="test verification"):
+        validate_rank_report(api, current)
+    assert (original, api.manifest, api.receipt) == (original_copy, manifest, receipt)
+    validate_rank_report(api, original)
+    api.calls.clear()
+    assert await api.verify(checkpoint_dir=tmp_path, rank_context_loader=loader) == current
+    assert api.calls == [] and len(loads) == 2  # Authority is refreshed even on resume.
+    assert loads[0] == (canonical_sha256(api.manifest), canonical_sha256(api.receipt), 30)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("rank_system", "professional_dan"),
+        ("source_as_of", "2026-10-21"),
+        ("policy_version", "other-policy"),
+        ("refusal_reason", None),
+        ("snapshot_sha256", "e" * 64),
+        ("source_sha256", "e" * 64),
+    ],
+)
+async def test_supersession_rejects_equal_visible_rank_with_changed_machine_provenance(field, value):
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    show_current_rank(api, context)
+    source = api.details[7, "en"]["black_rank_source"]
+    if field == "source_sha256":
+        source["source_ref"]["sgf_sha256"] = value
+    else:
+        source[field] = value
+    with pytest.raises(ValueError, match="rank"):
+        await api.verify(rank_context_loader=lambda *a, **kw: deepcopy(context))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("damage", ["manifest", "receipt", "mapping", "original", "duplicate", "extra", "oversized"])
+async def test_current_rank_context_rejects_invalid_authority_before_get(damage):
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    if damage in {"manifest", "receipt"}:
+        context[f"{damage}_sha256"] = "f" * 64
+    elif damage == "mapping":
+        context["source_mapping_sha256"] = "f" * 64
+    elif damage == "original":
+        context["slots"][0]["original_snapshot_sha256"] = "f" * 64
+    elif damage == "duplicate":
+        context["slots"].append(deepcopy(context["slots"][0]))
+    elif damage == "extra":
+        context["rank_override"] = "9段"
+    else:
+        context["slots"][0]["expected"]["rank"] = "x" * (1024 * 1024)
+    context["content_sha256"] = canonical_sha256({k: v for k, v in context.items() if k != "content_sha256"})
+    with pytest.raises(ValueError, match="context"):
+        await api.verify(rank_context_loader=lambda *a, **kw: context)
+    assert api.calls == []
+
+
+@pytest.mark.asyncio
+async def test_current_rank_context_empty_preserves_legacy_output_and_deadline_clamps_loader():
+    api, clock = rank_api(raw="9段"), Clock()
+    original = await api.verify()
+    context = supersession_context(api)
+    context["slots"] = []
+    context["content_sha256"] = canonical_sha256({k: v for k, v in context.items() if k != "content_sha256"})
+    calls = []
+
+    def loader(*args, timeout):
+        calls.append(timeout)
+        return context
+
+    assert await api.verify(rank_context_loader=loader, clock=clock.monotonic, deadline=clock.now + 7) == original
+    assert calls == [7]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "damage", ["target", "database", "context", "missing_slot", "rank", "missing_check", "duplicate", "budget"]
+)
+async def test_current_rank_context_saved_report_requires_fresh_authority_and_all_evidence(damage):
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    show_current_rank(api, context)
+    result = await api.verify(rank_context_loader=lambda *a, **kw: context)
+    report = deepcopy(result)
+    if damage == "target":
+        report["target"] = "https://other"
+    elif damage == "database":
+        report["database_identity"]["database_sha256"] = "f" * 64
+    elif damage == "context":
+        report["rank_publication_context"]["slots"][0]["expected"]["rank"] = "9p"
+    elif damage == "missing_slot":
+        report["rank_publication_context"]["slots"] = []
+    elif damage == "rank":
+        report["checks"][-1]["ranks"]["black"]["source"]["rank_system"] = "professional_dan"
+    elif damage == "missing_check":
+        report["checks"].pop()
+    elif damage == "duplicate":
+        report["checks"][-1] = deepcopy(report["checks"][0])
+    else:
+        report["checks"][-1]["ranks"]["black"]["source"]["refusal_reason"] = "x" * (4 * 1024 * 1024)
+    with pytest.raises(ValueError):
+        sync.validate_current_rank_verification(api.manifest, api.receipt, report, context, "https://example")
+    # The original validator also cannot accept a supplement with a forged status.
+    report["status"] = "verified"
+    with pytest.raises(ValueError):
+        validate_rank_report(api, report)
+
+
+@pytest.mark.asyncio
+async def test_current_rank_context_markers_cannot_masquerade_as_original_test_authorization():
+    api = rank_api(raw="9段")
+    original = await api.verify()
+    original.update(rank_publication_context=supersession_context(api))
+    with pytest.raises(ValueError, match="original|current"):
+        validate_rank_report(api, original)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("sgf_content", "(;PB[changed];B[bb])"),
+        ("player_black", "changed"),
+        ("black_rank", "9p"),
+        ("sources", []),
+        ("display_player_black", "changed"),
+    ],
+)
+async def test_supersession_still_checks_original_metadata_names_source_and_sgf(field, value):
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    show_current_rank(api, context)
+    api.details[7, "en"][field] = value
+    with pytest.raises(ValueError):
+        await api.verify(rank_context_loader=lambda *a, **kw: context)
+
+
+@pytest.mark.asyncio
+async def test_current_rank_context_new_v3_never_loads_compatibility_context():
+    from katrain.kifu_ingest.ranks import display_rank_for_game_slot
+
+    api = rank_api(raw="9段")
+    game = api.manifest["games"][0]
+    game["origin_path"] = "data/kifu-album/19x19/1.sgf"
+    black = supersession_snapshot(api)
+    white = deepcopy(black)
+    white.update(
+        player_ref=None,
+        raw_name="White",
+        raw_rank="",
+        display_rank="",
+        rank_value=None,
+        rank_system=None,
+        origin="unknown",
+    )
+    white["source_ref"]["slot"] = "white"
+    white["content_sha256"] = canonical_sha256({k: v for k, v in white.items() if k != "content_sha256"})
+    game["rank_snapshots"] = {"black": black, "white": white}
+    for side, snapshot in game["rank_snapshots"].items():
+        expected = display_rank_for_game_slot(snapshot)
+        for lang in sync.LANGUAGES:
+            api.details[7, lang].update(
+                {
+                    f"display_{side}_rank": expected["rank"],
+                    f"{side}_rank_origin": expected["rank_origin"],
+                    f"{side}_rank_source": expected["rank_source"],
+                }
+            )
+    api.listing["items"][0] = deepcopy(api.details[7, "cn"])
+    # A new native V3 publication keeps its ordinary applied-outcome contract.
+    api.receipt["manifest_sha256"] = canonical_sha256(api.manifest)
+    api.receipt["rank_outcomes"] = [
+        {
+            **api.receipt["games"][0],
+            "side": side,
+            "status": "applied",
+            "requested_snapshot_sha256": snapshot["content_sha256"],
+            "original_source_ref": snapshot["source_ref"],
+            "retained_snapshot": None,
+            "original_canonical_sgf_sha256": game["sgf_sha256"],
+        }
+        for side, snapshot in game["rank_snapshots"].items()
+    ]
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("new V3 must not load legacy authority")
+
+    result = await api.verify(rank_context_loader=forbidden)
+    assert result["status"] == "verified" and result["algorithm"] == sync.RANK_ALGORITHM_VERSION
+    assert len(api.calls) == 6
+
+
+@pytest.mark.asyncio
+async def test_current_rank_context_mixed_v1_v3_publication_keeps_original_no_rpc_verification(tmp_path, monkeypatch):
+    from sqlalchemy.orm import Session
+
+    from katrain.kifu_ingest import ranks
+    from katrain.web.api.v1.endpoints import kifu
+    from tests.web_ui.test_kifu_historical_rank_native import WHEN, make_engine, prepared, publish
+
+    engine = make_engine(tmp_path / "mixed-ranks.db")
+    old = prepared(engine, item="99701", raw="7p", day="2026-01-01")
+    game = old["games"][0]
+    frozen = ranks.freeze_game_ranks(game, matched_at=WHEN)
+    game.update({key: frozen[key] for key in ("rank_snapshots", "rank_observations")})
+    new = prepared(engine, item="99702", raw="8p", day="2026-02-01")
+    manifest = {
+        **old,
+        "publication_key": "mixed-replay-review",
+        "games": [game, *new["games"]],
+        "rank_facts": ranks.merge_rank_facts(frozen["rank_facts"], new["rank_facts"]),
+    }
+    receipt = publish(engine, manifest)
+    assert publish(engine, manifest) == receipt
+    monkeypatch.setattr(kifu.settings, "KIFU_SEARCH_BACKEND", "legacy")
+
+    async def handle(request):
+        with Session(engine) as db:
+            if request.url.path.endswith("/albums"):
+                value = kifu.read_album_page(
+                    db,
+                    q=request.url.params.get("q"),
+                    lang=request.url.params.get("lang", "cn"),
+                    page=int(request.url.params.get("page", 1)),
+                    page_size=int(request.url.params.get("page_size", 100)),
+                )
+            else:
+                value = kifu.read_album_detail(
+                    db, int(request.url.path.rsplit("/", 1)[1]), lang=request.url.params.get("lang", "cn")
+                )
+            return httpx.Response(200, json=value.model_dump(mode="json"))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("mixed V1/V3 must not load legacy authority")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        original = await sync.verify_album_api(client, "https://example", manifest, receipt)
+        current = await sync.verify_album_api(
+            client, "https://example", manifest, receipt, rank_context_loader=forbidden
+        )
+    assert current == original
+    assert current["status"] == "verified" and current["algorithm"] == sync.RANK_ALGORITHM_VERSION
+    assert len(current["checks"]) == 10 and len(current["public_cards"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_current_rank_context_is_not_accepted_as_caller_data_or_unbounded_loader():
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    show_current_rank(api, context)
+    api.receipt["rank_publication_context"] = context
+    with pytest.raises(ValueError, match="rank"):
+        await api.verify()
+    with pytest.raises(TypeError, match="rank_context"):
+        await api.verify(rank_context=context)
+    api.receipt.pop("rank_publication_context")
+    calls = len(api.calls)
+
+    async def slow(*args, **kwargs):
+        await asyncio.sleep(60)
+
+    with pytest.raises(TimeoutError):
+        await api.verify(rank_context_loader=slow, deadline=sync.time.monotonic() + 0.01)
+    assert len(api.calls) == calls
+
+
+def test_current_rank_context_ssh_uses_exact_fixed_command_and_request(monkeypatch):
+    import subprocess
+    import sys
+
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    response = {"status": "resolved", "context": context}
+    actual_popen, calls = subprocess.Popen, []
+    request = {
+        "operation": "read-rank-publication-context-v1",
+        "manifest_sha256": context["manifest_sha256"],
+        "receipt_sha256": context["receipt_sha256"],
+    }
+    script = (
+        "import json,sys; raw=sys.stdin.buffer.read(); assert len(raw)<=1024; "
+        "assert json.loads(raw)==" + repr(request) + "; print(json.dumps(" + repr(response) + "))"
+    )
+
+    def popen(command, **kwargs):
+        calls.append((command, kwargs))
+        return actual_popen([sys.executable, "-c", script], **kwargs)
+
+    monkeypatch.setattr(sync.subprocess, "Popen", popen)
+    got = sync.read_rank_publication_context(
+        host="prod",
+        key_path="/private/key",
+        known_hosts="/private/known_hosts",
+        manifest_sha256=context["manifest_sha256"],
+        receipt_sha256=context["receipt_sha256"],
+        timeout=30,
+    )
+    assert got == context
+    assert calls[0][0] == sync._receiver_command("prod", "/private/key", "/private/known_hosts")
+    assert calls[0][1]["stderr"] == subprocess.DEVNULL
+
+
+@pytest.mark.parametrize(
+    "damage", ["extra_envelope", "wrong_manifest", "invalid_json", "oversized", "exit", "timeout", "bad_hash"]
+)
+def test_current_rank_context_ssh_fails_closed_with_fixed_safe_error(monkeypatch, damage):
+    import subprocess
+    import sys
+
+    api = rank_api(raw="9段")
+    context = supersession_context(api)
+    request_sha = context["manifest_sha256"]
+    response = {"status": "resolved", "context": context}
+    if damage == "extra_envelope":
+        response["secret"] = "never-forward-this"
+    elif damage == "wrong_manifest":
+        context["manifest_sha256"] = "f" * 64
+    elif damage == "bad_hash":
+        request_sha = "not-a-hash"
+    script = "import sys; sys.stdin.read(); print(" + repr(json.dumps(response)) + ")"
+    if damage == "invalid_json":
+        script = "print('never-forward-this')"
+    elif damage == "oversized":
+        script = "import sys; sys.stdout.write('x' * (1024 * 1024 + 1)); sys.stdout.flush()"
+    elif damage == "exit":
+        script = "import sys; print('never-forward-this'); sys.exit(2)"
+    elif damage == "timeout":
+        script = "import time; time.sleep(60)"
+    actual_popen, calls = subprocess.Popen, []
+
+    def popen(command, **kwargs):
+        calls.append(command)
+        return actual_popen([sys.executable, "-c", script], **kwargs)
+
+    monkeypatch.setattr(sync.subprocess, "Popen", popen)
+    with pytest.raises(sync.RankPublicationContextUnavailable, match="^rank publication context unavailable$"):
+        sync.read_rank_publication_context(
+            host="prod",
+            key_path="/private/key",
+            known_hosts="/private/known_hosts",
+            manifest_sha256=request_sha,
+            receipt_sha256=context["receipt_sha256"],
+            timeout=0.01 if damage == "timeout" else 30,
+        )
+    assert len(calls) == (0 if damage == "bad_hash" else 1)
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("raw", [None, "9p", "6d", "6k"])
 async def test_v2_keeps_complete_rank_evidence_for_every_language_and_public_card(raw):

@@ -6,9 +6,13 @@ import asyncio
 from collections import Counter
 from copy import deepcopy
 from hashlib import sha256
+import inspect
 import json
+import math
+import os
 from pathlib import Path
 import re
+import selectors
 import subprocess
 import time
 
@@ -31,6 +35,10 @@ from katrain.web.kifu.name_parse import parse_player
 LANGUAGES = ("cn", "tw", "jp", "ko", "en")
 _MAX_VERIFICATION_BYTES = 4 * 1024 * 1024
 _MAX_RECEIVER_BYTES = 16 * 1024 * 1024
+_MAX_RANK_CONTEXT_BYTES = 1024 * 1024
+CURRENT_RANK_ALGORITHM = "kifu-current-rank-verification-v1"
+_CONTEXT_VERSION = "kifu-rank-publication-context-v1"
+_SHA = re.compile(r"[0-9a-f]{64}\Z")
 _SAFE_RECEIVER_ERRORS = frozenset(
     {
         "invalid research: incremental research differs from reviewed text or sources",
@@ -79,6 +87,18 @@ def validate_test_verification(manifest, digest, verification):
         or verification.get("manifest_sha256") != digest
     ):
         raise ValueError("test verification is required before production sync")
+    if (
+        any(
+            key in verification
+            for key in (
+                "rank_publication_context",
+                "rank_context_sha256",
+                "database_identity",
+            )
+        )
+        or verification.get("algorithm") == CURRENT_RANK_ALGORITHM
+    ):
+        raise ValueError("current rank supplement cannot replace original test verification")
     if isinstance(manifest, dict) and manifest.get("format") == FORMAT_V2:
         return _validate_rank_report(manifest, digest, verification)
     games = manifest.get("games", []) if isinstance(manifest, dict) else []
@@ -128,6 +148,261 @@ def _receiver_command(host, key_path, known_hosts):
 
 class IdentityCheckUnavailable(RuntimeError):
     """Defer preparation rather than selecting TEST-only canonical identities."""
+
+
+class RankPublicationContextUnavailable(RuntimeError):
+    """The fixed authenticated read did not yield bounded current authority."""
+
+
+def _json_bytes(value):
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8")
+
+
+def _validate_context_schema(context, manifest_sha256, receipt_sha256):
+    """Validate wire bytes and bindings; this does not establish DB authority."""
+    fields = {
+        "version",
+        "manifest_sha256",
+        "receipt_sha256",
+        "database_identity",
+        "source_mapping_sha256",
+        "slots",
+        "content_sha256",
+    }
+    if (
+        not isinstance(context, dict)
+        or set(context) != fields
+        or len(_json_bytes(context)) > _MAX_RANK_CONTEXT_BYTES
+        or context["version"] != _CONTEXT_VERSION
+        or context["manifest_sha256"] != manifest_sha256
+        or context["receipt_sha256"] != receipt_sha256
+        or any(
+            not isinstance(context[k], str) or not _SHA.fullmatch(context[k])
+            for k in ("manifest_sha256", "receipt_sha256", "source_mapping_sha256", "content_sha256")
+        )
+        or context["content_sha256"] != canonical_sha256({k: v for k, v in context.items() if k != "content_sha256"})
+        or not isinstance(context["slots"], list)
+        or len(context["slots"]) > 200
+    ):
+        raise ValueError("rank publication context is invalid")
+    database = context["database_identity"]
+    if not isinstance(database, dict):
+        raise ValueError("rank publication context database is invalid")
+    if database.get("dialect") == "sqlite":
+        valid_database = (
+            set(database) == {"dialect", "database_sha256"}
+            and isinstance(database["database_sha256"], str)
+            and _SHA.fullmatch(database["database_sha256"])
+        )
+    else:
+        valid_database = (
+            set(database) == {"dialect", "database", "schema", "database_oid", "server_sha256"}
+            and database.get("dialect") == "postgresql"
+            and all(isinstance(database[k], str) and 0 < len(database[k]) <= 256 for k in ("database", "schema"))
+            and type(database["database_oid"]) is int
+            and database["database_oid"] > 0
+            and isinstance(database["server_sha256"], str)
+            and _SHA.fullmatch(database["server_sha256"])
+        )
+    if not valid_database:
+        raise ValueError("rank publication context database is invalid")
+    slot_fields = {
+        "source_key",
+        "source_item_id",
+        "album_id",
+        "side",
+        "snapshot_id",
+        "original_snapshot_sha256",
+        "current_snapshot_sha256",
+        "repair_part_sha256",
+        "repair_batch_id",
+        "predecessor_after_sha256",
+        "successor_before_sha256",
+        "successor_after_sha256",
+        "expected",
+    }
+    seen = set()
+    for slot in context["slots"]:
+        if (
+            not isinstance(slot, dict)
+            or set(slot) != slot_fields
+            or any(
+                not isinstance(slot[k], str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", slot[k])
+                for k in ("source_key", "source_item_id")
+            )
+            or slot["side"] not in ("black", "white")
+            or any(type(slot[k]) is not int or slot[k] <= 0 for k in ("album_id", "snapshot_id", "repair_batch_id"))
+            or any(
+                not isinstance(slot[k], str) or not _SHA.fullmatch(slot[k])
+                for k in slot_fields
+                if k.endswith("_sha256")
+            )
+            or slot["original_snapshot_sha256"] == slot["current_snapshot_sha256"]
+            or slot["predecessor_after_sha256"] != slot["successor_before_sha256"]
+        ):
+            raise ValueError("rank publication context slot is invalid")
+        key = slot["source_key"], slot["source_item_id"], slot["side"]
+        if key in seen:
+            raise ValueError("rank publication context slot is duplicated")
+        seen.add(key)
+        expected = slot["expected"]
+        if (
+            not isinstance(expected, dict)
+            or set(expected) != {"rank", "rank_origin", "rank_source"}
+            or not isinstance(expected["rank"], str)
+            or len(expected["rank"]) > 128
+            or expected["rank_origin"] not in ("source", "historical_type", "historical_prior", "unknown")
+        ):
+            raise ValueError("rank publication context expectation is invalid")
+        source = expected["rank_source"]
+        if (
+            not isinstance(source, dict)
+            or set(source)
+            != {
+                "policy_version",
+                "snapshot_sha256",
+                "rank_system",
+                "origin",
+                "source_ref",
+                "source_as_of",
+                "refusal_reason",
+            }
+            or source["policy_version"] != "historical-rank-as-of-v1"
+            or source["snapshot_sha256"] != slot["current_snapshot_sha256"]
+            or source["origin"] != expected["rank_origin"]
+            or source["rank_system"] not in (None, "professional_dan", "amateur_dan", "kyu", "dan_unspecified")
+            or source["source_as_of"] is not None
+            and (
+                not isinstance(source["source_as_of"], str)
+                or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", source["source_as_of"])
+            )
+            or source["refusal_reason"] is not None
+            and (not isinstance(source["refusal_reason"], str) or not 0 < len(source["refusal_reason"]) <= 64)
+        ):
+            raise ValueError("rank publication context provenance is invalid")
+        ref = source["source_ref"]
+        if (
+            not isinstance(ref, dict)
+            or set(ref) != {"source_key", "origin_path", "sgf_sha256", "slot"}
+            or ref["source_key"] != slot["source_key"]
+            or ref["slot"] != slot["side"]
+            or not isinstance(ref["origin_path"], str)
+            or not 0 < len(ref["origin_path"]) <= 1024
+            or not isinstance(ref["sgf_sha256"], str)
+            or not _SHA.fullmatch(ref["sgf_sha256"])
+        ):
+            raise ValueError("rank publication context source is invalid")
+    return context
+
+
+def _bound_current_ranks(manifest, receipt, context):
+    _validate_context_schema(context, canonical_sha256(manifest), canonical_sha256(receipt))
+    games = {(g["source_key"], g["source_item_id"]): g for g in manifest["games"]}
+    mappings = receipt.get("games")
+    if not isinstance(mappings, list) or len(mappings) != len(games):
+        raise ValueError("rank publication context receipt membership is invalid")
+    ids = {}
+    for row in mappings:
+        if (
+            not isinstance(row, dict)
+            or not {"source_key", "source_item_id", "album_id"} <= row.keys()
+            or not isinstance(row["source_key"], str)
+            or not isinstance(row["source_item_id"], str)
+            or type(row["album_id"]) is not int
+            or row["album_id"] <= 0
+        ):
+            raise ValueError("rank publication context receipt mapping is invalid")
+        key = row["source_key"], row["source_item_id"]
+        if key not in games or key in ids:
+            raise ValueError("rank publication context receipt membership is invalid")
+        ids[key] = row["album_id"]
+    mapping = sorted(
+        ({"source_key": key[0], "source_item_id": key[1], "album_id": value} for key, value in ids.items()),
+        key=lambda row: (row["source_key"], row["source_item_id"], row["album_id"]),
+    )
+    if context["source_mapping_sha256"] != canonical_sha256(mapping):
+        raise ValueError("rank publication context source mapping changed")
+    current = {}
+    for slot in context["slots"]:
+        key = slot["source_key"], slot["source_item_id"]
+        game = games.get(key)
+        snapshot = game["rank_snapshots"][slot["side"]] if game else None
+        if (
+            game is None
+            or ids[key] != slot["album_id"]
+            or is_historical_snapshot(snapshot)
+            or snapshot["content_sha256"] != slot["original_snapshot_sha256"]
+            or slot["expected"]["rank_source"]["source_ref"]["sgf_sha256"] != game["sgf_sha256"]
+            or slot["expected"]["rank_source"]["source_ref"]["origin_path"]
+            != game.get("origin_path", f"data/kifu-album/{key[0]}/{key[1]}.sgf")
+        ):
+            raise ValueError("rank publication context original slot binding changed")
+        current[(*key, slot["side"])] = slot["expected"]
+    return current
+
+
+def _read_rank_context_bytes(command, payload, timeout):
+    """Read at most the response ceiling, killing SSH on overflow or timeout."""
+    deadline = time.monotonic() + timeout
+    with subprocess.Popen(
+        command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0
+    ) as process:
+        try:
+            with process.stdin:
+                process.stdin.write(payload)
+            chunks, size = [], 0
+            with selectors.DefaultSelector() as selector:
+                selector.register(process.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not selector.select(remaining):
+                        raise subprocess.TimeoutExpired(command, timeout)
+                    chunk = os.read(process.stdout.fileno(), min(65536, _MAX_RANK_CONTEXT_BYTES + 1 - size))
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > _MAX_RANK_CONTEXT_BYTES:
+                        raise ValueError("rank publication context response exceeds budget")
+                    chunks.append(chunk)
+            if process.wait(timeout=max(0, deadline - time.monotonic())):
+                raise ValueError("rank publication context read failed")
+            return b"".join(chunks)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+
+
+def read_rank_publication_context(*, host, key_path, known_hosts, manifest_sha256, receipt_sha256, timeout=30):
+    """Resolve one exact publication through the existing authenticated receiver.
+
+    This is a read operation only. A failed read never falls back to sending a
+    publication, and arbitrary remote output is not forwarded to the caller.
+    """
+    try:
+        if (
+            any(not isinstance(value, str) or not _SHA.fullmatch(value) for value in (manifest_sha256, receipt_sha256))
+            or type(timeout) not in (int, float)
+            or not math.isfinite(timeout)
+            or timeout <= 0
+        ):
+            raise ValueError("invalid rank publication context request")
+        payload = _json_bytes(
+            {
+                "operation": "read-rank-publication-context-v1",
+                "manifest_sha256": manifest_sha256,
+                "receipt_sha256": receipt_sha256,
+            }
+        )
+        if len(payload) > 1024:
+            raise ValueError("rank publication context request exceeds budget")
+        raw = _read_rank_context_bytes(_receiver_command(host, key_path, known_hosts), payload, min(30, timeout))
+        response = json.loads(raw.decode("utf-8"))
+        if not isinstance(response, dict) or set(response) != {"status", "context"} or response["status"] != "resolved":
+            raise ValueError("rank publication context response is invalid")
+        return _validate_context_schema(response["context"], manifest_sha256, receipt_sha256)
+    except (OSError, subprocess.SubprocessError, ValueError, TypeError, KeyError, UnicodeError):
+        raise RankPublicationContextUnavailable("rank publication context unavailable") from None
 
 
 def check_production_identities(request, *, host, key_path, known_hosts, timeout=180):
@@ -232,7 +507,9 @@ def _validate_shared_album_mappings(games, mappings, rank_outcomes):
                 raise ValueError("album shared receipt source coverage is invalid")
 
 
-def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aware=False, *, rank_outcomes=None):
+def _validate_detail_evidence(
+    evidence, game, album_id, lang, decisions, rank_aware=False, *, rank_outcomes=None, current_ranks=None
+):
     fields = {"album_id", "lang", "sgf_sha256", "metadata", "source_key", "displays"}
     actual_outcomes = _game_outcomes(game, rank_outcomes)
     has_outcomes = any(actual_outcomes.values())
@@ -281,6 +558,7 @@ def _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aw
                 if outcome
                 else display_rank_for_game_slot(game["rank_snapshots"][side], parsed.display_rank)
             )
+            expected = (current_ranks or {}).get((game["source_key"], game["source_item_id"], side), expected)
             actual = ranks[side]
             if (
                 not isinstance(actual, dict)
@@ -316,6 +594,7 @@ def _detail_evidence(
     *,
     include_sgf=True,
     rank_outcomes=None,
+    current_ranks=None,
     original_sgf_sha256=None,
 ):
     if not isinstance(detail, dict) or detail.get("id") != album_id:
@@ -367,7 +646,9 @@ def _detail_evidence(
                 for side in ("black", "white")
             },
         )
-    _validate_detail_evidence(evidence, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes)
+    _validate_detail_evidence(
+        evidence, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes, current_ranks=current_ranks
+    )
     return evidence
 
 
@@ -405,7 +686,9 @@ def _validate_display_duplicate(proof, game, album_id, *, stored_sgf_sha256):
     return proof
 
 
-def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware=False, *, rank_outcomes=None):
+def _validate_public_card(
+    card, game, album_id, cn_detail, decisions, rank_aware=False, *, rank_outcomes=None, current_ranks=None
+):
     fields = {"album_id", "lang", "query", "page", "page_size", "displays"}
     duplicate = isinstance(card, dict) and "display_duplicate" in card
     if duplicate:
@@ -450,7 +733,9 @@ def _validate_public_card(card, game, album_id, cn_detail, decisions, rank_aware
             if key not in {"query", "page", "page_size", "display_duplicate", "canonical_card"}
             and (key != "original_sgf_sha256" or any(_game_outcomes(game, rank_outcomes).values()))
         }
-        _validate_detail_evidence(evidence, game, album_id, "cn", decisions, True, rank_outcomes=rank_outcomes)
+        _validate_detail_evidence(
+            evidence, game, album_id, "cn", decisions, True, rank_outcomes=rank_outcomes, current_ranks=current_ranks
+        )
         if evidence != cn_detail:
             raise ValueError("album public list card differs from verified detail")
 
@@ -459,8 +744,9 @@ def _decision_map(manifest):
     return {(row["kind"], row["key"]): row["displays"] for row in manifest.get("decisions", [])}
 
 
-def _validate_rank_report(manifest, digest, verification):
-    if verification.get("algorithm") != RANK_ALGORITHM_VERSION:
+def _validate_rank_report(manifest, digest, verification, *, current_ranks=None):
+    algorithm = CURRENT_RANK_ALGORITHM if current_ranks else RANK_ALGORITHM_VERSION
+    if verification.get("algorithm") != algorithm:
         raise ValueError("test rank-aware verification is required")
     if canonical_sha256(manifest) != digest:
         raise ValueError("test rank-aware manifest hash mismatch")
@@ -548,7 +834,14 @@ def _validate_rank_report(manifest, digest, verification):
         if key not in games or slot in checked or album_ids[key] != evidence["album_id"]:
             raise ValueError("test rank-aware game/language/album coverage is invalid")
         _validate_detail_evidence(
-            evidence, games[key], album_ids[key], evidence["lang"], decisions, True, rank_outcomes=rank_outcomes
+            evidence,
+            games[key],
+            album_ids[key],
+            evidence["lang"],
+            decisions,
+            True,
+            rank_outcomes=rank_outcomes,
+            current_ranks=current_ranks,
         )
         checked[slot] = evidence
     if set(checked) != {(*key, lang) for key in games for lang in LANGUAGES}:
@@ -565,9 +858,58 @@ def _validate_rank_report(manifest, digest, verification):
         if key not in games or key in public:
             raise ValueError("test rank-aware public coverage is invalid")
         _validate_public_card(
-            card, games[key], album_ids[key], checked[(*key, "cn")], decisions, True, rank_outcomes=rank_outcomes
+            card,
+            games[key],
+            album_ids[key],
+            checked[(*key, "cn")],
+            decisions,
+            True,
+            rank_outcomes=rank_outcomes,
+            current_ranks=current_ranks,
         )
         public.add(key)
+
+
+def validate_current_rank_verification(manifest, receipt, report, context, target):
+    """Validate a supplement against freshly resolved trusted DB context.
+
+    The caller must obtain ``context`` from its internal local/fixed-SSH loader;
+    the context embedded in a saved report is never its own authority.
+    """
+    current_ranks = _bound_current_ranks(manifest, receipt, context)
+    fields = {
+        "status",
+        "algorithm",
+        "manifest_sha256",
+        "receipt_sha256",
+        "target",
+        "database_identity",
+        "rank_context_sha256",
+        "rank_publication_context",
+        "games",
+        "checks",
+        "public_cards",
+        "album_mappings",
+    }
+    if isinstance(report, dict) and "publication_receipt" in report:
+        fields.add("publication_receipt")
+    mappings = [{k: row[k] for k in ("source_key", "source_item_id", "album_id")} for row in receipt["games"]]
+    if (
+        not current_ranks
+        or not isinstance(report, dict)
+        or set(report) != fields
+        or report["status"] != "current_rank_verified"
+        or report["algorithm"] != CURRENT_RANK_ALGORITHM
+        or report["manifest_sha256"] != canonical_sha256(manifest)
+        or report["receipt_sha256"] != canonical_sha256(receipt)
+        or report["target"] != normalized_target(target)
+        or report["database_identity"] != context["database_identity"]
+        or report["rank_context_sha256"] != context["content_sha256"]
+        or report["rank_publication_context"] != context
+        or report["album_mappings"] != mappings
+    ):
+        raise ValueError("current rank verification context or target binding changed")
+    _validate_rank_report(manifest, canonical_sha256(manifest), report, current_ranks=current_ranks)
 
 
 async def verify_album_api(
@@ -579,6 +921,7 @@ async def verify_album_api(
     timeout=30,
     deadline=None,
     checkpoint_dir=None,
+    rank_context_loader=None,
     clock=time.monotonic,
     wall_clock=time.time,
     sleep=asyncio.sleep,
@@ -595,9 +938,34 @@ async def verify_album_api(
     target = normalized_target(base_url)
     rank_aware = isinstance(manifest_or_games, dict) and manifest_or_games.get("format") == FORMAT_V2
     rank_outcomes = {}
+    current_ranks, rank_context = {}, None
     if rank_aware:
         validate_manifest_ranks(manifest_or_games)
         rank_outcomes = validate_rank_outcomes(manifest_or_games, receipt)
+        # The compatibility resolver accepts only wholly legacy publications.
+        # Mixed cached V1/new V3 requests retain their existing outcome checks.
+        if rank_context_loader is not None and all(
+            snapshot.get("version") == "kifu-rank-snapshot-v1"
+            for game in manifest_or_games["games"]
+            for snapshot in game["rank_snapshots"].values()
+        ):
+            # This callable is installed by trusted orchestration code. No
+            # request/report/API field can provide or replace the context.
+            if not callable(rank_context_loader):
+                raise ValueError("rank publication context loader must be callable")
+            context_timeout = min(30, get.remaining())
+
+            async def load_context():
+                args = canonical_sha256(manifest_or_games), canonical_sha256(receipt)
+                if inspect.iscoroutinefunction(rank_context_loader):
+                    loaded = rank_context_loader(*args, timeout=context_timeout)
+                else:
+                    loaded = await asyncio.to_thread(rank_context_loader, *args, timeout=context_timeout)
+                return await loaded if inspect.isawaitable(loaded) else loaded
+
+            rank_context = deepcopy(await asyncio.wait_for(load_context(), timeout=context_timeout))
+            get.remaining()
+            current_ranks = _bound_current_ranks(manifest_or_games, receipt, rank_context)
     games = manifest_or_games["games"] if isinstance(manifest_or_games, dict) else manifest_or_games
     decisions = _decision_map(manifest_or_games) if isinstance(manifest_or_games, dict) else {}
     mappings = {}
@@ -636,10 +1004,26 @@ async def verify_album_api(
         ):
             raise ValueError("checkpoint album coverage is invalid")
         for lang, detail in zip(LANGUAGES, completed["details"]):
-            _validate_detail_evidence(detail, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes)
+            _validate_detail_evidence(
+                detail,
+                game,
+                album_id,
+                lang,
+                decisions,
+                rank_aware,
+                rank_outcomes=rank_outcomes,
+                current_ranks=current_ranks,
+            )
         cn_detail = next(detail for detail in completed["details"] if detail["lang"] == "cn")
         _validate_public_card(
-            completed["public_card"], game, album_id, cn_detail, decisions, rank_aware, rank_outcomes=rank_outcomes
+            completed["public_card"],
+            game,
+            album_id,
+            cn_detail,
+            decisions,
+            rank_aware,
+            rank_outcomes=rank_outcomes,
+            current_ranks=current_ranks,
         )
 
     checkpoint = AlbumCheckpoint(
@@ -650,7 +1034,11 @@ async def verify_album_api(
         LANGUAGES,
         validate_completed,
         wall_clock,
-        algorithm=RANK_ALGORITHM_VERSION if rank_aware else None,
+        algorithm=(
+            CURRENT_RANK_ALGORITHM + ":" + rank_context["content_sha256"]
+            if current_ranks
+            else RANK_ALGORITHM_VERSION if rank_aware else None
+        ),
     )
     checked = []
     public_cards = []
@@ -678,7 +1066,16 @@ async def verify_album_api(
                 elif observed != duplicate_proof:
                     raise ValueError("album display duplicate proof changed between languages")
                 details.append(
-                    _detail_evidence(payload, game, album_id, lang, decisions, rank_aware, rank_outcomes=rank_outcomes)
+                    _detail_evidence(
+                        payload,
+                        game,
+                        album_id,
+                        lang,
+                        decisions,
+                        rank_aware,
+                        rank_outcomes=rank_outcomes,
+                        current_ranks=current_ranks,
+                    )
                 )
             cn_detail = next(detail for detail in details if detail["lang"] == "cn")
             cn_card = cn_detail["displays"]
@@ -761,6 +1158,7 @@ async def verify_album_api(
                                             True,
                                             include_sgf=False,
                                             rank_outcomes=rank_outcomes,
+                                            current_ranks=current_ranks,
                                             original_sgf_sha256=cn_detail.get("original_sgf_sha256"),
                                         )
                                     )
@@ -772,6 +1170,7 @@ async def verify_album_api(
                                         decisions,
                                         True,
                                         rank_outcomes=rank_outcomes,
+                                        current_ranks=current_ranks,
                                     )
                                 except ValueError as exc:
                                     raise ValueError("album public list card rank or snapshot mismatch") from exc
@@ -783,6 +1182,7 @@ async def verify_album_api(
                                 decisions,
                                 rank_aware,
                                 rank_outcomes=rank_outcomes,
+                                current_ranks=current_ranks,
                             )
                             break
                     if public_card is not None or page * 100 >= listing["total"]:
@@ -821,7 +1221,19 @@ async def verify_album_api(
         if rank_outcomes:
             result["publication_receipt"] = deepcopy(receipt)
         digest = canonical_sha256(manifest_or_games)
-        validate_test_verification(manifest_or_games, digest, {**result, "manifest_sha256": digest})
+        if current_ranks:
+            result.update(
+                status="current_rank_verified",
+                algorithm=CURRENT_RANK_ALGORITHM,
+                manifest_sha256=digest,
+                target=target,
+                database_identity=rank_context["database_identity"],
+                rank_context_sha256=rank_context["content_sha256"],
+                rank_publication_context=rank_context,
+            )
+            validate_current_rank_verification(manifest_or_games, receipt, result, rank_context, target)
+        else:
+            validate_test_verification(manifest_or_games, digest, {**result, "manifest_sha256": digest})
     else:
         validate_test_verification({"games": games}, "", {**result, "manifest_sha256": ""})
     get.remaining()

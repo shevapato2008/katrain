@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { membershipApi } from '../../api/membershipApi';
 import { notifyMembershipChanged } from '../membership/useMembership';
 import type { BillingQuote, BillingQuoteRequest, MembershipProfile, PositionAnalysis } from '../membership/types';
+import { useMembershipI18n } from '../membership/useMembershipI18n';
+import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../membership/presentation';
 
 type View = 'hints' | 'ownership';
 type PositionInput = Pick<BillingQuoteRequest, 'sgf' | 'game_id' | 'session_id'>;
@@ -21,12 +23,13 @@ interface Snapshot {
   ownership: boolean;
   pending: { quote: BillingQuote; key: string } | null;
   busy: boolean;
-  error: string | null;
+  error: MembershipErrorCode | null;
 }
 const blank = (scope: string): Snapshot => ({ scope, result: null, hints: false, ownership: false, pending: null, busy: false, error: null });
 
 /** A result belongs to one authenticated full position, never to the shared WS state. */
 export function usePaidPosition({ identityKey, status, token, snapshotKey, input, profile = 'normal', enabled = true }: Options) {
+  const { t } = useMembershipI18n();
   const authenticated = enabled && status === 'authenticated' && identityKey != null;
   const inputKey = JSON.stringify(input);
   const scope = JSON.stringify([identityKey, status, snapshotKey, profile, inputKey, enabled]);
@@ -61,7 +64,8 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
     const catalog = await membershipApi.getCatalog(token);
     if (!current()) return;
     if (catalog.membership_mode !== 'enabled' || !catalog.capabilities.quotes || !catalog.capabilities.positions) {
-      throw new Error(catalog.membership_mode === 'paused' ? '分析服务暂停，请稍后重试' : '当前服务未开放单局面分析');
+      update({ hints: false, ownership: false, error: catalog.membership_mode === 'paused' ? 'service_paused' : 'position_unavailable' });
+      return;
     }
     const response = await membershipApi.createQuote({ ...JSON.parse(inputKey) as PositionInput, kind: 'position', profile }, token);
     if (current()) update({ pending: { quote: response, key: crypto.randomUUID() }, error: null });
@@ -69,7 +73,7 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
 
   const toggle = useCallback(async (view: View) => {
     if (scopeRef.current !== scope) return;
-    if (!authenticated) { update({ error: '请先登录后使用分析' }); return; }
+    if (!authenticated) { update({ error: 'analysis_login_required' }); return; }
     const current = snapshotRef.current.scope === scope ? snapshotRef.current : blank(scope);
     update({ [view]: !current[view], error: null });
     if (current.result || current.pending || execution.current) return;
@@ -77,7 +81,7 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
     update({ busy: true });
     const generation = generationRef.current;
     const request = quote().catch((error: unknown) => {
-      if (generationRef.current === generation) update({ hints: false, ownership: false, error: (error as { status?: number })?.status === 402 ? '会员额度和API积分不足，请前往会员页查看' : error instanceof Error ? error.message : '报价失败，请重试' });
+      if (generationRef.current === generation) update({ hints: false, ownership: false, error: membershipErrorCode(error, 'quote_failed') });
     }).finally(() => {
       if (generationRef.current === generation) { update({ busy: false }); quoteRequest.current = null; }
     });
@@ -110,9 +114,9 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
         }
         if (!current()) return;
         if (receipt.state === 'succeeded' && receipt.result) update({ result: receipt.result, pending: null });
-        else if (receipt.state === 'reserved' || receipt.state === 'running') update({ error: '分析仍在进行，请稍后重试查询' });
+        else if (receipt.state === 'reserved' || receipt.state === 'running') update({ error: 'operation_running' });
         else update({ result: null, pending: null, hints: false, ownership: false, error: receipt.state === 'result_expired'
-          ? '分析结果已过期，请重新分析' : '分析未完成，已退还本次消耗，请重试' });
+          ? 'result_expired' : receipt.state === 'refunded' ? 'position_refunded' : 'position_failed' });
         notifyMembershipChanged();
       } catch (error) {
         if (!current()) return;
@@ -121,7 +125,7 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
           update({ pending: null });
           await quote().catch(() => {});
         }
-        update({ result: null, error: carrier.status === 402 ? '会员额度和API积分不足，请前往会员页查看' : error instanceof Error ? error.message : '分析失败，请重试' });
+        update({ result: null, error: membershipErrorCode(error, 'position_failed') });
       } finally {
         if (current()) { execution.current = null; update({ busy: false }); }
       }
@@ -131,6 +135,6 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
   }, [authenticated, inputKey, profile, quote, scope, token, update]);
   const cancel = useCallback(() => { if (!execution.current) update({ pending: null, hints: false, ownership: false }); }, [update]);
   const current = authenticated && snapshot.scope === scope ? snapshot : blank(scope);
-  return { result: current.result, pendingQuote: current.pending?.quote ?? null, busy: current.busy, error: current.error,
+  return { result: current.result, pendingQuote: current.pending?.quote ?? null, busy: current.busy, error: current.error ? membershipErrorText(current.error, t) : null,
     showHints: current.hints, showOwnership: current.ownership, toggle, confirm, cancel };
 }

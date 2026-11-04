@@ -160,12 +160,18 @@ def test_manual_prefile_is_private_bounded_and_recovers_actual_keys(setup, tmp_p
 @pytest.mark.parametrize("phase", ["test_published", "test_verified", "prod_published"])
 async def test_durable_reentry_repairs_original_manifest_before_verification(monkeypatch, phase):
     from katrain.cron.jobs.kifu_ingest import resume_batch
+    from katrain.kifu_ingest.sync import LANGUAGES
 
     monkeypatch.setenv("KIFU_SEARCH_SYNC_MODE", "enabled")
     monkeypatch.setenv("KIFU_SEARCH_BACKEND", "elasticsearch")
     manifest = {"publication_key": "same-manifest", "games": []}
     receipt = {"batch_id": 9, "games": []}
-    verification = {"status": "verified", "manifest_sha256": "d" * 64}
+    verification = {
+        "status": "verified",
+        "manifest_sha256": "d" * 64,
+        "games": len(manifest["games"]),
+        "checks": [{"album_id": game["album_id"], "lang": lang} for game in receipt["games"] for lang in LANGUAGES],
+    }
 
     class Store:
         row = {"status": phase, "test_receipt": receipt, "test_verification": verification, "prod_receipt": receipt}

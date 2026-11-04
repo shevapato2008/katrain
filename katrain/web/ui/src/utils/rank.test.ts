@@ -44,6 +44,15 @@ describe('formatRank', () => {
 });
 
 describe('formatKifuRank', () => {
+  it('respects an explicit API empty rank while retaining legacy fallback', () => {
+    expect(formatKifuRank('', '前人', t, 'cn')).toBeNull();
+    expect(formatKifuRank('', '9p', t, 'en')).toBeNull();
+    expect(formatKifuRank(null, '9p', t, 'cn')).toBe('九段');
+    expect(formatKifuRank(undefined, '7d', t, 'cn')).toBe('7段');
+    expect(formatKifuRank(' ', '9p', t, 'cn')).toBe('九段');
+    expect(formatRank('前人', t)).toBe('前人');
+  });
+
   it.each(['cn', 'tw'])('uses the same ninth-dan wording for professional and unspecified ranks in %s', (lang) => {
     for (const rank of ['9p', ' 9P ', '职业九段', '職業九段', '职业9段', '職業9段', '9段', '九段']) {
       expect(formatKifuRank(rank, null, t, lang)).toBe('九段');

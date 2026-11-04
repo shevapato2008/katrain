@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { BillingQuote } from './types';
+import { API } from '../../api';
+import { i18n } from '../../i18n';
 import { ConsumptionQuoteDialog } from './ConsumptionQuoteDialog';
+import type { BillingQuote } from './types';
 
 describe('ConsumptionQuoteDialog', () => {
   it.each([false, true])('names the quoted API maximum in the wallet action (kiosk=%s)', kiosk => {
@@ -32,5 +34,24 @@ describe('ConsumptionQuoteDialog', () => {
     expect(screen.getByRole('dialog').textContent).toContain('最多 0.01 积分');
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
     expect(cancel).toHaveBeenCalledOnce();
+  });
+});
+
+describe('consumption quote copy', () => {
+  it('updates an open quote with a complete translated template and display-only localized points', async () => {
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: {} });
+    vi.spyOn(i18n, 'loadLiveTranslations').mockResolvedValue(undefined);
+    await act(async () => { await i18n.loadTranslations('cn'); });
+    const confirm = vi.fn();
+    const quote = { kind: 'report', source: 'wallet', wallet_max_display_points: '3.01' } as BillingQuote;
+    render(<ConsumptionQuoteDialog kiosk quote={quote} onConfirm={confirm} onCancel={vi.fn()} />);
+    expect(screen.getByRole('button', { name: '使用API积分，最多扣3.01' })).toBeInTheDocument();
+    vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: { 'membership:confirm_wallet_consumption': 'API-Punkte verwenden, höchstens {points}', 'membership:consumption_policy': 'Mitgliedschaft zuerst, sonst bis zu {points} API-Punkte.' } });
+    await act(async () => { await i18n.loadTranslations('de'); });
+    expect(screen.getByRole('button', { name: 'API-Punkte verwenden, höchstens 3,01' })).toBeInTheDocument();
+    expect(screen.getByText('Mitgliedschaft zuerst, sonst bis zu 3,01 API-Punkte.')).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+    expect(quote.wallet_max_display_points).toBe('3.01');
+    vi.restoreAllMocks();
   });
 });

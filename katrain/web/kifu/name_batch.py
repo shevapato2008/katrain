@@ -53,6 +53,7 @@ _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
 )}
 _ADVISORY_LOCK_KEY = 720220261002
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_NUMADATE_CORRECTION_MARKER = "numadate-canonical-first-pass-correction-v1"
 _TEAM_RAW = "团体赛"
 _TEAM_OWNER_ID = 73686
 _TEAM_ALL_IDS_SHA256 = "39fee6c73115534d2c206b0eaa4fc834cb6bc624dafdf147a3955fb09a9ea967"
@@ -371,6 +372,9 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
 
     owner, lang = candidate["owner"], candidate["lang"]
     marker = candidate.get("first_pass_correction")
+    if isinstance(marker, dict) and marker.get("version") == _NUMADATE_CORRECTION_MARKER:
+        _check_numadate_first_pass_correction(conn, candidate, marker, prior_proofs)
+        return
     if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
         _check_generated_raw_correction(conn, candidate, marker, prior_proofs, owner_kind="raw_event")
         return
@@ -456,6 +460,38 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
           and persisted_eligible(name, evidence, "raw_player", old_owner, batch, changes,
                                  batch_members=batch_members),
           "first-pass correction old name lacks complete generated journal proof")
+
+
+def _check_numadate_first_pass_correction(conn, candidate: dict, marker: dict,
+                                         prior_proofs: dict | None) -> None:
+    """Only the prevalidated, same-connection correction can replace these cells."""
+    hash_keys = {"identity_transition_sha256", "name_preimage_sha256", "prior_evidence_sha256",
+                 "prior_candidate_sha256", "prior_bundle_sha256", "owner_before_sha256",
+                 "owner_after_sha256", "source_input_sha256"}
+    integer_keys = {"prior_evidence_id", "prior_batch_id", "prior_revision"}
+    _fail(set(marker) == {"version", "player_id", "lang"} | hash_keys | integer_keys
+          and candidate.get("owner") == {"kind": "player", "id": 5364}
+          and candidate.get("lang") in {"cn", "tw", "en", "ko"}
+          and type(marker.get("player_id")) is int and marker["player_id"] == 5364
+          and marker.get("lang") == candidate["lang"]
+          and marker.get("name_preimage_sha256") == candidate.get("name_preimage_sha256")
+          and candidate.get("decision_kind") == "generated"
+          and candidate.get("generation_rule_version") == "user_authorized_first_pass_v1"
+          and candidate.get("review_status") == "approved"
+          and all(type(marker[key]) is int and marker[key] > 0 for key in integer_keys)
+          and all(isinstance(marker[key], str) and _SHA256.fullmatch(marker[key]) for key in hash_keys),
+          "canonical correction is outside the reviewed player5364 generated scope")
+    _fail(isinstance(prior_proofs, dict) and prior_proofs.get("_numadate_canonical_correction") is not None,
+          "Numadate trusted correction context is required")
+    # The serialized marker and proof hashes are not authority. The operator
+    # checks its private operation-local context against this exact connection,
+    # independently reviewed transition, candidates and original journal proof.
+    from katrain.web.kifu.numadate_canonical_correction import _validate_name_correction_context
+    try:
+        verified_marker = _validate_name_correction_context(conn, prior_proofs, candidate)
+    except ValueError as exc:
+        raise BatchError(f"Numadate trusted correction context invalid: {exc}") from exc
+    _fail(verified_marker == marker, "Numadate trusted correction context marker differs")
 
 
 def _check_generated_raw_correction(conn, candidate: dict, marker: dict,
@@ -618,6 +654,11 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
               "first-pass source owner changed")
         kind = source["kind"]
         marker = candidate.get("first_pass_correction")
+        if isinstance(marker, dict) and marker.get("version") == _NUMADATE_CORRECTION_MARKER:
+            _fail(kind == "catalog_canonical" and owner == {"kind": "player", "id": 5364}
+                  and marker.get("owner_after_sha256") == source["owner_preimage_sha256"]
+                  and marker.get("source_input_sha256") == canonical_sha256(source),
+                  "canonical correction generated source differs from the new owner")
         if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
             _fail(kind == "raw_event_literal" and research["generation"].get("method") == "translation",
                   "generated raw-event correction needs literal translation research")
@@ -1807,6 +1848,32 @@ def _retained_composition_dependency(conn, table, row_id: int, before_image: dic
     return False
 
 
+def _check_canonical_correction_undo(conn, batch) -> None:
+    """This correction has no post-commit rollback, including child-only undo."""
+    artifact = batch["reviewed_artifact"]
+    if not isinstance(artifact, dict):
+        return
+    bundle = artifact.get("bundle")
+
+    def correction_candidate(candidate):
+        marker = candidate.get("first_pass_correction") if isinstance(candidate, dict) else None
+        return isinstance(marker, dict) and marker.get("version") == _NUMADATE_CORRECTION_MARKER
+
+    blocked = (artifact.get("format") == "kifu-numadate-canonical-correction-v1"
+               or "canonical_correction_parent" in artifact
+               or isinstance(bundle, dict) and any(
+                   correction_candidate(candidate) for candidate in bundle.get("candidates", ())))
+    if not blocked:
+        # A stripped child binding must not turn the immutable creation journal
+        # into an ordinary name undo, even if its bundle marker was also lost.
+        evidence_images = conn.scalars(select(KifuNameChange.after_image).where(
+            KifuNameChange.batch_id == batch["id"],
+            KifuNameChange.target_table == KifuNameResearchEvidence.__tablename__))
+        blocked = any(correction_candidate((image.get("research_payload") or {}).get("candidate"))
+                      for image in evidence_images if isinstance(image, dict))
+    _fail(not blocked, "Numadate canonical correction v1 does not support undo")
+
+
 def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = False) -> dict:
     """Undo each unchanged after-image in reverse order, retaining later edits."""
     _fail(type(emergency_invalidate_search) is bool, "emergency invalidation must be a boolean")
@@ -1814,6 +1881,7 @@ def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = Fal
     with context as conn:
         batch = conn.execute(select(KifuNameBatch).where(KifuNameBatch.id == batch_id)).mappings().one_or_none()
         _fail(batch is not None, f"batch {batch_id} not found")
+        _check_canonical_correction_undo(conn, batch)
         bundle = batch["reviewed_artifact"].get("bundle")
         _fail(isinstance(bundle, dict) and canonical_sha256(bundle) == batch["bundle_sha256"],
               "batch artifact changed")

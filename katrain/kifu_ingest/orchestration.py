@@ -12,6 +12,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import sys
 
 from sqlalchemy import create_engine
@@ -48,6 +49,8 @@ from katrain.web.kifu.player_ranks import lookup_library_rank_facts, lookup_prof
 
 
 MAX_RECEIVE_BYTES = 16 * 1024 * 1024
+_RANK_CONTEXT_OPERATION = "read-rank-publication-context-v1"
+_RANK_CONTEXT_UNAVAILABLE = "rank publication context unavailable"
 logger = logging.getLogger(__name__)
 _RANK_LOOKUP_REASONS = frozenset(
     {
@@ -105,6 +108,10 @@ def _receive_payload():
     payload = json.loads(data)
     if not isinstance(payload, dict):
         raise ValueError("receiver payload must be an object")
+    if payload.get("operation") == _RANK_CONTEXT_OPERATION:
+        size = len(data.encode("utf-8")) if isinstance(data, str) else len(data)
+        if size > 1024:
+            raise ValueError(_RANK_CONTEXT_UNAVAILABLE)
     return payload
 
 
@@ -549,6 +556,27 @@ def main(argv=None):
                 _output({"status": "applied", "manifest_sha256": digest, "receipt": receipt})
         elif args.command == "receive":
             payload = _receive_payload()
+            if payload.get("operation") == _RANK_CONTEXT_OPERATION:
+                try:
+                    if set(payload) != {"operation", "manifest_sha256", "receipt_sha256"} or any(
+                        not isinstance(payload.get(key), str) or not re.fullmatch(r"[0-9a-f]{64}", payload[key])
+                        for key in ("manifest_sha256", "receipt_sha256")
+                    ):
+                        raise ValueError(_RANK_CONTEXT_UNAVAILABLE)
+                    from katrain.kifu_ingest.catalog import resolve_rank_publication_context
+
+                    context = resolve_rank_publication_context(
+                        _engine(), payload["manifest_sha256"], payload["receipt_sha256"]
+                    )
+                    result = {"status": "resolved", "context": context}
+                    encoded = json.dumps(result, ensure_ascii=False, sort_keys=True, allow_nan=False)
+                    if not isinstance(context, dict) or len(encoded.encode("utf-8")) + 1 > 1024 * 1024:
+                        raise ValueError(_RANK_CONTEXT_UNAVAILABLE)
+                except Exception:
+                    _output({"status": "error", "error": _RANK_CONTEXT_UNAVAILABLE})
+                    return 2
+                _output(result)
+                return 0
             if payload.get("operation") == "check-identities":
                 try:
                     validate_identity_check_request(payload)

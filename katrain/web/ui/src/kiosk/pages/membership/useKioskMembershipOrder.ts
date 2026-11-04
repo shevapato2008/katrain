@@ -3,16 +3,20 @@ import { membershipApi } from '../../../api/membershipApi';
 import { useAuth } from '../../../context/AuthContext';
 import type { BillingOrder, CreateBillingOrder } from '../../../features/membership/types';
 import { notifyMembershipChanged } from '../../../features/membership/useMembership';
+import { useMembershipI18n } from '../../../features/membership/useMembershipI18n';
+
+type OrderError = 'uncertain' | 'sync';
 
 /** Orders stay scoped to the authenticated identity, including cookie-only box sessions. */
 export function useKioskMembershipOrder(environment?: string) {
+  const { t } = useMembershipI18n();
   const { identityKey, status, token } = useAuth();
   const scope = JSON.stringify([identityKey, status, environment]);
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
   const authenticated = status === 'authenticated' && identityKey !== null;
-  const [state, setState] = useState<{ scope: string; order: BillingOrder | null; creating: boolean; error: string | null } | null>(null);
-  const [history, setHistory] = useState<{ scope: string; orders: BillingOrder[]; loading: boolean; error: string | null } | null>(null);
+  const [state, setState] = useState<{ scope: string; order: BillingOrder | null; creating: boolean; error: OrderError | null } | null>(null);
+  const [history, setHistory] = useState<{ scope: string; orders: BillingOrder[]; loading: boolean; error: 'sync' | null } | null>(null);
   const request = useRef<AbortController | null>(null);
   const historyRequest = useRef<AbortController | null>(null);
   const sequence = useRef(0);
@@ -55,7 +59,7 @@ export function useKioskMembershipOrder(environment?: string) {
       if (!isCurrent()) return;
       setState({ scope, order: next, creating: false, error: null });
     } catch {
-      if (isCurrent()) setState({ scope, order: null, creating: false, error: '订单结果未确认，请先查看订单记录，避免重复创建。' });
+      if (isCurrent()) setState({ scope, order: null, creating: false, error: 'uncertain' });
     } finally {
       if (request.current === controller) request.current = null;
     }
@@ -72,7 +76,7 @@ export function useKioskMembershipOrder(environment?: string) {
       if (controller.signal.aborted || scopeRef.current !== scope) return;
       setHistory({ scope, orders: result.orders, loading: false, error: null });
     } catch {
-      if (!controller.signal.aborted && scopeRef.current === scope) setHistory({ scope, orders: [], loading: false, error: '订单记录暂未同步，请稍后重试。' });
+      if (!controller.signal.aborted && scopeRef.current === scope) setHistory({ scope, orders: [], loading: false, error: 'sync' });
     } finally {
       if (historyRequest.current === controller) historyRequest.current = null;
     }
@@ -102,7 +106,7 @@ export function useKioskMembershipOrder(environment?: string) {
         if (next.status === 'pending') schedule();
       } catch {
         if (!isCurrent() || controller.signal.aborted) return;
-        setState(previous => previous?.scope === scope ? { ...previous, error: '订单状态暂未同步，正在重试；请勿重复下单。' } : previous);
+        setState(previous => previous?.scope === scope ? { ...previous, error: 'sync' } : previous);
         schedule();
       } finally {
         controller = null;
@@ -130,6 +134,12 @@ export function useKioskMembershipOrder(environment?: string) {
     notifyMembershipChanged();
   }, [order]);
 
-  return { order, creating: current?.creating ?? false, error: current?.error ?? null, create, close, openHistory, openOrder,
-    history: history?.scope === scope && authenticated ? history : null };
+  const error = current?.error === 'uncertain'
+    ? t('membership:kiosk_order_uncertain', '订单结果未确认，请先查看订单记录，避免重复创建。')
+    : current?.error === 'sync' ? t('membership:kiosk_order_sync_error', '订单状态暂未同步，正在重试；请勿重复下单。') : null;
+  const visibleHistory = history?.scope === scope && authenticated ? {
+    ...history,
+    error: history.error ? t('membership:kiosk_history_error', '订单记录暂未同步，请稍后重试。') : null,
+  } : null;
+  return { order, creating: current?.creating ?? false, error, create, close, openHistory, openOrder, history: visibleHistory };
 }

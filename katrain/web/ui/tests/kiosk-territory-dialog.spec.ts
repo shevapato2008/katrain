@@ -127,11 +127,16 @@ for (const source of ['ranked', 'star'] as const) {
     const geometry = await page.evaluate(() => {
       const rect = (selector: string) => { const r = document.querySelector(selector)!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }; };
       const rail = document.querySelector('.kiosk-rail')!;
+      const container = document.querySelector('.kiosk-game-side-dialog .MuiDialog-container')!;
       return { dialog: rect('[role="dialog"]'), close: rect('[role="dialog"] .MuiDialogActions-root button:last-child'), board: rect('[data-testid="game-board"]'), railOverflow: rail.scrollHeight - rail.clientHeight,
+        backdropColor: getComputedStyle(document.querySelector('.kiosk-game-side-dialog .MuiBackdrop-root')!).backgroundColor,
+        rightRailScrimLeft: parseFloat(getComputedStyle(container, '::before').left),
         documentWidth: document.documentElement.scrollWidth, documentHeight: document.documentElement.scrollHeight };
     });
     expect(geometry.dialog.width).toBe(380);
-    expect(geometry.dialog.x).toBeGreaterThanOrEqual(geometry.board.right);
+    expect(geometry.board.right).toBeLessThanOrEqual(geometry.dialog.x);
+    expect(geometry.backdropColor).toBe('rgba(0, 0, 0, 0)');
+    expect(geometry.rightRailScrimLeft).toBeGreaterThanOrEqual(geometry.board.right);
     expect(geometry.close.height).toBeGreaterThanOrEqual(42);
     expect(geometry.close.bottom).toBeLessThanOrEqual(600);
     expect(geometry.railOverflow).toBeLessThanOrEqual(0);

@@ -160,4 +160,32 @@ describe('ranked territory', () => {
     await waitFor(() => expect(result.current.phase).toBe('error'), { timeout: 3000 });
     expect(result.current.disabled).toBe(false);
   });
+
+  it('settles remote-only loading without a POST or reopening a dismissed view', async () => {
+    vi.useFakeTimers();
+    try {
+      quota.mockResolvedValueOnce({ remaining: 1, in_flight: true })
+        .mockResolvedValueOnce({ remaining: 0, in_flight: false });
+      const { result } = renderHook(() => useRankedTerritory('s1', true, 'n5', 5));
+      await act(async () => {});
+      expect(result.current.remaining).toBe(1);
+      await act(async () => { await result.current.activate(); });
+      expect(result.current.phase).toBe('loading');
+      expect(result.current.visible).toBe(true);
+      act(() => result.current.dismiss());
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+
+      expect(quota).toHaveBeenCalledTimes(2);
+      expect(result.current.remaining).toBe(0);
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.disabled).toBe(true);
+      expect(result.current.visible).toBe(false);
+      expect(result.current.result).toBeUndefined();
+      expect(result.current.overlay).toBeNull();
+      expect(request).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

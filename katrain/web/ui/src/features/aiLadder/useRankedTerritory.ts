@@ -44,6 +44,12 @@ export function useRankedTerritory(
         const response = await getAiLadderTerritoryQuota(sessionId, controller.signal);
         if (controller.signal.aborted || !mounted.current || current.current.quotaGeneration !== quotaGeneration) return;
         setQuota({ generation: quotaGeneration, remaining: response.remaining, inFlight: response.in_flight });
+        // Quota polling does not deliver a private answer. Once remote-only work
+        // settles, leave loading while preserving the user's open/close intent.
+        if (!response.in_flight && pendingRef.current?.quotaGeneration !== quotaGeneration
+          && viewRef.current.phase === 'loading' && !viewRef.current.result) {
+          updateView({ ...viewRef.current, phase: 'idle' });
+        }
         if (response.in_flight) timer = setTimeout(refresh, 2000);
       } catch {
         if (controller.signal.aborted || !mounted.current || current.current.quotaGeneration !== quotaGeneration) return;

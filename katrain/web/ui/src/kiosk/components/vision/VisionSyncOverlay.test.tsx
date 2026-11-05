@@ -413,4 +413,20 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(screen.queryByText('盘面与对局不一致')).toBeNull();
     expect(dialogCount()).toBe(0);
   });
+
+  it('shows the actionable shared mismatch while the platform still holds an uncertain send', async () => {
+    const pending = event(1, 'move_pending', { row: 4, col: 5, color: 1 });
+    const mismatch = event(2, 'illegal_change', { actionable: true, positions: [[4, 5, 1]], missing: [] });
+    const { rerender } = render(
+      <VisionSyncOverlay {...props} syncEvents={[pending, mismatch]}
+        platformPendingStone={{ row: 4, col: 5, color: 1 }} />,
+    );
+    expect(await screen.findByText('盘面与对局不一致')).toBeInTheDocument();
+    rerender(<VisionSyncOverlay {...props} currentNodeId={11} syncEvents={[pending, mismatch]}
+      platformPendingStone={{ row: 4, col: 5, color: 1 }} />);
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    rerender(<VisionSyncOverlay {...props} currentNodeId={11} syncEvents={[pending, mismatch, event(3, 'synced')]}
+      platformPendingStone={null} />);
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+  });
 });

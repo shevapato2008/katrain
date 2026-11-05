@@ -240,3 +240,16 @@ describe('reduceRecoveryState', () => {
     expect(transition(mismatch, 'synced')).toEqual(initialRecoveryState);
   });
 });
+
+it.each(['vision', 'platform'] as const)('shows actionable anomalies despite %s pending heuristics', source => {
+  const pending = transition(initialRecoveryState, 'move_pending', { row: 4, col: 5, color: 2 }, 1_000);
+  const next = reduceRecoveryState(pending, {
+    kind: 'vision_event',
+    event: event('illegal_change', { actionable: true, positions: [[4, 5, 2]], missing: [] }),
+    nowMs: 2_000,
+    platformPendingStone: source === 'platform' ? { row: 4, col: 5, color: 2 } : null,
+  });
+  expect(next.blocking).toEqual({ kind: 'mismatch', positions: [[4, 5, 2]], missing: [] });
+  expect(reduceRecoveryState(next, { kind: 'node_advanced' }).blocking).toEqual(next.blocking);
+  expect(transition(next, 'synced').blocking).toBeNull();
+});

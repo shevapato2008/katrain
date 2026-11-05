@@ -5064,8 +5064,10 @@ def box_and_cloud(tmp_path, monkeypatch, api_app):
 @pytest.mark.asyncio
 async def test_box_ranked_territory_reaches_cloud_and_deducts_once(box_and_cloud):
     box, cloud, remote = box_and_cloud
+    calls = []
 
     async def analyze(payload):
+        calls.append(payload)
         assert payload["includeOwnership"] is True
         return {"ownership": [0.8] * 361, "rootInfo": {"scoreLead": 12.5, "winrate": 0.95}}
 
@@ -5078,10 +5080,14 @@ async def test_box_ranked_territory_reaches_cloud_and_deducts_once(box_and_cloud
         assert first.status_code == 200, first.text
         assert first.json()["remaining"] == 2
         assert first.json()["black_area"] == 361
-        assert "score" not in first.text and "winrate" not in first.text
+        assert set(first.json()) == {
+            "remaining", "move_count", "ownership", "black_area", "white_area", "score_lead", "stale"
+        }
+        assert first.json()["score_lead"] == 12.5
         again = await ac.post("/api/ai-ladder/territory", headers=box.state._test_headers, json=body)
         assert again.status_code == 200, again.text
-        assert again.json()["remaining"] == 2
+        assert again.json() == first.json()
+        assert len(calls) == 1
         status = await ac.get("/api/ai-ladder/territory", headers=box.state._test_headers,
                               params={"session_id": session.session_id})
         assert status.json() == {"remaining": 2, "in_flight": False}

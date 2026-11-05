@@ -919,7 +919,7 @@ async def ranked_territory(
 
 async def analyze_ranked_territory(app, *, user_id: int, game_id: str, reservation_key: str,
                                    sgf_content: str, request_id: str) -> dict:
-    """Return only point ownership for the current ranked position."""
+    """Return ownership and an optional black-perspective lead for the ranked position."""
     moves = _count_moves_from_sgf(sgf_content, "territory")
     repo = app.state.ai_ladder_repo
     try:
@@ -943,7 +943,8 @@ async def analyze_ranked_territory(app, *, user_id: int, game_id: str, reservati
             raise RuntimeError("ranked territory engine unavailable")
         payload = {"rules": "chinese", "komi": 7.5, "boardXSize": 19, "boardYSize": 19,
                    "moves": moves, "analyzeTurns": [len(moves)], "maxVisits": 200,
-                   "includeOwnership": True, "includePolicy": False}
+                   "includeOwnership": True, "includePolicy": False,
+                   "overrideSettings": {"reportAnalysisWinratesAs": "BLACK"}}
         analysis = await asyncio.wait_for(client.analyze(payload), timeout=30)
         ownership = analysis.get("ownership") or analysis.get("rootInfo", {}).get("ownership")
         if not isinstance(ownership, list) or len(ownership) != 361 or any(
@@ -951,9 +952,15 @@ async def analyze_ranked_territory(app, *, user_id: int, game_id: str, reservati
             or not -1 <= value <= 1 for value in ownership
         ):
             raise ValueError("invalid territory ownership")
+        root_info = analysis.get("rootInfo")
+        lead = root_info.get("scoreLead") if isinstance(root_info, dict) else None
+        score_lead = float(lead) if (
+            not isinstance(lead, bool) and isinstance(lead, (int, float)) and math.isfinite(lead)
+        ) else None
         result = {"move_count": len(moves), "ownership": ownership,
                   "black_area": sum(value > 0.5 for value in ownership),
-                  "white_area": sum(value < -0.5 for value in ownership)}
+                  "white_area": sum(value < -0.5 for value in ownership),
+                  "score_lead": score_lead}
         if not repo.complete_territory(
             user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token, result=result,
         ):

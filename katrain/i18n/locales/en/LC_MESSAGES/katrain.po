@@ -8526,3 +8526,84 @@ msgstr "First page"
 
 msgid "kifu:last_page"
 msgstr "Last page"
+
+# Current-position territory view
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_lead_missing"
+msgstr "A lead estimate is not available yet"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_even"
+msgstr "Approximately even"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_black_lead"
+msgstr "Estimated Black lead: {n} points"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_white_lead"
+msgstr "Estimated White lead: {n} points"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_title"
+msgstr "Territory estimate"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_ranked_source"
+msgstr "Ranked · Cloud estimate"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_star_source"
+msgstr "Golaxy · Account items"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_loading"
+msgstr "Requesting a territory estimate…"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_query_note"
+msgstr "Closing only hides this view. A new query after leaving this page may use quota."
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_error"
+msgstr "Territory estimate is unavailable"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_black_region"
+msgstr "Black’s more certain region: {n} intersections"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_white_region"
+msgstr "White’s more certain region: {n} intersections"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_reference"
+msgstr "Mid-game reference; the final count determines the official result"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_close"
+msgstr "Close territory and keep playing"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_ranked_quota"
+msgstr "Ranked game: {n} uses left · Review this position for free"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_ranked_retry"
+msgstr "No result was received. Retry reuses the same request; check the server’s remaining uses."
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_quota_error"
+msgstr "Territory quota is unavailable. You can retry or keep playing."
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_star_quota"
+msgstr "Golaxy account: {n} territory items left · Review this position for free"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_star_error"
+msgstr "No result was received. Check your actual Golaxy item balance. A new query may use an item."
+
+#: katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx
+msgid "game:territory_items"
+msgstr "Golaxy items · Queries use items"

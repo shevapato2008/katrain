@@ -7959,3 +7959,84 @@ msgstr "第一页"
 
 msgid "kifu:last_page"
 msgstr "最后一页"
+
+# Current-position territory view
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_lead_missing"
+msgstr "暂未取得领先判断"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_even"
+msgstr "接近均势"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_black_lead"
+msgstr "预计黑领先 {n} 目"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_white_lead"
+msgstr "预计白领先 {n} 目"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_title"
+msgstr "领地判断"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_ranked_source"
+msgstr "升降级 · 云端参考"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_star_source"
+msgstr "星阵 · 账号道具"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_loading"
+msgstr "正在请求领地判断…"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_query_note"
+msgstr "关闭仅隐藏；离开页面后重新查询可能使用额度。"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_error"
+msgstr "暂时无法取得领地判断"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_black_region"
+msgstr "黑方较确定区域 {n} 点"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_white_region"
+msgstr "白方较确定区域 {n} 点"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_reference"
+msgstr "局中参考，正式胜负以终局数子为准"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_close"
+msgstr "关闭领地，继续下棋"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_ranked_quota"
+msgstr "升降级本局剩余 {n} 次 · 同局面可免费复看"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_ranked_retry"
+msgstr "请求未返回结果。重试沿用同一次请求，请以服务端剩余次数为准。"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_quota_error"
+msgstr "暂时无法查询领地额度，可以重试，对局仍可继续。"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_star_quota"
+msgstr "星阵账号领地道具剩余 {n} 次 · 同局面可免费复看"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_star_error"
+msgstr "请求未返回结果，请以星阵账号实际道具数为准。重新查询可能使用道具。"
+
+#: katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx
+msgid "game:territory_items"
+msgstr "星阵道具 · 查询使用道具"

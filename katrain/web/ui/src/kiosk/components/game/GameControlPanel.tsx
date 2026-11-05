@@ -73,8 +73,7 @@ interface Props {
   territory?: {
     remaining: number | null;
     phase: 'idle' | 'loading' | 'result' | 'error';
-    blackArea?: number;
-    whiteArea?: number;
+    visible?: boolean;
     disabled: boolean;
     retrySameRequest: boolean;
     onRequest: () => void;
@@ -520,7 +519,7 @@ const GameControlPanel = ({
     ...(rankedGame && territory ? [{
       key: 'ranked-territory', icon: 'map-trifold' as const,
       label: <span>领地 <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
-      onClick: territory.onRequest, disabled: territory.disabled,
+      onClick: territory.onRequest, disabled: territory.disabled, pressed: !!territory.visible,
       reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
     }] : []),
     ...(ogsGame && platformPhase === 'scoring' ? [
@@ -621,7 +620,7 @@ const GameControlPanel = ({
           在此之前 engineMode 下右栏中段是**空着约 148px** 的,登记在 scope.md 屏 10。
           `scrollbar` 是显式画的那根 —— `.kiosk-fold__body.mvrows` 把原生条宽度设成 0
           (460 的算术不许被滚动条改),所以「能滚」这件事得自己说出来。 */}
-      {showMoves && !(rankedGame && territory && (territory.phase !== 'idle' || territory.remaining === 0)) && (
+      {showMoves && (
         <KioskFold
           fold="moves"
           grow
@@ -640,38 +639,7 @@ const GameControlPanel = ({
         </KioskFold>
       )}
 
-      {rankedGame && territory && (territory.phase !== 'idle' || territory.remaining === 0) && (
-        <KioskFold
-          fold="ranked-territory" grow testId="ranked-territory-panel"
-          title="领地判断"
-          value={territory.phase === 'loading' ? '云端处理中'
-            : territory.phase === 'error' ? '未完成'
-            : territory.phase === 'result' ? '当前局面' : '次数已用完'}
-        >
-          <div className="ranked-territory-content" aria-live="polite">
-            {territory.phase === 'loading' ? <>
-              <h2>正在请求云端判断…</h2>
-              <p>按当前局面计算。请稍候，本次请求不会结束对局。</p>
-            </> : territory.phase === 'result' ? <>
-              <h2>领地判断结果</h2>
-              <p>棋盘已标出黑棋和白棋的预计归属区域。</p>
-              <div className="ranked-territory-areas">
-                <span><i className="black" />黑方区域<strong>约 {territory.blackArea}</strong></span>
-                <span><i className="white" />白方区域<strong>约 {territory.whiteArea}</strong></span>
-              </div>
-              <p className="ranked-territory-note">云端 AI 的当前局面判断，仅供参考；继续落子后请重新请求。正式胜负以终局数子为准。</p>
-            </> : territory.phase === 'error' ? <>
-              <h2>云端暂时无法判断</h2>
-              <p>{territory.retrySameRequest
-                ? '请求未返回结果。重试会沿用同一次请求，不会重复扣除机会；请查看剩余次数。对局仍可继续。'
-                : '领地额度暂时无法查询。可以再按“领地”尝试，对局仍可继续。'}</p>
-            </> : <>
-              <h2>本局 3 次机会已用完</h2>
-              <p>可以继续下棋或在满足条件后数子。此处的领地结果不会决定正式胜负。</p>
-            </>}
-          </div>
-        </KioskFold>
-      )}
+
 
       {showScore && (
         <KioskFold
@@ -743,7 +711,7 @@ const GameControlPanel = ({
         // 所有点击按钮连续摆放；坐标/手数滑动开关留在上面的独立组。
         // 两行共用四列网格，因此三颗道具与四颗对局操作都是同一尺寸。
         <div className="engine-button-cluster" data-testid="engine-button-cluster">
-          <div className="items" role="group" aria-label={t('game:golaxy_items', '星阵道具 · 每按一次扣一次')}>
+          <div className="items" role="group" aria-label={t('game:territory_items', '星阵道具 · 查询使用道具')}>
             {items.map((it) => (
               <button
                 key={it.kind}

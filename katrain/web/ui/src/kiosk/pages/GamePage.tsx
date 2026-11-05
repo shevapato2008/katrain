@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePlayerRanks } from '../hooks/usePlayerRanks';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import TerritoryDialog from '../components/game/TerritoryDialog';
 import LobbyGamePanel from '../components/game/LobbyGamePanel';
 import { useLobbyTerritory } from '../hooks/useLobbyTerritory';
 import LocalConfirmGame from '../components/game/LocalConfirmGame';
@@ -47,6 +48,8 @@ import { useGameCelebration } from '../hooks/useGameCelebration';
 import { isStrictBoxKiosk } from '../shell/boxUrls';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
+type EngineTerritoryResult = { ownership: OwnershipPoint[]; winrate: number; delta: number };
+type EngineTerritoryView = { generation: number; phase: 'idle' | 'loading' | 'result' | 'error'; visible: boolean; result?: EngineTerritoryResult };
 type AttentionPoint = { row: number; col: number }; // vision row 0 is the top edge
 
 export interface AiTurnState {
@@ -330,7 +333,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // another platform gets engine-play analysis tunnels.
   const platform = 'golaxy';
   const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
-  const [engineEvaluation, setEngineEvaluation] = useState<{ winrate: number; delta: number } | null>(null);
   const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
   const [judgeUndecided, setJudgeUndecided] = useState<{ positionKey: string; points: AttentionPoint[] } | null>(null);
   const [visionAttentionPoints, setVisionAttentionPoints] = useState<AttentionPoint[]>([]);
@@ -339,15 +341,42 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
   // calls before the first resolves (double quota spend + last-response-wins races).
   // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
-  const engineAnalysisPendingRef = useRef(false);
-  const enginePositionKey = `${sessionId}|${session.gameState?.game_id}|${session.gameState?.current_node_id}|${session.gameState?.end_result}|${session.gameState?.terminal_result}`;
-  const enginePositionRef = useRef(enginePositionKey);
-  enginePositionRef.current = enginePositionKey;
+  const engineAnalysisPendingRef = useRef<{ kind: EngineAnalysisKind; generation: number } | null>(null);
+  const territoryAccountKey = JSON.stringify([isAuthenticated, user?.id, token]);
+  const engineAccountRef = useRef(territoryAccountKey);
+  engineAccountRef.current = territoryAccountKey;
+  const engineGameScope = JSON.stringify([territoryAccountKey, sessionId, session.gameState?.game_id]);
+  const engineGameScopeRef = useRef(engineGameScope);
+  engineGameScopeRef.current = engineGameScope;
+  // History carries captured moves and passes; stones alone cannot identify a position.
+  const territoryPositionIdentity = JSON.stringify([
+    session.gameState?.history?.slice(0, (session.gameState?.current_node_index ?? 0) + 1)
+      .map(({ node_id, player, move }) => [node_id, player, move]),
+    session.gameState?.stones, session.gameState?.last_move, session.gameState?.is_pass,
+    session.gameState?.player_to_move, session.gameState?.board_size, session.gameState?.ruleset,
+    session.gameState?.komi, session.gameState?.handicap,
+  ]);
+  const enginePositionKey = JSON.stringify([territoryAccountKey, engineMode, sessionId,
+    session.gameState?.game_id, session.gameState?.current_node_id, territoryPositionIdentity,
+    session.gameState?.end_result, session.gameState?.terminal_result]);
+  const enginePositionRef = useRef({ key: enginePositionKey, generation: 0 });
+  if (enginePositionRef.current.key !== enginePositionKey) enginePositionRef.current = {
+    key: enginePositionKey, generation: enginePositionRef.current.generation + 1,
+  };
+  const engineGeneration = enginePositionRef.current.generation;
+  const engineMountedRef = useRef(true);
+  useEffect(() => { engineMountedRef.current = true; return () => { engineMountedRef.current = false; }; }, []);
+  const [engineTerritoryView, setEngineTerritoryView] = useState<EngineTerritoryView>({ generation: engineGeneration, phase: 'idle', visible: false });
+  const engineTerritoryRef = useRef(engineTerritoryView);
+  if (engineTerritoryRef.current.generation !== engineGeneration) engineTerritoryRef.current = { generation: engineGeneration, phase: 'idle', visible: false };
+  const updateEngineTerritory = (next: EngineTerritoryView) => { engineTerritoryRef.current = next; setEngineTerritoryView(next); };
+  const engineTerritory = engineTerritoryView.generation === engineGeneration ? engineTerritoryView : undefined;
   const rankedTerritory = useRankedTerritory(
     sessionId,
     !engineMode && !!session.gameState && isRankedGameType(session.gameState.game_type) && !endResultOf(session.gameState),
     session.gameState?.current_node_id,
     session.gameState?.current_node_index ?? 0,
+    { accountKey: territoryAccountKey, gameId: session.gameState?.game_id, positionIdentity: territoryPositionIdentity },
   );
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
@@ -640,7 +669,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // that dialog is dismissed by the user, not by position changes. engineMode only.
   useEffect(() => {
     setEngineOverlay(null);
-    setEngineEvaluation(null);
+    engineTerritoryRef.current = { generation: enginePositionRef.current.generation, phase: 'idle', visible: false };
+    setEngineTerritoryView(engineTerritoryRef.current);
     setActiveEngineKind(null);
     setJudgeUndecided(null);
     stopJudgeVoice();
@@ -712,13 +742,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const refreshItemCounts = useCallback(async () => {
     if (!engineMode || !isAuthenticated) return;
     try {
-      setEngineItemCounts(await API.platformEngineItems(platform, token));
+      const counts = await API.platformEngineItems(platform, token);
+      if (engineMountedRef.current && engineAccountRef.current === territoryAccountKey) setEngineItemCounts(counts);
     } catch (e) {
       console.error(e);
     }
-  }, [engineMode, isAuthenticated, token]);
+  }, [engineMode, isAuthenticated, token, territoryAccountKey]);
 
   useEffect(() => {
+    setEngineItemCounts(null);
     void refreshItemCounts();
   }, [refreshItemCounts]);
 
@@ -1190,40 +1222,72 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
-  // 星阵隧道分析 (领地/支招/变化图/数子) — engineMode only. Mutually exclusive: a new kind
-  // replaces any prior overlay; clicking the already-active kind toggles it off.
-  const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
-    if (engineAnalysisPendingRef.current) return;
-    if (activeEngineKind === kind) {
+  const dismissEngineTerritory = () => {
+    updateEngineTerritory({ ...engineTerritoryRef.current, visible: false });
+    if (activeEngineKind === 'area') {
       setActiveEngineKind(null);
       setEngineOverlay(null);
-      setEngineEvaluation(null);
+    }
+  };
+
+  // Only area keeps one current-position answer. Other engine tools retain their
+  // existing request/overlay behavior and share the same single-flight guard.
+  const handleEngineAnalysis = async (kind: EngineAnalysisKind, retry = false) => {
+    const area = engineTerritoryRef.current;
+    if (kind === 'area' && area.visible && !retry) { dismissEngineTerritory(); return; }
+    if (engineAnalysisPendingRef.current) {
+      if (kind === 'area' && engineAnalysisPendingRef.current.kind === 'area'
+        && engineAnalysisPendingRef.current.generation === engineGeneration) {
+        updateEngineTerritory({ ...area, visible: true });
+      }
+      return;
+    }
+    if (kind === 'area' && area.result) {
+      updateEngineTerritory({ ...area, visible: true });
+      setEngineOverlay({ kind: 'area', ownership: area.result.ownership });
+      setActiveEngineKind('area');
       setJudgeUndecided(null);
       stopJudgeVoice();
       return;
     }
-    if (!sessionId || !isAuthenticated) return;
-    // Capture the position identity at call time — if the board advances (a move
-    // played) while this request is in flight, the response below is for a stale
-    // position and must be discarded rather than resurrecting an old overlay.
+    if (activeEngineKind === kind) {
+      setActiveEngineKind(null);
+      setEngineOverlay(null);
+      setJudgeUndecided(null);
+      stopJudgeVoice();
+      return;
+    }
+    if (!sessionId || !isAuthenticated || sessionIsGameOver) return;
     const requestedPosition = enginePositionKey;
-    engineAnalysisPendingRef.current = true;
+    const requestedGeneration = engineGeneration;
+    const pending = { kind, generation: requestedGeneration };
+    const stillCurrent = () => engineMountedRef.current && enginePositionRef.current.generation === requestedGeneration;
+    engineAnalysisPendingRef.current = pending;
+    if (kind === 'area') updateEngineTerritory({ generation: requestedGeneration, phase: 'loading', visible: true });
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
-      // A settled call changed the balance (ok → one consumed; insufficient → it's 0);
-      // resync the badges. Fire-and-forget, and BEFORE the stale-position early return
-      // below so a discarded overlay still updates the count that was actually spent.
+      // Always ask the platform for its actual balance after a call, including a
+      // discarded old-position answer. Old accounts cannot overwrite new badges.
       void refreshItemCounts();
+      // Preserve judge's authoritative game-end response across cursor updates,
+      // while refusing a response from an old account/session/game.
+      if (res.ok && kind === 'judge' && res.ended && res.state) {
+        if (!engineMountedRef.current || engineGameScopeRef.current !== engineGameScope) return;
+        if (res.state.game_id === session.gameState?.game_id) session.setGameState(res.state);
+        setJudgeUndecided(null);
+        stopJudgeVoice();
+        setEngineOverlay(null);
+        setActiveEngineKind(null);
+        return;
+      }
+      if (!stillCurrent()) return;
       if (res.ok) {
-        if (kind === 'judge' && res.ended && res.state) {
-          if (res.state.game_id === session.gameState?.game_id) session.setGameState(res.state);
-          setJudgeUndecided(null);
-          stopJudgeVoice();
-          setEngineOverlay(null);
-          setActiveEngineKind(null);
-          return;
+        if (kind === 'area') {
+          const result = res.data as EngineTerritoryResult;
+          const visible = engineTerritoryRef.current.visible;
+          updateEngineTerritory({ generation: requestedGeneration, phase: 'result', result, visible });
+          if (!visible) return;
         }
-        if (enginePositionRef.current !== requestedPosition) return;
         if (kind === 'judge') {
           const judge = res.data as { ownership: JudgePoint[]; winner: string; delta: number };
           if (judge.winner === 'U') {
@@ -1246,17 +1310,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
           : kind === 'judge' ? { kind: 'judge', ownership: (res.data as { ownership: JudgePoint[] }).ownership }
           : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
+        if (kind !== 'area') updateEngineTerritory({ ...engineTerritoryRef.current, visible: false });
         setEngineOverlay(overlay);
-        setEngineEvaluation(kind === 'area' ? res.data as { winrate: number; delta: number } : null);
         setActiveEngineKind(kind);
       } else {
+        if (kind === 'area') {
+          const visible = engineTerritoryRef.current.visible;
+          updateEngineTerritory({ generation: requestedGeneration, phase: 'idle', visible: false });
+          if (!visible) return;
+        }
         setInsufficientKind(kind);
       }
     } catch (e) {
+      void refreshItemCounts();
+      if (!stillCurrent()) return;
       console.error(e);
-      setEngineErrorToast(true);
+      if (kind === 'area') updateEngineTerritory({ generation: requestedGeneration, phase: 'error', visible: engineTerritoryRef.current.visible });
+      else setEngineErrorToast(true);
     } finally {
-      engineAnalysisPendingRef.current = false;
+      if (engineAnalysisPendingRef.current === pending) engineAnalysisPendingRef.current = null;
     }
   };
 
@@ -1341,20 +1413,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           {timeoutLoserColor ? t('Review this game', '复盘本局') : t('game:retry', '重试')}
         </button>
       )}
-    </div>
-  ) : activeEngineKind === 'area' && engineEvaluation ? (
-    <div className="gstatus" data-testid="engine-analysis-summary" role="status">
-      <div>
-        <b>{t('game:golaxy_ai', '星阵围棋 · 人机')} · {t('Territory', '领地')}</b>
-        <span style={{ fontSize: 14, color: 'var(--text)' }}>
-          {t('live:black_winrate', '黑棋胜率')} {Number.isFinite(engineEvaluation.winrate) && engineEvaluation.winrate >= 0 && engineEvaluation.winrate <= 1
-            ? `${(engineEvaluation.winrate * 100).toFixed(1)}%` : '—'}
-          {' · '}
-          {Number.isFinite(engineEvaluation.delta)
-            ? `${engineEvaluation.delta < 0 ? t('game:white_short', '白') : t('game:black_short', '黑')}${t('live:lead_pts', '领先')} ${Math.abs(engineEvaluation.delta).toFixed(1)} ${t('game:points_unit', '目')}`
-            : `${t('research:col_score_diff', '目差')} —`}
-        </span>
-      </div>
     </div>
   ) : null;
 
@@ -1576,11 +1634,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             territory={isRanked && !isGameOver ? {
               remaining: rankedTerritory.remaining,
               phase: rankedTerritory.phase,
-              blackArea: rankedTerritory.result?.black_area,
-              whiteArea: rankedTerritory.result?.white_area,
+              visible: rankedTerritory.visible,
               disabled: rankedTerritory.disabled,
               retrySameRequest: rankedTerritory.retrySameRequest,
-              onRequest: () => { void rankedTerritory.request(); },
+              onRequest: () => { void rankedTerritory.activate(); },
             } : undefined}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
@@ -1598,6 +1655,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </div>
 
       }
+      <TerritoryDialog
+        source="ranked" open={isRanked && !isGameOver && rankedTerritory.visible} phase={rankedTerritory.phase}
+        lead={rankedTerritory.result?.score_lead}
+        blackArea={rankedTerritory.result?.black_area} whiteArea={rankedTerritory.result?.white_area}
+        quotaNote={t('game:territory_ranked_quota', '升降级本局剩余 {n} 次 · 同局面可免费复看').replace('{n}', String(rankedTerritory.remaining ?? '—'))}
+        error={rankedTerritory.retrySameRequest
+          ? t('game:territory_ranked_retry', '请求未返回结果。重试沿用同一次请求，请以服务端剩余次数为准。')
+          : t('game:territory_quota_error', '暂时无法查询领地额度，可以重试，对局仍可继续。')}
+        onRetry={() => { void rankedTerritory.activate(); }} onClose={rankedTerritory.dismiss}
+      />
+      <TerritoryDialog
+        source="star" open={engineMode && !isGameOver && !!engineTerritory?.visible} phase={engineTerritory?.phase ?? 'idle'}
+        lead={engineTerritory?.result?.delta} winrate={engineTerritory?.result?.winrate}
+        quotaNote={t('game:territory_star_quota', '星阵账号领地道具剩余 {n} 次 · 同局面可免费复看').replace('{n}', String(engineItemCounts?.area ?? '—'))}
+        error={t('game:territory_star_error', '请求未返回结果，请以星阵账号实际道具数为准。重新查询可能使用道具。')}
+        onRetry={() => { void handleEngineAnalysis('area', true); }} onClose={dismissEngineTerritory}
+      />
+
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
           留在棋盘 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
           game stays ended (useGameSession's handleAction has no 'resume' branch; calling it

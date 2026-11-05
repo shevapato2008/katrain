@@ -419,7 +419,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setPhysicalSession({ ...physicalSession, poseEverLocked: true });
   }
   const geometry = useOptionalGeometry();
-  const visionSync = useVisionSync(physicalPlay && visionLoaded !== false ? sessionId ?? null : null, geometry?.completeRecalibration);
+  const visionSync = useVisionSync(
+    physicalPlay && visionLoaded !== false ? sessionId ?? null : null,
+    geometry?.completeRecalibration,
+    session.gameState?.game_id,
+  );
   const localPhysicalGame = physicalPlay && session.gameState?.game_type === 'pvp_local';
   const recoveryScope = `${sessionId}|${session.gameState?.game_id}`;
   const geometryReady = !geometry?.status || (geometry.loaded !== false && geometry.status.phase === 'ready'

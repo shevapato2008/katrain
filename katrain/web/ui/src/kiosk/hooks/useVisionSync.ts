@@ -44,13 +44,20 @@ export interface VisionSyncState {
 
 const MAX_EVENTS = 100;
 
-export function useVisionSync(sessionId: string | null, onBound?: (sessionId: string) => Promise<void>): VisionSyncState {
+export function useVisionSync(
+  sessionId: string | null,
+  onBound?: (sessionId: string) => Promise<void>,
+  gameId?: string,
+): VisionSyncState {
   const [syncEvents, setSyncEvents] = useState<VisionSyncEvent[]>([]);
   const [latestEvent, setLatestEvent] = useState<VisionSyncEvent | null>(null);
   const [setupProgress, setSetupProgress] = useState<{ matched: number; total: number; missing: Array<[number, number]>; extra: Array<[number, number, number]> } | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [connected, setConnected] = useState(false);
   const [bindState, setBindState] = useState<VisionSyncState['bindState']>(sessionId ? 'preparing' : 'idle');
+  const gameIdRef = useRef(gameId);
+  gameIdRef.current = gameId;
+  const previousGameRef = useRef({ sessionId, gameId });
   const retryBindRef = useRef<() => Promise<boolean>>(async () => false);
   const retryBind = useCallback(() => retryBindRef.current(), []);
 
@@ -99,20 +106,24 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
     const bind = async () => {
       if (!sessionId || binding || cancelled) return false;
       binding = true;
+      const requestedGameId = gameIdRef.current;
       setBindState('preparing');
       try {
         await API.visionBind(sessionId);
-        if (cancelled) return false;
+        if (cancelled || requestedGameId !== gameIdRef.current) return false;
         await onBoundRef.current?.(sessionId);
-        if (cancelled) return false;
+        if (cancelled || requestedGameId !== gameIdRef.current) return false;
         setBindState('ready');
         return true;
       } catch (err) {
-        if (!cancelled) setBindState('error');
+        if (!cancelled && requestedGameId === gameIdRef.current) setBindState('error');
         console.error('Vision bind failed', err);
         return false;
       } finally {
         binding = false;
+        // A same-session game replacement can arrive while the previous bind awaits.
+        // Complete the new game's normal bind instead of accepting the old response.
+        if (!cancelled && requestedGameId !== gameIdRef.current) void bind();
       }
     };
     retryBindRef.current = bind;
@@ -165,6 +176,15 @@ export function useVisionSync(sessionId: string | null, onBound?: (sessionId: st
       setBindState('idle');
     };
   }, [sessionId, handleMessage]);
+
+  useEffect(() => {
+    const previous = previousGameRef.current;
+    previousGameRef.current = { sessionId, gameId };
+    if (sessionId && previous.sessionId === sessionId && previous.gameId !== gameId) {
+      setBindState('preparing');
+      void retryBindRef.current();
+    }
+  }, [sessionId, gameId]);
 
   return { syncEvents, latestEvent, setupProgress, isSetupComplete, connected, bindState, retryBind };
 }

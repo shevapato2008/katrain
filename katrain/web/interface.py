@@ -844,7 +844,8 @@ class WebKaTrain(KaTrainBase):
         # strength it was certified at. _do_new_game is only ever invoked from the request
         # thread (REST handlers / __call__ dispatch) or from start(), never from within the
         # AI thread itself, so acquiring ai_lock here cannot self-deadlock.
-        with self.ai_lock:
+        # Serialize game replacement with bound-board snapshots and move commit guards.
+        with self.ai_lock, self.ai_ladder_commit_lock:
             # R3/R5: remember whether this game permits analysis (rated/ranked => forbidden).
             # Same fail-closed lifecycle rule as ladder_rung below: a new game that does
             # not declare a type IS a free game. Without the reset, POST /api/new-game on

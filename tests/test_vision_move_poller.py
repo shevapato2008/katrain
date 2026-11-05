@@ -809,3 +809,59 @@ def test_central_bridge_uses_merged_mirror_and_cannot_mutate_rebound_physical_st
         await orch.shutdown()
 
     asyncio.run(run())
+
+
+def test_old_confirmation_cannot_enter_replacement_game_without_new_binding():
+    from katrain.core.game import BaseGame
+    from tests.platforms.test_gateway import bound_vision_gateway
+
+    async def run():
+        app, session, vision, orch, pm, adapter, ctx = bound_vision_gateway()
+        move = ConfirmedMove(3, 3, 1, 9, vision.binding_epoch, vision.expected_revision)
+        session.katrain.game = BaseGame(
+            session.katrain, game_properties={"SZ": 19, "RU": "japanese"}, bypass_config=True
+        )
+        await _handle_confirmed_move(app, vision, "s", move, log)
+        assert session.katrain.game.current_node.depth == 0
+        assert adapter.sent == []
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_game_replacement_while_waiting_for_commit_lock_cannot_receive_old_move():
+    from katrain.core.game import BaseGame
+    from katrain.web.server import _vision_game_replacement
+    from tests.platforms.test_gateway import bound_vision_gateway
+
+    async def run():
+        app, session, vision, orch, pm, adapter, ctx = bound_vision_gateway()
+        app.state.vision = vision
+        app.state.platform_gateway = None  # actual local submit branch
+        locked, presence_read = threading.Event(), threading.Event()
+        move = ConfirmedMove(3, 3, 1, 9, vision.binding_epoch, vision.expected_revision)
+
+        def replace():
+            with session.lock, _vision_game_replacement(app, session):
+                locked.set()
+                assert presence_read.wait(2)
+                session.katrain.game = BaseGame(
+                    session.katrain, game_properties={"SZ": 19, "RU": "japanese"}, bypass_config=True
+                )
+                session.last_state = session.katrain.get_state()
+
+        def observation():
+            presence_read.set()  # handler captured G1 and is about to acquire session.lock
+            return None, 0
+
+        vision.get_board_observation = observation
+        thread = threading.Thread(target=replace)
+        thread.start()
+        assert locked.wait(2)
+        await _handle_confirmed_move(app, vision, "s", move, log)
+        thread.join()
+        assert session.katrain.game.current_node.depth == 0
+        assert vision.bound_session_id is None
+        await orch.shutdown()
+
+    asyncio.run(run())

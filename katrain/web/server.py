@@ -123,6 +123,46 @@ def _apply_pvp_box_state(app, local_session_id: str, state: dict, *, source, cat
     return state
 
 
+@contextmanager
+def _vision_game_replacement(app, session):
+    """A replaced local game ends its physical binding; the new game binds normally."""
+    from katrain.vision.service import VisionService
+
+    vision = getattr(app.state, "vision", None)
+    source = (
+        capture_vision_source(vision, session.session_id, session)
+        if isinstance(vision, VisionService) and vision.bound_session_id == session.session_id
+        else None
+    )
+    try:
+        yield
+    finally:
+        epoch = vision.invalidate_replaced_game(source) if source is not None else None
+        if epoch is not None:
+            orchestrator = getattr(app.state, "physical_play", None)
+
+            def cleanup():
+                # A REST worker may finish after the loop has already bound the next game.
+                if vision.binding_epoch != epoch or vision.bound_session_id is not None:
+                    return
+                if orchestrator is not None and orchestrator.binding_source == source:
+                    orchestrator.on_unbind()
+                app.state.ranked_vision_binding = None
+                tracker = getattr(app.state, "engine_recovery", None)
+                if tracker is not None:
+                    tracker.clear()
+
+            loop = getattr(orchestrator, "_loop", None) or getattr(app.state.session_manager, "_loop", None)
+            try:
+                on_loop = asyncio.get_running_loop() is loop
+            except RuntimeError:
+                on_loop = False
+            if loop is not None and not on_loop:
+                loop.call_soon_threadsafe(cleanup)
+            else:
+                cleanup()
+
+
 def _terminal_of(session):
     """这一局的终局事实(`WebGame.terminal`);没有、或会话是替身(MagicMock 属性)时为 None。"""
     terminal = getattr(getattr(getattr(session, "katrain", None), "game", None), "terminal", None)
@@ -1688,7 +1728,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         skip_analysis = request.skip_analysis or not session_owner_ids(session)
         if not skip_analysis:
             register_persistent_analysis(current_user, session, "load-sgf", "SGF analysis")
-        with session.lock:
+        with session.lock, _vision_game_replacement(app, session):
             session.katrain("load_sgf", request.sgf, skip_initial_analysis=skip_analysis)
             state = session.katrain.get_state()
             session.last_state = state
@@ -1713,7 +1753,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         app.state.ranked_analysis_activity.end_session(session.session_id)
         with persistent_analysis_activity(current_user, session, "new-game", "new game analysis"):
-            with session.lock:
+            with session.lock, _vision_game_replacement(app, session):
                 session.game_ended = False
                 # A new game is starting: clear the "already recorded" guard from any
                 # previous game on this (possibly reused) session so it becomes recordable again.
@@ -1759,7 +1799,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         register_persistent_analysis(current_user, session, "game-setup", "game setup analysis")
         mode = request.mode
         settings = request.settings
-        with session.lock:
+        with session.lock, _vision_game_replacement(app, session):
             session.game_ended = False
             # A (re)configured game is starting: clear the "already recorded" guard from
             # any previous game on this (possibly reused) session so it becomes recordable again.
@@ -5471,6 +5511,8 @@ async def _submit_confirmed_move(
         move_player = "B" if move_data.color == 1 else "W"
         try:
             with session.lock:
+                if not current():
+                    return 0.0
                 if getattr(vision, "bound_session_id", None) != session_id:
                     raise HTTPException(status_code=403, detail="vision is no longer bound to this session")
                 binding = getattr(app.state, "ranked_vision_binding", None)
@@ -5569,6 +5611,8 @@ async def _submit_confirmed_move(
         live_turn = None
         try:
             with session.katrain.ai_ladder_commit_lock:
+                if not current():
+                    return 0.0
                 live_turn = session.katrain.next_player_to_move()
         except Exception:
             # a turn read must never be able to break move submission — fail-open is
@@ -5635,6 +5679,8 @@ async def _submit_confirmed_move(
         # 与跨平台 N13 在同一函数相邻改动,合并时逐段对。
         try:
             with session.lock:
+                if not current():
+                    return 0.0
                 session.katrain("play", move.coords, guard=True, expected_player=move_player)
         except EndgameConflict as exc:
             log.info("Vision move %s refused for session %s: %s", move_player, session_id, exc.reason)

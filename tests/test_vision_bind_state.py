@@ -373,3 +373,108 @@ def test_old_room_stream_updates_only_its_own_mirror_after_another_room_binds():
         await orch.shutdown()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("rebind_before_cleanup", [False, True])
+def test_game_replacement_invalidates_binding_and_allows_normal_rebind(rebind_before_cleanup):
+    import threading
+    from katrain.core.game import BaseGame
+    from katrain.web.server import _vision_game_replacement
+    from tests.platforms.test_gateway import bound_vision_gateway
+
+    async def run():
+        app, session, svc, orch, pm, adapter, ctx = bound_vision_gateway()
+        app.state.vision = svc
+        original_callback = orch._orig_callback
+        source = orch.binding_source
+        epoch = svc.binding_epoch
+        old_wrapper = session.katrain.update_state_callback
+        orch.enter_engine_error((3, 3), "old-recovery")
+
+        def replace():
+            with session.lock, _vision_game_replacement(app, session):
+                session.katrain.game = BaseGame(
+                    session.katrain, game_properties={"SZ": 19, "RU": "japanese"}, bypass_config=True
+                )
+                session.last_state = session.katrain.get_state()
+                old_wrapper(session.last_state)
+
+        thread = threading.Thread(target=replace)
+        thread.start()
+        thread.join()
+        assert svc.bound_session_id is None  # metadata invalidates before queued loop cleanup
+        assert svc.binding_epoch > epoch
+        assert not svc.source_is_current(source)
+        if rebind_before_cleanup:
+            svc.bind_session("s", session=session)
+            orch.on_bind("s", session)
+            revision = svc.expected_revision
+        applied = asyncio.Event()
+        asyncio.get_running_loop().call_soon(applied.set)
+        await applied.wait()
+        if rebind_before_cleanup:
+            assert svc.bound_session_id == "s"
+            assert svc.expected_revision == revision
+            assert orch._session is session
+        else:
+            assert orch._session is None
+            assert session.katrain.update_state_callback is original_callback
+            svc.bind_session("s", session=session)
+            orch.on_bind("s", session)
+            assert svc.bound_session_id == "s" and svc.expected_revision == 1
+        assert not orch._pause_reasons and orch._engine_error_context is None
+        node = svc.expected_revision
+        session.katrain("play", coords=(4, 15))
+        assert svc.expected_revision == node + 1  # the NEW wrapper updates normally
+        old_wrapper({"end_result": "W+R"})
+        assert not orch._pause_reasons
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_actual_new_game_holds_commit_lock_across_game_replacement():
+    import threading
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock, patch
+    from katrain.web.interface import WebKaTrain
+
+    runtime = MagicMock()
+    runtime.ai_lock = threading.Lock()
+    runtime.ai_ladder_commit_lock = threading.RLock()
+    runtime.engine = None
+    runtime.players_info = {}
+    runtime.config.return_value = {"paused": False}
+    held = []
+
+    def game(*args, **kwargs):
+        held.append(runtime.ai_ladder_commit_lock._is_owned())
+        return SimpleNamespace()
+
+    with patch("katrain.web.interface.WebGame", side_effect=game):
+        WebKaTrain._do_new_game(runtime, skip_initial_analysis=True)
+    assert held == [True]
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_replacement_boundary_without_orchestrator_only_invalidates_actual_game_changes(changed):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+    from katrain.web.server import _vision_game_replacement
+
+    svc = VisionService(VisionServiceConfig())
+    svc._worker = MagicMock()
+    session = SimpleNamespace(session_id="s", katrain=SimpleNamespace(game=object()))
+    app = SimpleNamespace(
+        state=SimpleNamespace(
+            vision=svc, session_manager=SimpleNamespace(), engine_recovery=MagicMock(), ranked_vision_binding=object()
+        )
+    )
+    svc.bind_session("s", session=session)
+    with _vision_game_replacement(app, session):
+        if changed:
+            session.katrain.game = object()
+    assert svc.bound_session_id == (None if changed else "s")
+    assert app.state.engine_recovery.clear.call_count == (1 if changed else 0)

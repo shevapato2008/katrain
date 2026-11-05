@@ -121,3 +121,22 @@ def test_old_stamped_ipc_cannot_cross_binding_or_authority_revision():
     ]
     assert svc.poll_events() == []
     assert svc.get_confirmed_move() is None
+
+
+def test_recapturing_source_cannot_upgrade_replaced_game_under_old_binding():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    svc = VisionService(VisionServiceConfig())
+    svc._worker = MagicMock()
+    session = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+    svc.bind_session("s", session=session)
+    old_source = svc.capture_binding_source("s", session)
+    svc.publish_expected_from_stones(old_source, [], expected_node_id=1)
+    revision = svc.expected_revision
+    session.katrain.game = object()
+    recaptured = svc.capture_binding_source("s", session)
+    assert not svc.source_is_current(old_source)
+    assert not svc.source_is_current(recaptured)
+    assert not svc.publish_expected_from_stones(recaptured, [["B", [3, 15], None, 1]], expected_node_id=2)
+    assert svc.expected_revision == revision

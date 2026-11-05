@@ -148,6 +148,8 @@ class VisionService:
     def capture_binding_source(self, session_id: str, session) -> VisionBindingSource:
         identity = binding_game_identity(session)
         with self._metadata_lock:
+            if session_id == self._bound_session_id and session is self._bound_session:
+                identity = self._bound_game_identity
             return VisionBindingSource(session_id, session, identity, self._binding_epoch)
 
     def source_is_current(self, source: VisionBindingSource) -> bool:
@@ -157,7 +159,7 @@ class VisionService:
                 source.binding_epoch == self._binding_epoch
                 and source.session_id == self._bound_session_id
                 and (self._bound_session is None or source.session is self._bound_session)
-                and source.game_identity == identity
+                and source.game_identity == self._bound_game_identity == identity
             )
 
     def publish_expected_from_stones(
@@ -172,6 +174,7 @@ class VisionService:
                 source.binding_epoch != self._binding_epoch
                 or source.session_id != self._bound_session_id
                 or (self._bound_session is not None and source.session is not self._bound_session)
+                or source.game_identity != self._bound_game_identity
                 or source.game_identity != identity
             ):
                 return False
@@ -195,6 +198,21 @@ class VisionService:
                     )
                 )
             return changed
+
+    def invalidate_replaced_game(self, source: VisionBindingSource) -> int | None:
+        """Retire only the binding whose anchored game was actually replaced."""
+        identity = binding_game_identity(source.session)
+        with self._metadata_lock:
+            if (
+                source.binding_epoch != self._binding_epoch
+                or source.session_id != self._bound_session_id
+                or source.session is not self._bound_session
+                or source.game_identity != self._bound_game_identity
+                or identity == self._bound_game_identity
+            ):
+                return None
+            self.unbind_session()
+            return self._binding_epoch
 
     def release_confirmed_move(self, move: ConfirmedMove) -> None:
         # Token only. In particular this cannot clear platform pending or write expected.

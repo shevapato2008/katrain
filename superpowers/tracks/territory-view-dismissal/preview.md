@@ -43,6 +43,8 @@ TDD evidence: the new ranked/Star lifecycle assertions first failed against the 
 
 Sparse-worktree note: TypeScript requires the existing named `katrain/assets/board-equipment/go/stones/clamshell-slate/v1/source/recipe.json`; it was materialized unchanged from its Git blob for module resolution. Node modules are symlinked to the existing UI install. Excluded tracked entries remain `skip-worktree`. No filesystem access or status traversal of the prohibited album directory was used.
 
+Runtime localization was checked separately: `katrain/core/lang.py` loads gettext `.mo` catalogs, and the existing root `i18n.py` compiles with `polib.pofile(...).save_as_mofile(...)`. Only the cn/en catalogs were compiled with that same method using the existing project virtualenv. The two explicitly requested `.mo` products are committed despite the general ignore rule; no other locale or PO normalization was run. A pure `gettext.GNUTranslations` check loaded each compiled file and verified all 20 new keys against its PO entry, including cn `领地判断` and en `Territory estimate`. It did not import/start the app or access runtime data.
+
 ## Remaining gates
 
 1. Visual approval: complete, explicitly relayed by ROOT on 2026-11-06.

@@ -29,6 +29,12 @@ from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.db import engine as kifu_db_engine
 from katrain.web.core.game_end_rules import is_awaiting_count
+from katrain.vision.service import binding_game_identity
+from katrain.web.core.physical_play_orchestrator import (
+    capture_vision_source,
+    publish_current_expected,
+    vision_source_is_current,
+)
 from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
@@ -70,6 +76,51 @@ ENDGAME_CONFLICT_DETAIL = {
     "not_your_turn": "Not your turn",
     "remote_ended": "Ranked game has ended on another device",
 }
+
+
+async def _receive_box_pvp_message(upstream, *, capture_source, check_user, transform):
+    """Fix this receive's source before awaiting, including the first receive after a bind."""
+    source = capture_source() if capture_source is not None else None
+    payload = json.loads(await upstream.recv())
+    check_user()
+    return transform(payload, source) if capture_source is not None else transform(payload)
+
+
+def _apply_pvp_box_state(app, local_session_id: str, state: dict, *, source, catch_up_current_binding=False) -> dict:
+    """Merge the room's authority before publishing its current physical binding."""
+    manager = app.state.session_manager
+    session = manager.get_session(local_session_id)
+    if source[1] is not session or source[2] != binding_game_identity(session):
+        return session.last_state
+    if source[3] != app.state.box_sso.active_generation:
+        return session.last_state
+    if app.state.pvp_box_bridge.rooms.for_local(source[3], local_session_id) is not source[4]:
+        return session.last_state
+    bridge = app.state.pvp_box_bridge
+    state = bridge.newer_state(session.last_state, state)
+    if state.get("end_result") and not state.get("awaiting_count"):
+        session.game_ended = True
+    session.last_state = state
+    physical_play = getattr(app.state, "physical_play", None)
+    vision = getattr(app.state, "vision", None)
+    publish_source = source[0]
+    if not vision_source_is_current(vision, publish_source):
+        # A persistent room stream is independent of one physical confirmation/bind.
+        # The single frame crossing bind may be its last frame until the user moves.
+        # Catch up only the SAME still-current room from its merged authority, never
+        # by assigning a new epoch to the received payload.
+        if not (
+            catch_up_current_binding
+            and getattr(vision, "bound_session_id", None) == local_session_id
+            and source[2] == binding_game_identity(session)
+        ):
+            return state
+        publish_source = capture_vision_source(vision, local_session_id, session)
+    if physical_play is not None:
+        physical_play.on_game_state(None, source=publish_source)
+    elif vision is not None:
+        publish_current_expected(vision, local_session_id, session, publish_source)
+    return state
 
 
 def _terminal_of(session):
@@ -1346,6 +1397,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
             from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 
+            vision_source = capture_box_source(session_id, session)
             try:
                 if session.game_ended and isinstance(session.last_state, dict):
                     room = bridge.rooms.for_local(app.state.box_sso.active_generation, session_id)
@@ -1354,14 +1406,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     bridge.check_user(room.generation, room.local_user_id)
                     return {"session_id": session_id, "state": session.last_state}
                 payload = await bridge.fetch_state(app.state.box_sso.active_generation, session_id)
-                payload["state"] = apply_pvp_box_state(session_id, payload["state"])
+                payload["state"] = apply_pvp_box_state(session_id, payload["state"], source=vision_source)
                 return payload
             except PvpBoxAuthError as exc:
                 raise HTTPException(status_code=401, detail=str(exc)) from exc
             except PvpBoxRemoteError as exc:
                 physical_play = getattr(app.state, "physical_play", None)
                 vision = getattr(app.state, "vision", None)
-                if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                if physical_play is not None and box_source_is_current(vision_source):
                     physical_play.enter_remote_disconnected()
                 raise HTTPException(status_code=503, detail=str(exc)) from exc
             except httpx.HTTPStatusError as exc:
@@ -1433,10 +1485,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 coords = None if request.pass_move else list(request.coords) if request.coords is not None else None
                 if coords is None and not request.pass_move:
                     raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
+                vision_source = capture_box_source(request.session_id, session)
                 payload = await bridge.forward_move(
                     app.state.box_sso.active_generation, request.session_id, coords=coords
                 )
-                payload["state"] = apply_pvp_box_state(request.session_id, payload["state"])
+                payload["state"] = apply_pvp_box_state(request.session_id, payload["state"], source=vision_source)
                 manager.broadcast_to_session(request.session_id, {"type": "game_update", "state": payload["state"]})
                 return payload
             except PvpBoxAuthError as exc:
@@ -3680,20 +3733,35 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def apply_pvp_box_state(local_session_id: str, state: dict) -> dict:
-        session = manager.get_session(local_session_id)
-        bridge = app.state.pvp_box_bridge
-        state = bridge.newer_state(session.last_state, state)
-        if state.get("end_result") and not state.get("awaiting_count"):
-            session.game_ended = True
-        if state is session.last_state:
-            return state
-        session.last_state = state
-        physical_play = getattr(app.state, "physical_play", None)
+    def capture_box_source(local_session_id, session):
         vision = getattr(app.state, "vision", None)
-        if physical_play is not None and getattr(vision, "bound_session_id", None) == local_session_id:
-            physical_play.on_game_state(state)
-        return state
+        generation = app.state.box_sso.active_generation
+        room = app.state.pvp_box_bridge.rooms.for_local(generation, local_session_id)
+        return (
+            capture_vision_source(vision, local_session_id, session),
+            session,
+            binding_game_identity(session),
+            generation,
+            room,
+        )
+
+    def box_source_is_current(source):
+        vision_source, session, identity, generation, room = source
+        return (
+            generation == app.state.box_sso.active_generation
+            and app.state.pvp_box_bridge.rooms.for_local(generation, session.session_id) is room
+            and binding_game_identity(session) == identity
+            and vision_source_is_current(getattr(app.state, "vision", None), vision_source)
+        )
+
+    def apply_pvp_box_state(local_session_id: str, state: dict, *, source, catch_up_current_binding=False) -> dict:
+        return _apply_pvp_box_state(
+            app,
+            local_session_id,
+            state,
+            source=source,
+            catch_up_current_binding=catch_up_current_binding,
+        )
 
     async def forward_box_pvp_action(session, current_user, method, path, body=None):
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
@@ -3702,6 +3770,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         bridge = getattr(app.state, "pvp_box_bridge", None)
         if bridge is None:
             raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        vision_source = capture_box_source(session.session_id, session)
         try:
             payload = await bridge.forward_action(
                 app.state.box_sso.active_generation, session.session_id, method, path, body
@@ -3713,11 +3782,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except httpx.HTTPStatusError as exc:
             raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         if isinstance(payload.get("state"), dict):
-            payload["state"] = apply_pvp_box_state(session.session_id, payload["state"])
+            payload["state"] = apply_pvp_box_state(session.session_id, payload["state"], source=vision_source)
             manager.broadcast_to_session(session.session_id, {"type": "game_update", "state": payload["state"]})
         return payload
 
-    async def proxy_pvp_websocket(websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None):
+    async def proxy_pvp_websocket(
+        websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None, capture_source=None
+    ):
         """Relay a box-origin socket to the central authority without exposing its token."""
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
         from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
@@ -3736,9 +3807,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 async def to_box():
                     while True:
-                        payload = json.loads(await upstream.recv())
-                        bridge.check_user(generation, local_user_id)
-                        await websocket.send_json(transform(payload))
+                        payload = await _receive_box_pvp_message(
+                            upstream,
+                            capture_source=capture_source,
+                            check_user=lambda: bridge.check_user(generation, local_user_id),
+                            transform=transform,
+                        )
+                        await websocket.send_json(payload)
 
                 tasks = {asyncio.create_task(to_central()), asyncio.create_task(to_box())}
                 try:
@@ -4298,18 +4373,37 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     app.state.box_sso.discard_socket(websocket)
                 return
 
-            def transform_room(payload):
+            room_source = capture_box_source(session_id, session)
+            vision_source = room_source
+
+            def capture_room_receive():
+                nonlocal vision_source
+                # The connection keeps its original session/game/room/auth identity.
+                # Only a NEW receive can capture a new binding; an in-flight await cannot.
+                vision_source = (
+                    capture_vision_source(getattr(app.state, "vision", None), session_id, session),
+                    *room_source[1:],
+                )
+                return vision_source
+
+            def transform_room(payload, source):
+                if (
+                    source[1] is not session
+                    or source[2] != binding_game_identity(session)
+                    or source[3] != app.state.box_sso.active_generation
+                    or bridge.rooms.for_local(source[3], session_id) is not source[4]
+                ):
+                    return payload
                 if payload.get("type") == "game_update" and isinstance(payload.get("state"), dict):
                     state = bridge.rewrite_state(generation, session_id, payload["state"])
-                    state = apply_pvp_box_state(session_id, state)
+                    state = apply_pvp_box_state(session_id, state, source=source, catch_up_current_binding=True)
                     return {**payload, "state": state}
                 if payload.get("type") == "game_end" and isinstance(payload.get("data"), dict):
                     result = payload["data"].get("result")
                     if isinstance(result, str) and result:
                         state = session_state_for_read(session)
                         state = {**state, "end_result": result, "awaiting_count": False, "degraded": False}
-                        session.game_ended = True
-                        apply_pvp_box_state(session_id, state)
+                        apply_pvp_box_state(session_id, state, source=source, catch_up_current_binding=True)
                 return payload
 
             session.sockets.add(websocket)
@@ -4318,7 +4412,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 def on_disconnect():
                     physical_play = getattr(app.state, "physical_play", None)
                     vision = getattr(app.state, "vision", None)
-                    if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                    if physical_play is not None and box_source_is_current(vision_source):
                         physical_play.enter_remote_disconnected()
 
                 await proxy_pvp_websocket(
@@ -4329,6 +4423,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     f"/ws/{room.central_session_id}",
                     transform_room,
                     on_disconnect,
+                    capture_source=capture_room_receive,
                 )
             finally:
                 session.sockets.discard(websocket)
@@ -5191,6 +5286,76 @@ def _apply_engine_recovery_outcome(
 
 
 async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_data, log) -> float:
+    """Own this confirmation only for the lifetime of its actual submission call."""
+    from katrain.vision.service import VisionService
+    from katrain.web.core.physical_play_orchestrator import (
+        capture_vision_source,
+        publish_current_expected,
+        vision_source_is_current,
+    )
+
+    try:
+        session = app.state.session_manager.get_session(session_id)
+    except KeyError:
+        session = None
+    source = capture_vision_source(vision, session_id, session) if session is not None else None
+    bridge = getattr(app.state, "pvp_box_bridge", None)
+    remote = None
+    if bridge is not None and session is not None and getattr(session, "game_type", None) == "pvp_lobby":
+        generation = app.state.box_sso.active_generation
+        remote = (generation, bridge.rooms.for_local(generation, session_id))
+
+    def current():
+        if remote is not None and (
+            app.state.box_sso.active_generation != remote[0]
+            or bridge.rooms.for_local(remote[0], session_id) is not remote[1]
+        ):
+            return False
+        if session is None:
+            return not isinstance(vision, VisionService) or (
+                vision.bound_session_id == session_id
+                and (not move_data.binding_epoch or move_data.binding_epoch == vision.binding_epoch)
+            )
+        try:
+            if app.state.session_manager.get_session(session_id) is not session:
+                return False
+        except KeyError:
+            return False
+        return vision_source_is_current(vision, source)
+
+    try:
+        if not current():
+            return 0.0
+        if (
+            isinstance(vision, VisionService)
+            and move_data.binding_epoch
+            and (
+                move_data.binding_epoch != vision.binding_epoch
+                or move_data.expected_revision != vision.expected_revision
+            )
+        ):
+            return 0.0
+        return await _submit_confirmed_move(
+            app, vision, session_id, move_data, log, source=source, source_current=current
+        )
+    finally:
+        # Flush only real changed authority, before the token-only release in the FIFO.
+        # No change means no rearm; an uncertain platform send keeps its own pending ctx.
+        try:
+            if session is not None and current() and isinstance(vision, VisionService):
+                orchestrator = getattr(app.state, "physical_play", None)
+                if orchestrator is not None and hasattr(orchestrator, "binding_source"):
+                    orchestrator.on_game_state(None, source=source)
+                else:
+                    publish_current_expected(vision, session_id, session, source)
+        finally:
+            if isinstance(vision, VisionService):
+                vision.release_confirmed_move(move_data)
+
+
+async def _submit_confirmed_move(
+    app: FastAPI, vision, session_id: str, move_data, log, *, source=None, source_current=None
+) -> float:
     """Handle one vision ConfirmedMove for the bound session. Extracted from
     _vision_move_poller (which is otherwise a bare infinite loop) so tests can
     drive this per-move logic directly with a mocked gateway/vision, per Task 7's
@@ -5203,6 +5368,11 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     """
     from katrain.vision.katrain_bridge import vision_move_to_katrain
     from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+    from katrain.web.core.physical_play_orchestrator import publish_current_expected, vision_source_is_current
+
+    def current():
+        return source_current() if source_current is not None else vision_source_is_current(vision, source)
 
     manager = app.state.session_manager
     tracker = getattr(app.state, "engine_recovery", None)
@@ -5223,11 +5393,13 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         return 0.0
 
     def _rearm_detection() -> None:
-        game_state = (
-            session.last_state if getattr(session, "game_type", None) == "pvp_lobby" else session.katrain.get_state()
-        )
-        if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(game_state["stones"], expected_node_id=game_state.get("current_node_id"))
+        if not current():
+            return
+        orchestrator = getattr(app.state, "physical_play", None)
+        if orchestrator is not None and hasattr(orchestrator, "binding_source"):
+            orchestrator.on_game_state(None, source=source, force_rearm=True)
+        else:
+            publish_current_expected(vision, session_id, session, source, force_rearm=True)
 
     # Re-arming after a TERMINAL refusal re-pushes the same frozen board, so the same
     # leftover stone re-confirms and is refused again every consistency window, forever.
@@ -5352,10 +5524,14 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         try:
             payload = await bridge.forward_move(generation, session_id, coords=list(coords))
         except httpx.HTTPStatusError as exc:
+            if not current():
+                return 0.0
             log.info("Central PvP physical move rejected: %s", exc)
             _rearm_detection()
             return 0.5
         except (PvpBoxAuthError, PvpBoxRemoteError) as exc:
+            if not current():
+                return 0.0
             log.warning("Central PvP physical move was not accepted: %s", exc)
             manager.broadcast_to_session(session_id, {"type": "pvp_central_disconnected"})
             orchestrator = getattr(app.state, "physical_play", None)
@@ -5363,13 +5539,15 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 orchestrator.enter_remote_disconnected()
             _rearm_detection()
             return 0.5
+        if not current():
+            return 0.0
         state = bridge.newer_state(session.last_state, payload["state"])
         if state is not session.last_state:
             session.last_state = state
             manager.broadcast_to_session(session_id, {"type": "game_update", "state": state})
             orchestrator = getattr(app.state, "physical_play", None)
             if orchestrator is not None:
-                orchestrator.on_game_state(state)
+                orchestrator.on_game_state(state, source=source)
         return 0.0
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
@@ -5419,15 +5597,21 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)
         except PlatformMoveRejectedError as e:
+            if not current():
+                return 0.0
             log.warning("Platform gateway rejected vision move: %s", e)
             rearm = _apply_engine_recovery_outcome(app, manager, session_id, game_id, coords, e.reason, str(e))
             if e.reason == "game_ended":
                 await _record_platform_engine_game_off_request(session, app)
+                if not current():
+                    return 0.0
             if rearm:
                 _rearm_detection()
                 return 0.5
             return 0.0
         except Exception as gw_err:
+            if not current():
+                return 0.0
             log.warning("Platform gateway rejected vision move: %s", gw_err)
             # Non-PlatformMoveRejectedError exceptions (httpx errors, unexpected
             # adapter bugs, ...) are tunnel/infra failures too — fold them into the
@@ -5441,6 +5625,8 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 return 0.5
             return 0.0
         else:
+            if not current():
+                return 0.0
             if tracker is not None:
                 tracker.on_success()
     else:

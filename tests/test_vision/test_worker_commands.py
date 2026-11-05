@@ -1400,9 +1400,7 @@ def test_subprocess_promoter_runs_unless_a_confirmation_is_one_frame_away(about_
 test_subprocess_promoter_runs_unless_a_confirmation_is_one_frame_away.__doc__ = _PROMOTER_DOC
 
 
-@pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
-@pytest.mark.parametrize("peak,frames", [(0.68, 5), (0.80, 3)])
-def test_real_detector_confirmation_owns_only_its_uncommitted_point(kind, peak, frames):
+def _run_real_detector_confirmation(kind, peak, frames, *, binding_epoch=31, expected_revision=4, monitor=False):
     """The confirmation and sync debounce mature on the SAME fifth frame."""
     from katrain.vision.move_detector import MoveDetector
     from katrain.vision.sync import SyncStateMachine
@@ -1419,8 +1417,11 @@ def test_real_detector_confirmation_owns_only_its_uncommitted_point(kind, peak, 
     worker._sync.bind()
     worker._sync.confirm_pose_lock()
     worker._expected_np = empty.copy()
-    worker._binding_epoch = 31
-    worker._expected_revision = 4
+    worker._bound = not monitor
+    worker._monitor = monitor
+    worker._move_armed = monitor
+    worker._binding_epoch = binding_epoch
+    worker._expected_revision = expected_revision
     worker._running = True
     worker._cmd_queue = queue.Queue()
     worker._frame_count = 0
@@ -1460,6 +1461,13 @@ def test_real_detector_confirmation_owns_only_its_uncommitted_point(kind, peak, 
 
     camera.read_frame = read
     (worker._loop if kind == "inprocess" else worker._processing_loop)()
+    return worker
+
+
+@pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
+@pytest.mark.parametrize("peak,frames", [(0.68, 5), (0.80, 3)])
+def test_real_detector_confirmation_owns_only_its_uncommitted_point(kind, peak, frames):
+    worker = _run_real_detector_confirmation(kind, peak, frames)
     events = list(worker._event_queue.queue)
     assert not [e for e in events if isinstance(e, dict) and e["type"] in {"illegal_change", "synced"}]
     confirmed = [e for e in events if isinstance(e, ConfirmedMove)]
@@ -1467,7 +1475,7 @@ def test_real_detector_confirmation_owns_only_its_uncommitted_point(kind, peak, 
     assert confirmed[0].binding_epoch == 31
     assert confirmed[0].expected_revision == 4
     assert confirmed[0].observation_seq == SEEDED_OBSERVATION_SEQ + frames
-    assert np.array_equal(worker._sync._expected_board, empty)
+    assert not np.any(worker._sync._expected_board)
 
 
 @pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
@@ -1502,3 +1510,37 @@ def test_dispatchers_release_exact_token_and_reject_old_authority(kind):
     worker._cmd_queue.put(WorkerCommand(CommandType.RELEASE_CONFIRMED_MOVE, {"token": move.token}))
     drain()
     assert not worker._sync.has_confirmed_move
+
+
+@pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
+def test_monitor_confirmation_remains_a_dict_without_single_point_ownership(kind):
+    worker = _run_real_detector_confirmation(kind, 0.68, 5, monitor=True)
+    events = list(worker._event_queue.queue)
+    assert not any(isinstance(event, ConfirmedMove) for event in events)
+    assert len([event for event in events if event.get("type") == "move_confirmed"]) == 1
+    assert not worker._sync.has_confirmed_move
+    worker._cmd_queue.put(WorkerCommand(CommandType.UNBIND))
+    (worker._drain_commands if kind == "inprocess" else worker._process_commands)()
+    assert worker._binding_epoch == 0 and worker._expected_revision == 0
+
+
+@pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
+def test_repeated_monitor_mode_is_not_a_new_ownership_lifecycle(kind):
+    worker = _run_real_detector_confirmation(kind, 0.68, 5)
+    worker._cmd_queue.put(WorkerCommand(CommandType.SET_MONITOR, {"active": False}))
+    drain = worker._drain_commands if kind == "inprocess" else worker._process_commands
+    drain()
+    assert worker._sync.has_confirmed_move
+    worker._cmd_queue.put(WorkerCommand(CommandType.SET_MONITOR, {"active": True}))
+    drain()
+    assert not worker._sync.has_confirmed_move
+
+
+def test_stale_local_mode_command_cannot_release_current_confirmation():
+    worker = _run_real_detector_confirmation("inprocess", 0.68, 5)
+    worker._local_mode_generation = 5
+    worker._cmd_queue.put(
+        WorkerCommand(CommandType.SET_LOCAL_CONFIRMATION_MODE, {"enabled": True, "mode_generation": 4})
+    )
+    worker._drain_commands()
+    assert worker._sync.has_confirmed_move

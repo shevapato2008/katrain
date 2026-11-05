@@ -630,3 +630,182 @@ class TestLiveTurnAccessor:
         katrain.game = SimpleNamespace(current_node=None)
 
         assert katrain.next_player_to_move() is None
+
+
+def test_bound_move_finally_releases_on_early_return_and_preserves_new_binding_after_await():
+    from unittest.mock import MagicMock
+    from katrain.vision.service import VisionService
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+
+    async def run():
+        a, b = FakeSession(), FakeSession()
+        manager = FakeSessionManager({"a": a, "b": b})
+        vision = VisionService(VisionServiceConfig())
+        vision._worker = MagicMock()
+        vision.get_board_observation = lambda: (None, 0)
+        vision.bind_session("a", session=a)
+        source = vision.capture_binding_source("a", a)
+        vision.publish_expected_from_stones(source, [], expected_node_id=5150)
+        entered, complete = asyncio.Event(), asyncio.Event()
+
+        class Gateway(FakeGateway):
+            async def play_move(self, *args, **kwargs):
+                entered.set()
+                await complete.wait()
+                raise PlatformMoveRejectedError("late A", reason="engine_error")
+
+        tracker = EngineRecoveryTracker()
+        app = _app(manager, Gateway(), tracker)
+        move = ConfirmedMove(3, 3, 1, 9, vision.binding_epoch, vision.expected_revision)
+        task = asyncio.create_task(_handle_confirmed_move(app, vision, "a", move, log))
+        await entered.wait()
+        vision.bind_session("b", session=b)
+        source_b = vision.capture_binding_source("b", b)
+        vision.publish_expected_from_stones(source_b, [], expected_node_id=5150)
+        before = vision._worker.send_command.call_count
+        revision = vision.expected_revision
+        complete.set()
+        await task
+        assert tracker.active_episode is None
+        assert vision.expected_revision == revision
+        assert vision._worker.send_command.call_count == before
+        # An early local-window guard still releases this call's exact token.
+        b.katrain.game_type = "pvp_local"
+        own = ConfirmedMove(4, 4, 1, 10, vision.binding_epoch, revision)
+        await _handle_confirmed_move(app, vision, "b", own, log)
+        cmd = vision._worker.send_command.call_args.args[0]
+        assert cmd.action == CommandType.RELEASE_CONFIRMED_MOVE
+        assert cmd.data == {"token": own.token}
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "exit_path", ["missing", "local_window", "wrong_turn", "vanished", "ranked_guard", "exception", "cancel"]
+)
+def test_every_handler_exit_releases_its_exact_token(exit_path):
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+    from katrain.vision.service import VisionService
+
+    async def run():
+        session = FakeSession()
+        manager = FakeSessionManager({"s1": session})
+        vision = VisionService(VisionServiceConfig())
+        vision._worker = MagicMock()
+        vision.bind_session("s1", session=session)
+        source = vision.capture_binding_source("s1", session)
+        vision.publish_expected_from_stones(source, [], expected_node_id=5150)
+        vision.get_board_observation = lambda: (None, 0)
+        move = ConfirmedMove(3, 3, 1, 8, vision.binding_epoch, vision.expected_revision)
+        entered, waiting = asyncio.Event(), asyncio.Event()
+
+        class Gateway(FakeGateway):
+            async def play_move(self, *args, **kwargs):
+                entered.set()
+                await waiting.wait()
+
+        app = _app(manager, gateway=Gateway() if exit_path == "cancel" else None)
+        if exit_path == "missing":
+            manager.sessions.clear()
+        elif exit_path == "local_window":
+            session.katrain.game_type = "pvp_local"
+        elif exit_path == "ranked_guard":
+            session.game_type = "ai_ladder_ranked"  # actual guard rejects absent trusted binding
+            session.session_id = "s1"
+        elif exit_path == "wrong_turn":
+            session.last_state["player_to_move"] = "W"
+        elif exit_path == "vanished":
+            vision.get_board_observation = lambda: ([[0] * 19 for _ in range(19)], 9)
+        elif exit_path == "exception":
+
+            class Broken(FakeKatrain):
+                def __call__(self, *args, **kwargs):
+                    raise RuntimeError("commit failed")
+
+            session.katrain.__class__ = Broken
+        if exit_path == "cancel":
+            task = asyncio.create_task(_handle_confirmed_move(app, vision, "s1", move, log))
+            await entered.wait()
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        elif exit_path == "exception":
+            with pytest.raises(RuntimeError):
+                await _handle_confirmed_move(app, vision, "s1", move, log)
+        else:
+            await _handle_confirmed_move(app, vision, "s1", move, log)
+        command = vision._worker.send_command.call_args.args[0]
+        assert command.action == CommandType.RELEASE_CONFIRMED_MOVE
+        assert command.data == {"token": move.token}
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("rebind", [False, True])
+def test_central_bridge_uses_merged_mirror_and_cannot_mutate_rebound_physical_state(rebind):
+    from tests.platforms.test_gateway import bound_vision_gateway
+    from katrain.vision.ipc import CommandType
+    from katrain.web.core.pvp_box_bridge import PvpBoxBridge, PvpBoxRemoteError
+
+    async def run():
+        app, a, vision, orch, pm, adapter, ctx = bound_vision_gateway()
+        a.game_type = "pvp_lobby"
+        a.last_state = {**a.last_state, "game_id": "remote-a", "current_node_index": 0}
+        vision.bind_session("s", session=a)
+        orch.on_bind("s", a)
+        entered, returned = asyncio.Event(), asyncio.Event()
+        room = SimpleNamespace(my_color="B")
+        sessions = {"s": a}
+        app.state.session_manager.get_session = lambda sid: sessions[sid]
+
+        async def forward(*args, **kwargs):
+            entered.set()
+            await returned.wait()
+            if rebind:
+                raise PvpBoxRemoteError("late outage for A")
+            return {
+                "state": {
+                    **a.last_state,
+                    "stones": [["B", [3, 15], None, 1]],
+                    "current_node_id": 99,
+                    "current_node_index": 1,
+                }
+            }
+
+        app.state.pvp_box_bridge = SimpleNamespace(
+            forward_move=forward,
+            newer_state=PvpBoxBridge.newer_state,
+            rooms=SimpleNamespace(for_local=lambda *_: room),
+        )
+        app.state.box_sso = SimpleNamespace(active_generation=1)
+        move = ConfirmedMove(3, 3, 1, 9, vision.binding_epoch, vision.expected_revision)
+        task = asyncio.create_task(_handle_confirmed_move(app, vision, "s", move, log))
+        await entered.wait()
+        if rebind:
+            b = FakeSession()
+            b.katrain.update_state_callback = None
+            sessions["b"] = b
+            vision.bind_session("b", session=b)
+            orch.on_bind("b", b)
+            before = vision._worker.send_command.call_count
+            revision = vision.expected_revision
+        returned.set()
+        await task
+        if rebind:
+            assert vision.expected_revision == revision
+            assert vision._worker.send_command.call_count == before
+            assert not orch._pause_reasons
+            assert orch._session is b
+        else:
+            assert a.katrain.game.current_node.depth == 0  # the local game is only a placeholder
+            assert a.last_state["current_node_id"] == 99
+            commands = [call.args[0] for call in vision._worker.send_command.call_args_list]
+            assert commands[-2].action == CommandType.SET_EXPECTED_BOARD
+            assert commands[-2].data["board"][3][3] == 1
+            assert commands[-1].action == CommandType.RELEASE_CONFIRMED_MOVE
+        await orch.shutdown()
+
+    asyncio.run(run())

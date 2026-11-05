@@ -34,6 +34,7 @@ def test_remote_pvp_outage_pauses_detection_until_authoritative_state_returns():
     orch.on_game_state({**state([]), "game_type": "pvp_lobby", "platform_my_color": "B"})
     assert vision.paused is False
 
+
 # Task 1 contract fixture: a real engine-game get_state() dump (both players marked
 # "human"; platform_engine_color:"W" is the only signal that W is the remote Golaxy AI).
 ENGINE_GAME_STATE_FIXTURE_PATH = os.path.join(
@@ -844,7 +845,7 @@ class TestRecoveryReleasedOnGameEnd:
         # 而 game_over 是有意留下的 —— 它就是「终局后停止比对」那道闸
         # (PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER)。
         assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER}
-        assert vision.paused is True   # 比对已停,这正是目的
+        assert vision.paused is True  # 比对已停,这正是目的
         assert led.calls[-1] == ("clear",)
 
     def test_awaiting_removal_is_released_when_the_game_ends(self):
@@ -914,3 +915,77 @@ class TestGameOverStopsComparing:
         orch.on_game_state(state([["B", [3, 15], None, 1]], end_result=None))
         assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
         assert vision.paused is False
+
+
+def test_old_callback_cannot_publish_into_rebound_session_and_delayed_state_is_reread():
+    import threading
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+
+    async def run():
+        vision = VisionService(VisionServiceConfig())
+        vision._worker = MagicMock()
+        orch = PhysicalPlayOrchestrator(
+            config=PhysicalPlayConfig(), led=None, vision=vision, session_manager=FakeManager()
+        )
+        a, b = FakeSessionForBind(state([])), FakeSessionForBind(state([], current_node_id=2002))
+        for s in (a, b):
+            s.katrain.ai_ladder_commit_lock = threading.RLock()
+            s.katrain.game = object()
+        vision.bind_session("a", session=a)
+        orch.on_bind("a", a)
+        old = a.katrain.update_state_callback
+        vision.bind_session("b", session=b)
+        orch.on_bind("b", b)
+        b_source = orch.binding_source
+        revision = vision.expected_revision
+        old({**state([]), "end_result": "W+R"})
+        assert vision.expected_revision == revision
+        assert orch.binding_source == b_source
+        assert not orch._pause_reasons
+        b.katrain._state = state([["B", [4, 15], None, 1]], current_node_id=2003)
+        b.katrain.update_state_callback(state([], current_node_id=2002))
+        assert orch._latest_state["current_node_id"] == 2003
+        assert vision.expected_revision == revision + 1
+        repeated = vision.expected_revision
+        b.katrain.update_state_callback(state([], current_node_id=2002))
+        assert vision.expected_revision == repeated
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_ai_thread_queued_callback_retains_original_source_across_rebind():
+    import threading
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+
+    async def run():
+        vision = VisionService(VisionServiceConfig())
+        vision._worker = MagicMock()
+        orch = PhysicalPlayOrchestrator(
+            config=PhysicalPlayConfig(), led=None, vision=vision, session_manager=FakeManager()
+        )
+        a, b = FakeSessionForBind(state([])), FakeSessionForBind(state([], current_node_id=2002))
+        vision.bind_session("a", session=a)
+        orch.on_bind("a", a)
+        callback = a.katrain.update_state_callback
+        thread = threading.Thread(target=lambda: callback({**state([]), "end_result": "W+R"}))
+        thread.start()
+        thread.join()
+        # The queued call_soon_threadsafe has not run yet; binding B happens first.
+        vision.bind_session("b", session=b)
+        orch.on_bind("b", b)
+        revision = vision.expected_revision
+        applied = asyncio.Event()
+        asyncio.get_running_loop().call_soon(applied.set)
+        await applied.wait()
+        assert vision.expected_revision == revision
+        assert orch._latest_state["current_node_id"] == 2002
+        assert not orch._pause_reasons
+        await orch.shutdown()
+
+    asyncio.run(run())

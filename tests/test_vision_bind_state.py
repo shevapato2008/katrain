@@ -154,7 +154,7 @@ class TestUnbindClearsEngineRecovery:
 
 
 class FakeLed:
-    def is_connected(self):
+    def is_board_connected(self):
         return True
 
 
@@ -167,3 +167,209 @@ class TestStatusLed:
         r = c.get("/vision/status")
         assert r.status_code == 200
         assert r.json()["led_connected"] is True
+
+
+def test_remote_bind_fetch_cannot_replace_a_newer_binding_or_auth_generation():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from fastapi import HTTPException
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+    from katrain.web.core.pvp_box_bridge import PvpBoxBridge
+
+    async def run(change_auth):
+        svc = VisionService(VisionServiceConfig())
+        svc._worker = MagicMock()
+        a, b = FakeSession(), FakeSession()
+        a.game_type = "pvp_lobby"
+        a.last_state = {"game_id": "a", "board_size": [19, 19], "stones": [], "current_node_id": 1}
+        sessions = {"a": a, "b": b}
+        entered, returned = asyncio.Event(), asyncio.Event()
+        room = SimpleNamespace(local_user_id=1)
+
+        async def fetch(*_):
+            entered.set()
+            await returned.wait()
+            return {"state": {**a.last_state, "current_node_id": 2}}
+
+        bridge = SimpleNamespace(
+            rooms=SimpleNamespace(for_local=lambda *_: room),
+            fetch_state=fetch,
+            newer_state=PvpBoxBridge.newer_state,
+        )
+        app = SimpleNamespace(
+            state=SimpleNamespace(
+                vision=svc,
+                session_manager=SimpleNamespace(get_session=lambda sid: sessions[sid]),
+                pvp_box_bridge=bridge,
+                box_sso=SimpleNamespace(active_generation=1),
+            )
+        )
+        request = SimpleNamespace(app=app)
+        task = asyncio.create_task(
+            vision.bind_session(request, vision.BindRequest(session_id="a"), SimpleNamespace(id=1))
+        )
+        await entered.wait()
+        if change_auth:
+            app.state.box_sso.active_generation = 2
+        else:
+            await vision.bind_session(request, vision.BindRequest(session_id="b"), None)
+        epoch, revision = svc.binding_epoch, svc.expected_revision
+        returned.set()
+        with pytest.raises(HTTPException) as error:
+            await task
+        assert error.value.status_code == 409
+        assert svc.binding_epoch == epoch and svc.expected_revision == revision
+        assert svc.bound_session_id == (None if change_auth else "b")
+        assert a.last_state["current_node_id"] == 1
+
+    asyncio.run(run(False))
+    asyncio.run(run(True))
+
+
+def test_manual_expected_target_is_rejected_for_bound_authority():
+    from types import SimpleNamespace
+    from fastapi import HTTPException
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+
+    svc = VisionService(VisionServiceConfig())
+    svc.bind_session("bound", session=FakeSession())
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(vision=svc)))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(
+            vision.set_expected_board(request, vision.ExpectedBoardRequest(board=[[0] * 19 for _ in range(19)]))
+        )
+    assert error.value.status_code == 409
+
+
+def test_central_receive_source_is_fixed_before_await_and_renewed_only_for_next_receive():
+    import json
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+    from katrain.web.core.physical_play import PhysicalPlayConfig
+    from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
+    from katrain.web.core.pvp_box_bridge import PvpBoxBridge
+    from katrain.web.server import _apply_pvp_box_state, _receive_box_pvp_message
+
+    async def run():
+        svc = VisionService(VisionServiceConfig())
+        svc._worker = MagicMock()
+        session = FakeSession()
+        session.katrain.update_state_callback = None
+        session.game_type = "pvp_lobby"
+        session.last_state = {**session.katrain.get_state(), "game_id": "room-game", "current_node_index": 0}
+        manager = SimpleNamespace(get_session=lambda _: session)
+        orch = PhysicalPlayOrchestrator(config=PhysicalPlayConfig(), led=None, vision=svc, session_manager=manager)
+        entered, returned = asyncio.Event(), asyncio.Event()
+        incoming = {
+            **session.last_state,
+            "current_node_id": 2,
+            "current_node_index": 1,
+            "stones": [["B", [4, 15], None, 1]],
+        }
+
+        async def recv():
+            entered.set()
+            await returned.wait()
+            return json.dumps(incoming)
+
+        room = object()
+        app = SimpleNamespace(
+            state=SimpleNamespace(
+                session_manager=manager,
+                vision=svc,
+                physical_play=orch,
+                box_sso=SimpleNamespace(active_generation=1),
+                pvp_box_bridge=SimpleNamespace(
+                    newer_state=PvpBoxBridge.newer_state, rooms=SimpleNamespace(for_local=lambda *_: room)
+                ),
+            )
+        )
+
+        def capture():
+            return (svc.capture_binding_source("s", session), session, ("room", "room-game", None), 1, room)
+
+        def transform(payload, source):
+            return _apply_pvp_box_state(app, "s", payload, source=source, catch_up_current_binding=True)
+
+        kwargs = dict(capture_source=capture, check_user=lambda: None, transform=transform)
+        task = asyncio.create_task(_receive_box_pvp_message(SimpleNamespace(recv=recv), **kwargs))
+        await entered.wait()
+        svc.bind_session("s", session=session)
+        orch.on_bind("s", session)
+        revision = svc.expected_revision
+        returned.set()
+        await task
+        # A single valid update must catch up the currently bound SAME room without waiting
+        # for a second message (the opponent may now wait indefinitely for our move).
+        assert svc.expected_revision == revision + 1
+        await _receive_box_pvp_message(SimpleNamespace(recv=recv), **kwargs)
+        assert svc.expected_revision == revision + 1
+        stale = {**incoming, "current_node_id": 1, "current_node_index": 0, "stones": []}
+        _apply_pvp_box_state(app, "s", stale, source=capture(), catch_up_current_binding=True)
+        assert svc.expected_revision == revision + 1
+        assert session.last_state["current_node_id"] == 2
+        assert svc._worker.send_command.call_args.args[0].data["board"][3][4] == 1
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_old_room_stream_updates_only_its_own_mirror_after_another_room_binds():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService, binding_game_identity
+    from katrain.web.core.physical_play import PhysicalPlayConfig
+    from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
+    from katrain.web.core.pvp_box_bridge import PvpBoxBridge
+    from katrain.web.server import _apply_pvp_box_state
+
+    async def run():
+        svc = VisionService(VisionServiceConfig())
+        svc._worker = MagicMock()
+        a, b = FakeSession(), FakeSession()
+        sessions = {"a": a, "b": b}
+        for sid, session in sessions.items():
+            session.session_id = sid
+            session.game_type = "pvp_lobby"
+            session.katrain.update_state_callback = None
+            session.last_state = {**session.katrain.get_state(), "game_id": sid, "current_node_index": 0}
+        manager = SimpleNamespace(get_session=lambda sid: sessions[sid])
+        rooms = {"a": object(), "b": object()}
+        orch = PhysicalPlayOrchestrator(config=PhysicalPlayConfig(), led=None, vision=svc, session_manager=manager)
+        app = SimpleNamespace(
+            state=SimpleNamespace(
+                session_manager=manager,
+                vision=svc,
+                physical_play=orch,
+                box_sso=SimpleNamespace(active_generation=1),
+                pvp_box_bridge=SimpleNamespace(
+                    newer_state=PvpBoxBridge.newer_state, rooms=SimpleNamespace(for_local=lambda _, sid: rooms[sid])
+                ),
+            )
+        )
+        svc.bind_session("a", session=a)
+        orch.on_bind("a", a)
+        source_a = (svc.capture_binding_source("a", a), a, binding_game_identity(a), 1, rooms["a"])
+        svc.bind_session("b", session=b)
+        orch.on_bind("b", b)
+        revision, calls = svc.expected_revision, svc._worker.send_command.call_count
+        _apply_pvp_box_state(
+            app,
+            "a",
+            {**a.last_state, "current_node_id": 2, "current_node_index": 1, "stones": [], "end_result": "W+R"},
+            source=source_a,
+            catch_up_current_binding=True,
+        )
+        assert a.last_state["current_node_id"] == 2
+        assert svc.expected_revision == revision
+        assert svc._worker.send_command.call_count == calls
+        assert orch._session is b and not orch._pause_reasons
+        assert orch._latest_state["game_id"] == "b"
+        await orch.shutdown()
+
+    asyncio.run(run())

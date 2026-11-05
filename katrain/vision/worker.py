@@ -518,7 +518,8 @@ class _VisionWorkerLoop:
                                         binding_epoch=getattr(self, "_binding_epoch", 0),
                                         expected_revision=getattr(self, "_expected_revision", 0),
                                     )
-                                    self._sync.claim_confirmed_move(confirmed, self._last_stable_board)
+                                    if not self._monitor:
+                                        self._sync.claim_confirmed_move(confirmed, self._last_stable_board)
                                     self._event_queue.put(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
@@ -586,7 +587,13 @@ class _VisionWorkerLoop:
                     # arm doesn't diff against a stale baseline.
                     self._move_detector.force_sync(observed_board)
                 for evt in events:
-                    self._event_queue.put({"type": evt.type.value, "data": evt.data})
+                    self._event_queue.put(
+                        {
+                            "type": evt.type.value,
+                            "data": evt.data,
+                            "binding_epoch": getattr(self, "_binding_epoch", 0),
+                        }
+                    )
 
             self._maybe_publish_status()
             # No throttle — processing runs as fast as inference allows
@@ -694,6 +701,8 @@ class _VisionWorkerLoop:
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
+                self._binding_epoch = 0
+                self._expected_revision = 0
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
                 self._reset_motion_region()
@@ -705,6 +714,7 @@ class _VisionWorkerLoop:
                 self._promoter.reset()
                 self._move_detector.reset_suspicion()  # a new session starts every cell at zero
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
+                self._sync.invalidate_confirmed_move()
                 self._board_locked = True
                 self._reset_motion_region()
                 logger.info("Board pose locked — reusing transform for subsequent frames")
@@ -773,8 +783,10 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_MONITOR:
-                self._sync.invalidate_confirmed_move()
-                self._monitor = cmd.data.get("active", False)
+                active = cmd.data.get("active", False)
+                if active != self._monitor:
+                    self._sync.invalidate_confirmed_move()
+                self._monitor = active
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False

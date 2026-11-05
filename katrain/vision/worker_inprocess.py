@@ -431,6 +431,7 @@ class InProcessAdapter:
         if self._local_confirmation_mode:
             self._local_window = None
             self._local_bootstrap_state = "unavailable"
+        self._sync.invalidate_confirmed_move()
         self._geometry = geometry
         self._motion_mask_cache.invalidate()
         self._motion_filter.reset()
@@ -1526,7 +1527,8 @@ class InProcessAdapter:
                                         if local_window.candidate is None:
                                             local_window.candidate = confirmed
                                     else:
-                                        self._sync.claim_confirmed_move(confirmed, observed_board)
+                                        if not self._monitor:
+                                            self._sync.claim_confirmed_move(confirmed, observed_board)
                                         self._event_queue.put(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
@@ -1606,7 +1608,13 @@ class InProcessAdapter:
                     # arm doesn't diff against a stale baseline.
                     self._move_detector.force_sync(observed_board)
                 for evt in events:
-                    self._event_queue.put({"type": evt.type.value, "data": evt.data})
+                    self._event_queue.put(
+                        {
+                            "type": evt.type.value,
+                            "data": evt.data,
+                            "binding_epoch": getattr(self, "_binding_epoch", 0),
+                        }
+                    )
 
             self._publish_status(observed_board)
             if frame is not None:
@@ -1703,6 +1711,8 @@ class InProcessAdapter:
                 self._invalidate_reference("bind")
                 self._drop_denials("bind")
             elif cmd.action == CommandType.UNBIND:
+                self._binding_epoch = 0
+                self._expected_revision = 0
                 self._local_confirmation_mode = False
                 self._local_confirmation_session_id = None
                 self._local_confirmation_game_id = None
@@ -1721,9 +1731,9 @@ class InProcessAdapter:
                 self._invalidate_reference("unbind")
                 self._drop_denials("unbind")
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
+                self._sync.invalidate_confirmed_move()
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_LOCAL_CONFIRMATION_MODE:
-                self._sync.invalidate_confirmed_move()
                 enabled = bool(cmd.data.get("enabled", False))
                 session_id = cmd.data.get("session_id")
                 game_id = cmd.data.get("game_id")
@@ -1744,6 +1754,7 @@ class InProcessAdapter:
                 ):
                     self._invalidate_reference("local game changed")
                     self._drop_denials("local game changed")
+                self._sync.invalidate_confirmed_move()
                 self._local_confirmation_mode = enabled
                 self._local_confirmation_session_id = session_id
                 self._local_confirmation_game_id = game_id
@@ -1904,8 +1915,10 @@ class InProcessAdapter:
                 self.set_geometry(cmd.data.get("geometry"))
                 self._averager.reset()  # warp content changes with the new lock
             elif cmd.action == CommandType.SET_MONITOR:
-                self._sync.invalidate_confirmed_move()
-                self._monitor = cmd.data.get("active", False)
+                active = cmd.data.get("active", False)
+                if active != self._monitor:
+                    self._sync.invalidate_confirmed_move()
+                self._monitor = active
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False

@@ -90,3 +90,27 @@ async def test_last_confirmed_move_and_broadcast_on_success():
     session_id, msg = sm.broadcasts[0]
     assert session_id == "sA"
     assert msg == {"type": "platform_move_confirmed", "col": 5, "row": 6, "move_number": 7}
+
+
+async def test_late_ogs_echo_reconciles_released_vision_token_through_original_manager():
+    import logging
+    from tests.platforms.test_gateway import bound_vision_gateway
+    from katrain.vision.ipc import ConfirmedMove, CommandType
+    from katrain.web.server import _handle_confirmed_move
+
+    app, session, vision, orch, pm, adapter, ctx = bound_vision_gateway("ogs")
+    move = ConfirmedMove(3, 3, 1, 9, vision.binding_epoch, vision.expected_revision)
+    await _handle_confirmed_move(app, vision, "s", move, logging.getLogger(__name__))
+    assert ctx.is_pending and ctx.needs_resync
+    assert vision._worker.send_command.call_args.args[0].action == CommandType.RELEASE_CONFIRMED_MOVE
+    revision = vision.expected_revision
+    await pm._on_opponent_move(PlatformMove(3, 15, "B", 1, "g"))
+    assert not ctx.is_pending and not ctx.needs_resync
+    assert ctx.last_confirmed_move == 1
+    assert session.katrain.game.current_node.depth == 1
+    assert vision.expected_revision == revision + 1
+    command = vision._worker.send_command.call_args.args[0]
+    assert command.action == CommandType.SET_EXPECTED_BOARD
+    assert command.data["board"][3][3] == 1
+    assert command.data["binding_epoch"] == move.binding_epoch
+    await orch.shutdown()

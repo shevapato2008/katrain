@@ -70,3 +70,54 @@ class TestQueueHygieneOnBindUnbind:
         svc._pending_moves.append(ConfirmedMove(col=5, row=5, color=2))
         svc.bind_session("s2")
         assert svc.get_confirmed_move() is None
+
+
+def test_bound_authority_is_versioned_deduplicated_and_source_checked():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    svc = _service([])
+    svc._worker = MagicMock()
+    a = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+    b = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+    svc.bind_session("a", session=a)
+    source_a = svc.capture_binding_source("a", a)
+    assert svc.publish_expected_from_stones(source_a, [], expected_node_id=1)
+    revision_a = svc.expected_revision
+    assert not svc.publish_expected_from_stones(source_a, [], expected_node_id=1)
+    assert svc.expected_revision == revision_a
+    assert svc.publish_expected_from_stones(source_a, [], expected_node_id=2)
+    svc.bind_session("b", session=b)
+    source_b = svc.capture_binding_source("b", b)
+    assert source_b.binding_epoch != source_a.binding_epoch
+    assert not svc.publish_expected_from_stones(source_a, [["B", [3, 15], None, 1]], expected_node_id=3)
+    assert svc.expected_revision == 0
+    assert svc.publish_expected_from_stones(source_b, [], expected_node_id=1)
+    assert svc._worker.send_command.call_args.args[0].data["binding_epoch"] == source_b.binding_epoch
+
+
+def test_old_stamped_ipc_cannot_cross_binding_or_authority_revision():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    svc = VisionService(VisionServiceConfig())
+    worker = FakeWorker([])
+    worker.send_command = MagicMock()
+    svc._worker = worker
+    a = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+    b = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+    svc.bind_session("a", session=a)
+    source = svc.capture_binding_source("a", a)
+    svc.publish_expected_from_stones(source, [], expected_node_id=1)
+    old = ConfirmedMove(3, 3, 1, 8, svc.binding_epoch, svc.expected_revision)
+    worker._events = [old]
+    svc.poll_events()  # split deque populated before the authority changes
+    svc.publish_expected_from_stones(source, [], expected_node_id=2)
+    assert svc.get_confirmed_move() is None
+    svc.bind_session("b", session=b)
+    worker._events = [
+        {"type": "illegal_change", "binding_epoch": old.binding_epoch, "data": {"positions": [[3, 3, 1]]}},
+        old,
+    ]
+    assert svc.poll_events() == []
+    assert svc.get_confirmed_move() is None

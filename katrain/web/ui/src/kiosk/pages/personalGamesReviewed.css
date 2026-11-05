@@ -19,7 +19,9 @@
 .personal-games-tier-menu .kiosk-btn span{font-size:14px;white-space:nowrap;color:var(--dim)}
 
 .personal-games-reviewed .kiosk-side__fixed{height:100%}
-.personal-games-reviewed .kiosk-section--grow{min-height:0}
+.personal-games-reviewed .kiosk-section--grow{min-height:0;--l1-sec-label-h:30px}
+.personal-games-reviewed .kiosk-section--grow>.kiosk-seclabel{align-items:center}
+.personal-games-reviewed .kiosk-section--grow>.kiosk-seclabel h2{font-size:22px;letter-spacing:0}
 .personal-games-reviewed .kiosk-section--grow::after{display:none}
 .personal-games-reviewed .kiosk-rows{display:grid;gap:8px}
 .personal-game-row{display:grid;grid-template-columns:minmax(0,1fr) 48px;align-items:stretch;gap:8px;height:74px;min-height:74px}
@@ -37,7 +39,7 @@
 .personal-game-delete:active{transform:translateY(2px);box-shadow:inset 0 2px 4px #130c0b}
 .personal-game-description{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
-.personal-games-pagination{flex:none;display:flex;justify-content:flex-end;align-items:center;height:52px}
+.personal-games-pagination{flex:none;display:flex;justify-content:flex-end;align-items:center;height:46px}
 .personal-games-pagination .compact-pagination{margin-top:0;font-size:18px;gap:6px}
 .personal-games-pagination .compact-pagination button{background:linear-gradient(#344b3d,#1d3025);border-color:#4e7157;border-radius:10px;box-shadow:inset 0 1px #718a75,0 3px 0 #0b1b11}
 .personal-games-pagination .compact-pagination button:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 5px #0b1b11}

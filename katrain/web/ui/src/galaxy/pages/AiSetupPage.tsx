@@ -6,6 +6,7 @@ import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
 import { useDebounce } from '../../hooks/useDebounce';
 import {
     AiLadderApiError,
@@ -115,8 +116,9 @@ const AiSetupContent = () => {
     const isLadder = opponent === 'ai:ladder';
 
     // Time Settings
+    const { unlock: unlockSound } = useSound();
     const [timerEnabled, setTimerEnabled] = useState(isRated); 
-    const [mainTime, setMainTime] = useState(10); 
+    const [mainTime, setMainTime] = useState(isRated ? 30 : 10);
     const [byoLength, setByoLength] = useState(30); 
     const [byoPeriods, setByoPeriods] = useState(3); 
 
@@ -211,6 +213,7 @@ const AiSetupContent = () => {
     };
 
     const handleStartGame = async () => {
+        void unlockSound();
         if (isRated) setStartPending(true);
         else setLoading(true);
         try {

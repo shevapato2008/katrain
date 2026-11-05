@@ -1,12 +1,13 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
+import { writeAudioPref } from '../../../utils/audioPrefs';
 import type { GameState } from '../../../api';
 
-const soundMocks = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn() }));
+const soundMocks = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn(), unlock: vi.fn().mockResolvedValue(true) }));
 
 vi.mock('../../../hooks/useSound', () => ({
-  useSound: () => ({ play: soundMocks.play, stop: soundMocks.stop }),
+  useSound: () => ({ play: soundMocks.play, stop: soundMocks.stop, unlock: soundMocks.unlock }),
 }));
 
 /** 对弈·AI/升降级赛道的右栏行为测试。只证 DOM 结构与文案;几何在 tests/kiosk-screen-05-play-ai.spec.ts。 */
@@ -53,10 +54,12 @@ const clockOf = (color: 'B' | 'W') => {
 describe('A18 · 玩家卡时钟', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    soundMocks.play.mockClear();
+    localStorage.clear();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    soundMocks.play.mockReset().mockResolvedValue(true);
     soundMocks.stop.mockClear();
   });
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
   /**
    * ⚠️ 这条用例的**上一版断言的是缺陷本身**:它要求窗口内每秒响一次、一个窗口 5 次调用。
@@ -76,7 +79,7 @@ describe('A18 · 玩家卡时钟', () => {
     }));
 
     // 进入窗口(byoLeft = 30 - 25 = 5)即放一次整轨。
-    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep', { offsetSeconds: 0 }]]);
 
     // 窗口内走完 5→1 秒,**不得再放**。
     for (let i = 0; i < 5; i += 1) {
@@ -90,7 +93,7 @@ describe('A18 · 玩家卡时钟', () => {
     // 下一期重新走到剩 5 秒时再放一次(共 2 次)。
     act(() => { vi.advanceTimersByTime(25_000); });
     expect(soundMocks.play).toHaveBeenCalledTimes(2);
-    expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep');
+    expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep', { offsetSeconds: 0 });
   });
 
   test.each([
@@ -123,7 +126,7 @@ describe('A18 · 玩家卡时钟', () => {
         settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true },
       },
     }));
-    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep', { offsetSeconds: 0 }]]);
   });
 
   test('本地双人 PlayerRow 路径也播放最后五秒读秒音', () => {
@@ -136,7 +139,130 @@ describe('A18 · 玩家卡时钟', () => {
       },
     }));
 
-    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep', { offsetSeconds: 0 }]]);
+  });
+
+  const audible = (over: Partial<GameState> = {}) => base({
+    game_type: 'ai_ladder_ranked',
+    timer: { ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }),
+      current_node_time_used: 25,
+      settings: { ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }).settings, sound: true } },
+    ...over,
+  });
+  const props = { onAction: () => {}, onNavigate: () => {}, analysisToggles: {}, onToggleAnalysis: () => {} };
+  const flush = async () => { await act(async () => { await Promise.resolve(); }); };
+  const gestureListeners = () => {
+    const spy = vi.spyOn(document, 'addEventListener');
+    return () => act(() => {
+      for (const [type, listener] of spy.mock.calls) {
+        if (type === 'pointerdown') (listener as EventListener)({ isTrusted: true } as Event);
+      }
+    });
+  };
+
+  test('same snapshot rerenders once, and entering at three seconds starts at offset two', async () => {
+    const gs = audible();
+    gs.timer!.current_node_time_used = 27;
+    const view = render(<GameControlPanel gameState={gs} {...props} />);
+    await flush();
+    view.rerender(<GameControlPanel gameState={{ ...gs }} {...props} />);
+    await flush();
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep', { offsetSeconds: 2 }]]);
+  });
+
+  test.each(['pause', 'end', 'nonleaf', 'timer mute', 'global mute', 'hidden', 'unmount'] as const)('%s stops an active window immediately', async (boundary) => {
+    const gs = audible();
+    const view = render(<GameControlPanel gameState={gs} {...props} />);
+    await flush();
+    soundMocks.stop.mockClear();
+    if (boundary === 'unmount') view.unmount();
+    else if (boundary === 'global mute') act(() => writeAudioPref('sfx', false));
+    else if (boundary === 'hidden') {
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      fireEvent(document, new Event('visibilitychange'));
+    } else {
+      const next = { ...gs, timer: { ...gs.timer!, settings: { ...gs.timer!.settings } } };
+      if (boundary === 'pause') next.timer.paused = true;
+      if (boundary === 'end') next.terminal_result = 'W+R';
+      if (boundary === 'nonleaf') next.children = [['W', [3, 3]]];
+      if (boundary === 'timer mute') next.timer.settings.sound = false;
+      view.rerender(<GameControlPanel gameState={next} {...props} />);
+    }
+    expect(soundMocks.stop).toHaveBeenCalledWith('countdownbeep');
+  });
+
+  test('rejected playback retries on a trusted gesture in the same window, never on rerender', async () => {
+    const gesture = gestureListeners();
+    soundMocks.play.mockResolvedValueOnce(false);
+    const gs = audible();
+    const view = render(<GameControlPanel gameState={gs} {...props} />);
+    await flush();
+    view.rerender(<GameControlPanel gameState={{ ...gs }} {...props} />);
+    expect(soundMocks.play).toHaveBeenCalledTimes(1);
+    fireEvent.pointerDown(document); // Synthetic events cannot grant playback activation.
+    expect(soundMocks.play).toHaveBeenCalledTimes(1);
+    gesture();
+    await flush();
+    expect(soundMocks.play).toHaveBeenCalledTimes(2);
+    gesture();
+    expect(soundMocks.play).toHaveBeenCalledTimes(2);
+  });
+
+  test('late success after pause is discarded; resuming uses the current window offset', async () => {
+    let resolve!: (ok: boolean) => void;
+    soundMocks.play.mockReturnValueOnce(new Promise<boolean>(yes => { resolve = yes; }));
+    const gs = audible();
+    const view = render(<GameControlPanel gameState={gs} {...props} />);
+    view.rerender(<GameControlPanel gameState={{ ...gs, timer: { ...gs.timer!, paused: true } }} {...props} />);
+    await act(async () => resolve(true));
+    view.rerender(<GameControlPanel gameState={{ ...gs, timer: { ...gs.timer!, current_node_time_used: 27 } }} {...props} />);
+    expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep', { offsetSeconds: 2 });
+  });
+
+  test('hidden or muted recovery rechecks current seconds and does not replay a missed window', async () => {
+    const gs = audible();
+    const view = render(<GameControlPanel gameState={gs} {...props} />);
+    await flush();
+    act(() => writeAudioPref('sfx', false));
+    view.rerender(<GameControlPanel gameState={{ ...gs, timer: { ...gs.timer!, current_node_time_used: 27 } }} {...props} />);
+    act(() => writeAudioPref('sfx', true));
+    expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep', { offsetSeconds: 2 });
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    fireEvent(document, new Event('visibilitychange'));
+    view.rerender(<GameControlPanel gameState={{ ...gs, timer: { ...gs.timer!, current_node_time_used: 31 } }} {...props} />);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    fireEvent(document, new Event('visibilitychange'));
+    expect(soundMocks.play).toHaveBeenCalledTimes(2);
+  });
+
+  test.each(['ai_ladder_ranked', 'pvp_local'])('visibility return refreshes the existing %s clock before retrying audio', async (game_type) => {
+    const gs = audible({ game_type });
+    panel(gs);
+    await flush();
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    fireEvent(document, new Event('visibilitychange'));
+    // Model a suspended/throttled tab: wall time moves, interval callbacks do not.
+    vi.setSystemTime(Date.now() + 6_000);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    fireEvent(document, new Event('visibilitychange'));
+    await flush();
+    expect(soundMocks.play).toHaveBeenCalledTimes(1);
+  });
+
+  test('changing node, game, color or period opens a new window', async () => {
+    const gs = audible();
+    const view = render(<GameControlPanel gameState={gs} {...props} />);
+    await flush();
+    for (const next of [
+      { ...gs, current_node_id: 8 },
+      { ...gs, game_id: 'new-game' },
+      { ...gs, player_to_move: 'W' },
+      { ...gs, players_info: { ...gs.players_info, B: { ...gs.players_info.B, periods_used: 1 } } },
+    ]) {
+      view.rerender(<GameControlPanel gameState={next} {...props} />);
+      await flush();
+    }
+    expect(soundMocks.play).toHaveBeenCalledTimes(5);
   });
 
   test('主时间阶段:两张卡都写剩余,只有轮到的一方在走', () => {

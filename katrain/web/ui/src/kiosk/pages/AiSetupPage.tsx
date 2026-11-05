@@ -20,6 +20,7 @@ import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
 import { useAuth } from '../../context/AuthContext';
 import { writeActiveSession } from '../utils/activeSession';
 import KioskAiLadderOpponent from '../components/aiLadder/KioskAiLadderOpponent';
@@ -89,8 +90,9 @@ const AiSetupContent = () => {
   const [freeKomi, setFreeKomi] = useState(FREE_KOMI_MAX);
 
   // Time control
+  const { unlock: unlockSound } = useSound();
   const [timeEnabled, setTimeEnabled] = useState(isRanked);
-  const [mainTime, setMainTime] = useState(0);
+  const [mainTime, setMainTime] = useState(isRanked ? 30 : 0);
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
 
@@ -164,6 +166,7 @@ const AiSetupContent = () => {
   );
 
   const handleStart = async () => {
+    void unlockSound();
     setError('');
     setAuthPrompt('');
     setLoading(true);

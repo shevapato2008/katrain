@@ -19,6 +19,9 @@ import { AiLadderApiError } from '../../features/aiLadder/api';
 // out-of-scope behavior — so tests locate a Select by its <label> text instead of relying
 // on the accessible-name computation.
 
+const { unlockSound } = vi.hoisted(() => ({ unlockSound: vi.fn().mockResolvedValue(true) }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ unlock: unlockSound }) }));
+
 const mockNavigate = vi.fn();
 const mockRequestNavigation = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -300,6 +303,20 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(mockRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('mode navigation keeps rated and free clock defaults', async () => {
+    const at = (mode: string) => <MemoryRouter><Routes location={`/galaxy/play/ai/setup?mode=${mode}`}>
+      <Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} />
+    </Routes></MemoryRouter>;
+    const view = render(at('free'));
+    view.rerender(at('rated'));
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '开始正式对局' }));
+    await waitFor(() => expect(mockStartRanked).toHaveBeenCalledWith(expect.objectContaining({ time_enabled: true, main_time: 30, byo_length: 30, byo_periods: 3 }), 'test-token'));
+    view.rerender(at('free'));
+    await user.click(await screen.findByRole('switch', { name: 'Enable Timer' }));
+    expect(screen.getByTestId('free-game-summary')).toHaveTextContent('10 Minutes · 3×30 Seconds');
+  });
+
   it('starts rated play only through the authoritative endpoint', async () => {
     renderPage('rated');
     const user = userEvent.setup();
@@ -308,8 +325,9 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     // Board size, ruleset, komi and handicap are server-owned (the calibration
     // conditions) and the request model forbids extras — the page sends seat + clock.
     await waitFor(() => expect(mockStartRanked).toHaveBeenCalledWith(expect.objectContaining({
-      color: 'black',
+      color: 'black', time_enabled: true, main_time: 30, byo_length: 30, byo_periods: 3,
     }), 'test-token'));
+    expect(unlockSound.mock.invocationCallOrder.at(-1)).toBeLessThan(mockStartRanked.mock.invocationCallOrder.at(-1)!);
     const sent = mockStartRanked.mock.calls[0][0];
     expect(sent).not.toHaveProperty('board_size');
     expect(sent).not.toHaveProperty('rules');

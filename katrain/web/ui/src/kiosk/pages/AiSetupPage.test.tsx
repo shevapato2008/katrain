@@ -8,6 +8,9 @@ import AiSetupPage from './AiSetupPage';
 import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
 import { openPick, pick } from '../__tests__/helpers/setupPick';
 
+const { unlockSound } = vi.hoisted(() => ({ unlockSound: vi.fn().mockResolvedValue(true) }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ unlock: unlockSound }) }));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -141,6 +144,7 @@ describe('AiSetupPage', () => {
         // 摄像头未标定(vision.enabled=false)⇒ 开局写下「这一局不下实体盘」
         onBoard: false,
       });
+      expect(gameSetup).toHaveBeenCalledWith('s1', 'free', expect.objectContaining({ time_enabled: false, main_time: 0, byo_length: 30, byo_periods: 3 }));
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/s1', { state: { backTo: '/kiosk/play/ai/setup/free' } });
     });
   });
@@ -154,7 +158,8 @@ describe('AiSetupPage', () => {
       expect(writeActiveSession).toHaveBeenCalledWith(
         expect.objectContaining({ kind: 'game', label: '升降级对弈', route: '/kiosk/play/ai/game/ranked-s1' })
       );
-      expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ color: 'black' }), 'test-token');
+      expect(unlockSound.mock.invocationCallOrder.at(-1)).toBeLessThan(startRanked.mock.invocationCallOrder.at(-1)!);
+      expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ color: 'black', time_enabled: true, main_time: 30, byo_length: 30, byo_periods: 3 }), 'test-token');
       expect(startRanked.mock.calls[0][0]).not.toHaveProperty('board_size');
       expect(createSession).not.toHaveBeenCalled();
       expect(gameSetup).not.toHaveBeenCalled();
@@ -162,6 +167,27 @@ describe('AiSetupPage', () => {
         game_id: 'g1',
       }));
     });
+  });
+
+  it('mode navigation keeps ranked and free clock defaults', async () => {
+    const at = (mode: string) => <ThemeProvider theme={kioskTheme}><MemoryRouter>
+      <Routes location={`/kiosk/play/ai/setup/${mode}`}><Route path="/kiosk/play/ai/setup/:mode" element={<AiSetupPage />} /></Routes>
+    </MemoryRouter></ThemeProvider>;
+    const view = render(at('free'));
+    view.rerender(at('ranked'));
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('ranked-start-action'));
+    await waitFor(() => expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ time_enabled: true, main_time: 30, byo_length: 30, byo_periods: 3 }), 'test-token'));
+    view.rerender(at('free'));
+    expect(screen.getByTestId('setup-clock')).toHaveTextContent('不限时');
+  });
+
+  it('ranked submits an explicitly selected time preset', async () => {
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await pick(user, 'setup-clock', '10');
+    await user.click(screen.getByTestId('ranked-start-action'));
+    await waitFor(() => expect(startRanked).toHaveBeenCalledWith(expect.objectContaining({ time_enabled: true, main_time: 10, byo_length: 30, byo_periods: 3 }), 'test-token'));
   });
 
   it('引擎开局前就被判不可用：说清「没开成、也没扣段位」，不贴英文原文', async () => {

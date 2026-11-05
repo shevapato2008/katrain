@@ -5773,3 +5773,79 @@ async def test_leaving_a_healthy_ranked_game_still_counts_the_loss(api_app, clie
         ledger = db.query(models_db.AiLadderGameLedger).one()
         assert (ledger.counted, ledger.reason) == (True, None)
         assert db.query(models_db.AiLadderProfile).one().placement_completed == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("preferences", "expected"),
+    [
+        ({}, {"time_enabled": False, "main_time": 0, "byo_length": 30, "byo_periods": 3}),
+        (
+            {"time_enabled": True, "main_time": 30, "byo_length": 30, "byo_periods": 3},
+            {"time_enabled": True, "main_time": 30, "byo_length": 30, "byo_periods": 3},
+        ),
+        (
+            {"time_enabled": True, "main_time": 0},
+            {"time_enabled": True, "main_time": 0, "byo_length": 30, "byo_periods": 3},
+        ),
+        (
+            {"time_enabled": True, "main_time": 10, "byo_length": 20, "byo_periods": 5},
+            {"time_enabled": True, "main_time": 10, "byo_length": 20, "byo_periods": 5},
+        ),
+        (
+            {"time_enabled": False, "main_time": 30},
+            {"time_enabled": False, "main_time": 30, "byo_length": 30, "byo_periods": 3},
+        ),
+    ],
+)
+async def test_start_time_control_snapshot_preserves_explicit_and_omitted_contract(
+    api_app, client, preferences, expected
+):
+    # api_app uses its own tmp_path SQLite and fake session. ASGITransport does not
+    # enter the production lifespan, start an engine or scan any game library.
+    async with client as ac:
+        response = await ac.post("/api/v1/ai-ladder/start", headers=api_app.state._test_headers, json=preferences)
+    assert response.status_code == 201
+    lifecycle = api_app.state.ai_ladder_repo.get_game_lifecycle(
+        user_id=api_app.state._test_user_id, game_id=response.json()["game_id"]
+    )
+    assert dict(lifecycle.time_control_snapshot) == expected
+    updates = dict(api_app.state._test_created_sessions[0].katrain.config_updates)
+    assert updates["timer/main_time"] == (expected["main_time"] if expected["time_enabled"] else 0)
+    assert updates["timer/byo_length"] == (expected["byo_length"] if expected["time_enabled"] else 0)
+    assert updates["timer/paused"] is not expected["time_enabled"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("state", ["reserved", "active"])
+async def test_old_time_control_snapshot_survives_recovery_status_and_blocked_start(api_app, client, state):
+    old_clock = {"time_enabled": True, "main_time": 20, "byo_length": 30, "byo_periods": 5}
+    reservation = reservation_payload(**old_clock)
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "fixture-clock-box"}
+    async with client as ac:
+        response = await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation)
+        assert response.status_code == 201
+        if state == "active":
+            api_app.state.ai_ladder_repo.activate_reservation(
+                user_id=api_app.state._test_user_id,
+                game_id=reservation["game_id"],
+                reservation_key=reservation["reservation_key"],
+                origin_device_id="fixture-clock-box",
+                origin_session_id="old-session",
+            )
+        # Reopen the persisted repository and exercise the existing recovery/status
+        # read; new setup defaults must never rewrite a reservation or active clock.
+        api_app.state.ai_ladder_repo = AiLadderRankedRepository(api_app.state._test_session_factory)
+        status = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+        assert status.status_code == 200
+        blocked = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers=headers,
+            json={"time_enabled": True, "main_time": 30, "byo_length": 30, "byo_periods": 3},
+        )
+    assert blocked.status_code == 409
+    lifecycle = api_app.state.ai_ladder_repo.get_game_lifecycle(
+        user_id=api_app.state._test_user_id, game_id=reservation["game_id"]
+    )
+    assert lifecycle.state == state
+    assert dict(lifecycle.time_control_snapshot) == old_clock

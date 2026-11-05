@@ -88,11 +88,11 @@ describe('audioPrefs —— 出厂是开的,读不出来也是开的', () => {
 describe('播放那一侧真的读它 —— 判据不落在键名上', () => {
   it('音效关掉之后 play 一声不响', () => {
     const { result } = renderHook(() => useSound());
-    act(() => result.current.play('stone'));
+    act(() => { void result.current.play('stone'); });
     expect(played).toHaveLength(1);
 
     act(() => writeAudioPref('sfx', false));
-    act(() => result.current.play('stone'));
+    act(() => { void result.current.play('stone'); });
     expect(played).toHaveLength(1);   // 没多出来
   });
 
@@ -102,17 +102,17 @@ describe('播放那一侧真的读它 —— 判据不落在键名上', () => {
     const a = renderHook(() => useSound());
     const b = renderHook(() => useSound());
     act(() => writeAudioPref('sfx', false));
-    act(() => a.result.current.play('stone'));
-    act(() => b.result.current.play('capture'));
+    act(() => { void a.result.current.play('stone'); });
+    act(() => { void b.result.current.play('capture'); });
     expect(played).toEqual([]);
   });
 
   it('开关是**现读**的 —— 设置屏可以在任意一屏开着的时候改', () => {
     const { result } = renderHook(() => useSound());
     act(() => writeAudioPref('sfx', false));
-    act(() => result.current.play('stone'));
+    act(() => { void result.current.play('stone'); });
     act(() => writeAudioPref('sfx', true));
-    act(() => result.current.play('stone'));
+    act(() => { void result.current.play('stone'); });
     expect(played).toHaveLength(1);
   });
 
@@ -124,7 +124,7 @@ describe('播放那一侧真的读它 —— 判据不落在键名上', () => {
     act(() => voice.result.current.speak('place_black'));
     expect(played).toEqual([]);
 
-    act(() => sound.result.current.play('stone'));
+    act(() => { void sound.result.current.play('stone'); });
     expect(played).toHaveLength(1);   // 另一把没被连累
   });
 

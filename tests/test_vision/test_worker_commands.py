@@ -1398,3 +1398,107 @@ def test_subprocess_promoter_runs_unless_a_confirmation_is_one_frame_away(about_
 
 
 test_subprocess_promoter_runs_unless_a_confirmation_is_one_frame_away.__doc__ = _PROMOTER_DOC
+
+
+@pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
+@pytest.mark.parametrize("peak,frames", [(0.68, 5), (0.80, 3)])
+def test_real_detector_confirmation_owns_only_its_uncommitted_point(kind, peak, frames):
+    """The confirmation and sync debounce mature on the SAME fifth frame."""
+    from katrain.vision.move_detector import MoveDetector
+    from katrain.vision.sync import SyncStateMachine
+
+    camera = _OneFrameCamera()
+    worker = _inprocess_worker(camera) if kind == "inprocess" else _subprocess_motion_worker()
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=peak, count=0)
+    board = extractor.detections_to_board.return_value
+    empty = np.zeros((19, 19), dtype=int)
+    worker._move_detector = MoveDetector(consistency_frames=5)
+    worker._move_detector.force_sync(empty)
+    worker._sync = SyncStateMachine()
+    worker._sync.bind()
+    worker._sync.confirm_pose_lock()
+    worker._expected_np = empty.copy()
+    worker._binding_epoch = 31
+    worker._expected_revision = 4
+    worker._running = True
+    worker._cmd_queue = queue.Queue()
+    worker._frame_count = 0
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    # Voting sees a stable board from frame one; the real detector still counts every frame.
+    worker._prev_observed_board = board.copy()
+    worker._last_stable_board = board.copy()
+    worker._maybe_send_preview = MagicMock()
+    worker._promote_stuck_stone = MagicMock()
+    worker._maybe_publish_status = MagicMock()
+    worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+    worker._active_extractor = MagicMock(return_value=extractor)
+    worker._config = {"capture_fps": 100000, "use_clahe": False, "enhance": "none"}
+    worker._enhance_mode = "none"
+    worker._add_threshold = 0.5
+    worker._ae = None
+    worker._camera = camera
+    worker._overlay_lock = MagicMock()
+    worker._overlay = MagicMock()
+    worker._state_extractor = extractor
+    worker._last_detected_board = None
+    worker._consecutive_failures = 0
+    if kind == "subprocess":
+        worker._board_finder.find_focus.return_value = (np.zeros((10, 10, 3), dtype=np.uint8), True)
+    remaining = frames
+
+    def read():
+        nonlocal remaining
+        remaining -= 1
+        if remaining == 0:
+            worker._running = False
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+    camera.read_frame = read
+    (worker._loop if kind == "inprocess" else worker._processing_loop)()
+    events = list(worker._event_queue.queue)
+    assert not [e for e in events if isinstance(e, dict) and e["type"] in {"illegal_change", "synced"}]
+    confirmed = [e for e in events if isinstance(e, ConfirmedMove)]
+    assert len(confirmed) == 1
+    assert confirmed[0].binding_epoch == 31
+    assert confirmed[0].expected_revision == 4
+    assert confirmed[0].observation_seq == SEEDED_OBSERVATION_SEQ + frames
+    assert np.array_equal(worker._sync._expected_board, empty)
+
+
+@pytest.mark.parametrize("kind", ["inprocess", "subprocess"])
+def test_dispatchers_release_exact_token_and_reject_old_authority(kind):
+    from katrain.vision.sync import SyncStateMachine
+
+    worker = _inprocess_worker() if kind == "inprocess" else _subprocess_motion_worker()
+    worker._cmd_queue = queue.Queue()
+    worker._sync = SyncStateMachine()
+    worker._binding_epoch = 4
+    worker._expected_revision = 3
+    board = np.zeros((19, 19), dtype=int)
+    observed = board.copy()
+    observed[3, 3] = 1
+    move = ConfirmedMove(3, 3, 1, 19, 4, 3)
+    assert worker._sync.claim_confirmed_move(move, observed)
+    worker._cmd_queue.put(
+        WorkerCommand(
+            CommandType.SET_EXPECTED_BOARD,
+            {
+                "board": observed.tolist(),
+                "binding_epoch": 3,
+                "expected_revision": 99,
+            },
+        )
+    )
+    worker._cmd_queue.put(WorkerCommand(CommandType.RELEASE_CONFIRMED_MOVE, {"token": (4, 3, 18)}))
+    drain = worker._drain_commands if kind == "inprocess" else worker._process_commands
+    drain()
+    assert worker._sync.has_confirmed_move
+    assert not np.any(worker._sync._expected_board)
+    worker._cmd_queue.put(WorkerCommand(CommandType.RELEASE_CONFIRMED_MOVE, {"token": move.token}))
+    drain()
+    assert not worker._sync.has_confirmed_move

@@ -15,6 +15,7 @@ from typing import Any
 class CommandType(Enum):
     """Commands sent from main process to vision worker."""
 
+    RELEASE_CONFIRMED_MOVE = "release_confirmed_move"
     SET_EXPECTED_BOARD = "set_expected_board"
     CONFIRM_POSE_LOCK = "confirm_pose_lock"
     RESET_SYNC = "reset_sync"
@@ -80,6 +81,12 @@ class ConfirmedMove:
     row: int
     color: int  # BLACK=1, WHITE=2
     observation_seq: int = 0  # the observation this confirmation was made on
+    binding_epoch: int = 0
+    expected_revision: int = 0
+
+    @property
+    def token(self) -> tuple[int, int, int]:
+        return self.binding_epoch, self.expected_revision, self.observation_seq
 
 
 @dataclass

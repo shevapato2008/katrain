@@ -33,7 +33,12 @@ from katrain.vision.gating import (
     should_feed_sync_frame,
 )
 from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
-from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, check_frame_exposure, detect_led_centroid
+from katrain.vision.led_geometry_calibrator import (
+    ROI_CELLS,
+    ROI_RADIUS_MIN_PX,
+    check_frame_exposure,
+    detect_led_centroid,
+)
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
@@ -409,6 +414,8 @@ class InProcessAdapter:
         # ConfirmedMove so a consumer can tell whether a board reading is newer than the
         # confirmation it is being used to judge.
         self._observation_seq = 0
+        self._binding_epoch = 0
+        self._expected_revision = 0
         # Local play keeps the camera/exposure ready, but only these bounded activities
         # are allowed through the inference gate. `_paused` remains the free-play gate.
         self._local_confirmation_mode = False
@@ -1375,7 +1382,8 @@ class InProcessAdapter:
                     # monitor (physical tsumego) → our move_event dict, no ambiguous dialog (the tsumego
                     # frontend consumes move_confirmed).
                     if local_window is not None or (
-                        not self._local_confirmation_mode
+                        self._sync.has_confirmed_move is not True
+                        and not self._local_confirmation_mode
                         and should_detect_moves(
                             self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
                         )
@@ -1507,12 +1515,18 @@ class InProcessAdapter:
                                         self._move_detector.suspicion_of(row, col),
                                     )
                                     confirmed = ConfirmedMove(
-                                        col=col, row=row, color=color, observation_seq=self._observation_seq
+                                        col=col,
+                                        row=row,
+                                        color=color,
+                                        observation_seq=self._observation_seq,
+                                        binding_epoch=getattr(self, "_binding_epoch", 0),
+                                        expected_revision=getattr(self, "_expected_revision", 0),
                                     )
                                     if local_window is not None:
                                         if local_window.candidate is None:
                                             local_window.candidate = confirmed
                                     else:
+                                        self._sync.claim_confirmed_move(confirmed, observed_board)
                                         self._event_queue.put(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
@@ -1677,7 +1691,12 @@ class InProcessAdapter:
 
             if cmd.action == CommandType.SHUTDOWN:
                 self._running = False
+            elif cmd.action == CommandType.RELEASE_CONFIRMED_MOVE:
+                self._sync.release_confirmed_move(tuple(cmd.data["token"]))
             elif cmd.action == CommandType.BIND:
+                self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
+                self._expected_revision = 0
+                self._sync.invalidate_confirmed_move()
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
@@ -1704,6 +1723,7 @@ class InProcessAdapter:
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_LOCAL_CONFIRMATION_MODE:
+                self._sync.invalidate_confirmed_move()
                 enabled = bool(cmd.data.get("enabled", False))
                 session_id = cmd.data.get("session_id")
                 game_id = cmd.data.get("game_id")
@@ -1788,6 +1808,15 @@ class InProcessAdapter:
                     self._maybe_capture_reference(window.raw_voted, window.raw_observed, window.gray)
                 self._local_window = None
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
+                epoch = int(cmd.data.get("binding_epoch", 0))
+                revision = int(cmd.data.get("expected_revision", 0))
+                if epoch and epoch != getattr(self, "_binding_epoch", 0):
+                    continue
+                if revision and revision < getattr(self, "_expected_revision", 0):
+                    continue
+                if revision and revision != getattr(self, "_expected_revision", 0):
+                    self._sync.invalidate_confirmed_move()
+                self._expected_revision = revision
                 board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
                 if self._reference is not None and not np.array_equal(board, self._reference.board):
@@ -1835,6 +1864,7 @@ class InProcessAdapter:
                     # A clean setup frame is the monitor's reference before the next guidance lamp lights.
                     self._expected_np = target
             elif cmd.action == CommandType.RESET_SYNC:
+                self._sync.invalidate_confirmed_move()
                 self._invalidate_reference("resync")
                 expected = cmd.data.get("expected") if cmd.data else None
                 if expected is not None:
@@ -1870,9 +1900,11 @@ class InProcessAdapter:
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
+                self._sync.invalidate_confirmed_move()
                 self.set_geometry(cmd.data.get("geometry"))
                 self._averager.reset()  # warp content changes with the new lock
             elif cmd.action == CommandType.SET_MONITOR:
+                self._sync.invalidate_confirmed_move()
                 self._monitor = cmd.data.get("active", False)
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)

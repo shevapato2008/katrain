@@ -54,9 +54,9 @@
 - Create/maintain: `docs/superpowers/plans/2026-11-08-galaxy-root-routing.md`
 - Create review record: `docs/superpowers/reviews/2026-11-08-galaxy-root-plan-astra-max.md`
 
-- [ ] 将本计划交给 `gpt-6-astra` / `max`、`fork_turns=none` 的独立代理，提供用户需求与本文件、仓库路径，不继承会话推理。要求验证路由完整性、静态/API 边界、Kiosk、预加载、并行文件归属及发布可执行性。
-- [ ] 控制器修正审核发现，最多两轮审核/修改；若两轮后仍有阻塞，记录具体问题并停止代码阶段，向用户报告，不自行增加审核轮数。
-- [ ] 审核通过后保存精简结论并提交计划文档。用户已授权按计划继续执行，不再重复请求“是否开始开发”。
+- [x] 将本计划交给 `gpt-6-astra` / `max`、`fork_turns=none` 的独立代理，提供用户需求与本文件、仓库路径，不继承会话推理。要求验证路由完整性、静态/API 边界、Kiosk、预加载、并行文件归属及发布可执行性。
+- [x] 控制器修正审核发现，最多两轮审核/修改；若两轮后仍有阻塞，记录具体问题并停止代码阶段，向用户报告，不自行增加审核轮数。
+- [x] 审核通过后保存精简结论并提交计划文档。用户已授权按计划继续执行，不再重复请求“是否开始开发”。
 
 ### Task 1: Root app shell and navigation — worker A
 
@@ -67,12 +67,12 @@
 - Modify: `katrain/web/ui/src/galaxy/components/guards/{AuthGuard.tsx,AuthGuard.test.tsx}`
 - Create: `katrain/web/ui/src/AppRouter.test.tsx`, `katrain/web/ui/src/galaxy/components/layout/galaxyNavigation.test.tsx`
 
-- [ ] 测试真实 AppRouter 的根首页选择（可 mock 页面与 provider，保留真实 router 语义）、根深链接、旧 `/galaxy` 的拒绝、Kiosk、`/record`；为不同编译常量建立必要的模块隔离，不能只验证静态源码字符串。测试 navigation 首页仅 `/` 选中，不误选所有路径。
-- [ ] Run from `katrain/web/ui`: `npm test -- src/AppRouter.test.tsx src/galaxy/components/layout/galaxyNavigation.test.tsx`。修改前根首页应错误进入旧应用或旧前缀仍可用。
-- [ ] 全量构建将 GalaxyApp 挂在根 `/*`，移除 AppRouter 对 ZenModeApp 的默认加载及旧 Galaxy 路由。Kiosk-only 构建根 fallback 导向 `/kiosk`（严格 SSO 行为保留），不加载 Galaxy/旧版 Zen；源码文件不删除。
-- [ ] GalaxyApp 未匹配路径不再 `<Navigate to="/galaxy">`，使用最小 404 展示而非兼容跳转；避免为此设计新页面。现有相对子路由保持。
-- [ ] 导航项 home 改 `/`、其他项去 `/galaxy`；`isGalaxyNavigationActive` 的 home 分支改为严格等于 `/`。品牌点击、sidebar home、面包屑、AuthGuard 的 `accessMetadata[feature].backPath` 直接使用根路径，防止空字符串/双斜杠。
-- [ ] 更新所有本任务拥有的运行测试 URL，运行新增测试及 layout/guard 测试。报告改动列表与 RED/GREEN 结果；交控制器提交 `serve Galaxy from root routes`。
+- [x] 测试真实 AppRouter 的根首页选择（可 mock 页面与 provider，保留真实 router 语义）、根深链接、旧 `/galaxy` 的拒绝、Kiosk、`/record`；为不同编译常量建立必要的模块隔离，不能只验证静态源码字符串。测试 navigation 首页仅 `/` 选中，不误选所有路径。
+- [x] Run from `katrain/web/ui`: `npm test -- src/AppRouter.test.tsx src/galaxy/components/layout/galaxyNavigation.test.tsx`。修改前根首页应错误进入旧应用或旧前缀仍可用。
+- [x] 全量构建将 GalaxyApp 挂在根 `/*`，移除 AppRouter 对 ZenModeApp 的默认加载及旧 Galaxy 路由。Kiosk-only 构建根 fallback 导向 `/kiosk`（严格 SSO 行为保留），不加载 Galaxy/旧版 Zen；源码文件不删除。
+- [x] GalaxyApp 未匹配路径不再 `<Navigate to="/galaxy">`，使用最小 404 展示而非兼容跳转；避免为此设计新页面。现有相对子路由保持。
+- [x] 导航项 home 改 `/`、其他项去 `/galaxy`；`isGalaxyNavigationActive` 的 home 分支改为严格等于 `/`。品牌点击、sidebar home、面包屑、AuthGuard 的 `accessMetadata[feature].backPath` 直接使用根路径，防止空字符串/双斜杠。
+- [x] 更新所有本任务拥有的运行测试 URL，运行新增测试及 layout/guard 测试。报告改动列表与 RED/GREEN 结果；交控制器提交 `serve Galaxy from root routes`。
 
 ### Task 2: All page links and return paths — worker B
 
@@ -85,11 +85,11 @@
 - Existing tests adjacent to these pages: `PlayMenu.test.tsx`, `AiSetupPage.test.tsx`, `GamePage.aiLadder.test.tsx`, `HvHLobbyPage.test.tsx`, `GameRoomPage.test.tsx`, `ResearchPage.test.tsx`, `KifuLibraryPage.localization.test.tsx`, `KifuReportDetailPage.test.tsx`, `live/LiveMatchPage.test.tsx`, `report/{ReportsPage,ReportDetailPage}.test.tsx`, `membership/{MembershipPage,MembershipNavigation}.test.tsx`
 - Any new focused click-to-URL tests must remain in these owned page directories.
 
-- [ ] 先将现有页面行为测试的期望位置改为新路径，选择 PlayMenu、入房和棋谱/报告返回的测试运行，确认实现仍产生旧前缀而失败。
-- [ ] 定点更新 navigate、backTo、parentTo、Dashboard 卡片以及动态模板 URL，保留 session/album/task IDs、query、hash 和现有导航离局守卫。共享 MatchCard 仍只在无 onSelect 时进入 Galaxy 直播，不能给 Kiosk 引入 Galaxy 模块或直播 API。
-- [ ] 相应更新本任务测试的 initialEntries、Route path、期望地址，不能把 `../galaxy/` 模块 import 或模型/业务标识替换为根路径。不改变权限、支付或对局逻辑。
-- [ ] Run: `npm test -- src/galaxy/pages`；共享 MatchCard 由现有 LivePage/列表行为测试验证，确有缺口才新增小型点击测试。所有这次 URL 相关测试应通过；确认为既有的失败需用基线复现而非重写无关业务。
-- [ ] 交控制器文件清单及测试结果，提交 `move Galaxy navigation to domain root`。
+- [x] 先将现有页面行为测试的期望位置改为新路径，选择 PlayMenu、入房和棋谱/报告返回的测试运行，确认实现仍产生旧前缀而失败。
+- [x] 定点更新 navigate、backTo、parentTo、Dashboard 卡片以及动态模板 URL，保留 session/album/task IDs、query、hash 和现有导航离局守卫。共享 MatchCard 仍只在无 onSelect 时进入 Galaxy 直播，不能给 Kiosk 引入 Galaxy 模块或直播 API。
+- [x] 相应更新本任务测试的 initialEntries、Route path、期望地址，不能把 `../galaxy/` 模块 import 或模型/业务标识替换为根路径。不改变权限、支付或对局逻辑。
+- [x] Run: `npm test -- src/galaxy/pages`；共享 MatchCard 由现有 LivePage/列表行为测试验证，确有缺口才新增小型点击测试。所有这次 URL 相关测试应通过；确认为既有的失败需用基线复现而非重写无关业务。
+- [x] 交控制器文件清单及测试结果，提交 `move Galaxy navigation to domain root`。
 
 ### Task 3: HTML/bootstrap/build and browser journeys — worker C
 
@@ -98,12 +98,12 @@
 - Modify active E2E URLs: `katrain/web/ui/tests/{galaxy-live-template,galaxy-play-record-entry-visual,membership-i18n,galaxy-ai-ladder-active-game-visual,tutorial,galaxy-ai-ladder-game-visual,galaxy-report-tabs-visual,ladder-geometry,report-v2,membership-recharge,galaxy-ai-ladder-setup-visual,galaxy-ai-ladder-blocking-exits-visual,kiosk-ai-ladder-cross-device-semantics}.spec.ts`
 - Create focused tests: `katrain/web/ui/src/galaxy-root-bootstrap.test.ts`, `katrain/web/ui/tests/galaxy-root-routing.spec.ts`
 
-- [ ] 为 HTML bounded kifu request 的实际内联脚本编写小型运行测试：`/kifu`（含 query/尾斜杠）和 `/kiosk/kifu` 提前请求一次并保留参数；`/galaxy/kifu`、详情页、`/api/...`、首页不请求。修改前 `/kifu` 应失败。
-- [ ] 将 `index.html` matcher 改为 `/^\/(?:kiosk\/)?kifu\/?$/`。模块预加载保留 surfaces 的 galaxy/kiosk 构建名字，以 pathname 的精确 `/kifu[/]` 映射 galaxy，`/kiosk/kifu[/]` 映射 kiosk；不按旧前缀识别。验证生成 HTML 的脚本实际执行，不只改正则文本。
-- [ ] Visual webServer readiness 改 `/play`；更新上列浏览器用例和转义 URL 正则。保持 HTTP API、mock payload、测试标题和视觉基准不变，不重拍全部截图。
-- [ ] 修正 Kiosk build guard：旧 `/galaxy/` 文字已不再能证明 Galaxy 被 DCE；保留 three/live 检查，补充检查输出中不存在 GalaxyApp/Galaxy 页 chunk（或稳定的构建 manifest/模块特征），以及严格 SSO token guard。不要粗暴拒绝合法 `/kiosk/play`、API URL 或共享组件名。
-- [ ] 浏览器回归覆盖：根首页且地址栏不跳转、点击主导航到 `/play` 或 `/kifu`、深链接刷新、带 query 的会员或棋谱页面、返回首页、旧 URL 不进入首页；Kiosk 在 `/kiosk`。真实 HTTP 404 由 Task 4 及最终真实服务器验证，Vite SPA fallback 的 200 不冒充生产 404。
-- [ ] Run `npm test -- src/galaxy-root-bootstrap.test.ts`；完成联调后控制器运行该 E2E。移交控制器提交 `update Galaxy bootstrap and route checks`。worker 不与控制器并行执行会覆盖 static 的生产 build。
+- [x] 为 HTML bounded kifu request 的实际内联脚本编写小型运行测试：`/kifu`（含 query/尾斜杠）和 `/kiosk/kifu` 提前请求一次并保留参数；`/galaxy/kifu`、详情页、`/api/...`、首页不请求。修改前 `/kifu` 应失败。
+- [x] 将 `index.html` matcher 改为 `/^\/(?:kiosk\/)?kifu\/?$/`。模块预加载保留 surfaces 的 galaxy/kiosk 构建名字，以 pathname 的精确 `/kifu[/]` 映射 galaxy，`/kiosk/kifu[/]` 映射 kiosk；不按旧前缀识别。验证生成 HTML 的脚本实际执行，不只改正则文本。
+- [x] Visual webServer readiness 改 `/play`；更新上列浏览器用例和转义 URL 正则。保持 HTTP API、mock payload、测试标题和视觉基准不变，不重拍全部截图。
+- [x] 修正 Kiosk build guard：旧 `/galaxy/` 文字已不再能证明 Galaxy 被 DCE；保留 three/live 检查，补充检查输出中不存在 GalaxyApp/Galaxy 页 chunk（或稳定的构建 manifest/模块特征），以及严格 SSO token guard。不要粗暴拒绝合法 `/kiosk/play`、API URL 或共享组件名。
+- [x] 浏览器回归覆盖：根首页且地址栏不跳转、点击主导航到 `/play` 或 `/kifu`、深链接刷新、带 query 的会员或棋谱页面、返回首页、旧 URL 不进入首页；Kiosk 在 `/kiosk`。真实 HTTP 404 由 Task 4 及最终真实服务器验证，Vite SPA fallback 的 200 不冒充生产 404。
+- [x] Run `npm test -- src/galaxy-root-bootstrap.test.ts`；完成联调后控制器运行该 E2E。移交控制器提交 `update Galaxy bootstrap and route checks`。worker 不与控制器并行执行会覆盖 static 的生产 build。
 
 ### Task 4: Server SPA route ownership and API-generated URLs — worker D
 
@@ -112,27 +112,27 @@
 - Create: `tests/web_ui/test_spa_routes.py`
 - Extend existing test: `tests/web_ui/test_game_termination_and_chat_identity.py` (only redirect expectations)
 
-- [ ] 使用临时静态 fixture / 无生命周期 ASGI 客户端测试页面路由，禁止启动引擎、写真实数据库或依赖某次本机构建；优先沿用现有 create_app 测试接缝，不为本次加通用路由框架。
-- [ ] 新测试：`/`、上述各页面根和代表性动态深链接（`/play/human/room/session`、`/kifu/7/replay`、`/report/7`、`/tutorials/book/7`）返回同一 index HTML + `Cache-Control: no-cache`，query 不丢失；非根页面同时覆盖无尾斜杠和有尾斜杠，禁用自动跟随重定向，不能依靠 Starlette 自动补斜杠；`/kiosk`、`/record` 仍可用。
-- [ ] 阴性/正性对照：`/galaxy`、`/galaxy/`、`/galaxy/kifu`、未知顶级路径、已知模块内无效深路径（如 `/play/not-a-page`、`/kifu/7/not-a-page`）、缺失 JS 404；存在的 JS/CSS、资源原样返回；缺失 `/api/v1/...` 保持 JSON 404，不变成 HTML，现有健康和 OpenAPI 端点仍由其原 handler 处理。页面 GET 与 HEAD 均 200、同样 no-cache/content-type，HEAD body 为空；旧路径 GET/HEAD 均 404 且无 Location，不引入路径穿越或任意文件 fallback。
-- [ ] Run `.venv/bin/python -m pytest tests/web_ui/test_spa_routes.py -q`，确认新根深链接先失败。
-- [ ] 以现有 FileResponse/no-cache 方式为上表及 GalaxyApp 当前声明的**精确页面模式**注册 SPA handlers：`/`、`/play`、`/play/ai`、`/play/game/{session_id}`、`/play/human`、`/play/human/room/{session_id}`、`/research`、`/membership`、`/report`、`/report/{task_id}`、`/kifu`、`/kifu/{album_id}/replay`、`/kifu/{album_id}/report`、`/live`、`/live/{match_id}`、`/tsumego`、`/tsumego/problem/{problem_id}`、`/tsumego/{level}`、`/tsumego/{level}/{category}`、`/tsumego/{level}/{category}/{unit}`、`/tutorials`、`/tutorials/book/{book_id}`、`/tutorials/section/{section_id}`、`/tutorials/{category}`。静态更具体模式在宽泛参数模式之前；参数不引入比前端更宽的跨段匹配。使用局部 tuple 加 `app.add_api_route` 或简洁现有 decorators 即可，不建通用注册框架。
-- [ ] 每个精确页面模式显式 `methods=["GET", "HEAD"]`、`include_in_schema=False`；除 `/` 本身外同时注册 `pattern` 与 `pattern + "/"`，返回同一个 FileResponse，保持地址不重定向。移除旧 `/galaxy` handlers，页面模式仍在最终 StaticFiles mount 前注册；不得添加 `/{full_path:path}` 或 `/play/{full_path:path}` 等 HTML fallback。保留 board 模式 static-kiosk-2d 选择、原 Kiosk handler 与 strict root 导向 Kiosk 的语义；不向 board bundle 引入 Galaxy。保留 `tests/test_ws_route_order.py`，新增 HTTP 测试可参考 `tests/web_ui/test_guest_bootstrap_route.py` 的轻量装配。
-- [ ] 3 处多人退出返回地址统一 `/play/human`；为 left、已终局与首次 forfeit 三支断言相同新 URL，保留身份与终局权限检查。
-- [ ] Run focused Python routing and termination tests；交控制器提交 `serve root Galaxy deep links and retire old prefix`。
+- [x] 使用临时静态 fixture / 无生命周期 ASGI 客户端测试页面路由，禁止启动引擎、写真实数据库或依赖某次本机构建；优先沿用现有 create_app 测试接缝，不为本次加通用路由框架。
+- [x] 新测试：`/`、上述各页面根和代表性动态深链接（`/play/human/room/session`、`/kifu/7/replay`、`/report/7`、`/tutorials/book/7`）返回同一 index HTML + `Cache-Control: no-cache`，query 不丢失；非根页面同时覆盖无尾斜杠和有尾斜杠，禁用自动跟随重定向，不能依靠 Starlette 自动补斜杠；`/kiosk`、`/record` 仍可用。
+- [x] 阴性/正性对照：`/galaxy`、`/galaxy/`、`/galaxy/kifu`、未知顶级路径、已知模块内无效深路径（如 `/play/not-a-page`、`/kifu/7/not-a-page`）、缺失 JS 404；存在的 JS/CSS、资源原样返回；缺失 `/api/v1/...` 保持 JSON 404，不变成 HTML，现有健康和 OpenAPI 端点仍由其原 handler 处理。页面 GET 与 HEAD 均 200、同样 no-cache/content-type，HEAD body 为空；旧路径 GET/HEAD 均 404 且无 Location，不引入路径穿越或任意文件 fallback。
+- [x] Run `.venv/bin/python -m pytest tests/web_ui/test_spa_routes.py -q`，确认新根深链接先失败。
+- [x] 以现有 FileResponse/no-cache 方式为上表及 GalaxyApp 当前声明的**精确页面模式**注册 SPA handlers：`/`、`/play`、`/play/ai`、`/play/game/{session_id}`、`/play/human`、`/play/human/room/{session_id}`、`/research`、`/membership`、`/report`、`/report/{task_id}`、`/kifu`、`/kifu/{album_id}/replay`、`/kifu/{album_id}/report`、`/live`、`/live/{match_id}`、`/tsumego`、`/tsumego/problem/{problem_id}`、`/tsumego/{level}`、`/tsumego/{level}/{category}`、`/tsumego/{level}/{category}/{unit}`、`/tutorials`、`/tutorials/book/{book_id}`、`/tutorials/section/{section_id}`、`/tutorials/{category}`。静态更具体模式在宽泛参数模式之前；参数不引入比前端更宽的跨段匹配。使用局部 tuple 加 `app.add_api_route` 或简洁现有 decorators 即可，不建通用注册框架。
+- [x] 每个精确页面模式显式 `methods=["GET", "HEAD"]`、`include_in_schema=False`；除 `/` 本身外同时注册 `pattern` 与 `pattern + "/"`，返回同一个 FileResponse，保持地址不重定向。移除旧 `/galaxy` handlers，页面模式仍在最终 StaticFiles mount 前注册；不得添加 `/{full_path:path}` 或 `/play/{full_path:path}` 等 HTML fallback。保留 board 模式 static-kiosk-2d 选择、原 Kiosk handler 与 strict root 导向 Kiosk 的语义；不向 board bundle 引入 Galaxy。保留 `tests/test_ws_route_order.py`，新增 HTTP 测试可参考 `tests/web_ui/test_guest_bootstrap_route.py` 的轻量装配。
+- [x] 3 处多人退出返回地址统一 `/play/human`；为 left、已终局与首次 forfeit 三支断言相同新 URL，保留身份与终局权限检查。
+- [x] Run focused Python routing and termination tests；交控制器提交 `serve root Galaxy deep links and retire old prefix`。
 
 ### Task 5: Integrated verification and independent review — controller
 
 **Files:** four workers' changes; review record `docs/superpowers/reviews/2026-11-08-galaxy-root-code-astra-max.md`.
 
-- [ ] 只在计划审核通过后并行派发 A/B/C/D；记录文件 ownership，禁止 worker 运行 release、push、全局 clean 或回退别人的文件。控制器逐个检查 diff、提交，仅将测试/代码实际达到的步骤标完成。
-- [ ] 用 `rg -n '/galaxy|galaxy\|kiosk'` 重新检查活跃源码、入口、构建配置及 E2E；逐项区分 HTTP URL 与模块 import、业务类名、历史注释。不要求全仓历史文档清零；所有运行时导航旧 URL 必须清零，拒绝旧路径的测试可保留。
-- [ ] Run UI root/navigation/bootstrap/全部 Galaxy page 用例，加共享 MatchCard 的相关现有用例及受影响 shared hook suites。Run Python `tests/web_ui/test_spa_routes.py` 和 termination focused tests；失败仅追查当前改动及直接回归。
-- [ ] Run full `npm run build`，再 `npm run build:smartbox-kiosk-2d`（顺序执行），确认 TypeScript、生产打包、no-three/Galaxy/live 和严格 SSO guard 通过。不重复做无关全量后端测试。
-- [ ] 在专用端口运行本 worktree frontend 的 `tests/galaxy-root-routing.spec.ts`，并用实际 FastAPI 静态服务核对 HTTP 深链接和旧 URL 404。采用一个桌面真实预览和 RK3562 已授权验收，不开展全状态视觉重拍；本次不改变视觉布局，无 fixture 后端集成门槛。
-- [ ] 独立规格代理先审阅完整需求/Task 1–4 的 diff 与测试证据，修复缺漏后再进入质量审核。
-- [ ] 新建 Astra Max (`gpt-6-astra`, `max`, `fork_turns=none`) 独立代理审阅全部实现及发布计划，提供 base/head SHA、计划、验证结果及边界要求，不继承控制器推理。发现缺陷交原 owner 修复、补必要测试，再送审直到 APPROVED；最终必须明确无未解决的 blocking/important findings。
-- [ ] 审核通过后的代码变更需要重新验证并重新审核相关 diff。`git diff --check` 通过，记录精简审核/验证事实，不把未执行设备/线上步骤写成通过。
+- [x] 只在计划审核通过后并行派发 A/B/C/D；记录文件 ownership，禁止 worker 运行 release、push、全局 clean 或回退别人的文件。控制器逐个检查 diff、提交，仅将测试/代码实际达到的步骤标完成。
+- [x] 用 `rg -n '/galaxy|galaxy\|kiosk'` 重新检查活跃源码、入口、构建配置及 E2E；逐项区分 HTTP URL 与模块 import、业务类名、历史注释。不要求全仓历史文档清零；所有运行时导航旧 URL 必须清零，拒绝旧路径的测试可保留。
+- [x] Run UI root/navigation/bootstrap/全部 Galaxy page 用例，加共享 MatchCard 的相关现有用例及受影响 shared hook suites。Run Python `tests/web_ui/test_spa_routes.py` 和 termination focused tests；失败仅追查当前改动及直接回归。
+- [x] Run full `npm run build`，再 `npm run build:smartbox-kiosk-2d`（顺序执行），确认 TypeScript、生产打包、no-three/Galaxy/live 和严格 SSO guard 通过。不重复做无关全量后端测试。
+- [x] 在专用端口运行本 worktree frontend 的 `tests/galaxy-root-routing.spec.ts`，并用实际 FastAPI 静态服务核对 HTTP 深链接和旧 URL 404。采用一个桌面真实预览和 RK3562 已授权验收，不开展全状态视觉重拍；本次不改变视觉布局，无 fixture 后端集成门槛。
+- [x] 独立规格代理先审阅完整需求/Task 1–4 的 diff 与测试证据，修复缺漏后再进入质量审核。
+- [x] 新建 Astra Max (`gpt-6-astra`, `max`, `fork_turns=none`) 独立代理审阅全部实现及发布计划，提供 base/head SHA、计划、验证结果及边界要求，不继承控制器推理。发现缺陷交原 owner 修复、补必要测试，再送审直到 APPROVED；最终必须明确无未解决的 blocking/important findings。
+- [x] 审核通过后的代码变更需要重新验证并重新审核相关 diff。`git diff --check` 通过，记录精简审核/验证事实，不把未执行设备/线上步骤写成通过。
 
 ### Task 6: Publish in the required order — controller only
 
@@ -165,5 +165,5 @@
 - [ ] 新页面可直接打开和刷新，query/hash 正常，旧 `/galaxy` 及子路径真实 404 且无兼容跳转。
 - [ ] 原首页不再加载 ZenModeApp/创建旧首页会话；Kiosk、API、WebSocket、媒体/静态及其他代理入口保持各自行为。
 - [ ] 棋谱提前请求和模块预加载支持新 `/kifu`；严格 Kiosk 仍无 Galaxy/three/live/token 泄漏路径。
-- [ ] 计划审阅不超过两轮；独立规格检查与最终独立 Astra Max 代码审核通过。
+- [x] 计划审阅不超过两轮；独立规格检查与最终独立 Astra Max 代码审核通过。
 - [ ] 按四步发布顺序完成三处 Git 发布和 TEST、PROD、RK3562 的真实验收。

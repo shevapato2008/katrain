@@ -83,6 +83,7 @@
     nativeTail: Promise.resolve(), nativePending: 0, nativeError: null
   };
   var root, candBar, compose, candList, rowsEl;
+  var shiftTarget = null;
 
   function isPassword() { return state.target && state.target.type === "password"; }
   function useNative() { return nativeLocal && state.mode === "zh" && !isPassword(); }
@@ -260,6 +261,76 @@
       default:
         onChar(k);
     }
+  }
+
+  function physicalTarget(event) {
+    var target = event.target;
+    if (event.defaultPrevented || event.isComposing || event.keyCode === 229 ||
+        event.smartKeyboardSource || !isEditable(target) || target !== document.activeElement ||
+        target.readOnly || target.disabled || target.type === "password") return null;
+    return target;
+  }
+
+  function consumeKey(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  // External keyboards share the touch keyboard's mode, decoder and async queue.
+  // Capture before form/xterm handlers so uncommitted Pinyin cannot be submitted.
+  function onPhysicalKeydown(event) {
+    var target = physicalTarget(event);
+    if (event.key === "Shift") {
+      shiftTarget = target && !event.repeat && !event.ctrlKey && !event.altKey && !event.metaKey ? target : null;
+      return;
+    }
+    shiftTarget = null;
+    if (!target) return;
+    if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
+        (event.key === " " || event.code === "Space")) {
+      consumeKey(event);
+      if (!event.repeat) {
+        if (state.target !== target) showKbd(target);
+        onKey("lang");
+      }
+      return;
+    }
+    if (event.ctrlKey || event.altKey || event.metaKey || state.mode !== "zh") return;
+    var composing = !!state.buffer || state.nativePending > 0;
+    var key = event.key;
+    if (!/^[a-z']$/.test(key) && !(composing &&
+        (key.length === 1 || /^(Backspace|Enter|Escape)$/.test(key)))) return;
+    if (state.target !== target) showKbd(target);
+    consumeKey(event);
+    if (/^[1-7]$/.test(key) && composing) {
+      var position = state.page * CAND_PAGE_SIZE + Number(key) - 1;
+      if (useNative()) {
+        queueNative(function (snapshot) {
+          var item = snapshot.candidates[position];
+          return item ? { type: "select", index: item.index, revision: snapshot.revision } : null;
+        });
+      } else if (state.cands[position]) commit(state.cands[position], true);
+    } else if (key === " ") onSpace();
+    else if (key === "Backspace") onBack();
+    else if (key === "Escape") {
+      if (useNative()) queueNative({ type: "clear" });
+      else clearBuffer();
+    } else if (key === "Enter") {
+      if (useNative()) queueNative(function (snapshot) {
+        return hasComposition(snapshot) ? { type: "commit" } : null;
+      });
+      else flushBuffer();
+    } else onChar(key);
+  }
+
+  function onPhysicalKeyup(event) {
+    if (event.key !== "Shift") return;
+    var target = shiftTarget;
+    shiftTarget = null;
+    if (!target || physicalTarget(event) !== target || event.ctrlKey || event.altKey || event.metaKey) return;
+    consumeKey(event);
+    if (state.target !== target) showKbd(target);
+    onKey("lang");
   }
 
   function onChar(ch) {
@@ -574,6 +645,7 @@
   }
 
   function hideKbd() {
+    shiftTarget = null;
     root.classList.remove("skbd-open");
     resetNative();
     clearBuffer();
@@ -586,6 +658,8 @@
   function init() {
     if (root) return;
     build();
+    document.addEventListener("keydown", onPhysicalKeydown, true);
+    document.addEventListener("keyup", onPhysicalKeyup, true);
     document.addEventListener("focusin", function (e) {
       if (isEditable(e.target)) showKbd(e.target);
     });

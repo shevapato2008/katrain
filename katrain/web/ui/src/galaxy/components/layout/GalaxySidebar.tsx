@@ -51,7 +51,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
 
   const handleLogout = async () => {
     await logout();
-    navigate('/galaxy');
+    navigate('/');
   };
 
   return (

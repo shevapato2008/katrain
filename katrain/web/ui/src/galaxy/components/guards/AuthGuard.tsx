@@ -22,7 +22,7 @@ export const AuthGuard = ({ children, feature = 'hall', realAccount = feature ==
         <ProtectedOutline surface="galaxy" feature={feature} />
         <AccessPrompt open={!loginOpen} surface="galaxy" status={status} feature={feature}
             onPrimary={() => { if (status === 'unavailable') void auth.retry(); else setLoginOpen(true); }}
-            onBack={() => navigate(`/galaxy${accessMetadata[feature].backPath}`, { replace: true })} />
+            onBack={() => navigate(accessMetadata[feature].backPath || '/', { replace: true })} />
         {loginOpen && <LoginModal open onClose={() => setLoginOpen(false)} />}
     </>;
 };

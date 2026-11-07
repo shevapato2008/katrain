@@ -28,7 +28,7 @@ const GalaxyTopBar = ({ rightSlot }: GalaxyTopBarProps) => {
     >
       <ButtonBase
         aria-label="回到首页"
-        onClick={() => requestNavigation('/galaxy')}
+        onClick={() => requestNavigation('/')}
         sx={{ height: '100%', gap: 1, borderRadius: 1, px: 0.5 }}
       >
         <img

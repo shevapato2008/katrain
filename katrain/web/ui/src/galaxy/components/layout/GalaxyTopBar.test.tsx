@@ -34,7 +34,7 @@ describe('GalaxyTopBar', () => {
     render(<GalaxyTopBar />);
     fireEvent.click(screen.getByRole('button', { name: '回到首页' }));
 
-    expect(requestNavigation).toHaveBeenCalledWith('/galaxy');
+    expect(requestNavigation).toHaveBeenCalledWith('/');
   });
 
   it('accepts a right slot for global controls', () => {

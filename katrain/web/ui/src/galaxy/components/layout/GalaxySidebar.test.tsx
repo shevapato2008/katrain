@@ -52,8 +52,10 @@ describe('GalaxySidebar', () => {
       const item = screen.getByRole('button', { name: label });
       expect(item.querySelector(`[data-testid="${icon}"]`)).toBeInTheDocument();
     }
+    fireEvent.click(screen.getByRole('button', { name: 'Home' }));
+    expect(requestNavigation).toHaveBeenCalledWith('/');
     fireEvent.click(screen.getByRole('button', { name: 'Research' }));
-    expect(requestNavigation).toHaveBeenCalledWith('/galaxy/research');
+    expect(requestNavigation).toHaveBeenCalledWith('/research');
   });
 
   it('keeps the native 44px toggle centered on the sidebar edge when collapsed', () => {

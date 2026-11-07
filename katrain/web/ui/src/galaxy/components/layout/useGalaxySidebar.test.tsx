@@ -60,7 +60,7 @@ const NavigationHarness = () => {
   return (
     <>
       <button ref={toggleButtonRef} onClick={toggle}>toggle</button>
-      <button onClick={() => navigate('/galaxy/live')}>route</button>
+      <button onClick={() => navigate('/live')}>route</button>
       <button onClick={() => navigate(-1)}>back</button>
       <output>{JSON.stringify({ dockedExpanded, dockedWidth, mode, overlayOpen })}</output>
     </>

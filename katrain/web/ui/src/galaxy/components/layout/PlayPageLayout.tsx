@@ -26,7 +26,7 @@ export default function PlayPageLayout({ title, status, children }: {
     <div className="galaxy-play-page">
       <div className="galaxy-play-page__inner">
         <div className="galaxy-play-page__header">
-          <ContentPageHeader title={title} parentLabel="对局" parentTo="/galaxy/play" status={status} />
+          <ContentPageHeader title={title} parentLabel="对局" parentTo="/play" status={status} />
         </div>
         {children}
       </div>

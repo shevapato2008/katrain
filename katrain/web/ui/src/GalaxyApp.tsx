@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo } from 'react';
 import { Box, ThemeProvider } from '@mui/material';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
 import { useSettings } from './context/SettingsContext';
 import { createGalaxyTheme } from './galaxy/theme';
@@ -88,7 +88,7 @@ const GalaxyApp = () => {
             <Route path="tutorials/:category" element={<TutorialBooksPage />} />
             <Route path="tutorials/book/:bookId" element={<TutorialBookDetailPage />} />
             <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
-            <Route path="*" element={<Navigate to="/galaxy" replace />} />
+            <Route path="*" element={<Box component="h1" sx={{ p: 3 }}>404</Box>} />
           </Route>
           </Routes></Suspense>
         </TsumegoProgressProvider>

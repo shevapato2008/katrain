@@ -37,7 +37,7 @@ import { useBoardCoordinates } from '../../components/board/useBoardCoordinates'
 import LiveMatchDisplayControls from '../live/LiveMatchDisplayControls';
 import ReplayBoard3D from '../../components/board/ReplayBoard3D';
 
-const BACK_TO = '/galaxy/report';
+const BACK_TO = '/report';
 
 // 三个早退形态（未登录 / 加载中 / 出错）也走同一副骨架 —— 照 `LiveMatchPage.tsx:79-125`。
 // 迁版式前它们是裸 `Box p={4}`，于是「棋盘正上方不放任何东西」这条在错误态下等于没实现。

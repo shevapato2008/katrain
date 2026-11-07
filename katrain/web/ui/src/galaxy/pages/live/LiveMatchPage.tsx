@@ -128,7 +128,7 @@ export default function LiveMatchPage() {
             title={t('live:loading_match', 'Loading live match')}
             subtitle={<Skeleton width={180} />}
             status={<CircularProgress size={22} />}
-            backTo="/galaxy/live"
+            backTo="/live"
           />
         )}
         railBody={<Box sx={{ py: 2 }}><Skeleton height={120} /><Skeleton height={160} /><Skeleton height={180} /></Box>}
@@ -147,7 +147,7 @@ export default function LiveMatchPage() {
            挂 `displayControls`/`actions` —— 加载不出对局，就没有可开关的东西，
            画一排永远按不动的占位只是在假装还有内容。 */
         board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
-        modulePlate={<ModulePlate title={t('live:match', 'Live match')} backTo="/galaxy/live" />}
+        modulePlate={<ModulePlate title={t('live:match', 'Live match')} backTo="/live" />}
         railBody={(
           <Box sx={{ py: 2 }}>
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -209,7 +209,7 @@ export default function LiveMatchPage() {
           title={`${i18n.translatePlayer(match.player_black)} vs ${i18n.translatePlayer(match.player_white)}`}
           subtitle={subtitle}
           status={status}
-          backTo="/galaxy/live"
+          backTo="/live"
         />
       )}
       railBody={(

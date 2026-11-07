@@ -107,12 +107,12 @@ vi.mock('../../components/Board', () => ({
   default: () => <div data-testid="mock-board">Board Component</div>,
 }));
 
-const pageElement = (path = '/galaxy/research') => (
+const pageElement = (path = '/research') => (
   <MemoryRouter initialEntries={[path]}>
     <ResearchPage />
   </MemoryRouter>
 );
-const renderPage = (path = '/galaxy/research') => render(pageElement(path));
+const renderPage = (path = '/research') => render(pageElement(path));
 
 const KIFU_SGF = '(;FF[4]GM[1]SZ[19];B[pd];W[dp];B[pp];W[dd])';
 const USER_GAME_SGF = '(;FF[4]GM[1]SZ[19];B[pd];W[dp])';
@@ -157,19 +157,19 @@ describe('ResearchPage', () => {
       id: 42, sgf_content: KIFU_SGF,
       display_player_black: `${lang}-black`, display_player_white: `${lang}-white`,
     }));
-    const view = renderPage('/galaxy/research?kifu_id=42');
+    const view = renderPage('/research?kifu_id=42');
     const input = await screen.findByRole('textbox', { name: '黑方姓名' });
     await waitFor(() => expect(input).toHaveValue('cn-black'));
     fireEvent.change(input, { target: { value: 'Edited player' } });
     language.current = 'ru';
-    view.rerender(<MemoryRouter initialEntries={['/galaxy/research?kifu_id=42']}><ResearchPage /></MemoryRouter>);
+    view.rerender(<MemoryRouter initialEntries={['/research?kifu_id=42']}><ResearchPage /></MemoryRouter>);
     await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(42, 'ru'));
     await waitFor(() => expect(input).toHaveValue('Edited player'));
   });
 
   it('loads a deep-linked game silently and plays one shared sound for an explicit stone navigation', async () => {
     (useAuth as Mock).mockReturnValue(anonymousAuth);
-    renderPage('/galaxy/research?kifu_id=42');
+    renderPage('/research?kifu_id=42');
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
     expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: '◀' }));
@@ -223,7 +223,7 @@ describe('ResearchPage', () => {
 
   it('loads analyze=1 deep links without automatically authorizing consumption', async () => {
     (useAuth as Mock).mockReturnValue(confirmedAuth);
-    renderPage('/galaxy/research?kifu_id=42&analyze=1');
+    renderPage('/research?kifu_id=42&analyze=1');
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
     expect(createSession).not.toHaveBeenCalled();
     expect(API.analysisScan).not.toHaveBeenCalled();
@@ -234,7 +234,7 @@ describe('ResearchPage', () => {
   it('loads a public deep-linked kifu anonymously without opening an analysis session', async () => {
     (useAuth as Mock).mockReturnValue(anonymousAuth);
 
-    renderPage('/galaxy/research?kifu_id=42');
+    renderPage('/research?kifu_id=42');
 
     await waitFor(() =>
       expect(screen.getByTestId('mock-live-board').getAttribute('data-moves')).toBe('4'));
@@ -246,7 +246,7 @@ describe('ResearchPage', () => {
   it('loads the handed-off game from ?user_game_id', async () => {
     (useAuth as Mock).mockReturnValue(confirmedAuth);
 
-    renderPage('/galaxy/research?user_game_id=g1');
+    renderPage('/research?user_game_id=g1');
 
     await waitFor(() => expect(getUserGame).toHaveBeenCalledWith('test-token', 'g1'));
     // 两手棋真的进了棋盘，不是只发了个请求。
@@ -256,7 +256,7 @@ describe('ResearchPage', () => {
   it.each(['checking', 'unavailable'])('does not fetch a private deep link with a retained token during %s', (status) => {
     (useAuth as Mock).mockReturnValue({ ...anonymousAuth, status, token: 'saved-token', isLoading: status === 'checking' });
 
-    renderPage('/galaxy/research?user_game_id=g1');
+    renderPage('/research?user_game_id=g1');
 
     expect(getUserGame).not.toHaveBeenCalled();
     expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '0');
@@ -264,11 +264,11 @@ describe('ResearchPage', () => {
 
   it('waits for confirmed cookie identity before loading a private deep link', async () => {
     (useAuth as Mock).mockReturnValue({ ...anonymousAuth, status: 'checking', isLoading: true });
-    const view = renderPage('/galaxy/research?user_game_id=g1');
+    const view = renderPage('/research?user_game_id=g1');
     expect(getUserGame).not.toHaveBeenCalled();
 
     (useAuth as Mock).mockReturnValue({ ...confirmedAuth, token: null });
-    view.rerender(pageElement('/galaxy/research?user_game_id=g1'));
+    view.rerender(pageElement('/research?user_game_id=g1'));
 
     await waitFor(() => expect(getUserGame).toHaveBeenCalledWith(null, 'g1'));
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '2'));
@@ -278,11 +278,11 @@ describe('ResearchPage', () => {
     let finish: (value: unknown) => void = () => {};
     getUserGame.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
     (useAuth as Mock).mockReturnValue(confirmedAuth);
-    const view = renderPage('/galaxy/research?user_game_id=g1');
+    const view = renderPage('/research?user_game_id=g1');
     expect(getUserGame).toHaveBeenCalledWith('test-token', 'g1');
 
     (useAuth as Mock).mockReturnValue(anonymousAuth);
-    view.rerender(pageElement('/galaxy/research?user_game_id=g1'));
+    view.rerender(pageElement('/research?user_game_id=g1'));
     await act(async () => { finish({ id: 'g1', sgf_content: USER_GAME_SGF }); });
 
     expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '0');
@@ -293,11 +293,11 @@ describe('ResearchPage', () => {
     let finishOld: (value: unknown) => void = () => {};
     getUserGame.mockImplementationOnce(() => new Promise((resolve) => { finishOld = resolve; }));
     (useAuth as Mock).mockReturnValue(confirmedAuth);
-    const view = renderPage('/galaxy/research?user_game_id=g1');
+    const view = renderPage('/research?user_game_id=g1');
 
     (useAuth as Mock).mockReturnValue({ ...confirmedAuth, identityKey: 'two', token: 'new-token' });
     getUserGame.mockResolvedValueOnce({ id: 'g1', sgf_content: KIFU_SGF });
-    view.rerender(pageElement('/galaxy/research?user_game_id=g1'));
+    view.rerender(pageElement('/research?user_game_id=g1'));
     await waitFor(() => expect(getUserGame).toHaveBeenCalledWith('new-token', 'g1'));
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
     await act(async () => { finishOld({ id: 'g1', sgf_content: USER_GAME_SGF }); });
@@ -320,7 +320,7 @@ describe('ResearchPage', () => {
   it('does not start an analysis scan on the deep link', async () => {
     (useAuth as Mock).mockReturnValue(confirmedAuth);
 
-    renderPage('/galaxy/research?user_game_id=g1&analyze=1');
+    renderPage('/research?user_game_id=g1&analyze=1');
 
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '2'));
     expect(API.analysisScan).not.toHaveBeenCalled();

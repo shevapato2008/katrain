@@ -339,7 +339,7 @@ const GamePage = () => {
         if (!gameState?.end_result) {
             setShowLeaveConfirm(true);
         } else {
-            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
+            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/play/ai?mode=rated' : '/play/ai');
         }
     };
 
@@ -351,7 +351,7 @@ const GamePage = () => {
             }
             await handleAction('resign');
             setShowLeaveConfirm(false);
-            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
+            navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/play/ai?mode=rated' : '/play/ai');
         } catch (error) {
             setResignError(error instanceof Error ? error.message : '认输失败，请重试');
         }
@@ -558,7 +558,7 @@ const GamePage = () => {
                             ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
                             : <Chip size="small" color="primary" label={t('game:in_play', '对局中')} />}
                         backLabel={isRated ? t('rated_play_short', '升降级') : t('btn:Play', '对局')}
-                        backTo={isRated ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai'}
+                        backTo={isRated ? '/play/ai?mode=rated' : '/play/ai'}
                     />
                 )}
                 railBody={(
@@ -566,8 +566,8 @@ const GamePage = () => {
                         {isRated && (gameState.end_result || remoteFeedback) && (
                             <AiLadderSettlementPanel
                                 feedback={remoteFeedback ?? settlementFeedback ?? { kind: 'pending', message: '正在读取服务器结算结果' }}
-                                onPlayAgain={() => navigate('/galaxy/play/ai?mode=rated')}
-                                onReturn={() => navigate('/galaxy/play')}
+                                onPlayAgain={() => navigate('/play/ai?mode=rated')}
+                                onReturn={() => navigate('/play')}
                             />
                         )}
                         {controls(true)}

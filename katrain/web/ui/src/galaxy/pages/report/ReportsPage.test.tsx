@@ -580,7 +580,7 @@ describe('ReportsPage', () => {
     mockUserGamesList.mockResolvedValue({ items: [gameSummary], total: 25, page: 2, page_size: 12 });
 
     render(
-      <MemoryRouter initialEntries={['/galaxy/report?q=Alpha&page=2']}><GameNavigationProvider>
+      <MemoryRouter initialEntries={['/report?q=Alpha&page=2']}><GameNavigationProvider>
         <ReportsPage />
       </GameNavigationProvider></MemoryRouter>,
     );

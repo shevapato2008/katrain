@@ -70,11 +70,11 @@ const analysis = { 2: moveAnalysis(2, 'Q16', ['D16', 'Q4']), 3: moveAnalysis(3, 
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/galaxy/live/live-9']}>
+    <MemoryRouter initialEntries={['/live/live-9']}>
       <GameNavigationProvider>
         <Routes>
-          <Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} />
-          <Route path="/galaxy/live" element={<div>Live list destination</div>} />
+          <Route path="/live/:matchId" element={<LiveMatchPage />} />
+          <Route path="/live" element={<div>Live list destination</div>} />
         </Routes>
       </GameNavigationProvider>
     </MemoryRouter>,
@@ -249,7 +249,7 @@ describe('LiveMatchPage', () => {
 
 it('sounds once for explicit replay, keeps pass, initial frontier and recovery catch-up silent, and sounds one new live stone', () => {
   liveFixture.currentMove = 3;
-  const page = () => <MemoryRouter initialEntries={['/galaxy/live/live-9']}><GameNavigationProvider><Routes><Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+  const page = () => <MemoryRouter initialEntries={['/live/live-9']}><GameNavigationProvider><Routes><Route path="/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
   const view = render(page());
   expect(playSound).not.toHaveBeenCalled();
   liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10'], move_count: 4 } };
@@ -279,7 +279,7 @@ it('sounds once for explicit replay, keeps pass, initial frontier and recovery c
     const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
     try {
       liveFixture.currentMove = 3;
-      const page = () => <MemoryRouter initialEntries={['/galaxy/live/live-9']}><GameNavigationProvider><Routes><Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+      const page = () => <MemoryRouter initialEntries={['/live/live-9']}><GameNavigationProvider><Routes><Route path="/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
       const view = render(page());
       hidden.mockReturnValue(true);
       fireEvent(document, new Event('visibilitychange'));

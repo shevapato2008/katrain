@@ -222,7 +222,7 @@ const show = (tab = "usage") =>
   render(
     <MemoryRouter
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      initialEntries={[`/galaxy/membership?tab=${tab}`]}
+      initialEntries={[`/membership?tab=${tab}`]}
     >
       <MembershipPage />
     </MemoryRouter>,
@@ -439,7 +439,7 @@ describe("Galaxy membership", () => {
     view.rerender(
       <MemoryRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        initialEntries={["/galaxy/membership?tab=plans"]}
+        initialEntries={["/membership?tab=plans"]}
       >
         <MembershipPage />
       </MemoryRouter>,
@@ -495,7 +495,7 @@ describe("Galaxy membership", () => {
     view.rerender(
       <MemoryRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        initialEntries={["/galaxy/membership?tab=plans"]}
+        initialEntries={["/membership?tab=plans"]}
       >
         <MembershipPage />
       </MemoryRouter>,

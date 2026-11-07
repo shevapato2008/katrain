@@ -105,7 +105,7 @@ export default function LivePage() {
 
   const handleEnterMatch = () => {
     if (selectedMatchId) {
-      navigate(`/galaxy/live/${selectedMatchId}`);
+      navigate(`/live/${selectedMatchId}`);
     }
   };
 
@@ -188,7 +188,7 @@ export default function LivePage() {
           subtitle={plateSubtitle}
           status={plateStatus}
           /* 直播是一级导航页，没有上一级 —— 同棋谱库页（`KifuLibraryPage.tsx:378`）。 */
-          backTo="/galaxy/live"
+          backTo="/live"
           showBack={false}
         />
       )}

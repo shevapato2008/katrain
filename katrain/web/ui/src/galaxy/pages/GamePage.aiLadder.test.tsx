@@ -89,7 +89,7 @@ describe('Galaxy GamePage ranked settlement', () => {
      而分析类的建议 / 领地必须**到不了**（那正是这个过滤器存在的理由）。 */
   it('passes the cosmetic stone-drop toggle to the 3D board but never the analysis toggles', async () => {
     mocks.gameState = { ...gameState, end_result: null };
-    render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
 
     fireEvent.click(screen.getByRole('button', { name: 'toggle 3d' }));
     const board3d = await screen.findByTestId('board3d');
@@ -106,7 +106,7 @@ describe('Galaxy GamePage ranked settlement', () => {
   it('renders the authoritative feedback and supports cookie-only status refresh', async () => {
     sessionStorage.setItem('ai-ladder-before:s1', JSON.stringify({ identity: 'fan', status: status(18) }));
     mocks.getStatus.mockResolvedValue(status(17));
-    render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     expect(await screen.findByText('降级：17级')).toBeInTheDocument();
     const rail = screen.getByTestId('board-rail-scroll');
     expect(rail).toHaveTextContent('本局已结算');
@@ -117,7 +117,7 @@ describe('Galaxy GamePage ranked settlement', () => {
 
   it('keeps the rated board clear and puts the named parent action in the right rail', () => {
     mocks.getStatus.mockResolvedValue(status(18));
-    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
 
     const stage = screen.getByTestId('board-stage');
     const module = screen.getByTestId('board-rail-module');
@@ -136,7 +136,7 @@ describe('Galaxy GamePage ranked settlement', () => {
         .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
         .mockResolvedValueOnce({ state: 'pending_settlement', game_id: 'g1' })
         .mockResolvedValueOnce({ state: 'settled', game_id: 'g1', receipt: { counted: true, reason: null } });
-      render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+      render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
 
       await act(async () => { await Promise.resolve(); await Promise.resolve(); });
       expect(mocks.getGameStatus).toHaveBeenCalledTimes(1);
@@ -156,7 +156,7 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.gameState = { ...gameState, end_result: null };
     let resolveLifecycle!: (value: { state: 'settled'; game_id: string; receipt: { counted: boolean; reason: null } }) => void;
     mocks.getGameStatus.mockReturnValueOnce(new Promise((resolve) => { resolveLifecycle = resolve; }));
-    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole('button', { name: 'board' }));
@@ -175,7 +175,7 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.getGameStatus
       .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
       .mockResolvedValueOnce({ state: 'pending_settlement', game_id: 'g1' });
-    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole('button', { name: 'resign action' }));
@@ -190,7 +190,7 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.getGameStatus.mockResolvedValue({
       state: 'settled', game_id: 'g1', receipt: { counted: true, reason: null },
     });
-    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     const user = userEvent.setup();
 
     expect(await screen.findByText('本局已在其他设备结束，结算已完成')).toBeInTheDocument();
@@ -211,7 +211,7 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.getGameStatus
       .mockResolvedValueOnce({ state: 'active', game_id: 'g1' })
       .mockRejectedValueOnce(new Error('offline'));
-    render(<MemoryRouter initialEntries={['/galaxy/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/play/game/s1?mode=rated&game_id=g1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
     await waitFor(() => expect(mocks.getGameStatus).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole('button', { name: 'board' }));
@@ -242,8 +242,8 @@ describe('Galaxy GamePage 自由对弈', () => {
   });
 
   const renderFree = () => render(
-    <MemoryRouter initialEntries={['/galaxy/play/game/s1']}>
-      <Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes>
+    <MemoryRouter initialEntries={['/play/game/s1']}>
+      <Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes>
     </MemoryRouter>,
   );
 

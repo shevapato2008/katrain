@@ -19,7 +19,7 @@ describe("membership navigation", () => {
       getGalaxyNavigation(translate).find(
         (item) => item.key === "membership",
       )?.path,
-    ).toBe("/galaxy/membership");
+    ).toBe("/membership");
     expect(translate).toHaveBeenCalledWith("membership:galaxy_title", "会员与用量");
   });
   it("keeps membership in More without adding another mobile destination", () => {
@@ -35,6 +35,6 @@ describe("membership navigation", () => {
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "More" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "会员与用量" }));
-    expect(requestNavigation).toHaveBeenCalledWith("/galaxy/membership");
+    expect(requestNavigation).toHaveBeenCalledWith("/membership");
   });
 });

@@ -377,7 +377,7 @@ export default function TutorialFigurePage() {
           title={`${section.section_number}. ${section.title}`}
           subtitle={`${currentFigure?.figure_label ?? ''} · ${currentFigureIndex + 1} / ${section.figures.length}`}
           status={<Chip size="small" color={editor.isEditing ? 'warning' : 'default'} variant={editor.isEditing ? 'filled' : 'outlined'} label={editor.isEditing ? '编辑中' : '只读'} />}
-          backTo={section.chapter_id ? `/galaxy/tutorials/book/${section.chapter_id}` : '/galaxy/tutorials'}
+          backTo={section.chapter_id ? `/tutorials/book/${section.chapter_id}` : '/tutorials'}
           backLabel="教程"
         />
       )}

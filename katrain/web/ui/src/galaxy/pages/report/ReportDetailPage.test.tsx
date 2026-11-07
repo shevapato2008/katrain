@@ -108,7 +108,7 @@ describe('ReportDetailPage', () => {
   it('keeps asynchronous first load silent, then sounds exactly once for a replay cursor change', () => {
     const loaded = reportDetailFixture;
     reportDetailFixture = { ...loaded, game: null, task: null, currentMove: 0, loading: true };
-    const page = () => <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider><Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+    const page = () => <MemoryRouter initialEntries={['/report/7']}><GameNavigationProvider><Routes><Route path="/report/:taskId" element={<ReportDetailPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
     const view = render(page());
     reportDetailFixture = loaded;
     view.rerender(page());
@@ -146,9 +146,9 @@ describe('ReportDetailPage', () => {
     reportDetailFixture = { ...reportDetailFixture, task: null, game: null, error: 'Report task not found' };
 
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/404']}><GameNavigationProvider>
+      <MemoryRouter initialEntries={['/report/404']}><GameNavigationProvider>
         <Routes>
-          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+          <Route path="/report/:taskId" element={<ReportDetailPage />} />
         </Routes>
       </GameNavigationProvider></MemoryRouter>,
     );
@@ -170,9 +170,9 @@ describe('ReportDetailPage', () => {
     reportDetailFixture = { ...reportDetailFixture, loading: true };
 
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+      <MemoryRouter initialEntries={['/report/7']}><GameNavigationProvider>
         <Routes>
-          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+          <Route path="/report/:taskId" element={<ReportDetailPage />} />
         </Routes>
       </GameNavigationProvider></MemoryRouter>,
     );
@@ -189,9 +189,9 @@ describe('ReportDetailPage', () => {
 
   it('renders a live-aligned detail shell', async () => {
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+      <MemoryRouter initialEntries={['/report/7']}><GameNavigationProvider>
         <Routes>
-          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+          <Route path="/report/:taskId" element={<ReportDetailPage />} />
         </Routes>
       </GameNavigationProvider></MemoryRouter>,
     );
@@ -229,8 +229,8 @@ describe('ReportDetailPage', () => {
     };
 
     const { rerender } = render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
-        <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
+      <MemoryRouter initialEntries={['/report/7']}><GameNavigationProvider>
+        <Routes><Route path="/report/:taskId" element={<ReportDetailPage />} /></Routes>
       </GameNavigationProvider></MemoryRouter>,
     );
 
@@ -244,8 +244,8 @@ describe('ReportDetailPage', () => {
       currentMove: 1,
     };
     rerender(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
-        <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
+      <MemoryRouter initialEntries={['/report/7']}><GameNavigationProvider>
+        <Routes><Route path="/report/:taskId" element={<ReportDetailPage />} /></Routes>
       </GameNavigationProvider></MemoryRouter>,
     );
     expect(screen.getByTestId('mock-playback-bar')).toHaveTextContent('1/2');

@@ -48,32 +48,32 @@ const Dashboard = () => {
             title: i18n.t('btn:Play', 'Play'), 
             desc: i18n.t('dashboard:play_desc', "Challenge AI opponents or play against friends. Features Rated games to establish your rank."), 
             icon: <SportsEsportsIcon fontSize="large"/>, 
-            path: "/galaxy/play" 
+            path: "/play"
         },
         { 
             title: i18n.t('Research', 'Research'), 
             desc: i18n.t('dashboard:research_desc', "Analyze games with AI, explore variations, and manage your SGF library."), 
             icon: <ScienceIcon fontSize="large"/>, 
-            path: "/galaxy/research" 
+            path: "/research"
         },
         { 
             title: i18n.t('analysis:report', 'Review'),
             desc: i18n.t('dashboard:report_desc', "Generate move-by-move analysis reports and review your games."), 
             icon: <AssessmentIcon fontSize="large"/>, 
-            path: "/galaxy/report",
+            path: "/report",
             disabled: false 
         },
         {
             title: i18n.t('Live', 'Live'),
             desc: i18n.t('dashboard:live_desc', "Watch top games and live tournaments with AI analysis."),
             icon: <LiveTvIcon fontSize="large"/>,
-            path: "/galaxy/live"
+            path: "/live"
         },
         {
             title: i18n.t('Tsumego', 'Tsumego'),
             desc: i18n.t('dashboard:tsumego_desc', "Practice life and death problems to sharpen your reading skills."),
             icon: <ExtensionIcon fontSize="large"/>,
-            path: "/galaxy/tsumego"
+            path: "/tsumego"
         }
     ];
 

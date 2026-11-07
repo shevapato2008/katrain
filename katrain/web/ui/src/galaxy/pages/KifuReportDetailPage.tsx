@@ -23,7 +23,7 @@ import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import LiveMatchDisplayControls from './live/LiveMatchDisplayControls';
 import ReplayBoard3D from '../components/board/ReplayBoard3D';
 
-const BACK_TO = '/galaxy/kifu';
+const BACK_TO = '/kifu';
 
 export default function KifuReportDetailPage({ replayOnly = false }: { replayOnly?: boolean }) {
   const { albumId } = useParams<{ albumId: string }>();

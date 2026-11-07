@@ -79,7 +79,7 @@ const ResearchPage = () => {
             const game = await saveBoard();
             if (liveIdentity.current !== requestedIdentity) return;
             const task = await createReport({ userGameId: game.id, totalMoves: game.move_count });
-            if (task && liveIdentity.current === requestedIdentity) navigate('/galaxy/report');
+            if (task && liveIdentity.current === requestedIdentity) navigate('/report');
         } catch (error) { if (liveIdentity.current === requestedIdentity) setReportPreparationError(membershipErrorCode(error, 'report_failed')); }
         finally { setReportBusy(false); }
     }, [createReport, identityKey, isAuthenticated, navigate, reportBusy, saveBoard, status]);
@@ -122,7 +122,7 @@ const ResearchPage = () => {
     }, [searchParams, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* 「进入研究室」的入口：`?user_game_id=<uuid>`（复盘·报告详情页 → 这里）。
-       Fan 2026-08-22 点头补上 —— 在此之前报告页那个按钮只 `navigate('/galaxy/research')`，
+       Fan 2026-08-22 点头补上 —— 在此之前报告页那个按钮只 `navigate('/research')`，
        落到一张空棋盘。
 
        和上面那条 `?kifu_id=` 是**两个 id 空间**：那条走棋谱库 `KifuAPI.getAlbum`，
@@ -193,7 +193,7 @@ const ResearchPage = () => {
                     <ModulePlate
                         title={t('Research', '研究')}
                         subtitle={t('research:move_counter', '{current} / {total} 手').replace('{current}', String(Math.max(0, board.currentMove - board.handicapCount))).replace('{total}', String(board.moves.length - board.handicapCount))}
-                        backTo="/galaxy/research"
+                        backTo="/research"
                         showBack={false}
                     />
                 )}
@@ -300,7 +300,7 @@ const ResearchPage = () => {
             />
             <ConsumptionQuoteDialog quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onCancel={paid.cancel} onConfirm={() => void paid.confirm()} />
             <ConsumptionQuoteDialog quote={reportQuote?.quote ?? null} busy={quoteBusy} error={reportBillingError ? reportError : null} onCancel={cancelQuote}
-                onConfirm={() => { void confirmQuote().then((task) => { if (task) navigate('/galaxy/report'); }).catch(() => undefined); }} />
+                onConfirm={() => { void confirmQuote().then((task) => { if (task) navigate('/report'); }).catch(() => undefined); }} />
             <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
             <AuthRequiredDialog
                 open={authPromptOpen}

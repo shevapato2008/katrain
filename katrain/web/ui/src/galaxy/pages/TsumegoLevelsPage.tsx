@@ -146,7 +146,7 @@ const TsumegoLevelsPage = () => {
         key={level.level}
         data-testid="tsumego-rung"
         aria-label={rowLabel}
-        onClick={() => navigate(`/galaxy/tsumego/${level.level}`)}
+        onClick={() => navigate(`/tsumego/${level.level}`)}
         sx={{
           width: '100%',
           display: 'grid',

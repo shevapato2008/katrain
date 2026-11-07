@@ -145,7 +145,7 @@ const TsumegoUnitsPage = () => {
       <ContentPageHeader
         title={getCategoryName(category || '')}
         parentLabel={level?.toUpperCase()}
-        parentTo={`/galaxy/tsumego/${level}`}
+        parentTo={`/tsumego/${level}`}
       />
       <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
         {t('tsumego:selectUnit')} · {interpolate(t('tsumego:unitDesc'), { total: totalProblems, units: totalUnits })}
@@ -176,7 +176,7 @@ const TsumegoUnitsPage = () => {
               }
             }}
           >
-            <CardActionArea onClick={() => navigate(`/galaxy/tsumego/${level}/${category}/${unit.unitNumber}`)}>
+            <CardActionArea onClick={() => navigate(`/tsumego/${level}/${category}/${unit.unitNumber}`)}>
               <Box
                 sx={{
                   display: 'flex',

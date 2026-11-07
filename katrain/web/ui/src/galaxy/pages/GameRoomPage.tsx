@@ -135,11 +135,11 @@ const GameRoomPage = () => {
         } catch (e) {
             console.error("Failed to leave game:", e);
         }
-        navigate('/galaxy/play/human');
+        navigate('/play/human');
     }, [sessionId, token, navigate]);
 
     const handleBackToLobby = useCallback(() => {
-        navigate('/galaxy/play/human');
+        navigate('/play/human');
     }, [navigate]);
 
     const handleActionWrapper = useCallback((action: string) => {
@@ -189,7 +189,7 @@ const GameRoomPage = () => {
         try { await handleAction('resign'); } catch { /* surfaced by hook */ }
     }, [handleAction]);
 
-    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert><Button onClick={() => navigate('/galaxy/play/human')}>{t('game_room:back_to_lobby', '返回大厅')}</Button></Box>;
+    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert><Button onClick={() => navigate('/play/human')}>{t('game_room:back_to_lobby', '返回大厅')}</Button></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
     const isBlack = gameState.players_info.B.name === user?.username;
@@ -207,7 +207,7 @@ const GameRoomPage = () => {
        只有进行中的自己的对局才弹那句「离开将判负」的确认框。 */
     const handleLeave = () => {
         if (!isPlayer || isGameOver || gameEndData) {
-            navigate('/galaxy/play/human');
+            navigate('/play/human');
         } else {
             setShowLeaveConfirm(true);
         }
@@ -347,7 +347,7 @@ const GameRoomPage = () => {
                                         ? <Chip size="small" color="primary" label={t('game_room:your_turn', '轮到你了')} />
                                         : <Chip size="small" variant="outlined" label={t('game_room:opponents_turn', '对手回合')} />
                         }
-                        backTo="/galaxy/play/human"
+                        backTo="/play/human"
                         backLabel={t('game_room:lobby_short', '大厅')}
                     />
                 )}

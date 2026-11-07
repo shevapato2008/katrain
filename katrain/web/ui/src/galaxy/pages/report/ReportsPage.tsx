@@ -381,7 +381,7 @@ export default function ReportsPage() {
           modulePlate={(
             <ModulePlate
               title={t('report:my_reports', 'Review')}
-              backTo="/galaxy/report"
+              backTo="/report"
               showBack={false}
             />
           )}
@@ -454,7 +454,7 @@ export default function ReportsPage() {
             subtitle={plateSubtitle}
             status={plateStatus}
             /* 复盘是一级导航页，没有上一级 —— 同棋谱库页 / 直播列表页。 */
-            backTo="/galaxy/report"
+            backTo="/report"
             showBack={false}
           />
         )}
@@ -569,7 +569,7 @@ export default function ReportsPage() {
                           reportState={reportStatesByGame[game.id] || {}}
                           onSelect={() => setSelectedGameId(game.id)}
                           onCreateReport={(reportType) => handleCreateReport(game, reportType)}
-                          onOpenReport={(taskId) => navigate(`/galaxy/report/${taskId}`)}
+                          onOpenReport={(taskId) => navigate(`/report/${taskId}`)}
                           onRetry={(taskId) => handleRetry(taskId)}
                           onDelete={() => setDeleteTarget(game.id)}
                         />

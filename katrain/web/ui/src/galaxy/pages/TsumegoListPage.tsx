@@ -111,7 +111,7 @@ const TsumegoListPage = () => {
       <ContentPageHeader
         title={`${t('tsumego:unit')} ${unitNumber}`}
         parentLabel={getCategoryName(category || '')}
-        parentTo={`/galaxy/tsumego/${level}/${category}`}
+        parentTo={`/tsumego/${level}/${category}`}
         status={
           <Chip
             label={`${completedCount}/${problems.length}`}
@@ -132,7 +132,7 @@ const TsumegoListPage = () => {
               initialBlack={problem.initialBlack}
               initialWhite={problem.initialWhite}
               progress={progress[problem.id]}
-              onClick={() => navigate(`/galaxy/tsumego/problem/${problem.id}`)}
+              onClick={() => navigate(`/tsumego/problem/${problem.id}`)}
             />
           </Grid>
         ))}

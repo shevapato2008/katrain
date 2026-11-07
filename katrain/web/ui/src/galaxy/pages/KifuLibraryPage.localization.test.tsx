@@ -46,7 +46,7 @@ const deferred = <T,>() => {
   const promise = new Promise<T>((done) => { resolve = done; });
   return { promise, resolve };
 };
-const page = () => <ThemeProvider theme={createTheme()}><MemoryRouter initialEntries={['/galaxy/kifu?q=原黑&page=2']}><KifuLibraryPage /></MemoryRouter></ThemeProvider>;
+const page = () => <ThemeProvider theme={createTheme()}><MemoryRouter initialEntries={['/kifu?q=原黑&page=2']}><KifuLibraryPage /></MemoryRouter></ThemeProvider>;
 
 beforeEach(() => {
   vi.clearAllMocks();

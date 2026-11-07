@@ -63,7 +63,7 @@ export default function TutorialBookDetailPage() {
       <ContentPageHeader
         title={book.title}
         parentLabel={book.category}
-        parentTo={`/galaxy/tutorials/${book.category}`}
+        parentTo={`/tutorials/${book.category}`}
       />
       {book.author && <Typography variant="body2" color="text.secondary" sx={{ mt: 1, display: 'block' }}>{book.author}</Typography>}
 
@@ -80,7 +80,7 @@ export default function TutorialBookDetailPage() {
               {(sections[ch.id] ?? []).map(sec => (
                 <ListItemButton
                   key={sec.id}
-                  onClick={() => navigate(`/galaxy/tutorials/section/${sec.id}`)}
+                  onClick={() => navigate(`/tutorials/section/${sec.id}`)}
                   sx={{ pl: 1 }}
                 >
                   {/* Play button — fixed width for alignment, visible only when video exists */}

@@ -167,13 +167,13 @@ const TsumegoProblemPage: React.FC = () => {
   // Navigation handlers
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      navigate(`/galaxy/tsumego/problem/${problemList[currentIndex - 1].id}`);
+      navigate(`/tsumego/problem/${problemList[currentIndex - 1].id}`);
     }
   };
 
   const handleNext = () => {
     if (currentIndex < problemList.length - 1) {
-      navigate(`/galaxy/tsumego/problem/${problemList[currentIndex + 1].id}`);
+      navigate(`/tsumego/problem/${problemList[currentIndex + 1].id}`);
     }
   };
 
@@ -278,7 +278,7 @@ const TsumegoProblemPage: React.FC = () => {
       <Link
         component="button"
         variant="body2"
-        onClick={() => navigate('/galaxy/tsumego')}
+        onClick={() => navigate('/tsumego')}
         sx={{ cursor: 'pointer' }}
       >
         {t('Tsumego')}
@@ -286,7 +286,7 @@ const TsumegoProblemPage: React.FC = () => {
       <Link
         component="button"
         variant="body2"
-        onClick={() => navigate(`/galaxy/tsumego/${problem.level}`)}
+        onClick={() => navigate(`/tsumego/${problem.level}`)}
         sx={{ cursor: 'pointer' }}
       >
         {problem.level.toUpperCase()}
@@ -294,7 +294,7 @@ const TsumegoProblemPage: React.FC = () => {
       <Link
         component="button"
         variant="body2"
-        onClick={() => navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`)}
+        onClick={() => navigate(`/tsumego/${problem.level}/${problem.category}`)}
         sx={{ cursor: 'pointer' }}
       >
         {categoryLabel}
@@ -349,7 +349,7 @@ const TsumegoProblemPage: React.FC = () => {
           <ModulePlate
             title={t('tsumego:problem_n').replace('{n}', String(problemNumber))}
             subtitle={`${problem.level.toUpperCase()} · ${categoryLabel} · ${problemNumber} / ${totalProblems}`}
-            backTo={`/galaxy/tsumego/${problem.level}/${problem.category}`}
+            backTo={`/tsumego/${problem.level}/${problem.category}`}
             backLabel={categoryLabel}
           />
         )}

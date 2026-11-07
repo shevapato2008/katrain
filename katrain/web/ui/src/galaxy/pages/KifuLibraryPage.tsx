@@ -410,7 +410,7 @@ export default function KifuLibraryPage() {
 
   const handleViewReport = useCallback(() => {
     if (selectedId !== null) {
-      navigate(`/galaxy/kifu/${selectedId}/${visibleSelectedAlbum?.has_analysis ? 'report' : 'replay'}`);
+      navigate(`/kifu/${selectedId}/${visibleSelectedAlbum?.has_analysis ? 'report' : 'replay'}`);
     }
   }, [selectedId, visibleSelectedAlbum?.has_analysis, navigate]);
 
@@ -498,7 +498,7 @@ export default function KifuLibraryPage() {
           subtitle={plateSubtitle}
           status={plateStatus}
           /* 棋谱库是一级导航页，没有上一级 —— 同研究页（`ResearchPage.tsx:501`）。 */
-          backTo="/galaxy/kifu"
+          backTo="/kifu"
           showBack={false}
         />
       )}

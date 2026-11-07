@@ -65,8 +65,8 @@ const makeState = (over: Partial<GameState> = {}): GameState => ({
 } as GameState);
 
 const renderPage = () => render(
-  <MemoryRouter initialEntries={['/galaxy/play/game/s1']}>
-    <Routes><Route path="/galaxy/play/game/:sessionId" element={<GameRoomPage />} /></Routes>
+  <MemoryRouter initialEntries={['/play/human/room/s1']}>
+    <Routes><Route path="/play/human/room/:sessionId" element={<GameRoomPage />} /></Routes>
   </MemoryRouter>
 );
 

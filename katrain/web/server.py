@@ -3432,7 +3432,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         is_player = current_user.id in (session.player_b_id, session.player_w_id)
         if not is_player:
             # Spectator leaving - just return
-            return {"status": "left", "redirect": "/galaxy/play/human"}
+            return {"status": "left", "redirect": "/play/human"}
 
         # Player leaving = forfeit
         winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
@@ -3444,7 +3444,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.game_ended = True
                 session.last_state = session.katrain.get_state()
             await app.state.pvp_lobby_bots.finish(session, reason="forfeit", result=result)
-            return {"status": "forfeited", "redirect": "/galaxy/play/human"}
+            return {"status": "forfeited", "redirect": "/play/human"}
 
         try:
             if not _is_guest_participant(app, session):
@@ -3470,7 +3470,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Clean up the session
         manager.remove_session(request.session_id)
 
-        return {"status": "forfeited", "redirect": "/galaxy/play/human"}
+        return {"status": "forfeited", "redirect": "/play/human"}
 
     @app.post("/api/timer/pause")
     def pause_timer(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
@@ -4584,11 +4584,46 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             elif session.sockets:
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
-    # SPA Routing for Galaxy UI
-    @app.get("/galaxy", response_class=FileResponse)
-    @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
-    async def serve_galaxy_app(full_path: str = None):
+    # Only known Galaxy pages receive the SPA shell; other paths remain real 404s.
+    async def serve_galaxy_app():
         return FileResponse(static_root / "index.html", headers={"Cache-Control": "no-cache"})
+
+    galaxy_paths = (
+        "/",
+        "/play",
+        "/play/ai",
+        "/play/game/{session_id}",
+        "/play/human",
+        "/play/human/room/{session_id}",
+        "/research",
+        "/membership",
+        "/report",
+        "/report/{task_id}",
+        "/kifu",
+        "/kifu/{album_id}/replay",
+        "/kifu/{album_id}/report",
+        "/live",
+        "/live/{match_id}",
+        "/tsumego",
+        "/tsumego/problem/{problem_id}",
+        "/tsumego/{level}",
+        "/tsumego/{level}/{category}",
+        "/tsumego/{level}/{category}/{unit}",
+        "/tutorials",
+        "/tutorials/book/{book_id}",
+        "/tutorials/section/{section_id}",
+        "/tutorials/{category}",
+    )
+    for path in galaxy_paths:
+        # The final static mount wins over automatic slash redirects, so register both.
+        for route_path in (path,) if path == "/" else (path, path + "/"):
+            app.add_api_route(
+                route_path,
+                serve_galaxy_app,
+                methods=["GET", "HEAD"],
+                response_class=FileResponse,
+                include_in_schema=False,
+            )
 
     # SPA Routing for Kiosk UI
     @app.get("/kiosk", response_class=FileResponse)

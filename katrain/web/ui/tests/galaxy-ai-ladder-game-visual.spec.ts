@@ -79,7 +79,7 @@ test('Galaxy 升降级对弈结算页 1440x900', async ({ page }) => {
     }));
   }
 
-  await page.goto('/galaxy/play/game/ranked-demo?mode=rated');
+  await page.goto('/play/game/ranked-demo?mode=rated');
   await expect(page.getByTestId('board-page-shell')).toBeVisible();
   await expect(page.getByRole('heading', { name: '升降级对弈' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回升降级' })).toBeVisible();

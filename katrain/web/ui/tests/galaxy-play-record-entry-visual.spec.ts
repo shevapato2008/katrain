@@ -56,7 +56,7 @@ for (const viewport of [
   test(`Galaxy 对局记录入口 ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await prepareGalaxyPlay(page);
-    await page.goto('/galaxy/play');
+    await page.goto('/play');
 
     await expect(page.getByRole('heading', { name: '对局', exact: true })).toBeVisible();
     const recordsButton = page.getByRole('button', { name: '对局记录', exact: true });
@@ -74,6 +74,6 @@ for (const viewport of [
     await page.screenshot({ path: screenshotPath });
 
     await recordsButton.click();
-    await expect(page).toHaveURL(/\/galaxy\/report$/);
+    await expect(page).toHaveURL('/report');
   });
 }

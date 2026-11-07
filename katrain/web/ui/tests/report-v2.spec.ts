@@ -202,7 +202,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 2048, height: 108
     const kiosk = viewport.width === 1024;
     test(`${kiosk ? 'kiosk' : 'Galaxy'} ${viewport.width} ${professional ? 'professional' : 'personal'}`, async ({ page }) => {
       await page.setViewportSize(viewport); await prepare(page);
-      await page.goto(kiosk ? professional ? '/kiosk/kifu/7' : '/kiosk/report/42' : professional ? '/galaxy/kifu/7/report' : '/galaxy/report/42');
+      await page.goto(kiosk ? professional ? '/kiosk/kifu/7' : '/kiosk/report/42' : professional ? '/kifu/7/report' : '/report/42');
       const rail = page.getByTestId(kiosk ? professional ? 'kifu-report-detail-shell' : 'report-detail-shell' : 'report-analysis-layout');
       await expect(page.getByTestId('report-candidate-list')).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
@@ -257,7 +257,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 2048, height: 108
 }
 
 test('unresolved report exposes raw SGF komi and keeps the WenKai dialog font', async ({ page }) => {
-  await prepare(page, true); await page.goto('/galaxy/kifu/7/report');
+  await prepare(page, true); await page.goto('/kifu/7/report');
   await expect(page.getByTestId('report-meta-panel')).toContainText('规则待核验');
   await expect(page.getByTestId('report-meta-panel')).not.toContainText('50.0%');
   await page.getByRole('button', { name: '对局详情' }).click();
@@ -269,7 +269,7 @@ test('unresolved report exposes raw SGF komi and keeps the WenKai dialog font', 
 for (const kiosk of [false, true]) test(`professional ${kiosk ? 'kiosk' : 'Galaxy'} plays the real stone wave after a gesture and respects mute`, async ({ page }) => {
   await page.setViewportSize(kiosk ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
   await prepare(page, false, true);
-  await page.goto(kiosk ? '/kiosk/kifu/7' : '/galaxy/kifu/7/report');
+  await page.goto(kiosk ? '/kiosk/kifu/7' : '/kifu/7/report');
   await expect(page.getByTestId('report-candidate-list')).toBeVisible();
   expect(await page.evaluate(() => (window as any).__stonePlays)).toBe(0);
   const previous = page.getByRole('button', { name: kiosk ? '上一手' : 'live:previous', exact: true });

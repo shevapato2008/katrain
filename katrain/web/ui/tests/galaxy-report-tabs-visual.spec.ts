@@ -247,7 +247,7 @@ const TABS = [
 test('Galaxy report fixed rail at 2048×1080', async ({ page }) => {
   await page.setViewportSize({ width: 2048, height: 1080 });
   await prepare(page);
-  await page.goto('/galaxy/report/1');
+  await page.goto('/report/1');
   await expect(page.getByTestId('report-analysis-layout')).toBeVisible({ timeout: 15000 });
   await page.screenshot({ path: `${OUT}/desktop-2048.png`, fullPage: false });
   const rail = page.getByTestId('board-rail-scroll');
@@ -264,7 +264,7 @@ test('Galaxy report fixed rail at 2048×1080', async ({ page }) => {
 test('Galaxy 复盘右栏四个统计 tab', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await prepare(page);
-  await page.goto('/galaxy/report/1');
+  await page.goto('/report/1');
 
   const tabs = page.locator('.MuiTabs-root').first();
   await expect(tabs).toBeVisible({ timeout: 15000 });
@@ -365,7 +365,7 @@ for (const width of [1024, 1180, 1440]) {
   test(`AI 推荐表在 ${width}px 下不溢出右栏`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await prepare(page);
-    await page.goto('/galaxy/report/1');
+    await page.goto('/report/1');
     await expect(page.locator('.MuiTabs-root').first()).toBeVisible({ timeout: 15000 });
 
     const m = await page.evaluate(() => {
@@ -422,7 +422,7 @@ for (const chart of CHART_TABS) {
     for (const width of [1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await prepare(page);
-      await page.goto('/galaxy/report/1');
+      await page.goto('/report/1');
       await expect(page.locator('.MuiTabs-root').first()).toBeVisible({ timeout: 15000 });
       await page.locator('.MuiTabs-root').first().getByRole('tab').nth(chart.index).click();
       await page.waitForTimeout(200);

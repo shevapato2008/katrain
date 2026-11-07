@@ -7,7 +7,7 @@
     <title>智星盒 · 围棋</title>
     <script>
       // Start the one bounded library request while application modules download.
-      if (/^\/(galaxy|kiosk)\/kifu\/?$/.test(location.pathname)) {
+      if (/^\/(?:kiosk\/)?kifu\/?$/.test(location.pathname)) {
         var query = new URLSearchParams(location.search);
         var params = new URLSearchParams();
         if (query.get('q')) params.set('q', query.get('q'));

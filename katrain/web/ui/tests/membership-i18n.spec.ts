@@ -98,7 +98,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
     test.setTimeout(120_000);
     await page.setViewportSize(surface === 'kiosk' ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
     const backend = await bootMembership(page);
-    await page.goto(`/${surface}/membership`);
+    await page.goto(`${surface === 'kiosk' ? '/kiosk' : ''}/membership`);
     await expect(page.getByRole('progressbar')).toHaveCount(2);
     for (const lang of LANGUAGES) {
       await switchLanguage(page, lang);
@@ -122,7 +122,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
   test(`${surface}: German decimal display preserves numeric progress values`, async ({ page }) => {
     await page.setViewportSize(surface === 'kiosk' ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
     await bootMembership(page, { language: 'de' });
-    await page.goto(`/${surface}/membership`);
+    await page.goto(`${surface === 'kiosk' ? '/kiosk' : ''}/membership`);
     const progress = page.getByRole('progressbar').first();
     await expect(progress).toHaveAttribute('aria-valuenow', '65.6');
     await expect(module(page, surface)).toContainText('65,6');
@@ -137,7 +137,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
     test.setTimeout(60_000);
     await page.setViewportSize(surface === 'kiosk' ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
     const backend = await bootMembership(page, { language: 'en', autoPay: false });
-    await page.goto(`/${surface}/membership`);
+    await page.goto(`${surface === 'kiosk' ? '/kiosk' : ''}/membership`);
     await expect(page.getByRole('progressbar')).toHaveCount(2);
     await checkTab(page, surface, 'en', 1);
     const root = module(page, surface);
@@ -191,7 +191,7 @@ test('Galaxy 375px: Chinese, English and German plans and top-up stay usable', a
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 375, height: 812 });
   await bootMembership(page);
-  await page.goto('/galaxy/membership');
+  await page.goto('/membership');
   await expect(page.getByRole('progressbar')).toHaveCount(2);
   for (const lang of ['cn', 'en', 'de']) {
     await switchLanguage(page, lang);

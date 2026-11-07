@@ -43,7 +43,7 @@ test('Galaxy 升降级对弈准备页 1440x900', async ({ page }) => {
     },
   }));
 
-  await page.goto('/galaxy/play/ai?mode=rated');
+  await page.goto('/play/ai?mode=rated');
   await expect(page.getByRole('heading', { name: '升降级对弈' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
   await expect(page.getByRole('button', { name: '开始正式对局' })).toBeEnabled();

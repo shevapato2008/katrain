@@ -193,7 +193,7 @@ for (const testCase of CASES) {
       json: readyStatus(testCase.blocking),
     }));
 
-    await page.goto('/galaxy/play/ai?mode=rated');
+    await page.goto('/play/ai?mode=rated');
     await expect(page.getByText('未完成对局')).toBeVisible();
 
     const measured = await measurePanel(page);
@@ -255,7 +255,7 @@ test('远端那一格的加长代价句:galaxy 要求整块面板零溢出,所�
     status: 500, json: { detail: 'boom' },
   }));
 
-  await page.goto('/galaxy/play/ai?mode=rated');
+  await page.goto('/play/ai?mode=rated');
   await expect(page.getByText('未完成对局')).toBeVisible();
 
   // 今天改的那几句,galaxy 侧此前**一条断言都没有**(只有跨设备那条钉了代价行)。
@@ -314,7 +314,7 @@ test('内容最多的那一格:同步状态行 + 重试 + 开新局 + 一条错�
     status: 500, json: { detail: 'boom' },
   }));
 
-  await page.goto('/galaxy/play/ai?mode=rated');
+  await page.goto('/play/ai?mode=rated');
   await expect(page.getByText('未完成对局')).toBeVisible();
 
   const measured = await measurePanel(page);

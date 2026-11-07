@@ -16,12 +16,12 @@ test.describe('Tutorial Module V2', () => {
   test.beforeEach(async ({ page }) => { await login(page); });
 
   test('Tutorial link appears in sidebar', async ({ page }) => {
-    await page.goto('/galaxy');
+    await page.goto('/');
     await expect(page.getByText('教程')).toBeVisible({ timeout: 10000 });
   });
 
   test('Landing page shows 4 category cards', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await expect(page.getByText('入门')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('布局')).toBeVisible();
     await expect(page.getByText('中盘')).toBeVisible();
@@ -29,19 +29,19 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Landing page shows category summaries', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await expect(page.getByText('围棋基础知识')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('开局阶段')).toBeVisible();
   });
 
   test('Clicking category navigates to books list', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await expect(page.getByText('← 返回')).toBeVisible({ timeout: 10000 });
   });
 
   test('Books page shows imported books or empty state', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     // Should show either a book card or "该分类暂无书籍"
     const hasBook = await page.locator('.MuiCard-root').first().isVisible({ timeout: 5000 }).catch(() => false);
@@ -50,14 +50,14 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Empty category shows appropriate message', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('入门').first().click();
     // 入门 likely has no imported books
     await expect(page.getByText('该分类暂无书籍')).toBeVisible({ timeout: 10000 });
   });
 
   test('Clicking book navigates to chapter/section tree', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await page.waitForTimeout(1000);
     const card = page.locator('.MuiCard-root').first();
@@ -69,7 +69,7 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Book detail shows chapters with section counts', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await page.waitForTimeout(1000);
     const card = page.locator('.MuiCard-root').first();
@@ -82,7 +82,7 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Section link opens figure page', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await page.waitForTimeout(1000);
     const card = page.locator('.MuiCard-root').first();
@@ -100,7 +100,7 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Figure page shows page screenshot', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await page.waitForTimeout(1000);
     const card = page.locator('.MuiCard-root').first();
@@ -119,7 +119,7 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Figure navigation: next/prev between figures', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await page.waitForTimeout(1000);
     const card = page.locator('.MuiCard-root').first();
@@ -143,7 +143,7 @@ test.describe('Tutorial Module V2', () => {
   });
 
   test('Back navigation works from each page', async ({ page }) => {
-    await page.goto('/galaxy/tutorials');
+    await page.goto('/tutorials');
     await page.getByText('布局').first().click();
     await page.waitForTimeout(1000);
     // Click back

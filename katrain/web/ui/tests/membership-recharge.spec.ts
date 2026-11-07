@@ -37,7 +37,7 @@ async function kioskReference(page: Page, tab: string, name: string) {
 test('Galaxy 1440: usage, plans, recharge and server-confirmed order refresh', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const backend = await boot(page);
-  await page.goto('/galaxy/membership');
+  await page.goto('/membership');
   await expect(page.getByRole('progressbar')).toHaveCount(2);
   await expect(page.getByRole('progressbar').first()).toHaveAttribute('aria-valuenow', '65.6');
   await expect(page.getByRole('progressbar').last()).toHaveAttribute('aria-valuenow', '80');
@@ -116,7 +116,7 @@ test('Kiosk 1024×600: usage, plans, pricing and in-canvas order/dialog', async 
 test('Galaxy 375: main membership page has no horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await boot(page);
-  await page.goto('/galaxy/membership?tab=plans');
+  await page.goto('/membership?tab=plans');
   await expect(page.getByRole('button', { name: '选择 Plus', exact: true })).toBeVisible();
   await noHorizontalOverflow(page); await noInternalUnits(page);
   await shot(page, 'galaxy-plans-375.png');
@@ -168,7 +168,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
     await page.setViewportSize(surface === 'kiosk' ? { width: 1024, height: 600 } : { width: 1440, height: 900 });
     const backend = await boot(page);
     const consumption = await consumptionBackend(page, 'wallet');
-    await page.goto(`/${surface}/membership?tab=plans`);
+    await page.goto(`${surface === 'kiosk' ? '/kiosk' : ''}/membership?tab=plans`);
     if (surface === 'kiosk') await page.getByRole('tab', { name: '会员', exact: true }).click();
     const membershipPage = page.getByTestId(surface === 'kiosk' ? 'kiosk-membership-page' : 'membership-page');
     for (const count of [30, 90, 240]) await expect(membershipPage).toContainText(`30天共约${count}盘`);
@@ -189,7 +189,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
     } else {
       expect(backend.requests).toHaveLength(0);
     }
-    await page.goto(`/${surface}/research?user_game_id=runtime-game&analyze=1`);
+    await page.goto(`${surface === 'kiosk' ? '/kiosk' : ''}/research?user_game_id=runtime-game&analyze=1`);
     await page.getByRole('button', { name: '领地', exact: true }).click();
     const dialog = page.getByTestId('consumption-quote');
     const confirm = dialog.getByRole('button', { name: '使用API积分，最多扣0.01', exact: true });
@@ -212,7 +212,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
     const backend = await consumptionBackend(page);
     const rawRequests: string[] = [];
     page.on('request', request => { if (/\/api\/(analysis\/(quick|scan|current)|hint)(?:[/?]|$)/.test(request.url())) rawRequests.push(request.url()); });
-    await page.goto(`/${surface}/research?user_game_id=runtime-game&analyze=1`);
+    await page.goto(`${surface === 'kiosk' ? '/kiosk' : ''}/research?user_game_id=runtime-game&analyze=1`);
     await page.getByRole('button', { name: '领地', exact: true }).click();
     const dialog = page.getByTestId('consumption-quote');
     await expect(dialog).toContainText('最多 0.01 积分');
@@ -232,7 +232,7 @@ for (const surface of ['galaxy', 'kiosk'] as const) {
     await expect(dialog).toContainText('最多 3.01 积分');
     expect(backend.reportRequests).toHaveLength(0);
     await dialog.getByRole('button', { name: '确认并开始', exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/${surface}/report$`));
+    await expect(page).toHaveURL(`${surface === 'kiosk' ? '/kiosk' : ''}/report`);
     expect(backend.reportRequests).toHaveLength(1);
     expect(backend.reportRequests[0]).toMatchObject({ user_game_id: 'runtime-game', quote_token: expect.stringMatching(/^signed-report/), idempotency_key: expect.any(String) });
     expect(rawRequests).toEqual([]);

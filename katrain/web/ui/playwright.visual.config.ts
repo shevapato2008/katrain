@@ -19,7 +19,7 @@ export default defineConfig({
   } }],
   webServer: {
     command: `npm run dev -- --host 127.0.0.1 --port ${visualPort}${visualPortEnv ? ' --strictPort' : ''}`,
-    url: `http://127.0.0.1:${visualPort}/galaxy/play`,
+    url: `http://127.0.0.1:${visualPort}/play`,
     reuseExistingServer: !visualPortEnv,
     timeout: 120_000,
   },

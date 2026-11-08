@@ -264,5 +264,33 @@
     "en": "View analysis report",
     "jp": "解析レポートを見る",
     "ko": "분석 보고서 보기"
+  },
+  "kifu:page_range": {
+    "cn": "请输入 1 到 {max} 之间的整数页码",
+    "tw": "請輸入 1 到 {max} 之間的整數頁碼",
+    "en": "Enter a whole page number from 1 to {max}",
+    "jp": "1 から {max} までの整数のページ番号を入力してください",
+    "ko": "1부터 {max} 사이의 정수 페이지 번호를 입력하세요"
+  },
+  "kifu:pagination": {
+    "cn": "棋谱分页",
+    "tw": "棋譜分頁",
+    "en": "Game library pages",
+    "jp": "棋譜のページ",
+    "ko": "기보 페이지"
+  },
+  "kifu:jump": {
+    "cn": "跳转",
+    "tw": "跳轉",
+    "en": "Go",
+    "jp": "移動",
+    "ko": "이동"
+  },
+  "kifu:jump_page": {
+    "cn": "跳转页码",
+    "tw": "跳轉頁碼",
+    "en": "Jump to page",
+    "jp": "移動先のページ番号",
+    "ko": "이동할 페이지 번호"
   }
 }

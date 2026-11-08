@@ -26,10 +26,13 @@
   box-shadow: inset 0 2px 5px #0d1d13;
 }
 .kiosk-screen .kiosk-dock {
+  grid-auto-columns: minmax(0, 1fr);
   gap: 4px;
   padding: 7px 14px;
 }
 .kiosk-screen .kiosk-dock__item {
+  min-width: 0;
+  padding: 0 6px;
   height: 68px;
   flex-direction: row;
   gap: 7px;

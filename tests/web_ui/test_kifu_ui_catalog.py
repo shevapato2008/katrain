@@ -21,11 +21,14 @@ def test_kifu_visible_fallback_labels_have_five_language_translations():
         for language in LOCALES
     }
     calls = {}
-    for path in (ROOT / "katrain/web/ui/src/kiosk/pages").glob("Kifu*Page.tsx"):
+    sources = list((ROOT / "katrain/web/ui/src/kiosk/pages").glob("Kifu*Page.tsx"))
+    sources.append(ROOT / "katrain/web/ui/src/components/CompactPagination.tsx")
+    for path in sources:
         for key, default in re.findall(r"\bt\(\s*'([^']+)'\s*,\s*'([^']*)'", path.read_text()):
             if re.search(r"[\u3400-\u9fff]", default):
                 calls[key] = default
     assert "kifu:selected_game" in calls
+    assert "kifu:jump" in calls
     for key in calls:
         for language in LOCALES:
             value = catalogs[language].get(key) or fallback.get(key, {}).get(language)

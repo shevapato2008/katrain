@@ -47,17 +47,18 @@ it('translates missing professional-library labels without waiting for a server 
   mocks.getTranslations.mockResolvedValue({ translations: {} });
   mocks.live.mockResolvedValue({});
   const { i18n } = await import('./i18n');
-  for (const [language, selected, select, library] of [
-    ['cn', '选中这一局', '请选择棋谱', '职业棋谱'],
-    ['tw', '選中這一局', '請選擇棋譜', '職業棋譜'],
-    ['en', 'Selected game', 'Select a game record', 'Professional game library'],
-    ['jp', '選択した対局', '棋譜を選んでください', 'プロ棋譜'],
-    ['ko', '선택한 대국', '기보를 선택하세요', '프로 기보'],
+  for (const [language, selected, select, library, jump] of [
+    ['cn', '选中这一局', '请选择棋谱', '职业棋谱', '跳转'],
+    ['tw', '選中這一局', '請選擇棋譜', '職業棋譜', '跳轉'],
+    ['en', 'Selected game', 'Select a game record', 'Professional game library', 'Go'],
+    ['jp', '選択した対局', '棋譜を選んでください', 'プロ棋譜', '移動'],
+    ['ko', '선택한 대국', '기보를 선택하세요', '프로 기보', '이동'],
   ]) {
     await i18n.loadTranslations(language);
     expect(i18n.t('kifu:selected_game', '选中这一局')).toBe(selected);
     expect(i18n.t('kifu:select_game', '请选择棋谱')).toBe(select);
     expect(i18n.t('kifu:professional_library', '职业棋谱')).toBe(library);
+    expect(i18n.t('kifu:jump', '跳转')).toBe(jump);
   }
   mocks.getTranslations.mockResolvedValue({ translations: { 'kifu:selected_game': 'Server-owned wording' } });
   await i18n.loadTranslations('en');

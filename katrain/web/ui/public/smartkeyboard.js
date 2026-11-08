@@ -18,6 +18,30 @@
   var CAND_PAGE_SIZE = 7;
   var FREQ_KEY = "skbd-freq-v1";
 
+  // Interface language is independent of the EN/Pinyin input mode and its composition.
+  var UI = {
+    zh: {space:"空格", enter:"换行", go:"前往", hide:"收起键盘", unavailable:"中文输入暂不可用", retry:"重试", loading:"中文输入处理中…", empty:"无候选", prev:"上一页候选", next:"下一页候选"},
+    "zh-TW": {space:"空格", enter:"換行", go:"前往", hide:"收起鍵盤", unavailable:"中文輸入暫不可用", retry:"重試", loading:"中文輸入處理中…", empty:"無候選字", prev:"上一頁候選字", next:"下一頁候選字"},
+    en: {space:"Space", enter:"Return", go:"Go", hide:"Hide keyboard", unavailable:"Chinese input unavailable", retry:"Retry", loading:"Processing Chinese input…", empty:"No candidates", prev:"Previous candidates", next:"Next candidates"},
+    ja: {space:"空白", enter:"改行", go:"移動", hide:"キーボードを閉じる", unavailable:"中国語入力を利用できません", retry:"再試行", loading:"中国語入力を処理中…", empty:"候補なし", prev:"前の候補", next:"次の候補"},
+    ko: {space:"공백", enter:"줄바꿈", go:"이동", hide:"키보드 닫기", unavailable:"중국어 입력을 사용할 수 없습니다", retry:"재시도", loading:"중국어 입력 처리 중…", empty:"후보 없음", prev:"이전 후보", next:"다음 후보"}
+  };
+  var CJK_FONTS = {wenkai:'"SmartBox Kai"', kaiti:'"SmartBox CNS Kai"', lishu:'"SmartBox DaoLi"', heiti:'"SmartBox Noto Sans CJK"'};
+  function uiLanguage() {
+    var lang = document.documentElement.lang;
+    if (lang === "zh-CN") lang = "zh";
+    return Object.prototype.hasOwnProperty.call(UI, lang) ? lang : "zh";
+  }
+  function ui(key) { return UI[uiLanguage()][key]; }
+  function applyAppearance() {
+    var lang = uiLanguage();
+    root.lang = lang;
+    var font = document.documentElement.getAttribute("data-smartbox-font");
+    root.style.setProperty("--skbd-cjk", lang === "ja" || lang === "ko"
+      ? CJK_FONTS.heiti : (Object.prototype.hasOwnProperty.call(CJK_FONTS, font) ? CJK_FONTS[font] : CJK_FONTS.wenkai));
+    root.querySelector(".skbd-hide").setAttribute("aria-label", ui("hide"));
+  }
+
   function loadFreq() {
     try {
       var ls = (typeof window !== "undefined") ? window.localStorage : null;
@@ -211,12 +235,15 @@
   function keyLabel(spec) {
     if (typeof spec === "string") return state.shift ? spec.toUpperCase() : spec;
     if (spec.icon) return spec.icon;
-    if (spec.k === "return" && state.target && state.target.enterKeyHint === "go") return state.target.getAttribute("data-enter-label") || "Go";
+    if (spec.k === "return" && state.target && state.target.enterKeyHint === "go") return state.target.getAttribute("data-enter-label") || ui("go");
     if (spec.k === "lang") return state.mode === "zh" ? "中" : "EN";
+    if (spec.k === "space") return ui("space");
+    if (spec.k === "return") return ui("enter");
     return spec.label || spec.k;
   }
 
   function render() {
+    applyAppearance();
     root.classList.toggle("skbd-zh", state.mode === "zh");
     rowsEl.innerHTML = "";
     var rows = LAYOUTS[state.layer];
@@ -500,24 +527,24 @@
     if (useNative() && state.nativeError) {
       var status = document.createElement("span");
       status.className = "skbd-cand-empty";
-      status.textContent = "中文输入暂不可用";
+      status.textContent = ui("unavailable");
       candList.appendChild(status);
       var retry = document.createElement("button");
-      retry.type = "button"; retry.className = "skbd-cand-retry skbd-cand-nav"; retry.textContent = "重试";
+      retry.type = "button"; retry.className = "skbd-cand-retry skbd-cand-nav"; retry.textContent = ui("retry");
       tap(retry, function () { resetNative(); queueNative(null); });
       candList.appendChild(retry);
       return;
     }
     if (useNative() && state.nativePending && !state.cands.length) {
       var loading = document.createElement("span");
-      loading.className = "skbd-cand-empty"; loading.textContent = "中文输入处理中…";
+      loading.className = "skbd-cand-empty"; loading.textContent = ui("loading");
       candList.appendChild(loading);
       return;
     }
     if (!state.buffer) return;
     if (!state.cands.length) {
       var em = document.createElement("span");
-      em.className = "skbd-cand-empty"; em.textContent = "无候选";
+      em.className = "skbd-cand-empty"; em.textContent = ui("empty");
       candList.appendChild(em); return;
     }
     var totalPages = Math.max(1, Math.ceil(state.cands.length / CAND_PAGE_SIZE));
@@ -528,6 +555,7 @@
 
     var prevBtn = document.createElement("button");
     prevBtn.type = "button"; prevBtn.className = "skbd-cand-nav skbd-cand-prev"; prevBtn.textContent = "‹";
+    prevBtn.setAttribute("aria-label", ui("prev"));
     prevBtn.disabled = state.page <= 0 || (useNative() && state.nativePending > 0);
     tap(prevBtn, function () {
       if (state.page > 0) { state.page--; renderCandPage(); }
@@ -570,6 +598,7 @@
 
     var nextBtn = document.createElement("button");
     nextBtn.type = "button"; nextBtn.className = "skbd-cand-nav skbd-cand-next"; nextBtn.textContent = "›";
+    nextBtn.setAttribute("aria-label", ui("next"));
     nextBtn.disabled = state.page >= totalPages - 1 || (useNative() && state.nativePending > 0);
     tap(nextBtn, function () {
       if (state.page < totalPages - 1) { state.page++; renderCandPage(); }
@@ -658,6 +687,9 @@
   function init() {
     if (root) return;
     build();
+    new MutationObserver(function () { render(); }).observe(document.documentElement, {
+      attributes: true, attributeFilter: ["lang", "data-smartbox-font"]
+    });
     document.addEventListener("keydown", onPhysicalKeydown, true);
     document.addEventListener("keyup", onPhysicalKeyup, true);
     document.addEventListener("focusin", function (e) {

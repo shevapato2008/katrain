@@ -1,3 +1,5 @@
+import { useTranslation } from '../../hooks/useTranslation';
+import { kioskText, type KioskMessageKey } from '../appearance/messages';
 import { Icon } from './icons';
 import { DOCK_TABS, dockActiveOf } from './dockRoutes';
 
@@ -16,10 +18,12 @@ export function KioskDock({ pathname, onTab }: {
   pathname: string;
   onTab: (path: string) => void;
 }) {
+  const { lang } = useTranslation();
+  const labelKeys: KioskMessageKey[] = ['play', 'train', 'kifu', 'review', 'growth', 'courses', 'settings'];
   const active = dockActiveOf(pathname);
   return (
-    <nav className="kiosk-dock" aria-label="主导航">
-      {DOCK_TABS.map((tab) => {
+    <nav className="kiosk-dock" aria-label={kioskText(lang, 'navigation')}>
+      {DOCK_TABS.map((tab, index) => {
         const on = active === tab.path;
         return (
           <button
@@ -30,7 +34,7 @@ export function KioskDock({ pathname, onTab }: {
             onClick={() => onTab(tab.path)}
           >
             <Icon name={tab.icon} filled={on} />
-            <span className="kiosk-dock__label">{tab.label}</span>
+            <span className="kiosk-dock__label">{kioskText(lang, labelKeys[index])}</span>
           </button>
         );
       })}

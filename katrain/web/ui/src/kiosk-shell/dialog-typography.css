@@ -92,3 +92,7 @@ body[data-kiosk-typography] .MuiPopover-root [role="dialog"] > .MuiBox-root > st
   font-size: 18px;
   white-space: normal;
 }
+
+.kiosk-appearance-state { position:fixed; inset:0; display:grid; place-content:center; gap:20px; background:#0f1416; color:#eef4ed; font:22px/1.5 "SmartBox Sans","SmartBox Kai",sans-serif; text-align:center; }
+.kiosk-appearance-state button, .kiosk-appearance-refresh button { font:inherit; min-height:44px; padding:6px 20px; color:inherit; border:1px solid #6d927a; border-radius:8px; background:#253b2d; }
+.kiosk-appearance-refresh { position:fixed; bottom:78px; right:20px; z-index:1500; max-width:600px; padding:8px 16px; background:#302d20; color:#fff3cd; border:1px solid #8b774c; border-radius:8px; font:18px/1.4 var(--font-sans); }

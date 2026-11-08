@@ -3,9 +3,14 @@
 from pathlib import Path
 from threading import Lock
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 
-from katrain.web.core.kiosk_preferences import TypographyPreference, TypographyPreferenceStore
+from katrain.web.core.kiosk_preferences import (
+    DeviceAppearance,
+    TypographyPreference,
+    TypographyPreferenceStore,
+    read_device_appearance,
+)
 
 
 router = APIRouter()
@@ -36,3 +41,14 @@ def set_typography(preference: TypographyPreference) -> TypographyPreference:
         return _preference_store().write(preference)
     except OSError as exc:
         raise HTTPException(status_code=503, detail="Typography preference could not be saved") from exc
+
+
+@router.get("/device", response_model=DeviceAppearance)
+def get_device_appearance(response: Response) -> DeviceAppearance:
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return read_device_appearance()
+    except (OSError, ValueError) as exc:
+        raise HTTPException(
+            status_code=503, detail="Device appearance unavailable", headers={"Cache-Control": "no-store"}
+        ) from exc

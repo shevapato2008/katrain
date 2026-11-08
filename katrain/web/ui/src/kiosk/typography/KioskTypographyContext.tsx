@@ -54,7 +54,7 @@ export function useKioskTypography(): TypographyContextValue {
 }
 
 /** One device preference, shared by guests and signed-in kiosk routes. */
-export function KioskTypographyProvider({ children, language }: { children: ReactNode; language: string }) {
+export function KioskTypographyProvider({ children, language, deviceFont }: { children: ReactNode; language: string; deviceFont?: KioskChineseFont }) {
   const [preference, setPreferenceState] = useState(DEFAULT_TYPOGRAPHY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,7 +98,7 @@ export function KioskTypographyProvider({ children, language }: { children: Reac
   }, []);
 
   const setPreference = useCallback((change: Partial<TypographyPreference>) => {
-    const next = { ...current.current, ...change };
+    const next = { ...current.current, ...change, ...(deviceFont ? { font: current.current.font } : {}) };
     if (!isPreference(next) || (next.font === current.current.font && next.size === current.current.size)) return;
     editGeneration.current += 1;
     current.current = next;
@@ -106,7 +106,7 @@ export function KioskTypographyProvider({ children, language }: { children: Reac
     setReadFailed(false);
     setError(null);
     enqueueSave(next);
-  }, [enqueueSave]);
+  }, [enqueueSave, deviceFont]);
 
   const retry = useCallback(() => {
     if (!readFailed) { enqueueSave(current.current); return; }
@@ -145,12 +145,13 @@ export function KioskTypographyProvider({ children, language }: { children: Reac
   }, []);
   useLayoutEffect(() => {
     const chineseUI = language === 'cn' || language === 'tw';
-    document.body.style.setProperty('--kiosk-cjk-font', chineseUI ? fontFaces[preference.font] : fontFaces.wenkai);
+    document.body.style.setProperty('--kiosk-cjk-font', chineseUI ? fontFaces[deviceFont ?? preference.font]
+      : language === 'jp' || language === 'ko' ? '"SmartBox Noto Sans CJK", "SmartBox CJK Scripts", "SmartBox Kai"' : fontFaces.wenkai);
     document.body.style.setProperty('--kiosk-size-step', sizeSteps[preference.size]);
     document.body.setAttribute('data-kiosk-font-size', preference.size);
-  }, [language, preference]);
+  }, [language, preference, deviceFont]);
 
-  return <TypographyContext.Provider value={{ preference, setPreference, loading, saving, error, retry }}>
+  return <TypographyContext.Provider value={{ preference: deviceFont ? { ...preference, font: deviceFont } : preference, setPreference, loading, saving, error, retry }}>
     {children}
   </TypographyContext.Provider>;
 }

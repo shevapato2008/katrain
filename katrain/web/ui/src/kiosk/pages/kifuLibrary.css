@@ -82,7 +82,7 @@ body.skbd-padded .kifu-library .compact-pagination:focus-within {
 .archive-preview__board{width:272px;height:272px;flex:none;overflow:hidden;border-radius:10px}
 .archive-preview p{font-size:18px;line-height:24px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .archive-preview__actions{display:flex;gap:8px;margin-top:auto}
-.archive-preview__actions .kiosk-btn{flex:1;justify-content:center;text-align:center;height:48px;font-size:22px;white-space:nowrap;padding:0 6px}
+.archive-preview__actions .kiosk-btn{flex:1;min-width:0;justify-content:center;text-align:center;min-height:48px;height:auto;font-size:22px;line-height:1.1;white-space:normal;padding:4px 6px}
 .archive-reviewed .kifu-library{grid-template-rows:38px 24px 44px minmax(0,1fr) 44px}
 .archive-reviewed .kifu-library .kiosk-greet{height:38px}
 .archive-reviewed .kifu-library .kiosk-greet b{font-size:22px}

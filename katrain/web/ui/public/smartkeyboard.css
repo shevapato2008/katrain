@@ -11,7 +11,7 @@
   background: #d1d4da;
   padding: 5px 6px calc(5px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -2px 12px rgba(0,0,0,.18);
-  font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-family: "SmartBox Readable Number", "SmartBox Sans", var(--skbd-cjk, "SmartBox Kai"), "SmartBox CJK Scripts", "PingFang SC", sans-serif;
   -webkit-user-select: none; user-select: none;
   touch-action: manipulation;
   transform: translateY(100%);
@@ -19,6 +19,7 @@
 }
 .skbd.skbd-open { transform: translateY(0); }
 .skbd * { box-sizing: border-box; }
+.skbd button { font-family: inherit; }
 
 /* 候选条(方案 B「聚焦流」,W2-T2)。注意:候选条宽度不跟随 .skbd-rows 的 600px
    居中限制 —— 7/页 + 48px chip + 无横向滚动(靠渐隐+‹/›翻页,非滑动)只有在接近

@@ -17,6 +17,8 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useNavigate: () => mockNavigate,
 }));
 
+const strictBox = vi.hoisted(() => ({ enabled: false }));
+vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return strictBox.enabled; } }));
 const mockSetLanguage = vi.fn();
 const typography = vi.hoisted(() => ({
   preference: { font: 'wenkai', size: 'large' },
@@ -390,4 +392,17 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(groups.indexOf('typography')).toBeLessThan(groups.indexOf('about'));
     expect(screen.queryByText('预览')).toBeNull();
   });
+});
+
+
+it('strict Box removes local language and font controls while keeping local size', () => {
+  strictBox.enabled = true;
+  mockGeometry({ loaded: true });
+  mockHealth({ status: 'ok', engines: {} });
+  renderPage();
+  expect(screen.queryByTestId('settings-language')).not.toBeInTheDocument();
+  expect(screen.queryByRole('group', { name: '字体' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '小一号' }));
+  expect(typography.setPreference).toHaveBeenCalledWith({ size: 'medium' });
+  strictBox.enabled = false;
 });

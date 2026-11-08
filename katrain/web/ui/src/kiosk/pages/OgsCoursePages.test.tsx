@@ -316,3 +316,31 @@ it('shows OGS attribution and opens the public source and license download', asy
   fireEvent.click(screen.getByRole('button', { name: '返回课程' }));
   expect(screen.queryByRole('dialog')).toBeNull();
 });
+
+it('refreshes Japanese presentation without resetting a solved physical-board attempt', async () => {
+  const { i18n } = await import('../../i18n');
+  const { API } = await import('../../api');
+  vi.spyOn((await import('../../api/live')).LiveAPI, 'getTranslations').mockResolvedValue({ players: {}, tournaments: {}, rounds: {}, rules: {} });
+  vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: {} });
+  await i18n.loadTranslations('cn');
+  mocks.vision.enabled = true; mocks.vision.recognitionReady = true;
+  mocks.geometry = { status: { phase: 'ready', session_calibrated: true, capabilities: { geometry_ready: true } } };
+  mocks.getCourse.mockImplementation((lang: string) => Promise.resolve(lang === 'ja' ? { ...course, lessons: [{ ...course.lessons[0], title: '布石の基本' }] } : course));
+  mocks.getStep.mockImplementation((_page: number, lang: string) => Promise.resolve(lang === 'ja' ? { ...base, locale: { requested: 'ja', effective: 'ja', text: { title: '布石', instruction: '白番です。Aに打ってください。' } } } : base));
+  renderAt('/kiosk/tutorial/lesson/bl4-opening-4');
+  await screen.findByText('白先，点 A 位。');
+  fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
+  fireEvent.click(screen.getByTestId('ogs-point-2-3'));
+  expect(screen.getByText('回答正确')).toBeInTheDocument();
+  const stones = mocks.physicalOptions?.stones;
+  const problemKey = mocks.physicalOptions?.problemKey;
+  await act(async () => { await i18n.loadTranslations('jp'); });
+  await screen.findByText('白番です。Aに打ってください。');
+  expect(mocks.getStep).toHaveBeenLastCalledWith(1, 'ja', 'kiosk19');
+  expect(screen.getByText('正解')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '実物盤' })).toHaveAttribute('aria-pressed', 'true');
+  expect(mocks.physicalOptions?.stones).toBe(stones);
+  expect(mocks.physicalOptions?.problemKey).toBe(problemKey);
+  await act(async () => { await i18n.loadTranslations('cn'); });
+  vi.restoreAllMocks();
+});

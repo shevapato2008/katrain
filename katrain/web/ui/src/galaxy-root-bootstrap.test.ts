@@ -8,9 +8,9 @@ const html = readFileSync('index.html', 'utf8');
 const prefetchScript = html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
 if (!prefetchScript) throw new Error('Missing inline library prefetch script');
 
-function runPrefetch(path: string, language: string | null = 'en') {
+function runPrefetch(path: string, language: string | null = 'en', strict = false) {
   const fetch = vi.fn().mockResolvedValue({ ok: true });
-  const window: { __kifuListRequest?: { path: string; response: Promise<unknown> } } = {};
+  const window: { __smartboxStrictKiosk?: boolean; __kifuListRequest?: { path: string; response: Promise<unknown> } } = { __smartboxStrictKiosk: strict };
   runInNewContext(prefetchScript!, {
     location: new URL(path, 'https://example.test'),
     URLSearchParams,
@@ -126,4 +126,9 @@ describe('kiosk Galaxy module boundary', () => {
       type: 'asset', fileName: 'kiosk-module-boundary.json', source: JSON.stringify({ galaxyModules }),
     });
   });
+});
+
+
+it('does not preload a strict Box library under a local or default language', () => {
+  expect(runPrefetch('/kiosk/kifu', 'cn', true).fetch).not.toHaveBeenCalled();
 });

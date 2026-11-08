@@ -1,3 +1,4 @@
+import { useTranslation } from '../../hooks/useTranslation';
 import { stoneSpriteUrl } from '../board/stoneAppearance';
 
 export interface SGFPayload {
@@ -56,6 +57,7 @@ const HOSHI_19: [number, number][] = [
 ];
 
 export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, onClick, maxWidth, style, className, unknownStones = [], sourceRegion, knownRegion }: SGFBoardProps) {
+  const { t } = useTranslation();
   const { size, stones, labels = {}, letters = {}, shapes = {}, highlights = [], viewport } = payload;
 
   // Viewport: support rectangular {col, row, cols, rows} and square {col, row, size}
@@ -268,7 +270,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
         const coordinate = stone.point.join(',');
         const annotation = labels[coordinate] || (letters[coordinate] || shapes[coordinate] ? null : '?');
         return <g key={`unknown-${stone.point}`} data-testid="tutorial-unknown-stone">
-          <title>{stone.evidence || '棋子颜色待确认'}</title>
+          <title>{stone.evidence || t("棋子颜色待确认", "棋子颜色待确认")}</title>
           <circle cx={x} cy={y} r={STONE_R} fill="#999c9e" stroke="#4f5357" strokeDasharray="3 2" />
           {annotation && <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fontSize={STONE_R * 1.1} fill="#222" fontFamily="inherit">{annotation}</text>}
         </g>;

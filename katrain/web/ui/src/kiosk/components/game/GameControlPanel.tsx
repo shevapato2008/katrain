@@ -1,3 +1,4 @@
+import { interpolate } from '../../utils/interpolate';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../../kiosk-shell/engine-game-redesign.css';
 import { Icon } from '../../shell/icons';
@@ -5,7 +6,7 @@ import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
 import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
-import { seatRank, UNKNOWN_RANK, type PlayerRank, type PlayerRanks } from '../../utils/playerRank';
+import { presentPlayerRank, seatRank, UNKNOWN_RANK, type PlayerRank, type PlayerRanks } from '../../utils/playerRank';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { autoCountEligible } from '../../hooks/useAutoCount';
 import type { EngineItemCounts, GameState, PlatformClockState, PlayerInfo } from '../../../api';
@@ -231,7 +232,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_R
         <PlayerCardSurface left={color === 'W'} />
         <div className="ai-player-card__name">
           <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
-          <h4 title={name}>{name}</h4><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span>
+          <h4 title={name}>{name}</h4><span className="kiosk-player-rank" title={presentPlayerRank(rank, t).title} aria-label={presentPlayerRank(rank, t).title}>{presentPlayerRank(rank, t).label}</span>
         </div>
         <div className={untimedClock ? 'clock clock--untimed' : 'clock'}>
           {clock ? <><b>{clock.value}</b><span>{clock.label}</span></> : <span>{t('game:untimed', '不限时')}</span>}
@@ -247,7 +248,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_R
     <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />
       <div>
-        <h4 className="kiosk-player-name-line"><span title={name}>{name}</span><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></h4>
+        <h4 className="kiosk-player-name-line"><span title={name}>{name}</span><span className="kiosk-player-rank" title={presentPlayerRank(rank, t).title} aria-label={presentPlayerRank(rank, t).title}>{presentPlayerRank(rank, t).label}</span></h4>
         <p>
           {state} · {color === 'B' ? t('game:plays_black', '执黑') : t('game:plays_white', '执白')}
           {' · '}{t('game:captures', '提子')} {captures}
@@ -385,7 +386,7 @@ const GameControlPanel = ({
   };
   const stateWord = (c: 'B' | 'W') =>
     isGameOver ? t('game:ended', '本局结束')
-      : lobbyCountStopped ? (lobbyCountRetry ? '数子失败' : '正在自动数子')
+      : lobbyCountStopped ? (lobbyCountRetry ? t('数子失败', '数子失败') : t('正在自动数子', '正在自动数子'))
       : ogsGame && platformPhase === 'scoring' ? t('game:ogs_scoring_short', 'OGS 数子中')
       : ogsGame && platformPhase === 'paused' ? t('game:ogs_paused_short', 'OGS 暂停中')
       : onlineGame && c !== myColor && c === toMove ? t('game:opponent_turn', '对方回合')
@@ -518,9 +519,9 @@ const GameControlPanel = ({
   const playActions: KioskAction[] = isGameOver ? [] : [
     ...(rankedGame && territory ? [{
       key: 'ranked-territory', icon: 'map-trifold' as const,
-      label: <span>领地 <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
+      label: <span>{t("领地", "领地")} <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
       onClick: territory.onRequest, disabled: territory.disabled, pressed: !!territory.visible,
-      reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
+      reason: territory.remaining === 0 ? t('本局 3 次机会已用完', '本局 3 次机会已用完') : undefined,
     }] : []),
     ...(ogsGame && platformPhase === 'scoring' ? [
       {
@@ -679,7 +680,7 @@ const GameControlPanel = ({
             那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {rankedGame && territory && !hardwareFault && !physicalStatus
-            ? `领地判断：本局剩余 ${territory.remaining ?? '—'} 次`
+            ? interpolate(t("领地判断：本局剩余 {value1} 次", "领地判断：本局剩余 {value1} 次"), { value1: territory.remaining ?? '—' })
             : hardwareFault
             ?? physicalStatus
             ?? (ogsGame
@@ -696,9 +697,9 @@ const GameControlPanel = ({
                 ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
                 // F4:双 pass 之后(awaitingCount)不再说「数子要下满 N 手」—— 门槛已经满足了。
                 : lobbyCountStopped && !lobbyCountRetry && !isGameOver
-                  ? '正在自动数子'
+                  ? t("正在自动数子", "正在自动数子")
                 : lobbyCountRetry && !isGameOver
-                  ? '自动数子失败，请按「数子」重试'
+                  ? t("自动数子失败，请按「数子」重试", "自动数子失败，请按「数子」重试")
                 : awaitingCount && !isGameOver
                   ? t('game:both_passed', '双方都停了一手')
                   : !isGameOver && !canCount

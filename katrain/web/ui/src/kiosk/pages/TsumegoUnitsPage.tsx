@@ -76,7 +76,7 @@ const TsumegoUnitsPage = () => {
   const categoryName = isAll
     ? t('Mixed training', '综合训练')
     : category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
-  const levelName = level ? levelChinese(level) : '';
+  const levelName = level ? levelChinese(level, t) : '';
   const backToLevel = () => navigate(`/kiosk/tsumego/${level}`);
 
   const pagebar = (
@@ -160,14 +160,14 @@ const TsumegoUnitsPage = () => {
           </div>
         </div>
 
-        <div className="training-tabs" role="tablist" aria-label="训练内容">
-          <button role="tab" aria-selected={tab === 'units'} onClick={() => setTab('units')}>单元</button>
-          <button role="tab" aria-selected={tab === 'wrong'} onClick={() => setTab('wrong')}>错题</button>
+        <div className="training-tabs" role="tablist" aria-label={t("训练内容", "训练内容")}>
+          <button role="tab" aria-selected={tab === 'units'} onClick={() => setTab('units')}>{t("单元", "单元")}</button>
+          <button role="tab" aria-selected={tab === 'wrong'} onClick={() => setTab('wrong')}>{t("错题", "错题")}</button>
         </div>
         {tab === 'wrong' ? <section className="kiosk-section training-wrong-book-entry">
           <KioskCard
-            title="错题簿"
-            sub={progressLoading ? '正在读取做题记录…' : wrongUnknown ? '做题记录没读到，进入后可重试' : `这一类现在有 ${wrongCount} 道错题`}
+            title={t("错题簿", "错题簿")}
+            sub={progressLoading ? t("正在读取做题记录…", "正在读取做题记录…") : wrongUnknown ? t("做题记录没读到，进入后可重试", "做题记录没读到，进入后可重试") : interpolate(t("这一类现在有 {wrongCount} 道错题", "这一类现在有 {wrongCount} 道错题"), { wrongCount: wrongCount })}
             icon="arrow-clockwise"
             disabled={!progressLoading && wrongCount === 0 && !wrongUnknown}
             onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}

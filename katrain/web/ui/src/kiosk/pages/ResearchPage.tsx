@@ -61,7 +61,7 @@ function toRows(raw: RawMove[], mover: 'B' | 'W'): AiRow[] {
 }
 
 /** 出处:四个入口各写各的,认不出来就整行不渲染(见 `PROVENANCE` 那段注)。 */
-interface Provenance { label: string; backPath: string; backLabel: string }
+interface Provenance { label: () => string; backPath: string; backLabel: () => string }
 
 /**
  * 返回去哪,由 URL 上的 `?from=` 决定,**目标路径查这张表、不收路径参数** ——
@@ -178,8 +178,8 @@ const ResearchPage = () => {
         ? `${album.display_event}${album.display_round_name ? ` · ${album.display_round_name}` : ''}`
         : `${black} vs ${white}`;
       setProvenance({
-        label: `${t('research:from_kifu', '棋谱库')}：${head}${album.date_played ? ` · ${album.date_played}` : ''}`,
-        backPath: `/kiosk/kifu/${id}`, backLabel: t('kifu:title', '棋谱'),
+        label: () => `${t('research:from_kifu', '棋谱库')}：${head}${album.date_played ? ` · ${album.date_played}` : ''}`,
+        backPath: `/kiosk/kifu/${id}`, backLabel: () => t('kifu:title', '棋谱'),
       });
 
     }).catch((err) => {
@@ -199,8 +199,8 @@ const ResearchPage = () => {
     // 谱是空的、`loadFromSGF` 解析失败、或者请求本身就没成 —— 三条路都不留一块没有解释的
     // 空盘,说的是同一句(取不到就说取不到,和 kifu_id 那条分支同一个说法)。
     const failProvenance = () => setProvenance({
-      label: t('research:user_game_failed', '这一局读不到'),
-      backPath, backLabel: backTo.label,
+      label: () => t('research:user_game_failed', '这一局读不到'),
+      backPath, backLabel: () => t(backTo.label, backTo.label),
     });
     UserGamesAPI.get(token, id).then(async (detail) => {
       if (!detail.sgf_content) { failProvenance(); return; }
@@ -210,15 +210,15 @@ const ResearchPage = () => {
         failProvenance();
         return;
       }
-      const head = detail.title
+      const head = () => detail.title
         || `${detail.player_black ?? t('research:black', '黑方')} vs ${detail.player_white ?? t('research:white', '白方')}`;
       const stamp = detail.game_date ?? detail.created_at;
       const when = stamp ? Date.parse(stamp) : NaN;
       setProvenance({
-        label: `${t('research:from_my_games', '我的对局')}：${head}${Number.isNaN(when) ? '' : ` · ${whenLabel(when, t)}`}`,
+        label: () => `${t('research:from_my_games', '我的对局')}：${head()}${Number.isNaN(when) ? '' : ` · ${whenLabel(when, t)}`}`,
         // `backPath` 不是 `backTo.path`:从屏 20 进来时带着 `task`,返回要回**这一份报告**而不是列表。
         // 盒上以前 provenance 永远是 null、返回键碰巧走的就是 `backPath`;这里修通后不许把它退回列表。
-        backPath, backLabel: backTo.label,
+        backPath, backLabel: () => t(backTo.label, backTo.label),
       });
 
     }).catch((err) => {
@@ -244,8 +244,8 @@ const ResearchPage = () => {
     // 渲染期读它就是在渲染期写外部状态。挂载时同步跑一次是对的。
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProvenance({
-      label: t('research:from_last_game', '刚下完的这一局'),
-      backPath: '/kiosk/play', backLabel: t('play:title', '对弈'),
+      label: () => t('research:from_last_game', '刚下完的这一局'),
+      backPath: '/kiosk/play', backLabel: () => t('play:title', '对弈'),
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -337,10 +337,10 @@ const ResearchPage = () => {
         {(saveError || reportError) && <p role="alert">{reportError || (saveError ? membershipErrorText(saveError, t) : null)}</p>}
         <KioskPagebar
           testId="research-pagebar"
-          backLabel={provenance?.backLabel ?? backTo.label}
+          backLabel={provenance?.backLabel() ?? t(backTo.label, backTo.label)}
           onBack={() => navigate(provenance?.backPath ?? backPath)}
           title={t('research:move_title', '研究 · 第 {n} 手').replace('{n}', String(moveNo))}
-          sub={provenance?.label}
+          sub={provenance?.label()}
           /* §11 的那**一颗**页级图标键。领地是盘面视图叠加,和「翻转棋盘/全屏」同族。 */
           action={{
             icon: 'map-trifold',

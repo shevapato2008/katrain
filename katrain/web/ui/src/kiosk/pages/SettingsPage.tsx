@@ -370,7 +370,7 @@ const SettingsPage = () => {
           {!isStrictBoxKiosk && <><div className="kiosk-type-heading">{t('settings:font', '字体')}</div>
           <div className="kiosk-type-fonts" role="group" aria-label={t('settings:font', '字体')}>
             {([
-              ['wenkai', '霞鹜楷体'], ['kaiti', '楷体'], ['lishu', '隶书'], ['heiti', '黑体'],
+              ['wenkai', t("霞鹜楷体", "霞鹜楷体")], ['kaiti', t("楷体", "楷体")], ['lishu', t("隶书", "隶书")], ['heiti', t("黑体", "黑体")],
             ] as const).map(([id, label]) => (
               <button key={id} type="button" className="kiosk-type-choice" data-font={id}
                 aria-pressed={typography.font === id} onClick={() => setTypography({ font: id })}>

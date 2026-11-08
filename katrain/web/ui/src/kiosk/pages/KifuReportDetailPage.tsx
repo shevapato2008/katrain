@@ -1,3 +1,4 @@
+import { interpolate } from '../utils/interpolate';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -155,7 +156,7 @@ export default function KifuReportDetailPage() {
           players={[album.display_player_black ?? album.player_black, album.display_player_white ?? album.player_white]}
           pagebar={(<KioskPagebar
             backLabel={t('kifu:back_kifu_full', '返回棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title}
-            sub={`${album.date_played ?? ''} · ${at} / ${totalMoves} ${t('kifu:moves_unit', '手')}`}
+            sub={interpolate(t("{value1} · {at} / {totalMoves} {value4}", "{value1} · {at} / {totalMoves} {value4}"), { value1: album.date_played ?? '', at: at, totalMoves: totalMoves, value4: t('kifu:moves_unit', '手') })}
           />)}
           analysis={currentAnalysis} analysisByMove={analysisByMove}
           playerToMove={playerToMove} actualMove={parsed.moves[boardCursor]}
@@ -167,7 +168,7 @@ export default function KifuReportDetailPage() {
           }}
           status={(<div className="report-analysis-rail__status" data-testid="kifu-report-head">
             <span>{status}</span>
-            <span>{detail?.requested_visits != null ? `${detail.requested_visits} visits · ${album.move_count} ${t('kifu:moves_unit', '手')}` : '—'}</span>
+            <span>{detail?.requested_visits != null ? interpolate(t("{requested_visits} visits · {move_count} {value3}", "{requested_visits} visits · {move_count} {value3}"), { requested_visits: detail.requested_visits, move_count: album.move_count, value3: t('kifu:moves_unit', '手') }) : '—'}</span>
           </div>)}
           statusVisible={detail?.status !== 'completed' || !kifuAnalysisParametersValid(detail) || detail.moves.length === 0 || analysisError}
           metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">

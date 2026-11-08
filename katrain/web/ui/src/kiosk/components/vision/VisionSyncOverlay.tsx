@@ -281,7 +281,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
             onClose={closeToast}
             sx={{ width: '100%', fontSize: '1rem' }}
           >
-            {toastConfig.message}
+            {t(toastConfig.message, toastConfig.message)}
           </Alert>
         ) : undefined}
       </Snackbar>
@@ -325,12 +325,10 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
       {boardLostOpen && !suppressBoardLost && recovery.blocking === null && (
         <Dialog open maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
           <DialogTitle sx={{ textAlign: 'center', color: 'error.main' }}>
-            棋盘检测异常
-          </DialogTitle>
+            {t("棋盘检测异常", "棋盘检测异常")}</DialogTitle>
           <DialogContent>
             <Typography variant="body1" sx={{ textAlign: 'center', py: 1 }}>
-              棋盘检测异常，请检查摄像头和棋盘位置
-            </Typography>
+              {t("棋盘检测异常，请检查摄像头和棋盘位置", "棋盘检测异常，请检查摄像头和棋盘位置")}</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
               {t('vision:board_lost_hint', '看一下摄像头有没有被挡住、棋盘有没有被挪动；挪动过的话要重新标定')}
             </Typography>
@@ -343,8 +341,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
                 onDismiss?.();
               }}
             >
-              确定
-            </Button>
+              {t("确定", "确定")}</Button>
           </DialogActions>
         </Dialog>
       )}

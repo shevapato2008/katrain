@@ -1,3 +1,4 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import { Box, TextField, Button, Typography, Alert, CircularProgress, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
@@ -22,7 +23,7 @@ const LoginPage = () => {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<UiMessage | string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ const LoginPage = () => {
       await login(username, password);
       navigate('/kiosk/play', { replace: true });
     } catch {
-      setError(t('Login failed', '登录失败'));
+      setError(uiMessage('Login failed', '登录失败'));
     } finally {
       setLoading(false);
     }
@@ -236,7 +237,7 @@ const LoginPage = () => {
             </>
           ) : (
           <>
-          {error && <Alert severity="error">{error}</Alert>}
+          {error && <Alert severity="error">{renderUiMessage(error, t)}</Alert>}
           <TextField
             fullWidth
             label={t('Username', '用户名')}

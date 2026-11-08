@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../hooks/useTranslation';
 import { KioskConsoleRail } from '../../shell/KioskConsoleRail';
 import { GoBoardSvg } from '../../shell/GoBoardSvg';
 import type { StatusCell } from '../../shell/KioskStatusCells';
@@ -29,8 +30,22 @@ export function GoConsoleRail({ syncLeft, syncRight, help = false }: {
   syncRight?: string;
   help?: boolean;
 } = {}) {
+  const { t } = useTranslation();
   const vision = useOptionalVision();
   const geometry = useOptionalGeometry();
+  const cameraCell = (connected?: boolean | null): StatusCell => connected == null
+    ? { label: t('Camera', '摄像头'), value: '—' }
+    : { label: t('Camera', '摄像头'), value: connected ? t('Connected', '已连接') : t('Disconnected', '未连接'), tone: connected ? 'good' : 'bad' };
+  const ledCell = (connected?: boolean | null): StatusCell => connected == null
+    ? { label: 'LED', value: t('未确认', '未确认') }
+    : { label: 'LED', value: connected ? t('Connected', '已连接') : t('Disconnected', '未连接'), tone: connected ? 'good' : 'warn' };
+  const geometryCell = (phase?: string): StatusCell => {
+    const label = t('Calibration', '标定');
+    if (phase === undefined) return { label, value: '—' };
+    if (phase === 'ready') return { label, value: t('已标定', '已标定'), tone: 'good' };
+    if (phase === 'degraded' || phase === 'failed') return { label, value: t('异常', '异常'), tone: 'bad' };
+    return { label, value: t('需校准', '需校准'), tone: 'warn' };
+  };
 
   const statuses: readonly StatusCell[] = [
     cameraCell(vision?.visionStatus.cameraConnected),
@@ -40,35 +55,15 @@ export function GoConsoleRail({ syncLeft, syncRight, help = false }: {
 
   return (
     <KioskConsoleRail
-      title="实体棋盘"
+      helpLabel={t('实体棋盘说明', '实体棋盘说明')}
+      closeLabel={t('Got it', '知道了')}
+      title={t("实体棋盘", "实体棋盘")}
       sub="Camera board"
-      board={<GoBoardSvg muted label="实体棋盘镜像:识别的盘面还没接进来" />}
-      syncLeft={syncLeft ?? '识别的盘面还没接进来'}
-      syncRight={syncRight ?? '暂不可用'}
+      board={<GoBoardSvg muted label={t("实体棋盘镜像:识别的盘面还没接进来", "实体棋盘镜像:识别的盘面还没接进来")} />}
+      syncLeft={syncLeft ?? t("识别的盘面还没接进来", "识别的盘面还没接进来")}
+      syncRight={syncRight ?? t("暂不可用", "暂不可用")}
       statuses={statuses}
-      help={help ? '这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。' : undefined}
+      help={help ? t("这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。", "这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。") : undefined}
     />
   );
 }
-
-const cameraCell = (connected?: boolean | null): StatusCell =>
-  connected == null
-    ? { label: '摄像头', value: '—' }
-    : { label: '摄像头', value: connected ? '已连接' : '未连接', tone: connected ? 'good' : 'bad' };
-
-// ⚠️ `ledConnected` 的类型是 `boolean | null` —— **null 是「后端没说」,不是「没连上」**
-// (`VisionContext.tsx:41` 的 `r.led_connected ?? null`)。旧 `SmartBoardConsole.tsx:83` 写的是
-// `?? false`,于是「没说」被画成一颗琥珀灯的「未连接」。一条消息的缺席不是判别位。
-const ledCell = (connected?: boolean | null): StatusCell =>
-  connected == null
-    ? { label: 'LED', value: '未确认' }
-    // 没连上是**琥珀不是红**:没有它照样能下棋,只是没有提示灯。摄像头没连上才是故障。
-    // LINK 确认 Board A 供电；仍不声称每颗 LED 都正常。
-    : { label: 'LED', value: connected ? '已连接' : '未连接', tone: connected ? 'good' : 'warn' };
-
-const geometryCell = (phase?: string): StatusCell => {
-  if (phase === undefined) return { label: '标定', value: '—' };
-  if (phase === 'ready') return { label: '标定', value: '已标定', tone: 'good' };
-  if (phase === 'degraded' || phase === 'failed') return { label: '标定', value: '异常', tone: 'bad' };
-  return { label: '标定', value: '需校准', tone: 'warn' };
-};

@@ -25,10 +25,11 @@ interface Props {
   onNotStone: (row: number, col: number) => void;
 }
 
-const colorName = (c: number) => (c === 1 ? '黑' : '白');
+
 
 const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove, onAdoptObserved, onRestored, onNotStone }: Props) => {
   const { t } = useTranslation();
+  const colorName = (c: number) => c === 1 ? t('Black', '黑') : t('White', '白');
   const adoptable =
     positions.length === 1 && missing.length === 0 && playerToMove != null &&
     ((playerToMove === 'B' && positions[0][2] === 1) || (playerToMove === 'W' && positions[0][2] === 2));
@@ -40,7 +41,7 @@ const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove
         {positions.length === 1 && missing.length === 0 ? (
           <Box className="kiosk-attention-point-row">
             <strong>{rcToGtpLabel(positions[0][0], positions[0][1], boardSize)}</strong>
-            <span>{t('game:camera_sees_stone', '相机识别到')}{colorName(positions[0][2])}{t('game:stone_suffix', '子')}<small>{t('game:no_move_at_point', '当前棋谱在此处没有落子')}</small></span>
+            <span>{positions[0][2] === 1 ? t('game:camera_sees_black_stone', '相机识别到黑子') : t('game:camera_sees_white_stone', '相机识别到白子')}<small>{t('game:no_move_at_point', '当前棋谱在此处没有落子')}</small></span>
           </Box>
         ) : (
           <Box className="kiosk-attention-point-list">

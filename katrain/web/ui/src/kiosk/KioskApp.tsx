@@ -38,7 +38,9 @@ import { KioskTypographyProvider, useKioskTypography } from './typography/KioskT
 import { installKioskTextSizing } from './typography/applyTextSizing';
 import { accessAllowed, kioskAccessPolicy } from '../components/auth/accessPolicy';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
+import { isStrictBoxKiosk } from './shell/boxUrls';
+import { kioskText } from './appearance/messages';
+import { DEVICE_UI_FONT, useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { VisionProvider } from './context/VisionContext';
@@ -227,13 +229,11 @@ function KioskTypographyGate({ children }: { children: React.ReactNode }) {
 }
 
 const KioskApp = () => {
-  const { language, setLanguage } = useSettings();
+  const { language, setLanguage, deviceAppearance, appearanceLoading, appearanceError, refreshAppearance } = useSettings();
   useEffect(() => {
-    // The kiosk is a Chinese-market terminal: default to Simplified Chinese
-    // unless the user has explicitly picked a language before (persisted in
-    // localStorage by useSettings). Runs once on mount; a later user choice
-    // in Settings wins because it writes the same localStorage key.
-    if (!localStorage.getItem('katrain_language')) {
+    // Non-strict kiosks retain their local Chinese-market default. Strict Box
+    // startup waits for the wizard authority below and never persists a choice.
+    if (!isStrictBoxKiosk && !localStorage.getItem('katrain_language')) {
       setLanguage('cn');
     }
   }, [setLanguage]);
@@ -243,10 +243,17 @@ const KioskApp = () => {
     document.title = '智星盒 StellaBox';
   }, []);
 
+  if (isStrictBoxKiosk && !deviceAppearance) return <main className="kiosk-appearance-state" role={appearanceError ? 'alert' : 'status'}>
+    <p>{kioskText(language, appearanceError ? 'settingsError' : 'settingsLoading')}</p>
+    {appearanceError && <button onClick={refreshAppearance}>{kioskText(language, 'retry')}</button>}
+  </main>;
   return (
-    <KioskTypographyProvider language={language}>
+    <KioskTypographyProvider language={language} deviceFont={isStrictBoxKiosk && deviceAppearance ? DEVICE_UI_FONT[deviceAppearance.font] : undefined}>
       <ThemeProvider theme={kioskTheme}>
         <CssBaseline />
+        {isStrictBoxKiosk && appearanceError && <aside className="kiosk-appearance-refresh" role="alert">
+          {kioskText(language, 'settingsError')} <button disabled={appearanceLoading} onClick={refreshAppearance}>{kioskText(language, 'retry')}</button>
+        </aside>}
         <KioskTypographyGate>
           <VisionProvider>
             <GeometryProvider>

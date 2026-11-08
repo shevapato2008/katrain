@@ -49,3 +49,25 @@ class TypographyPreferenceStore:
                 if staged_path is not None:
                     staged_path.unlink(missing_ok=True)
             return preference
+
+
+class DeviceAppearance(BaseModel):
+    language: Literal["zh", "zh-TW", "en", "ja", "ko"] = "zh"
+    font: Literal["wenkai", "kai", "daoli", "hei"] = "wenkai"
+
+
+def read_device_appearance() -> DeviceAppearance:
+    """Read the wizard authority without treating an existing broken file as first boot."""
+    path = Path(os.environ.get("SMARTBOX_SETTINGS_PATH", "/var/lib/smartbox/settings.json"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return DeviceAppearance()
+    if not isinstance(data, dict):
+        raise ValueError("settings root must be an object")
+    language = data.get("language")
+    font = data.get("font")
+    return DeviceAppearance(
+        language=language if language in ("zh", "zh-TW", "en", "ja", "ko") else "zh",
+        font=font if font in ("wenkai", "kai", "daoli", "hei") else "wenkai",
+    )

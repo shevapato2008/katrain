@@ -2293,6 +2293,8 @@ button.kiosk-row.figrow { flex: none; }
   line-height: 18px;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   pointer-events: none;
 }
 

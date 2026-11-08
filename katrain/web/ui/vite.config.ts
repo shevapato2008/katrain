@@ -72,8 +72,19 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   const kioskMode = env.VITE_KIOSK_2D_ONLY === 'true'
 
+  const appearanceBootstrap: Plugin = {
+    name: 'smartbox-appearance-bootstrap',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        return [{ tag: 'script', injectTo: 'head-prepend',
+          children: `window.__smartboxStrictKiosk=${JSON.stringify(kioskMode && env.VITE_BOX_SSO_STRICT === 'true')};` }];
+      },
+    },
+  }
+
   return {
-    plugins: [react(), libraryModulePreload, ...(kioskMode ? [kioskNoReferrerMeta, kioskGalaxyModuleBoundary] : [])],
+    plugins: [react(), appearanceBootstrap, libraryModulePreload, ...(kioskMode ? [kioskNoReferrerMeta, kioskGalaxyModuleBoundary] : [])],
     define: {
       __KIOSK_2D_ONLY__: JSON.stringify(kioskMode),
     },

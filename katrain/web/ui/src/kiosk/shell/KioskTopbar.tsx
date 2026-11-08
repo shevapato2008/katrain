@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { kioskText } from '../appearance/messages';
 import { identityPresentation, type ShellIdentity } from './identityPresentation';
 import { useMembershipI18n } from '../../features/membership/useMembershipI18n';
 
@@ -48,9 +49,9 @@ export function KioskTopbar({ identity, onHome, onAccount, homeBusy = false }: {
   onAccount?: () => void;
   homeBusy?: boolean;
 }) {
-  const { t } = useMembershipI18n();
+  const { t, lang } = useMembershipI18n();
   const clock = clockText(useMinuteClock());
-  const presented = identityPresentation(identity);
+  const presented = identityPresentation(identity.username ? identity : { username: kioskText(lang, 'guest') });
 
   return (
     <header className="kiosk-topbar">
@@ -63,20 +64,20 @@ export function KioskTopbar({ identity, onHome, onAccount, homeBusy = false }: {
         <span className="kiosk-topbar__brand-en">StellaBox</span>
       </span>
       <span className="kiosk-topbar__rule" aria-hidden="true" />
-      <span className="kiosk-topbar__game">围棋</span>
+      <span className="kiosk-topbar__game">{kioskText(lang, 'go')}</span>
       <div className="kiosk-topbar__right">
         <div id="kiosk-topbar-actions" />
         {onHome && (
           <button
             type="button"
             className="kiosk-topbar__home"
-            aria-label="返回智星盒主页"
+            aria-label={kioskText(lang, 'backHome')}
             data-testid="kiosk-home-action"
             disabled={homeBusy}
             onClick={onHome}
           >
             <span className="kiosk-topbar__home-icon" aria-hidden="true" />
-            <span>主页</span>
+            <span>{kioskText(lang, 'home')}</span>
           </button>
         )}
         {onAccount ? <button

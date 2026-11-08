@@ -7,7 +7,7 @@
     <title>智星盒 · 围棋</title>
     <script>
       // Start the one bounded library request while application modules download.
-      if (/^\/(?:kiosk\/)?kifu\/?$/.test(location.pathname)) {
+      if (!window.__smartboxStrictKiosk && /^\/(?:kiosk\/)?kifu\/?$/.test(location.pathname)) {
         var query = new URLSearchParams(location.search);
         var params = new URLSearchParams();
         if (query.get('q')) params.set('q', query.get('q'));
@@ -28,7 +28,7 @@
     <!-- SBC kiosk 触屏键盘:仅在 /kiosk 路由加载,桌面/服务器版(galaxy)不受影响 -->
     <script>
       if (location.pathname.indexOf('/kiosk') === 0) {
-        document.documentElement.lang = 'zh-CN';
+        if (!window.__smartboxStrictKiosk) document.documentElement.lang = 'zh-CN';
         var kbCss = document.createElement('link');
         kbCss.rel = 'stylesheet'; kbCss.href = '/smartkeyboard.css?v=kbd8';
         document.head.appendChild(kbCss);

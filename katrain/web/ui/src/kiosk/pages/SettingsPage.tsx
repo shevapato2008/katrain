@@ -5,6 +5,8 @@ import { API, type EngineHealthResponse } from '../../api';
 import { useSettings } from '../../context/SettingsContext';
 import { useGeometry } from '../context/GeometryContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { isStrictBoxKiosk } from '../shell/boxUrls';
+import { kioskText } from '../appearance/messages';
 import { useKioskTypography } from '../typography/KioskTypographyContext';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -105,6 +107,7 @@ const SettingsPage = () => {
   const { preference: typography, setPreference: setTypography, saving: typographySaving, error: typographyError, retry: retryTypography } = useKioskTypography();
   const { status, loaded } = useGeometry();
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
+  const groups = GROUPS.filter(group => !isStrictBoxKiosk || group.key !== 'language');
   const [active, setActive] = useState<GroupKey>(GROUPS[0].key);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const [tail, setTail] = useState(0);
@@ -146,7 +149,7 @@ const SettingsPage = () => {
     const onScroll = () => {
       const top = scrollEl.getBoundingClientRect().top;
       let current = GROUPS[0].key;
-      for (const g of GROUPS) {
+      for (const g of groups) {
         const el = scrollEl.querySelector(`[data-group="${g.key}"]`);
         // 上缘已经滚过视口顶(留 8px 容差)的那一组就是「正在看的」——
         // 最后一组永远排在后面,所以循环到底自然取到最靠下的那一个。
@@ -188,14 +191,14 @@ const SettingsPage = () => {
   const ledReady = loaded && status.capabilities.led_ready === true;
   const canCalibrate = cameraReady && ledReady;
   const disconnected = [
-    !noCamera && status.capabilities.camera_ready === false && '摄像头',
+    !noCamera && status.capabilities.camera_ready === false && kioskText(language, 'camera'),
     status.capabilities.led_ready === false && 'LED',
   ].filter(Boolean).join('、');
   const calibrationBlockers = [
-    noCamera && '这台盒子没有配摄像头',
-    disconnected && `请先连接${disconnected}`,
-    !noCamera && status.capabilities.camera_ready == null && '摄像头状态未确认',
-    status.capabilities.led_ready == null && 'LED 状态未确认',
+    noCamera && kioskText(language, 'noCamera'),
+    disconnected && kioskText(language, 'connectFirst', { devices: disconnected }),
+    !noCamera && status.capabilities.camera_ready == null && kioskText(language, 'cameraUnconfirmed'),
+    status.capabilities.led_ready == null && kioskText(language, 'ledUnconfirmed'),
   ].filter(Boolean).join(' · ');
   const calibratedAt = !loaded
     ? '—'
@@ -212,7 +215,7 @@ const SettingsPage = () => {
           <b>{t('Settings', '设置')}</b><em>Settings</em>
         </div>
         <nav className="kiosk-navlist" data-testid="settings-nav" aria-label={t('Settings', '设置')}>
-          {GROUPS.map((g) => (
+          {groups.map((g) => (
             <button
               key={g.key}
               type="button"
@@ -220,7 +223,7 @@ const SettingsPage = () => {
               aria-current={active === g.key}
               onClick={() => jumpTo(g.key)}
             >
-              <Icon name={g.icon} />{t(`settings:nav_${g.key}`, g.zh)}
+              <Icon name={g.icon} />{isStrictBoxKiosk && g.key === 'typography' ? kioskText(language, 'size') : t(`settings:nav_${g.key}`, g.zh)}
             </button>
           ))}
         </nav>
@@ -245,7 +248,7 @@ const SettingsPage = () => {
               <div className="kiosk-board-status__item" key={key} data-testid={`settings-cap-${key}`}>
                 <span>{label}</span>
                 <strong className={loaded && ok === true ? 'kiosk-board-status__good' : ''}>
-                  {!loaded || ok == null ? '未确认' : noCamera && key !== 'led' ? '未确认' : ok ? yes : no}
+                  {!loaded || ok == null ? kioskText(language, 'unconfirmed') : noCamera && key !== 'led' ? kioskText(language, 'unconfirmed') : ok ? yes : no}
                 </strong>
               </div>
             ))}
@@ -255,7 +258,7 @@ const SettingsPage = () => {
               <span className="kiosk-row__t">
                 <b>{t('Recalibrate board', '重新标定棋盘')}</b>
                 <em data-testid={noCamera ? 'settings-no-camera' : undefined}>
-                  {!loaded ? '正在读取设备状态' : !canCalibrate ? calibrationBlockers : calibratedAt}
+                  {!loaded ? kioskText(language, 'deviceLoading') : !canCalibrate ? calibrationBlockers : calibratedAt}
                 </em>
               </span>
               <span className="kiosk-row__end">
@@ -334,7 +337,7 @@ const SettingsPage = () => {
           </div>
         </section>
 
-        <section className="kiosk-section" data-group="language">
+        {!isStrictBoxKiosk && <section className="kiosk-section" data-group="language">
           <KioskSecLabel zh={t('settings:nav_language', '语言')} en="Language" />
           <div className="kiosk-rows">
             <div className="kiosk-row">
@@ -360,11 +363,11 @@ const SettingsPage = () => {
               </span>
             </div>
           </div>
-        </section>
+        </section>}
         <section className="kiosk-section" data-group="typography">
-          <KioskSecLabel zh={t('settings:nav_typography', '字体与字号')} en="Typography" />
-          <p className="setnote">{t('settings:typography_scope', '中文字体应用于围棋界面的汉字；英文字母与数字保持原样。')}</p>
-          <div className="kiosk-type-heading">{t('settings:font', '字体')}</div>
+          <KioskSecLabel zh={isStrictBoxKiosk ? kioskText(language, 'size') : t('settings:nav_typography', '字体与字号')} en={isStrictBoxKiosk ? '' : 'Typography'} />
+          <p className="setnote">{isStrictBoxKiosk ? kioskText(language, 'sizeNote') : t('settings:typography_scope', '中文字体应用于围棋界面的汉字；英文字母与数字保持原样。')}</p>
+          {!isStrictBoxKiosk && <><div className="kiosk-type-heading">{t('settings:font', '字体')}</div>
           <div className="kiosk-type-fonts" role="group" aria-label={t('settings:font', '字体')}>
             {([
               ['wenkai', '霞鹜楷体'], ['kaiti', '楷体'], ['lishu', '隶书'], ['heiti', '黑体'],
@@ -375,22 +378,23 @@ const SettingsPage = () => {
               </button>
             ))}
           </div>
-          <div className="kiosk-type-heading">{t('settings:font_size', '字号')}</div>
-          <div className="kiosk-type-sizes kiosk-seg" role="group" aria-label={t('settings:font_size', '字号')}>
+          </>}
+          <div className="kiosk-type-heading">{kioskText(language, 'size')}</div>
+          <div className="kiosk-type-sizes kiosk-seg" role="group" aria-label={kioskText(language, 'size')}>
             {([
-              ['large', '当前大小'], ['medium', '小一号'], ['small', '小两号'],
-            ] as const).map(([id, label]) => (
+              ['large'], ['medium'], ['small'],
+            ] as const).map(([id]) => (
               <button key={id} type="button" className="kiosk-seg__btn"
                 aria-pressed={typography.size === id} onClick={() => setTypography({ size: id })}>
-                {label}
+                {kioskText(language, id)}
               </button>
             ))}
           </div>
-          {typographySaving && <p className="kiosk-type-save" role="status">正在保存…</p>}
+          {typographySaving && <p className="kiosk-type-save" role="status">{kioskText(language, 'saving')}</p>}
           {typographyError && (
             <p className="kiosk-type-save kiosk-type-save--error" role="alert">
-              设置尚未保存，重启后可能恢复旧值。
-              <button type="button" onClick={retryTypography}>重试</button>
+              {kioskText(language, 'notSaved')}
+              <button type="button" onClick={retryTypography}>{kioskText(language, 'retry')}</button>
             </p>
           )}
         </section>
@@ -405,8 +409,8 @@ const SettingsPage = () => {
               </div>
             )}
             <div className="kiosk-row" data-testid="about-katago-model">
-              <span className="kiosk-row__lead">{t('settings:about_katago_model', 'KataGo 模型')}</span>
-              <span className="kiosk-row__t"><b>{health?.katago_model || t('settings:about_model_unavailable', '暂时无法获取')}</b></span>
+              <span className="kiosk-row__lead">{kioskText(language, 'model')}</span>
+              <span className="kiosk-row__t"><b>{health?.katago_model || kioskText(language, 'unavailable')}</b></span>
             </div>
             {/* 两个引擎都是 KataGo(`LOCAL_KATAGO_URL` / `CLOUD_KATAGO_URL`),区别只在跑在哪儿。 */}
             {([

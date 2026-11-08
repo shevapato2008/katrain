@@ -74,3 +74,20 @@ describe('KioskTypographyProvider', () => {
     expect(fetch.mock.calls.every(([, options]) => options === undefined)).toBe(true);
   });
 });
+
+it('uses the global font in strict Box while size writes retain the legacy payload font', async () => {
+  const fetch = vi.fn().mockImplementation((_url: string, options?: RequestInit) => options
+    ? Promise.resolve({ ok: true })
+    : Promise.resolve({ ok: true, json: async () => ({ font: 'lishu', size: 'medium' }) }));
+  vi.stubGlobal('fetch', fetch);
+  const view = render(<KioskTypographyProvider language="cn" deviceFont="heiti"><Controls /></KioskTypographyProvider>);
+  await waitFor(() => expect(screen.getByTestId('choice')).toHaveTextContent('heiti/medium'));
+  fireEvent.click(screen.getByText('Kai'));
+  expect(fetch).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByText('Small'));
+  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ font: 'lishu', size: 'small' });
+  view.rerender(<KioskTypographyProvider language="jp" deviceFont="kaiti"><Controls /></KioskTypographyProvider>);
+  expect(screen.getByTestId('choice')).toHaveTextContent('kaiti/small');
+  expect(document.body.style.getPropertyValue('--kiosk-cjk-font')).toContain('SmartBox CJK Scripts');
+});

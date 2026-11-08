@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { OgsStep } from '../../types/ogsCourse';
 import type { OgsExerciseState, OgsPoint } from './ogsExercise';
+import { useOgsLocale } from './useOgsLocale';
 import { useVision } from '../context/VisionContext';
 import { useOptionalGeometry } from '../context/GeometryContext';
 import { useVisionSync } from '../hooks/useVisionSync';
@@ -24,6 +25,7 @@ interface Options {
 }
 
 export function useOgsPhysicalBoard({ step, state, enabled, revision, playPoint, undoWrong }: Options) {
+  const { text } = useOgsLocale();
   const { visionStatus } = useVision();
   const geometry = useOptionalGeometry();
   const sync = useVisionSync(null);
@@ -32,14 +34,13 @@ export function useOgsPhysicalBoard({ step, state, enabled, revision, playPoint,
     geometry.status.session_calibrated && geometry.status.capabilities.geometry_ready;
   const calibrate = Boolean(step?.size === 19 && isBoardPuzzle && visionStatus.enabled && geometry?.status.phase !== 'disabled' && geometry && !geometryConfirmed);
   const available = Boolean(isBoardPuzzle && step?.size === 19 && visionStatus.enabled && visionStatus.recognitionReady && geometryConfirmed);
-  const reason = !step ? '正在读取练习' : !isBoardPuzzle ? '本步骤请在屏幕完成' : step.size !== 19
-    ? '实体盘当前支持 19 路练习' : !visionStatus.enabled ? '未检测到摄像头 / 视觉服务未启用'
+  const reason = !step ? text('stepLoading') : !isBoardPuzzle ? text('screenOnly') : step.size !== 19
+    ? text('board19') : !visionStatus.enabled ? text('cameraMissing')
       : !geometryConfirmed ? !geometry?.status || geometry.status.phase === 'disabled'
-        ? '棋盘标定不可用，请在屏幕完成本题'
+        ? text('geometryUnavailable')
         : geometry.status.phase === 'degraded' || geometry.status.phase === 'failed'
-          ? '棋盘标定已失效，请重新标定棋盘' : '物理棋盘需先确认棋盘标定'
-        : !visionStatus.recognitionReady
-        ? '正在连接摄像头与识别模型，请稍候…' : '';
+          ? text('geometryExpired') : text('geometryConfirm')
+        : !visionStatus.recognitionReady ? text('cameraLoading') : '';
   const active = enabled && available && !!state;
   const [terminalSynced, setTerminalSynced] = useState(false);
   const sawConvergence = useRef(false);

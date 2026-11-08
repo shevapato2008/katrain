@@ -8,3 +8,19 @@
 Rebuild the optional assets and CSS declarations with `python scripts/build-kiosk-cjk-fonts.py /path/to/Fonts_Kai.zip /path/to/AlimamaDaoLiTi-Regular.woff2` from `katrain/web/ui`. Download the two publisher sources at the URLs above; the Alimama host requires `Referer: https://fonts.alibabadesign.com/` for direct download.
 
 The asset build requires Python `fonttools` with Brotli support. The bundled DaoLi file has SHA-256 `85a8afa1a7503418575793effe55bd13d99b3d0f5a82fdb7e83ec1c4910a2efb`, matching the publisher download byte for byte.
+
+## Japanese and Korean script support
+
+`noto-sans-cjk-jp-kr-scripts.woff2` is a kana/Hangul-only derivative of the same complete licensed source, `katrain/fonts/NotoSansCJKsc-Regular.otf` in this repository (source SHA-256 `1652500938055a232cfbfa321de6ebaadfc5635dd9f75e369bc991d14a6512dd`, version 1.004). Attribution: Google Noto Fonts / Adobe. It retains source copyright and license metadata; the SIL OFL 1.1 is already bundled as `OFL-NotoSansCJK.txt`. Its internal derivative family is named **SmartBox CJK Scripts**.
+
+The subset covers the source's hiragana, katakana, halfwidth kana, Hangul syllables, modern/extended jamo, compatibility and halfwidth Hangul. It includes every modern Hangul syllable (`U+AC00–D7A3`), with no Latin, digits or Han. As with the source, recently added rare kana outside its Unicode coverage are not supplied. This is a script fallback, not an editorial text subset.
+
+`fonts.css` and `KioskTypographyContext.tsx` routes Japanese/Korean body Han to the existing Noto CJK face. That face retains its `JAN`/`KOR` `locl` substitutions, selected by the root's actual `lang` attribute; applications must set `lang="ja"`/`lang="ko"` rather than a CSS-only language flag. Kana/Hangul then use the script face. Brand marks, ordinary Latin, numeric runs, coordinates and explicitly owned piece glyphs keep their existing fonts. Chinese font choices remain effective in Chinese UI.
+
+Reproduce the script subset from the workspace root with FontTools and Brotli:
+
+```sh
+python -m fontTools.subset katrain/fonts/NotoSansCJKsc-Regular.otf --unicodes=U+1100-11FF,U+3040-30FF,U+3130-318F,U+31F0-31FF,U+A960-A97F,U+AC00-D7AF,U+D7B0-D7FF,U+FF61-FFDC,U+1B000-1B16F --layout-features='*' --layout-scripts='*' --name-IDs='*' --name-languages='*' --flavor=woff2 --output-file=katrain/web/ui/src/kiosk-shell/fonts/noto-sans-cjk-jp-kr-scripts.woff2
+```
+
+Then rename name-table IDs 1/4/6/16/17 to `SmartBox CJK Scripts`, `SmartBox CJK Scripts Regular`, `SmartBoxCJK-Scripts-Regular`, `SmartBox CJK Scripts`, `Regular` respectively, and the CFF font name/FamilyName/FullName likewise. Preserve copyright/license records and source timestamps. The final asset digest is recorded in the adjacent kiosk-shell `MANIFEST.sha256`. This owned copy makes standalone Go builds independent of the parent repository.

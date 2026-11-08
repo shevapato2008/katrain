@@ -159,3 +159,26 @@ def walk_tree(node):
 
 def depth(node):
     return max((1 + depth(child) for child in node["children"]), default=0)
+
+
+def test_smartbox_five_locales_return_authored_instructional_text(course):
+    """Exercise the public presentation boundary with the actual pinned bundle."""
+    from types import SimpleNamespace
+    from katrain.web.tutorials.ogs_course import public_step_output
+
+    bundle, report = course
+    for language in ("zh-cn", "zh-tw", "en", "ja", "ko"):
+        assert report["languages"][language]["missing"] == 0
+        for payload in bundle["steps"]:
+            output = public_step_output(1, SimpleNamespace(payload=payload, figure_id=1, screenshot=None), language)
+            assert output["locale"]["effective"] == language
+            assert output["locale"]["text"]["instruction"] == payload["translations"][language]["instruction"]
+            assert output["locale"]["text"]["instruction"].strip()
+            assert output["locale"]["text"].get("fallback") is not True
+        # A substantive instructional paragraph, rather than an identifier or a
+        # language request parameter, must actually change for non-English UI.
+        if language != "en":
+            assert (
+                bundle["steps"][0]["translations"][language]["instruction"]
+                != bundle["steps"][0]["translations"]["en"]["instruction"]
+            )

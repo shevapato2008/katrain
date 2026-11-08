@@ -18,9 +18,9 @@ body[data-kiosk-typography],
      自然落到第二族当前中文选项(默认霞鹜文楷)。**顺序不可调**:把中文族提前会让它
      连 ASCII 一起抢走。
      选项字形缺字时回退到已捆绑的霞鹜文楷。 */
-  --font-serif: "SmartBox Serif", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", Georgia, serif;
-  --font-sans: "SmartBox Sans", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", system-ui, sans-serif;
-  --font-mono: "SmartBox IBM Plex Mono", "SmartBox Mono", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox Kai", ui-monospace, monospace;
+  --font-serif: "SmartBox Serif", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox CJK Scripts", "SmartBox Kai", Georgia, serif;
+  --font-sans: "SmartBox Sans", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox CJK Scripts", "SmartBox Kai", system-ui, sans-serif;
+  --font-mono: "SmartBox IBM Plex Mono", "SmartBox Mono", var(--kiosk-cjk-font, "SmartBox Kai"), "SmartBox CJK Scripts", "SmartBox Kai", ui-monospace, monospace;
 }
 
 .kiosk {

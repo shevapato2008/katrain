@@ -286,3 +286,8 @@
 /* Noto Sans CJK SC (SIL OFL 1.1), from repository source. */
 @font-face{font-family:"SmartBox Noto Sans CJK";src:url("./fonts/noto-sans-cjk-sc-cjk.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+2E80-2FFF,U+3000-303F,U+31C0-31EF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FE10-FE1F,U+FE30-FE4F,U+FF01-FF0F,U+FF1A-FF20,U+FF3B-FF40,U+FF5B-FF60,U+20000-2FA1F}
 /* END generated optional kiosk CJK faces */
+
+/* Licensed kana/Hangul-only fallback; source and OFL: fonts/CJK-FONT-SOURCES.md.
+ * Han uses Noto's JAN/KOR locl forms via the actual document lang; Latin, digits
+ * and the brand face retain their separately owned roles. */
+@font-face{font-family:"SmartBox CJK Scripts";src:url("./fonts/noto-sans-cjk-jp-kr-scripts.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+1100-11FF,U+3040-30FF,U+3130-318F,U+31F0-31FF,U+A960-A97F,U+AC00-D7AF,U+D7B0-D7FF,U+FF61-FFDC,U+1B000-1B16F}

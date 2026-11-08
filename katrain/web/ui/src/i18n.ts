@@ -1,4 +1,5 @@
 import { API } from './api';
+import kifuMessages from './kiosk/appearance/kifuMessages.json';
 import { isStrictBoxKiosk } from './kiosk/shell/boxUrls';
 import { LiveAPI } from './api/live';
 
@@ -64,7 +65,9 @@ class I18n {
   }
 
   t(key: string, defaultText?: string): string {
-    return this.translations[key] || defaultText || key;
+    const kifuMessage = kifuMessages[key as keyof typeof kifuMessages];
+    const localText = kifuMessage?.[this.currentLang as keyof typeof kifuMessage] ?? kifuMessage?.en;
+    return this.translations[key] || localText || defaultText || key;
   }
 
   /**

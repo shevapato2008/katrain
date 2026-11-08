@@ -7,6 +7,7 @@ import threading
 import time
 from dataclasses import dataclass
 
+from katrain.vision.device_events import UdevDeviceMonitor
 from katrain.web.core.device_lease import DeviceLease
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,10 @@ class CameraHub:
         self._device_lease = None
         self._recovery_stop = threading.Event()
         self._recovery_thread: threading.Thread | None = None
+        self._recovery_wake = threading.Event()
+        self._device_event_lock = threading.Lock()
+        self._pending_device_events: list[str] = []
+        self._device_monitor = None
 
     @property
     def is_started(self) -> bool:
@@ -61,6 +66,16 @@ class CameraHub:
                         exposure=self.config.exposure,
                         lock_awb=self.config.lock_awb,
                     )
+                self._recovery_stop = threading.Event()
+                self._recovery_wake = threading.Event()
+                with self._device_event_lock:
+                    self._pending_device_events = []
+                stop = self._recovery_stop
+                self._device_monitor = UdevDeviceMonitor(
+                    self.config.device_id, lambda action: self._queue_device_event(action, stop)
+                )
+                # Subscribe first so an event during initial open is reconciled too.
+                self._device_monitor.start()
                 if not self._camera.open():
                     if not allow_unavailable:
                         raise RuntimeError(f"Failed to open camera {self.config.device_id}")
@@ -68,7 +83,6 @@ class CameraHub:
                         "Camera unavailable; retaining shared services and retrying: %s", self.config.device_id
                     )
                 self._started = True
-                self._recovery_stop = threading.Event()
                 self._recovery_thread = threading.Thread(
                     target=self._recover_loop, args=(self._recovery_stop,), daemon=True, name="camera-recovery"
                 )
@@ -76,6 +90,10 @@ class CameraHub:
             except BaseException:
                 self._started = False
                 self._recovery_stop.set()
+                self._recovery_wake.set()
+                if self._device_monitor is not None:
+                    self._device_monitor.stop()
+                    self._device_monitor = None
                 self._recovery_thread = None
                 # Preserve the existing lease through partial-open cleanup.
                 try:
@@ -88,18 +106,40 @@ class CameraHub:
                     self._release_device_lease()
                 raise
 
+    def _queue_device_event(self, action: str, stop: threading.Event) -> None:
+        # The monitor only registers work. It never waits for a capture or opens one.
+        with self._device_event_lock:
+            if stop is not self._recovery_stop or stop.is_set() or action not in {"add", "remove"}:
+                return
+            if action == "remove":
+                self._pending_device_events = ["remove"]
+            elif not self._pending_device_events or self._pending_device_events[-1] != "add":
+                self._pending_device_events.append("add")
+            self._recovery_wake.set()
+
     def _recover_loop(self, stop: threading.Event) -> None:
-        while not stop.wait(self.RECOVERY_INTERVAL_S):
+        while not stop.is_set():
+            self._recovery_wake.wait(self.RECOVERY_INTERVAL_S)
+            self._recovery_wake.clear()
             with self._lifecycle_lock:
                 if not self._started or stop.is_set():
                     return
-                if not self.is_connected():
-                    try:
-                        # CameraManager owns reconnect cooldown/identity and reader startup.
-                        # This runs even when vision is idle and no consumer requests frames.
+                with self._device_event_lock:
+                    events, self._pending_device_events = self._pending_device_events, []
+                try:
+                    handle_event = getattr(self._camera, "handle_device_event", None)
+                    if handle_event is not None:
+                        for action in events:
+                            handle_event(action)
+                    reconcile = getattr(self._camera, "reconcile_device", None)
+                    if reconcile is not None:
+                        reconcile()
+                    if not self.is_connected():
+                        # CameraManager owns cooldown/identity and reader startup.
+                        # Timer reconciliation remains active when events are lost.
                         self._camera.read_frame()
-                    except Exception:
-                        logger.exception("Camera recovery failed for %s", self.config.device_id)
+                except Exception:
+                    logger.exception("Camera recovery failed for %s", self.config.device_id)
 
     def stop(self) -> None:
         recovery = None
@@ -109,6 +149,10 @@ class CameraHub:
                     return
                 self._started = False
                 self._recovery_stop.set()
+                self._recovery_wake.set()
+                if self._device_monitor is not None:
+                    self._device_monitor.stop()
+                    self._device_monitor = None
                 recovery, self._recovery_thread = self._recovery_thread, None
                 try:
                     self._camera.close()

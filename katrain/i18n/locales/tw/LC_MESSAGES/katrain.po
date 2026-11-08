@@ -8035,3 +8035,54 @@ msgstr "第一頁"
 
 msgid "kifu:last_page"
 msgstr "最後一頁"
+
+msgid "membership:order_cancelled"
+msgstr "訂單已取消"
+
+msgid "membership:wechat_another_screen"
+msgstr "使用手機瀏覽時，請在另一個螢幕開啟本頁，再用手機微信掃碼。"
+
+msgid "membership:wechat_cancel"
+msgstr "取消訂單"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "正在確認取消結果；如已付款，將以付款回執為準。"
+
+msgid "membership:wechat_cancelling"
+msgstr "正在取消…"
+
+msgid "membership:wechat_close_help"
+msgstr "關閉僅隱藏此頁，可從訂單紀錄繼續查看。"
+
+msgid "membership:wechat_confirming"
+msgstr "正在確認付款結果，請勿重複下單。"
+
+msgid "membership:wechat_paid"
+msgstr "微信支付成功，正在同步帳戶。"
+
+msgid "membership:wechat_pay"
+msgstr "微信支付"
+
+msgid "membership:wechat_qr_alt"
+msgstr "微信支付二維碼"
+
+msgid "membership:wechat_qr_error"
+msgstr "二維碼暫時無法顯示，請重試確認訂單。"
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "二維碼尚未準備好，正在確認訂單。"
+
+msgid "membership:wechat_retry"
+msgstr "安全重試"
+
+msgid "membership:wechat_scan"
+msgstr "掃碼付款"
+
+msgid "membership:wechat_scan_help"
+msgstr "請用手機微信「掃一掃」掃描二維碼。"
+
+msgid "membership:wechat_valid_for"
+msgstr "二維碼剩餘 {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "等待微信支付確認"

@@ -67,6 +67,12 @@ def test_postgres_membership_upgrade_twice_preserves_old_financial_facts(members
             with engine.begin() as conn:
                 conn.execute(text(sql))
     inspector = inspect(engine)
+    order_columns = {column["name"]: column for column in inspector.get_columns("recharge_orders")}
+    assert order_columns["payment_details"]["nullable"] is True
+    assert order_columns["payment_next_check_at"]["nullable"] is True
+    assert "ix_recharge_orders_payment_next_check_at" in {index["name"] for index in inspector.get_indexes("recharge_orders")}
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT payment_details,payment_next_check_at FROM recharge_orders")).one() == (None, None)
     assert {c["name"] for c in inspector.get_check_constraints("quota_buckets")} >= {
         "ck_quota_bucket_nonnegative",
         "ck_quota_bucket_window",

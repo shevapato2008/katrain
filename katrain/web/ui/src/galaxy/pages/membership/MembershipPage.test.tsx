@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   createOrder: vi.fn(),
   getOrder: vi.fn(),
   getOrders: vi.fn(),
+  cancelOrder: vi.fn(),
   changed: vi.fn(),
   language: "cn",
   languageListeners: new Set<() => void>(),
@@ -71,6 +72,7 @@ vi.mock("../../../api/membershipApi", () => ({
     createOrder: mocks.createOrder,
     getOrder: mocks.getOrder,
     getOrders: mocks.getOrders,
+    cancelOrder: mocks.cancelOrder,
   },
 }));
 vi.mock("../../components/layout/ContentPageHeader", () => ({
@@ -450,15 +452,17 @@ describe("Galaxy membership", () => {
     expect(screen.queryByText("order-a")).not.toBeInTheDocument();
     expect(mocks.changed).not.toHaveBeenCalled();
   });
-  it.each(["production-mock", "production-live", "orders-disabled"])(
+  it.each(["production-mock", "live-orders-disabled", "orders-disabled"])(
     "blocks unsupported payment boundary %s",
     (boundary) => {
       const catalog = makeCatalog(),
         usage = makeUsage();
       if (boundary.startsWith("production"))
         catalog.environment = usage.environment = "production";
-      if (boundary === "production-live")
+      if (boundary === "live-orders-disabled") {
         catalog.payments_mode = usage.payments_mode = "live";
+        catalog.capabilities.orders = false;
+      }
       if (boundary === "orders-disabled") usage.capabilities.orders = false;
       mocks.membership = { ...mocks.membership, catalog, usage };
       show("plans");
@@ -512,4 +516,38 @@ describe("Galaxy membership", () => {
     expect(screen.queryByText("order-a")).not.toBeInTheDocument();
     expect(mocks.changed).not.toHaveBeenCalled();
   });
+  it("offers explicit WeChat Pay for server-enabled live orders and lets unknown creates retry safely", async () => {
+    const catalog = { ...makeCatalog(), environment: "production", payments_mode: "live" as const };
+    mocks.membership = { ...mocks.membership, catalog, usage: { ...makeUsage(), environment: "production", payments_mode: "live" } };
+    mocks.createOrder.mockRejectedValueOnce(new Error("timeout")).mockResolvedValue({ ...pendingOrder(), provider: "wechat", payments_mode: "live", expires_at: new Date(Date.now() + 900000).toISOString(), payment_url: "weixin://wxpay/bizpayurl?pr=fixture" });
+    show("plans");
+    fireEvent.click(screen.getByRole("button", { name: "选择 Plus" }));
+    expect(screen.getByText("手机浏览时，请在另一块屏幕打开本页，再用手机微信扫码。")).toBeInTheDocument();
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "微信支付" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "安全重试" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "安全重试" }));
+    await waitFor(() => expect(screen.getByRole("img", { name: "微信支付二维码" })).toBeInTheDocument());
+    expect(mocks.createOrder.mock.calls[1][0]).toEqual(mocks.createOrder.mock.calls[0][0]);
+    expect(mocks.createOrder.mock.calls[0][0].provider).toBe("wechat");
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+    expect(mocks.cancelOrder).not.toHaveBeenCalled();
+  });
+
+  it("recovers owned existing orders when creation capabilities are disabled", async () => {
+    const catalog = makeCatalog(), usage = makeUsage();
+    catalog.payments_mode = usage.payments_mode = "disabled";
+    catalog.capabilities.orders = usage.capabilities.orders = false;
+    mocks.membership = { ...mocks.membership, catalog, usage };
+    mocks.getOrders.mockResolvedValue({ orders: [{ ...pendingOrder(), provider: "wechat", payments_mode: "live" }] });
+    show();
+    const history = screen.getByRole("button", { name: "订单记录", exact: true });
+    expect(history).toBeEnabled();
+    fireEvent.click(history);
+    await waitFor(() => expect(screen.getByRole("button", { name: /order-a/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /order-a/ }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("order-a");
+    expect(mocks.createOrder).not.toHaveBeenCalled();
+  });
+
 });

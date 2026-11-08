@@ -24,6 +24,7 @@ export const membershipApi = {
   createOrder: (payload: CreateBillingOrder, token?: string | null, signal?: AbortSignal) => request<BillingOrder>('/api/v1/billing/orders', token, signal, payload),
   getOrders: (token?: string | null, signal?: AbortSignal) => request<{ orders: BillingOrder[] }>('/api/v1/billing/orders', token, signal),
   getOrder: (id: string, token?: string | null, signal?: AbortSignal) => request<BillingOrder>(`/api/v1/billing/orders/${encodeURIComponent(id)}`, token, signal),
+  cancelOrder: (id: string, token?: string | null, signal?: AbortSignal) => request<BillingOrder>(`/api/v1/billing/orders/${encodeURIComponent(id)}/cancel`, token, signal, {}),
   createPosition: (payload: CreatePositionAnalysis, token?: string | null, signal?: AbortSignal) => request<PositionAnalysis>('/api/v1/analysis/positions', token, signal, payload),
   getPosition: (id: string, token?: string | null, signal?: AbortSignal) => request<PositionAnalysis>(`/api/v1/analysis/positions/${encodeURIComponent(id)}`, token, signal),
 };

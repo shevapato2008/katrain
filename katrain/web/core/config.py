@@ -1,6 +1,6 @@
 import os
 import uuid as uuid_module
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal
 
 # 仓库里跟着代码走的字面量默认值。**唯一真源**——生产装配（下方 env 装配处）与
@@ -86,13 +86,23 @@ class Settings(BaseModel):
     KATRAIN_BOX_SSO_BRIDGE_KEY_PATH: str = "/etc/smartbox/box-sso-bridge.key"
 
     KATRAIN_ENVIRONMENT: Literal["production", "development", "test"] = "production"
-    PAYMENTS_MODE: Literal["disabled", "mock"] = "disabled"
+    PAYMENTS_MODE: Literal["disabled", "mock", "live"] = "disabled"
     MEMBERSHIP_MODE: Literal["legacy", "enabled", "paused"] = "legacy"
     MEMBERSHIP_REPORT_QUEUE_LIMIT: int = 8
     MEMBERSHIP_POSITION_QUEUE_LIMIT: int = 4
     MEMBERSHIP_POSITION_LEASE_SECONDS: int = 90
     MEMBERSHIP_MAX_SALE_ENABLED: bool = True
     PAYMENT_MOCK_EVENT_SECRET: str = ""
+    # Values are identifiers/paths only. Secrets are loaded from read-only files;
+    # public-key callback migration must be completed before live activation.
+    WECHAT_PAY_APP_ID: str = Field(default="", repr=False)
+    WECHAT_PAY_MCH_ID: str = Field(default="", repr=False)
+    WECHAT_PAY_MERCHANT_SERIAL: str = Field(default="", repr=False)
+    WECHAT_PAY_PRIVATE_KEY_PATH: str = Field(default="", repr=False)
+    WECHAT_PAY_API_V3_KEY_PATH: str = Field(default="", repr=False)
+    WECHAT_PAY_PUBLIC_KEY_ID: str = Field(default="", repr=False)
+    WECHAT_PAY_PUBLIC_KEY_PATH: str = Field(default="", repr=False)
+    WECHAT_PAY_NOTIFY_URL: str = Field(default="", repr=False)
 
     # Billing / paid-analysis (single-pool integer credits). Prices are per analysis action.
     BILLING_PRICES: dict = {"territory": 10, "hints": 10, "variations": 10}
@@ -135,6 +145,12 @@ class Settings(BaseModel):
 
         data.setdefault("KATRAIN_ENVIRONMENT", os.getenv("KATRAIN_ENVIRONMENT", "production"))
         data.setdefault("PAYMENTS_MODE", os.getenv("PAYMENTS_MODE", "disabled"))
+        for suffix in (
+            "APP_ID", "MCH_ID", "MERCHANT_SERIAL", "PRIVATE_KEY_PATH", "API_V3_KEY_PATH",
+            "PUBLIC_KEY_ID", "PUBLIC_KEY_PATH", "NOTIFY_URL",
+        ):
+            name = f"WECHAT_PAY_{suffix}"
+            data.setdefault(name, os.getenv(name, ""))
         data.setdefault("MEMBERSHIP_MODE", os.getenv("MEMBERSHIP_MODE", "legacy"))
         data.setdefault("BILLING_ENFORCED", os.getenv("BILLING_ENFORCED", "false").lower() in ("1", "true", "yes"))
         data.setdefault("FREE_WEEKLY_REPORTS", int(os.getenv("FREE_WEEKLY_REPORTS", "1")))

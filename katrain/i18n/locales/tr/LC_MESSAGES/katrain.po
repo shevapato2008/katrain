@@ -8505,3 +8505,54 @@ msgstr "İlk sayfa"
 
 msgid "kifu:last_page"
 msgstr "Son sayfa"
+
+msgid "membership:order_cancelled"
+msgstr "Sipariş iptal edildi"
+
+msgid "membership:wechat_another_screen"
+msgstr "Telefondan bakıyorsanız bu sayfayı başka bir ekranda açın, ardından telefonunuzdaki WeChat ile kodu tarayın."
+
+msgid "membership:wechat_cancel"
+msgstr "Siparişi iptal et"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "İptal sonucu doğrulanıyor. Ödeme zaten tamamlandıysa ödeme makbuzu esas alınır."
+
+msgid "membership:wechat_cancelling"
+msgstr "İptal ediliyor…"
+
+msgid "membership:wechat_close_help"
+msgstr "Kapatmak yalnızca bu sayfayı gizler. Sipariş geçmişinden tekrar açabilirsiniz."
+
+msgid "membership:wechat_confirming"
+msgstr "Ödeme sonucu doğrulanıyor. Lütfen yeni bir sipariş oluşturmayın."
+
+msgid "membership:wechat_paid"
+msgstr "WeChat Pay ödemesi başarılı. Hesabınız eşitleniyor."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat Pay QR kodu"
+
+msgid "membership:wechat_qr_error"
+msgstr "QR kodu şu anda görüntülenemiyor. Lütfen bu siparişi kontrol etmeyi yeniden deneyin."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "QR kodu henüz hazır değil. Siparişiniz kontrol ediliyor."
+
+msgid "membership:wechat_retry"
+msgstr "Güvenle yeniden dene"
+
+msgid "membership:wechat_scan"
+msgstr "Ödemek için tarayın"
+
+msgid "membership:wechat_scan_help"
+msgstr "Telefonunuzdaki WeChat uygulamasının tarama işleviyle QR kodunu tarayın."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR kodunun kalan süresi {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "WeChat Pay onayı bekleniyor"

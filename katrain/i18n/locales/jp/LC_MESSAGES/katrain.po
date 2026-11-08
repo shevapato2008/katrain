@@ -8070,3 +8070,54 @@ msgstr "最初のページ"
 
 msgid "kifu:last_page"
 msgstr "最後のページ"
+
+msgid "membership:order_cancelled"
+msgstr "注文はキャンセルされました"
+
+msgid "membership:wechat_another_screen"
+msgstr "スマートフォンで閲覧している場合は、別の画面でこのページを開き、スマートフォンのWeChatでコードをスキャンしてください。"
+
+msgid "membership:wechat_cancel"
+msgstr "注文をキャンセル"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "キャンセル結果を確認しています。すでに支払い済みの場合は、支払いの確認結果が優先されます。"
+
+msgid "membership:wechat_cancelling"
+msgstr "キャンセル中…"
+
+msgid "membership:wechat_close_help"
+msgstr "閉じるとこの画面が非表示になるだけです。注文履歴から再び確認できます。"
+
+msgid "membership:wechat_confirming"
+msgstr "支払い結果を確認しています。重複して注文しないでください。"
+
+msgid "membership:wechat_paid"
+msgstr "WeChat Payでの支払いが完了しました。アカウントを同期しています。"
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat Payの支払い用QRコード"
+
+msgid "membership:wechat_qr_error"
+msgstr "現在QRコードを表示できません。この注文の確認を再試行してください。"
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "QRコードはまだ準備できていません。注文を確認しています。"
+
+msgid "membership:wechat_retry"
+msgstr "安全に再試行"
+
+msgid "membership:wechat_scan"
+msgstr "スキャンして支払う"
+
+msgid "membership:wechat_scan_help"
+msgstr "スマートフォンのWeChatのスキャン機能でQRコードを読み取ってください。"
+
+msgid "membership:wechat_valid_for"
+msgstr "QRコードの有効期限まで {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "WeChat Payの支払い確認を待っています"

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { usagePercent } from '../../../features/membership/presentation';
 import type { BillingOrder, CreateBillingOrder, MembershipPeriod } from '../../../features/membership/types';
+import { WechatNativePayment } from '../../../features/membership/WechatNativePayment';
 import { useMembership } from '../../../features/membership/useMembership';
 import { useMembershipI18n } from '../../../features/membership/useMembershipI18n';
 import { KioskActions } from '../../shell/KioskActions';
@@ -68,10 +69,11 @@ function OrderReceipt({ order }: { order: BillingOrder }) {
     expired: t('membership:kiosk_order_expired', '订单已过期'),
     failed: t('membership:kiosk_order_failed', '订单未完成'),
     refunded: t('membership:kiosk_order_refunded', '订单已退款'),
+    cancelled: t('membership:order_cancelled', '订单已取消'),
   };
   return <>
-    <div className="km-order-summary"><div><strong>{order.kind === 'topup' ? t('membership:kiosk_api_points_topup', 'API积分充值') : t('membership:kiosk_membership_purchase', '会员购买')}</strong><span className="km-note">{t('membership:kiosk_order_id', '订单 {id}', { id: order.id })}</span></div><strong><Num>{money(order.amount_fen)}</Num></strong></div>
-    <p className="km-order-state" role="status">{states[order.status]}</p>
+    <div className={`km-order-summary${order.provider === 'wechat' ? ' km-order-summary--native' : ''}`}><div><strong>{order.kind === 'topup' ? t('membership:kiosk_api_points_topup', 'API积分充值') : t('membership:kiosk_membership_purchase', '会员购买')}</strong><span className="km-note">{t('membership:kiosk_order_id', '订单 {id}', { id: order.id })}</span></div><strong><Num>{money(order.amount_fen)}</Num></strong></div>
+    {order.provider === 'wechat' ? <WechatNativePayment order={order} layout="kiosk" /> : <p className="km-order-state" role="status">{states[order.status]}</p>}
     {order.payments_mode === 'mock' && <p className="km-test">{t('membership:kiosk_test_order', 'TEST模拟订单 · 不会真实收款')}</p>}
     {paid ? <>
       <p className="km-note">{t('membership:kiosk_paid_time', '确认时间 {date} · 北京时间', { date: date(order.paid_at) })}</p>
@@ -81,7 +83,7 @@ function OrderReceipt({ order }: { order: BillingOrder }) {
     </> : order.status === 'pending' ? <>
       {order.kind === 'membership' && <><p className="km-note">{t('membership:kiosk_estimated_period', '预计 {start} 至 {end} · 北京时间', { start: date(order.estimated_starts_at, true), end: date(order.estimated_ends_at, true) })}</p><p className="km-note">{t('membership:kiosk_membership_extension', '已有会员将顺延至已购周期结束后生效；现有用量保留，最终时间以支付回执为准。')}</p></>}
       <p className="km-note">{t('membership:kiosk_order_valid_until', '订单有效至 {date} · 北京时间', { date: date(order.expires_at) })}</p>
-      <p className="km-note">{order.payments_mode === 'mock' ? t('membership:kiosk_mock_fulfillment', '测试环境由服务端模拟支付结果，此页不会触发支付或自行发放权益。') : t('membership:kiosk_payment_entry_pending', '支付入口尚未接通，请稍后查看订单状态。')}</p>
+      {order.provider !== 'wechat' && <p className="km-note">{order.payments_mode === 'mock' ? t('membership:kiosk_mock_fulfillment', '测试环境由服务端模拟支付结果，此页不会触发支付或自行发放权益。') : t('membership:kiosk_payment_entry_pending', '支付入口尚未接通，请稍后查看订单状态。')}</p>}
     </> : <p className="km-note">{t('membership:kiosk_no_local_fulfillment', '本页不会自行发放权益；需要时返回重新选择。')}</p>}
   </>;
 }
@@ -95,6 +97,7 @@ export default function MembershipPage() {
   const { identityKey, status: authStatus } = useAuth();
   const { catalog, usage, status, countdowns, refresh } = useMembership();
   const checkout = useKioskMembershipOrder(catalog?.environment);
+  const [purchase, setPurchase] = useState<{ sku: CreateBillingOrder['sku']; amount: number; name: string } | null>(null);
   const [tab, setTab] = useState<MembershipTab>('usage');
   const [info, setInfo] = useState<MembershipInfo | null>(null);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
@@ -102,7 +105,7 @@ export default function MembershipPage() {
   const boundaryPending = ready && [countdowns.term, countdowns.week, countdowns.free].includes(0);
   const usable = ready && !boundaryPending;
   const paymentReady = usable && catalog?.capabilities.orders === true && usage?.capabilities.orders === true
-    && catalog.payments_mode === 'mock' && catalog.environment.toLowerCase() === 'test' && catalog.payments_mode === usage.payments_mode;
+    && ((catalog.payments_mode === 'mock' && catalog.environment.toLowerCase() === 'test') || catalog.payments_mode === 'live') && catalog.payments_mode === usage.payments_mode;
   const selected = catalog?.topups.find(option => option.sku === selectedSku) ?? catalog?.topups[0];
   const activePlan = usable ? usage?.plan.current : null;
   const wallet = usable ? usage?.wallet : null;
@@ -111,18 +114,22 @@ export default function MembershipPage() {
   const paymentReason = !usable ? t('membership:kiosk_purchase_after_sync', '账号和额度确认后才可购买') : !paymentReady ? t('membership:payments_disabled', '支付暂未开放') : null;
   const environment = catalog?.environment.toLowerCase();
   const isTest = environment === 'test' || environment === 'development';
-  useEffect(() => { setInfo(null); setSelectedSku(null); }, [identityKey, authStatus]);
+  useEffect(() => { setInfo(null); setSelectedSku(null); setPurchase(null); }, [identityKey, authStatus]);
 
   const buy = (sku: string, membership: boolean) => {
     if (!paymentReady || !catalog || checkout.creating) return;
     if (membership && (!catalog.capabilities.membership || !usage?.capabilities.membership || catalog.membership_mode !== 'enabled'
       || !catalog.plans.find(plan => `membership_${plan.code}` === sku)?.sale_enabled)) return;
     if (!membership && !catalog.topups.some(option => option.sku === sku)) return;
-    void checkout.create({ sku: sku as CreateBillingOrder['sku'], provider: catalog.payments_mode === 'mock' ? 'mock' : 'live', idempotency_key: crypto.randomUUID() });
+    if (catalog.payments_mode === 'live') {
+      const item = membership ? catalog.plans.find(plan => `membership_${plan.code}` === sku)! : catalog.topups.find(option => option.sku === sku)!;
+      setPurchase({ sku: sku as CreateBillingOrder['sku'], amount: item.amount_fen, name: membership ? catalog.plans.find(plan => `membership_${plan.code}` === sku)!.name : t('membership:api_topup', 'API充值') });
+    } else void checkout.create({ sku: sku as CreateBillingOrder['sku'], provider: 'mock', idempotency_key: crypto.randomUUID() });
   };
   const closeOrder = () => {
     const paid = checkout.order?.status === 'paid';
     checkout.close();
+    setPurchase(null);
     if (paid) setTab('usage');
   };
   const headerState = boundaryPending ? t('membership:kiosk_period_pending', '周期待核对') : status === 'loading' ? t('membership:kiosk_syncing', '正在同步') : status === 'error' ? t('membership:kiosk_sync_failed', '同步失败')
@@ -156,7 +163,7 @@ export default function MembershipPage() {
   </aside>;
 
   return <div className="km-page" data-testid="kiosk-membership-page">
-    <KioskPagebar backLabel={t('membership:kiosk_back_settings', '返回设置')} onBack={() => navigate('/kiosk/settings')} title={t('membership:kiosk_title', '会员与充值')} status={<span className={usable && !isTest ? 'km-header-ready' : 'km-header-status'} role="status">{headerState}</span>} action={{ icon: 'clock-counter-clockwise', label: t('membership:kiosk_order_history', '订单记录'), onClick: () => void checkout.openHistory() }} />
+    <KioskPagebar backLabel={t('membership:kiosk_back_settings', '返回设置')} onBack={() => navigate('/kiosk/settings')} title={t('membership:kiosk_title', '会员与充值')} status={<span className={usable && !isTest ? 'km-header-ready' : 'km-header-status'} role="status">{headerState}</span>} action={{ icon: 'clock-counter-clockwise', label: t('membership:kiosk_order_history', '订单记录'), onClick: () => { setPurchase(null); void checkout.openHistory(); } }} />
     <nav className="km-tabs" role="tablist" aria-label={t('membership:kiosk_title', '会员与充值')}>{tabs.map(([key, label]) => <button key={key} type="button" id={`km-tab-${key}`} role="tab" aria-selected={tab === key} aria-controls={tab === key ? `km-panel-${key}` : undefined} tabIndex={tab === key ? 0 : -1} onClick={() => setTab(key)} onKeyDown={event => {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
       event.preventDefault();
@@ -216,17 +223,21 @@ export default function MembershipPage() {
       <KioskScrollZone grow className="km-order-history">
         {checkout.history.loading ? <p className="km-note" role="status">{t('membership:kiosk_syncing_orders', '正在同步订单…')}</p> : checkout.history.error ? <p className="km-note" role="status">{checkout.history.error}</p> : checkout.history.orders.length ? checkout.history.orders.map(order => <button key={order.id} type="button" className="km-history-row" aria-label={t('membership:kiosk_view_order', '查看订单 {id}', { id: order.id })} onClick={() => checkout.openOrder(order)}>
           <span><strong>{t('membership:kiosk_order_history_item', '{kind} · {date}', { kind: order.kind === 'membership' ? t('membership:kiosk_membership_purchase', '会员购买') : t('membership:api_topup', 'API充值'), date: date(order.created_at) })}</strong><span className="km-note"><Num>{order.id}</Num></span></span>
-          <span><strong><Num>{money(order.amount_fen)}</Num></strong><span className="km-note">{({ pending: t('membership:order_pending', '等待付款'), paid: t('membership:order_paid', '已支付'), expired: t('membership:order_expired', '订单已过期'), failed: t('membership:order_failed', '订单未完成'), refunded: t('membership:order_refunded', '已退款') })[order.status]}</span></span>
+          <span><strong><Num>{money(order.amount_fen)}</Num></strong><span className="km-note">{({ pending: t('membership:order_pending', '等待付款'), paid: t('membership:order_paid', '已支付'), expired: t('membership:order_expired', '订单已过期'), failed: t('membership:order_failed', '订单未完成'), cancelled: t('membership:order_cancelled', '订单已取消'), refunded: t('membership:order_refunded', '已退款') })[order.status]}</span></span>
         </button>) : <p className="km-note">{t('membership:kiosk_no_orders', '暂无订单记录')}</p>}
       </KioskScrollZone>
       <footer className="km-dialog-actions"><button type="button" onClick={() => void checkout.openHistory()} disabled={checkout.history.loading}>{t('membership:kiosk_resync', '重新同步')}</button><button type="button" className="km-primary" onClick={checkout.close}>{t('membership:kiosk_back', '返回')}</button></footer>
     </CanvasDialog>}
-    {(checkout.creating || checkout.order || checkout.error) && <CanvasDialog title={t('membership:kiosk_order_confirmation', '订单确认')} onClose={closeOrder}>
+    {(purchase || checkout.creating || checkout.order || checkout.error) && <CanvasDialog title={t('membership:kiosk_order_confirmation', '订单确认')} onClose={closeOrder}>
       <KioskScrollZone grow className="km-dialog-copy">
+      {purchase && !checkout.order && <div className="km-order-summary"><strong>{purchase.name}</strong><strong><Num>{money(purchase.amount)}</Num></strong></div>}
       {checkout.order ? <OrderReceipt order={checkout.order} /> : <p className="km-order-state" role="status">{checkout.creating ? t('membership:kiosk_creating_order', '正在创建订单…') : t('membership:kiosk_order_unconfirmed', '订单待确认')}</p>}
       {checkout.error && <p className="km-note" role="status">{checkout.error}</p>}
       </KioskScrollZone>
-      <footer className="km-dialog-actions">{checkout.error && !checkout.order && <button type="button" onClick={() => void checkout.openHistory()}>{t('membership:kiosk_order_history', '订单记录')}</button>}<button type="button" className="km-primary" onClick={closeOrder}>{checkout.order?.status === 'paid' ? t('membership:kiosk_return_usage', '返回用量') : t('membership:kiosk_return_selection', '返回选择')}</button></footer>
+      <footer className="km-dialog-actions">{checkout.order?.provider === 'wechat' && checkout.order.status === 'pending' && <button type="button" onClick={() => void checkout.cancel()} disabled={checkout.cancelling || checkout.order.cancel_requested}>{checkout.cancelling ? t('membership:wechat_cancelling', '正在取消…') : t('membership:wechat_cancel', '取消订单')}</button>}
+      {checkout.canRetry && (checkout.error && !checkout.order || checkout.order?.provider === 'wechat' && checkout.order.status === 'pending' && !checkout.order.payment_url && !checkout.order.cancel_requested && Date.parse(checkout.order.expires_at) > Date.now()) && <button type="button" onClick={checkout.retry}>{t('membership:wechat_retry', '安全重试')}</button>}
+      {purchase && !checkout.order && !checkout.error && <button type="button" className="km-primary" disabled={!paymentReady || checkout.creating} onClick={() => void checkout.create({ sku: purchase.sku, provider: 'wechat', idempotency_key: crypto.randomUUID() })}>{checkout.creating ? t('membership:kiosk_creating_order', '正在创建订单…') : t('membership:wechat_pay', '微信支付')}</button>}
+      {checkout.error && !checkout.order && <button type="button" onClick={() => void checkout.openHistory()}>{t('membership:kiosk_order_history', '订单记录')}</button>}<button type="button" className="km-primary" onClick={closeOrder}>{checkout.order?.status === 'paid' ? t('membership:kiosk_return_usage', '返回用量') : t('membership:kiosk_return_selection', '返回选择')}</button></footer>
     </CanvasDialog>}
   </div>;
 }

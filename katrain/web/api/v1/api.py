@@ -61,3 +61,9 @@ register_test_payment_routes(api_router, runtime_settings=settings)
 
 
 api_router.include_router(paid_analysis.router, prefix="/analysis", tags=["paid-analysis"])
+
+
+# Authenticated by WeChat's signature, independent of new-order availability.
+from katrain.web.api.v1.endpoints import payment_wechat
+
+api_router.include_router(payment_wechat.router, prefix="/payments/wechat", tags=["wechat-payments"])

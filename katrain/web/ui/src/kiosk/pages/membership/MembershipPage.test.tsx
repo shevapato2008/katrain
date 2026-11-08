@@ -8,7 +8,7 @@ import MembershipPage from './MembershipPage';
 
 const { auth, api } = vi.hoisted(() => ({
   auth: { identityKey: 'account-a' as string | null, status: 'authenticated', token: null as string | null },
-  api: { getCatalog: vi.fn(), getUsage: vi.fn(), createOrder: vi.fn(), getOrder: vi.fn(), getOrders: vi.fn() },
+  api: { getCatalog: vi.fn(), getUsage: vi.fn(), createOrder: vi.fn(), getOrder: vi.fn(), getOrders: vi.fn(), cancelOrder: vi.fn() },
 }));
 vi.mock('../../../context/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../../../api/membershipApi', () => ({ membershipApi: api }));
@@ -263,4 +263,24 @@ describe('Kiosk membership', () => {
     expect(screen.queryByText('own-order-a')).not.toBeInTheDocument();
     expect(screen.queryByText('服务端已确认支付')).not.toBeInTheDocument();
   });
+  it('confirms live purchases explicitly with WeChat Pay, retries the same attempt and separates cancelling from closing', async () => {
+    api.getCatalog.mockResolvedValue({ ...catalog(), environment: 'production', payments_mode: 'live' });
+    api.getUsage.mockResolvedValue({ ...usage(), environment: 'production', payments_mode: 'live' });
+    const native = { ...order(), provider: 'wechat', payments_mode: 'live', expires_at: new Date(Date.now() + 900000).toISOString(), payment_url: 'weixin://wxpay/bizpayurl?pr=fixture', payment_state: 'ready' };
+    api.createOrder.mockRejectedValueOnce(new Error('timeout')).mockResolvedValue(native);
+    api.cancelOrder.mockResolvedValue({ ...native, status: 'cancelled', payment_url: null });
+    mount(); await flush(); openTopup();
+    fireEvent.click(screen.getByRole('button', { name: /^充值/ }));
+    expect(api.createOrder).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '微信支付' })); await flush();
+    fireEvent.click(screen.getByRole('button', { name: '安全重试' })); await flush();
+    expect(api.createOrder.mock.calls[1][0]).toEqual(api.createOrder.mock.calls[0][0]);
+    expect(api.createOrder.mock.calls[0][0].provider).toBe('wechat');
+    fireEvent.click(screen.getByRole('button', { name: '取消订单' })); await flush();
+    expect(api.cancelOrder).toHaveBeenCalledWith('own-order-a', null, expect.any(AbortSignal));
+    expect(screen.getByRole('dialog')).toHaveTextContent('订单已取消');
+    fireEvent.click(screen.getByRole('button', { name: '返回选择' }));
+    expect(api.cancelOrder).toHaveBeenCalledTimes(1);
+  });
+
 });

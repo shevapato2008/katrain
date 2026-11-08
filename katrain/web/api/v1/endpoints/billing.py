@@ -16,6 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,6 +29,7 @@ from katrain.web.core import (
     membership,
     models_db,
     payments,
+    wechat_payments,
 )
 from katrain.web.core.billing_quotes import canonical_analysis_input
 from katrain.web.core.repository import RemoteServiceUnavailableError
@@ -190,7 +192,7 @@ class BillingQuoteRequest(BaseModel):
 class BillingOrderRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     sku: Literal["membership_plus", "membership_pro", "membership_max", "topup_10", "topup_30", "topup_100"]
-    provider: Literal["mock", "live"] | None = None
+    provider: Literal["mock", "live", "wechat"] | None = None
     idempotency_key: str = Field(min_length=1, max_length=128)
 
 
@@ -258,6 +260,10 @@ def resolve_analysis_input(db, *, user_id, body):
 
 
 def _orders_available():
+    if settings.PAYMENTS_MODE == "live":
+        from katrain.web.core.wechat_native import wechat_native_ready
+
+        return wechat_payments.new_orders_enabled(settings) and wechat_native_ready(settings)
     return (
         settings.MEMBERSHIP_MODE == "enabled"
         and settings.PAYMENTS_MODE == "mock"
@@ -410,6 +416,16 @@ async def create_billing_order(
         return await _cloud(request, "billing_create_order", current_user.id, body.model_dump(exclude_none=True))
     now = _now()
     try:
+        if body.provider == "wechat" or (body.provider is None and settings.PAYMENTS_MODE == "live"):
+            return await run_in_threadpool(
+                wechat_payments.create_order,
+                db,
+                user_id=current_user.id,
+                sku=body.sku,
+                idempotency_key=body.idempotency_key,
+                now=now,
+                settings=settings,
+            )
         order = payments.create_order_in_transaction(
             db,
             user_id=current_user.id,
@@ -480,6 +496,11 @@ async def get_billing_order(
         except ValueError:
             raise payments.PaymentError("order_not_found", 404) from None
         now = _now()
+        probe = db.query(models_db.RechargeOrder).filter_by(id=oid, user_id=current_user.id).one_or_none()
+        if probe and probe.provider == "wechat" and probe.catalog_version:
+            return await run_in_threadpool(
+                wechat_payments.reconcile_order, db, user_id=current_user.id, order_id=oid, now=now, settings=settings
+            )
         order = payments.reconcile_order_in_transaction(
             db, user_id=current_user.id, order_id=oid, now=now, settings=settings
         )
@@ -488,3 +509,26 @@ async def get_billing_order(
     except operations.MembershipError as exc:
         db.rollback()
         _membership_error(exc)
+
+
+@router.post("/orders/{order_id}/cancel")
+async def cancel_billing_order(
+    order_id: str,
+    request: Request,
+    response: Response,
+    current_user: User = Depends(require_writable_user),
+    db: Session = Depends(get_db),
+):
+    _private(response)
+    if _is_board():
+        return await _cloud(request, "billing_cancel_order", current_user.id, order_id)
+    try:
+        return await run_in_threadpool(
+            wechat_payments.cancel_order, db, user_id=current_user.id, order_id=order_id, now=_now(), settings=settings
+        )
+    except operations.MembershipError as exc:
+        db.rollback()
+        _membership_error(exc)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, detail={"code": "order_conflict"}, headers={"Cache-Control": "no-store"}) from None

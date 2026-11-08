@@ -1041,6 +1041,7 @@ vision-train = [
 web = [
     { name = "alembic" },
     { name = "bcrypt" },
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "passlib", extra = ["bcrypt"] },
@@ -1073,6 +1074,7 @@ requires-dist = [
     { name = "bcrypt", marker = "extra == 'web'", specifier = ">=4.0.1,<4.1" },
     { name = "beautifulsoup4", marker = "extra == 'cron'", specifier = ">=4.12" },
     { name = "chardet", specifier = ">=5.2.0,<6" },
+    { name = "cryptography", marker = "extra == 'web'", specifier = ">=3.4.0" },
     { name = "docutils", specifier = ">=0.21.2" },
     { name = "easyocr", marker = "extra == 'classifier'", specifier = ">=1.7.2" },
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.115.2,<0.116" },

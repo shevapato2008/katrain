@@ -8607,3 +8607,54 @@ msgstr "No result was received. Check your actual Golaxy item balance. A new que
 #: katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx
 msgid "game:territory_items"
 msgstr "Golaxy items · Queries use items"
+
+msgid "membership:order_cancelled"
+msgstr "Order cancelled"
+
+msgid "membership:wechat_another_screen"
+msgstr "If you are browsing on your phone, open this page on another screen, then scan it with WeChat on your phone."
+
+msgid "membership:wechat_cancel"
+msgstr "Cancel order"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "Confirming cancellation. If payment has already completed, the payment receipt takes precedence."
+
+msgid "membership:wechat_cancelling"
+msgstr "Cancelling…"
+
+msgid "membership:wechat_close_help"
+msgstr "Closing only hides this page. You can reopen it from order history."
+
+msgid "membership:wechat_confirming"
+msgstr "Confirming payment. Please do not create another order."
+
+msgid "membership:wechat_paid"
+msgstr "WeChat Pay payment successful. Syncing your account."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat Pay QR code"
+
+msgid "membership:wechat_qr_error"
+msgstr "The QR code cannot be displayed right now. Please retry checking this order."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "The QR code is not ready yet. Checking your order."
+
+msgid "membership:wechat_retry"
+msgstr "Retry safely"
+
+msgid "membership:wechat_scan"
+msgstr "Scan to pay"
+
+msgid "membership:wechat_scan_help"
+msgstr "Scan the QR code using Scan in WeChat on your phone."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR code valid for {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "Waiting for WeChat Pay confirmation"

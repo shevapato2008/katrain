@@ -8388,3 +8388,54 @@ msgstr "Primera página"
 
 msgid "kifu:last_page"
 msgstr "Última página"
+
+msgid "membership:order_cancelled"
+msgstr "Pedido cancelado"
+
+msgid "membership:wechat_another_screen"
+msgstr "Si estás usando el móvil, abre esta página en otra pantalla y escanea el código con WeChat en tu móvil."
+
+msgid "membership:wechat_cancel"
+msgstr "Cancelar pedido"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "Confirmando la cancelación. Si el pago ya se ha completado, prevalece el recibo de pago."
+
+msgid "membership:wechat_cancelling"
+msgstr "Cancelando…"
+
+msgid "membership:wechat_close_help"
+msgstr "Cerrar solo oculta esta página. Puedes volver a abrirla desde el historial de pedidos."
+
+msgid "membership:wechat_confirming"
+msgstr "Confirmando el pago. No crees otro pedido."
+
+msgid "membership:wechat_paid"
+msgstr "Pago con WeChat Pay completado. Sincronizando tu cuenta."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "Código QR de WeChat Pay"
+
+msgid "membership:wechat_qr_error"
+msgstr "No se puede mostrar el código QR ahora. Vuelve a comprobar este pedido."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "El código QR aún no está listo. Comprobando tu pedido."
+
+msgid "membership:wechat_retry"
+msgstr "Reintentar de forma segura"
+
+msgid "membership:wechat_scan"
+msgstr "Escanear para pagar"
+
+msgid "membership:wechat_scan_help"
+msgstr "Escanea el código QR con la función de escaneo de WeChat en tu móvil."
+
+msgid "membership:wechat_valid_for"
+msgstr "Código QR válido durante {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "Esperando confirmación de WeChat Pay"

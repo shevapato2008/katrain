@@ -128,8 +128,8 @@
 .km-selected { color: var(--km-green); font-size: 22px; }
 .km-recharge > .km-primary { flex: none; width: 100%; min-height: 48px; margin-top: auto; }
 .km-recharge > .km-footnote { text-align: center; }
-.km-backdrop { position: absolute; z-index: 85; inset: 0; display: grid; place-items: center; padding: 10px; background: color-mix(in srgb, var(--ink) 92%, transparent); }
-.km-dialog { display: flex; flex-direction: column; gap: 12px; width: 860px; max-width: 100%; max-height: 100%; padding: 20px 24px; border: 1px solid var(--km-green); border-radius: 16px; background: var(--panel); box-shadow: 0 16px 48px #0009; }
+.km-backdrop { position: absolute; z-index: 85; inset: 0; display: flex; align-items: center; justify-content: center; padding: 10px; background: color-mix(in srgb, var(--ink) 92%, transparent); }
+.km-dialog { display: flex; flex-direction: column; gap: 12px; width: 860px; max-width: 100%; max-height: 100%; min-height: 0; overflow: hidden; padding: 20px 24px; border: 1px solid var(--km-green); border-radius: 16px; background: var(--panel); box-shadow: 0 16px 48px #0009; }
 .km-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .km-order-summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; border-top: 1px solid var(--km-line); border-bottom: 1px solid var(--km-line); }
 .km-order-summary > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -137,7 +137,7 @@
 .km-order-summary > strong { color: var(--km-green); font-size: 28px; white-space: nowrap; }
 .km-order-state { color: var(--warn); font-size: 22px; }
 .km-test { color: var(--warn); font-size: 18px; }
-.km-dialog-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: auto; }
+.km-dialog-actions { flex: none; min-height: 44px; flex-wrap: wrap; display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: auto; }
 .km-dialog-copy { min-height: 0; color: var(--text); font-size: 18px; line-height: 1.4; }
 .km-dialog-copy .kiosk-side__scroll { gap: 12px; padding-right: 8px; }
 .km-order-history { min-height: 100px; }
@@ -147,3 +147,6 @@
 .km-history-row > span:first-child { overflow-wrap: anywhere; }
 .km-history-row > span:last-child { flex: none; text-align: right; }
 @media (prefers-reduced-motion: reduce) { .km-page button { transition: none; } }
+
+.km-order-summary--native { padding-block: 8px; }
+.km-order-summary--native > div { gap: 4px; }

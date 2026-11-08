@@ -353,7 +353,9 @@ async def lifespan(app: FastAPI):
     collector = getattr(app.state, "error_collector", None)
     if collector is not None:
         await asyncio.to_thread(collector.stop)
-    for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task", "health_report_task"):
+    for attr in (
+        "cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task", "wechat_reconciliation_task", "health_report_task"
+    ):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
@@ -531,6 +533,7 @@ async def _lifespan_server(app: FastAPI, log):
     # Board mode never spends locally (billing is proxied to the cloud, see
     # billing.py's module docstring) so this loop only runs in server mode.
     app.state.report_settlement_task = asyncio.create_task(_report_settlement_loop(session_factory))
+    app.state.wechat_reconciliation_task = asyncio.create_task(_wechat_payment_reconciliation_loop(session_factory))
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -4684,6 +4687,21 @@ def _reconcile_membership_reservations(session_factory):
         logging.getLogger("katrain_web").warning("Membership reservation sweep failed", exc_info=True)
     finally:
         db.close()
+
+
+async def _wechat_payment_reconciliation_loop(session_factory):
+    """Server-only recovery, independent of report/reservation maintenance."""
+    from datetime import datetime, timezone
+    from katrain.web.core.wechat_payments import reconcile_due_orders
+
+    while True:
+        await asyncio.sleep(5)
+        try:
+            await asyncio.to_thread(
+                reconcile_due_orders, session_factory, now=datetime.now(timezone.utc), settings=settings, limit=20
+            )
+        except Exception:
+            logging.getLogger("katrain_web").warning("WeChat payment sweep failed", exc_info=True)
 
 
 async def _report_settlement_loop(session_factory):

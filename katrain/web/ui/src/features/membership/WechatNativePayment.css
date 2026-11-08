@@ -1,0 +1,16 @@
+.wechat-native { display: flex; flex-direction: column; gap: 16px; padding-block: 16px; min-width: 0; color: inherit; }
+.wechat-native p { margin: 0; overflow-wrap: anywhere; }
+.wechat-native__visual { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.wechat-native__qr { display: block; width: 224px; height: 224px; max-width: 100%; object-fit: contain; background: #fff; }
+.wechat-native__placeholder { width: 224px; min-height: 80px; max-width: 100%; }
+.wechat-native__countdown { font-variant-numeric: tabular-nums; font-size: .9em; }
+.wechat-native__copy { display: flex; flex-direction: column; justify-content: center; gap: 12px; min-width: 0; font-size: .9em; line-height: 1.5; }
+.wechat-native__status { font-size: 1.12em; }
+.wechat-native__phone-help, .wechat-native-before-payment { display: none; }
+.wechat-native--kiosk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; padding-block: 8px; }
+.wechat-native--kiosk .wechat-native__qr { width: 208px; height: 208px; }
+.wechat-native--kiosk > .wechat-native__copy:only-child { grid-column: 1 / -1; }
+@media (max-width: 600px) {
+  .wechat-native--galaxy .wechat-native__qr { width: 208px; height: 208px; }
+  .wechat-native--galaxy .wechat-native__phone-help, .wechat-native-before-payment { display: block; }
+}

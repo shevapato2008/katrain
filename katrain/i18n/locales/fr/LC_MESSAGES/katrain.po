@@ -8563,3 +8563,56 @@ msgstr "Première page"
 
 msgid "kifu:last_page"
 msgstr "Dernière page"
+
+msgid "membership:order_cancelled"
+msgstr "Commande annulée"
+
+msgid "membership:wechat_another_screen"
+msgstr ""
+"Si vous consultez cette page sur votre téléphone, ouvrez-la sur un autre écran, puis scannez le code avec WeChat sur "
+"votre téléphone."
+
+msgid "membership:wechat_cancel"
+msgstr "Annuler la commande"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "Vérification de l’annulation. Si le paiement a déjà été effectué, le reçu de paiement fait foi."
+
+msgid "membership:wechat_cancelling"
+msgstr "Annulation en cours…"
+
+msgid "membership:wechat_close_help"
+msgstr "Fermer masque uniquement cette page. Vous pouvez la rouvrir depuis l’historique des commandes."
+
+msgid "membership:wechat_confirming"
+msgstr "Vérification du paiement. Veuillez ne pas créer une nouvelle commande."
+
+msgid "membership:wechat_paid"
+msgstr "Paiement WeChat Pay effectué. Synchronisation de votre compte."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "Code QR WeChat Pay"
+
+msgid "membership:wechat_qr_error"
+msgstr "Le code QR ne peut pas être affiché pour le moment. Réessayez de vérifier cette commande."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "Le code QR n’est pas encore prêt. Vérification de votre commande."
+
+msgid "membership:wechat_retry"
+msgstr "Réessayer en toute sécurité"
+
+msgid "membership:wechat_scan"
+msgstr "Scanner pour payer"
+
+msgid "membership:wechat_scan_help"
+msgstr "Scannez le code QR avec la fonction de scan de WeChat sur votre téléphone."
+
+msgid "membership:wechat_valid_for"
+msgstr "Code QR valable encore {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "En attente de la confirmation de WeChat Pay"

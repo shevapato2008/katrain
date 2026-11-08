@@ -318,3 +318,13 @@ async def test_report_reads_discard_late_previous_users_data(cloud, dispatcher_m
         if not pending.done():
             pending.cancel()
         await asyncio.gather(pending, return_exceptions=True)
+
+
+async def test_cancel_order_proxies_without_local_writes_and_rejects_switched_identity(cloud):
+    assert await cloud.dispatcher.billing_cancel_order("17", expected_user_id=7) == {"authority": "cloud", "balance": 91}
+    assert (cloud.calls[0].method, cloud.calls[0].url.path) == ("POST", "/api/v1/billing/orders/17/cancel")
+    assert cloud.local.mock_calls == []
+    cloud.remote.set_tokens("token-b", "refresh-b", user_id=8)
+    with pytest.raises(httpx.HTTPStatusError) as error:
+        await cloud.dispatcher.billing_cancel_order("17", expected_user_id=7)
+    assert error.value.response.status_code == 401 and len(cloud.calls) == 1

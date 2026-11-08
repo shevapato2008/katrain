@@ -1,7 +1,7 @@
 """Versioned checkout and atomic fulfillment; the caller owns every transaction.
 
 Lock order is user -> order -> term/ledger. No provider network calls occur under locks.
-Only the isolated mock provider is available in this release.
+Mock entry points retain TEST-only guards; Native orchestration lives in wechat_payments.
 """
 
 from datetime import datetime, timedelta
@@ -162,6 +162,13 @@ def apply_provider_event_in_transaction(db, *, event, now, settings):
         raise PaymentError("payment_time_mismatch", 409)
     if order.expires_at and paid_at >= ms.utc(order.expires_at):
         raise PaymentError("order_expired", 409)
+    return fulfill_order_in_transaction(
+        db, user=user, order=order, provider_tx_id=event["provider_tx_id"], paid_at=paid_at, now=now
+    )
+
+
+def fulfill_order_in_transaction(db, *, user, order, provider_tx_id, paid_at, now):
+    """Shared grant primitive; callers authenticate facts and hold user/order locks."""
     snapshot = order.sku_snapshot
     if not isinstance(snapshot, dict) or snapshot.get("kind") not in {"membership", "topup"}:
         raise PaymentError("invalid_order_snapshot", 409)
@@ -182,7 +189,7 @@ def apply_provider_event_in_transaction(db, *, event, now, settings):
     else:
         raise PaymentError("invalid_order_snapshot", 409)
     order.status = "paid"
-    order.provider_tx_id = event["provider_tx_id"]
+    order.provider_tx_id = provider_tx_id
     order.settled_at = paid_at
     order.fulfilled_at = now
     user.membership_revision += 1
@@ -265,16 +272,20 @@ def order_receipt(db, order, *, now, payments_mode):
                 }
     receipt = {
         "id": str(order.id),
+        "server_now": ms.utc(now).isoformat(),
         "sku": snapshot["sku"],
         "kind": snapshot["kind"],
         "status": (
             "expired"
-            if order.status == "pending" and order.expires_at and ms.utc(now) >= ms.utc(order.expires_at)
+            if order.provider != "wechat"
+            and order.status == "pending"
+            and order.expires_at
+            and ms.utc(now) >= ms.utc(order.expires_at)
             else order.status
         ),
         "amount_fen": order.amount_fen,
         "currency": "CNY",
-        "payments_mode": payments_mode,
+        "payments_mode": "live" if order.provider == "wechat" else payments_mode,
         "provider": order.provider,
         "created_at": ms.utc(order.created_at).isoformat(),
         "expires_at": ms.utc(order.expires_at).isoformat(),
@@ -282,6 +293,30 @@ def order_receipt(db, order, *, now, payments_mode):
         "fulfillment": fulfillment,
         "payment_url": None,
     }
+    if order.provider == "wechat":
+        details = order.payment_details or {}
+        payable = (
+            order.status == "pending"
+            and not details.get("cancel_requested")
+            and not details.get("provider_attention")
+            and order.expires_at
+            and ms.utc(now) < ms.utc(order.expires_at)
+        )
+        receipt["payment_url"] = details.get("code_url") if payable else None
+        receipt["cancel_requested"] = bool(details.get("cancel_requested"))
+        receipt["payment_state"] = (
+            "paid"
+            if order.status in {"paid", "refunded"}
+            else (
+                "closed"
+                if order.status != "pending"
+                else (
+                    "ready"
+                    if receipt["payment_url"]
+                    else "creating" if payable and not details.get("create_attempted") else "confirming"
+                )
+            )
+        )
     if receipt["status"] == "pending" and snapshot["kind"] == "membership":
         tail = (
             db.query(m.MembershipTerm)
@@ -298,13 +333,15 @@ def order_receipt(db, order, *, now, payments_mode):
 
 
 def reconcile_order_in_transaction(db, *, user_id, order_id, now, settings):
-    # Fetch provider facts before locking. Mock facts are durable in the same TEST DB;
-    # a future live adapter must perform its network lookup here, outside locks.
+    # Only durable TEST mock facts belong in this caller-owned transaction.
+    # Native reconciliation owns separate short transactions around network calls.
     from .payment_mock import lookup_event
 
     probe = db.query(m.RechargeOrder).filter_by(id=order_id, user_id=user_id).one_or_none()
     if probe is None or not probe.catalog_version:
         raise PaymentError("order_not_found", 404)
+    if probe.provider == "wechat":
+        return probe
     fact = lookup_event(db, probe) if probe.provider == "mock" and settings.PAYMENTS_MODE == "mock" else None
     if fact and probe.status == "pending":
         return apply_provider_event_in_transaction(db, event=fact, now=now, settings=settings)
@@ -325,7 +362,9 @@ def reconcile_order_in_transaction(db, *, user_id, order_id, now, settings):
 def reconcile_pending_orders(db, *, now, settings, user_id=None, limit=100):
     """Maintenance/read recovery; caller commits once after this returns."""
     query = db.query(m.RechargeOrder).filter(
-        m.RechargeOrder.catalog_version.isnot(None), m.RechargeOrder.status == "pending"
+        m.RechargeOrder.catalog_version.isnot(None),
+        m.RechargeOrder.status == "pending",
+        m.RechargeOrder.provider != "wechat",
     )
     if user_id is not None:
         query = query.filter_by(user_id=user_id)

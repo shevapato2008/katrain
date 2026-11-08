@@ -40,6 +40,12 @@ describe('membership API', () => {
     ]);
   });
 
+  it('cancels only the owned encoded order with an empty POST body', async () => {
+    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+    await membershipApi.cancelOrder('order/1', null);
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/billing/orders/order%2F1/cancel', expect.objectContaining({ method: 'POST', body: '{}', credentials: 'same-origin' }));
+  });
+
   it('preserves shared ApiError status and structured reason', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ detail: { code: 'quote_expired', message: 'Refresh quote' } }), { status: 409 }));
     await expect(membershipApi.getUsage(null)).rejects.toMatchObject({

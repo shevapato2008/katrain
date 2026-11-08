@@ -15,8 +15,10 @@ export function useKioskMembershipOrder(environment?: string) {
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
   const authenticated = status === 'authenticated' && identityKey !== null;
-  const [state, setState] = useState<{ scope: string; order: BillingOrder | null; creating: boolean; error: OrderError | null } | null>(null);
+  const [state, setState] = useState<{ scope: string; order: BillingOrder | null; creating: boolean; cancelling?: boolean; error: OrderError | null } | null>(null);
   const [history, setHistory] = useState<{ scope: string; orders: BillingOrder[]; loading: boolean; error: 'sync' | null } | null>(null);
+  const attempt = useRef<CreateBillingOrder | null>(null);
+  const [pollRevision, setPollRevision] = useState(0);
   const request = useRef<AbortController | null>(null);
   const historyRequest = useRef<AbortController | null>(null);
   const sequence = useRef(0);
@@ -27,6 +29,7 @@ export function useKioskMembershipOrder(environment?: string) {
   useEffect(() => {
     setState(null);
     setHistory(null);
+    attempt.current = null;
     paidOrders.current.clear();
     return () => {
       sequence.current += 1;
@@ -45,10 +48,12 @@ export function useKioskMembershipOrder(environment?: string) {
     historyRequest.current = null;
     setState(null);
     setHistory(null);
+    attempt.current = null;
   }, []);
 
   const create = useCallback(async (payload: CreateBillingOrder) => {
     if (!authenticated || scopeRef.current !== scope || request.current) return;
+    attempt.current = payload;
     const generation = ++sequence.current;
     const controller = new AbortController();
     request.current = controller;
@@ -64,6 +69,27 @@ export function useKioskMembershipOrder(environment?: string) {
       if (request.current === controller) request.current = null;
     }
   }, [authenticated, scope, token]);
+
+  const retry = () => {
+    if (!attempt.current || order && (order.status !== 'pending' || order.cancel_requested || Date.parse(order.expires_at) <= Date.now())) return;
+    void create(attempt.current);
+  };
+  const cancel = async () => {
+    if (!authenticated || !order || order.provider !== 'wechat' || order.status !== 'pending' || request.current) return;
+    const generation = ++sequence.current;
+    const controller = new AbortController();
+    request.current = controller;
+    setState({ scope, order: { ...order, cancel_requested: true, payment_url: null }, creating: false, cancelling: true, error: null });
+    try {
+      const next = await membershipApi.cancelOrder(order.id, token, controller.signal);
+      if (!controller.signal.aborted && scopeRef.current === scope && sequence.current === generation && next.id === order.id) setState({ scope, order: next, creating: false, error: null });
+    } catch {
+      if (!controller.signal.aborted && scopeRef.current === scope && sequence.current === generation) setState(previous => previous?.scope === scope ? { ...previous, cancelling: false, error: 'sync' } : previous);
+    } finally {
+      if (request.current === controller) request.current = null;
+      if (!controller.signal.aborted && scopeRef.current === scope) setPollRevision(value => value + 1);
+    }
+  };
 
   const openHistory = async () => {
     if (!authenticated || scopeRef.current !== scope) return;
@@ -88,7 +114,7 @@ export function useKioskMembershipOrder(environment?: string) {
   };
 
   useEffect(() => {
-    if (!authenticated || !order || order.status !== 'pending') return;
+    if (!authenticated || !order || order.status !== 'pending' || current?.cancelling) return;
     let timer: number | undefined;
     let controller: AbortController | null = null;
     let stopped = false;
@@ -126,7 +152,7 @@ export function useKioskMembershipOrder(environment?: string) {
       controller?.abort();
       document.removeEventListener('visibilitychange', foreground);
     };
-  }, [authenticated, order?.id, order?.status, scope, token]);
+  }, [authenticated, order?.id, order?.status, current?.cancelling, pollRevision, scope, token]);
 
   useEffect(() => {
     if (!order || order.status !== 'paid' || paidOrders.current.has(order.id)) return;
@@ -141,5 +167,5 @@ export function useKioskMembershipOrder(environment?: string) {
     ...history,
     error: history.error ? t('membership:kiosk_history_error', '订单记录暂未同步，请稍后重试。') : null,
   } : null;
-  return { order, creating: current?.creating ?? false, error, create, close, openHistory, openOrder, history: visibleHistory };
+  return { order, retry, canRetry: !!attempt.current, cancel, cancelling: current?.cancelling ?? false, creating: current?.creating ?? false, error, create, close, openHistory, openOrder, history: visibleHistory };
 }

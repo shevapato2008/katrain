@@ -338,6 +338,11 @@ class RemoteAPIClient:
             "GET", f"/api/v1/billing/orders/{order_id}", expected_user_id=expected_user_id
         )
 
+    async def billing_cancel_order(self, order_id: str, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "POST", f"/api/v1/billing/orders/{order_id}/cancel", expected_user_id=expected_user_id
+        )
+
     async def paid_position(self, data: Dict, *, expected_user_id) -> Dict:
         return await self._identity_bound_request(
             "POST", "/api/v1/analysis/positions", json=data, expected_user_id=expected_user_id

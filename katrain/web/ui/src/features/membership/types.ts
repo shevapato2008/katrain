@@ -96,7 +96,7 @@ export interface BillingQuote {
 
 export interface CreateBillingOrder {
   sku: 'membership_plus' | 'membership_pro' | 'membership_max' | 'topup_10' | 'topup_30' | 'topup_100';
-  provider?: 'mock' | 'live';
+  provider?: 'mock' | 'live' | 'wechat';
   idempotency_key: string;
 }
 
@@ -104,16 +104,19 @@ export interface BillingOrder {
   id: string;
   sku: CreateBillingOrder['sku'];
   kind: 'membership' | 'topup';
-  status: 'pending' | 'paid' | 'expired' | 'failed' | 'refunded';
+  status: 'pending' | 'paid' | 'expired' | 'failed' | 'cancelled' | 'refunded';
   amount_fen: number;
   currency: 'CNY';
   payments_mode: PaymentsMode;
-  provider: 'mock' | 'live';
+  provider: 'mock' | 'live' | 'wechat';
   created_at: string;
   expires_at: string;
   paid_at: string | null;
   fulfillment: { credits?: number; display_points?: string; plan_code?: MembershipPlanCode; starts_at?: string; ends_at?: string } | null;
+  server_now?: string;
   payment_url?: string | null;
+  cancel_requested?: boolean;
+  payment_state?: 'creating' | 'ready' | 'confirming' | 'paid' | 'closed';
   estimated_starts_at?: string | null;
   estimated_ends_at?: string | null;
 }

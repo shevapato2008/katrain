@@ -1,0 +1,51 @@
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useMembershipCheckout } from './useMembershipCheckout';
+import type { BillingOrder } from '../../../features/membership/types';
+const api = vi.hoisted(() => ({ createOrder: vi.fn(), getOrder: vi.fn(), cancelOrder: vi.fn() }));
+const changed = vi.hoisted(() => vi.fn());
+vi.mock('../../../api/membershipApi', () => ({ membershipApi: api }));
+vi.mock('../../../features/membership/useMembership', () => ({ notifyMembershipChanged: changed }));
+const pending = (): BillingOrder => ({ id: 'native-order', sku: 'topup_10', kind: 'topup', status: 'pending', amount_fen: 1000, currency: 'CNY', payments_mode: 'live', provider: 'wechat', created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 900000).toISOString(), paid_at: null, fulfillment: null });
+const selection = { sku: 'topup_10' as const, kind: 'topup' as const, amountFen: 1000, credits: 1000, catalogVersion: 'v1' };
+beforeEach(() => { vi.useFakeTimers(); Object.values(api).forEach(fn => fn.mockReset()); changed.mockReset(); Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }); api.createOrder.mockResolvedValue(pending()); api.getOrder.mockResolvedValue(pending()); api.cancelOrder.mockResolvedValue({ ...pending(), cancel_requested: true }); });
+afterEach(() => vi.useRealTimers());
+describe('scoped native checkout', () => {
+  it('reuses the original idempotency key after an unknown create result', async () => {
+    api.createOrder.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useMembershipCheckout('a', true, null));
+    act(() => result.current.select(selection));
+    await act(async () => result.current.create('wechat'));
+    expect(result.current.checkout?.error).toBe('result_unknown');
+    await act(async () => result.current.create('wechat'));
+    expect(api.createOrder.mock.calls[1][0]).toEqual(api.createOrder.mock.calls[0][0]);
+    expect(result.current.checkout?.order?.id).toBe('native-order');
+  });
+  it('keeps closing separate from cancellation and accepts payment winning the cancel race', async () => {
+    const { result } = renderHook(() => useMembershipCheckout('a', true, null));
+    act(() => result.current.openOrder(pending()));
+    act(() => result.current.close());
+    expect(api.cancelOrder).not.toHaveBeenCalled();
+    act(() => result.current.openOrder(pending()));
+    api.cancelOrder.mockResolvedValue({ ...pending(), status: 'paid' });
+    await act(async () => result.current.cancel());
+    expect(api.cancelOrder).toHaveBeenCalledWith('native-order', null, expect.any(AbortSignal));
+    expect(result.current.checkout?.order?.status).toBe('paid');
+    expect(changed).toHaveBeenCalledOnce();
+  });
+  it('polls immediately on visibility resume, retains pending on errors and discards late results from another owner', async () => {
+    const { result, rerender } = renderHook(({ scope }) => useMembershipCheckout(scope, true, null), { initialProps: { scope: 'a' } });
+    act(() => result.current.openOrder(pending()));
+    api.getOrder.mockRejectedValueOnce(new Error('offline'));
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    expect(result.current.checkout?.order?.status).toBe('pending');
+    expect(result.current.checkout?.error).toBe('poll_error');
+    let resolve!: (order: BillingOrder) => void;
+    api.getOrder.mockReturnValue(new Promise(done => { resolve = done; }));
+    await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+    rerender({ scope: 'b' });
+    await act(async () => resolve({ ...pending(), status: 'paid' }));
+    expect(result.current.checkout).toBeNull();
+    expect(changed).not.toHaveBeenCalled();
+  });
+});

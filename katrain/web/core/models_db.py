@@ -1726,6 +1726,8 @@ class RechargeOrder(Base):
     fulfilled_at = Column(DateTime(timezone=True), nullable=True)
     refunded_at = Column(DateTime(timezone=True), nullable=True)
     refund_ref = Column(String(160), nullable=True)
+    payment_details = Column(JSON(none_as_null=True), nullable=True)
+    payment_next_check_at = Column(DateTime(timezone=True), nullable=True, index=True)
 
     __table_args__ = (
         Index("uq_recharge_order_user_key", "user_id", "idempotency_key", unique=True),

@@ -16,6 +16,8 @@ declare module 'qrcode' {
   export interface QRCodeToStringOptions {
     type?: 'svg' | 'utf8' | 'terminal';
     margin?: number;
+    width?: number;
+    color?: { dark: string; light: string };
     errorCorrectionLevel?: 'low' | 'medium' | 'quartile' | 'high' | 'L' | 'M' | 'Q' | 'H';
   }
 

@@ -13234,3 +13234,54 @@ msgstr "星阵"
 #. Native Go kiosk UI.
 msgid "Fox Weiqi"
 msgstr "野狐"
+
+msgid "membership:order_cancelled"
+msgstr "订单已取消"
+
+msgid "membership:wechat_another_screen"
+msgstr "手机浏览时，请在另一块屏幕打开本页，再用手机微信扫码。"
+
+msgid "membership:wechat_cancel"
+msgstr "取消订单"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "正在确认取消结果；如已支付，将以支付回执为准。"
+
+msgid "membership:wechat_cancelling"
+msgstr "正在取消…"
+
+msgid "membership:wechat_close_help"
+msgstr "关闭仅隐藏此页，可从订单记录继续查看。"
+
+msgid "membership:wechat_confirming"
+msgstr "正在确认支付结果，请勿重复下单。"
+
+msgid "membership:wechat_paid"
+msgstr "微信支付成功，正在同步账户。"
+
+msgid "membership:wechat_pay"
+msgstr "微信支付"
+
+msgid "membership:wechat_qr_alt"
+msgstr "微信支付二维码"
+
+msgid "membership:wechat_qr_error"
+msgstr "二维码暂时无法显示，请重试确认订单。"
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "二维码暂未准备好，正在确认订单。"
+
+msgid "membership:wechat_retry"
+msgstr "安全重试"
+
+msgid "membership:wechat_scan"
+msgstr "扫码支付"
+
+msgid "membership:wechat_scan_help"
+msgstr "请用手机微信“扫一扫”扫描二维码。"
+
+msgid "membership:wechat_valid_for"
+msgstr "二维码剩余 {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "等待微信支付确认"

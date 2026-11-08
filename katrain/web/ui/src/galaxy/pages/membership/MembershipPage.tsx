@@ -38,6 +38,7 @@ import {
   planReportCopy,
 } from "../../../features/membership/presentation";
 import { useMembershipI18n, type MembershipTranslate } from "../../../features/membership/useMembershipI18n";
+import { WechatNativePayment } from "../../../features/membership/WechatNativePayment";
 import { useMembership } from "../../../features/membership/useMembership";
 import type {
   BillingOrder,
@@ -91,6 +92,7 @@ const orderStatus = (status: BillingOrder["status"], t: MembershipTranslate) =>
     expired: t("membership:order_expired", "订单已过期"),
     failed: t("membership:order_failed", "订单未完成"),
     refunded: t("membership:order_refunded", "已退款"),
+    cancelled: t("membership:order_cancelled", "订单已取消"),
   })[status];
 
 function Quota({
@@ -371,7 +373,7 @@ export default function MembershipPage() {
   ]);
   const authenticated =
     auth.status === "authenticated" && auth.identityKey !== null;
-  const { checkout, select, openOrder, close, create } = useMembershipCheckout(
+  const { checkout, select, openOrder, close, create, cancel } = useMembershipCheckout(
     scope,
     authenticated,
     auth.token,
@@ -397,9 +399,8 @@ export default function MembershipPage() {
   const mode = catalog?.payments_mode;
   const ordersEnabled =
     ready && catalog.capabilities.orders && usage.capabilities.orders;
-  // This release only supports isolated TEST orders; real merchant checkout is not configured.
   const safePaymentMode =
-    mode === "mock" && catalog?.environment.toLowerCase() === "test";
+    (mode === "mock" && catalog?.environment.toLowerCase() === "test") || mode === "live";
   const canPay =
     ordersEnabled && safePaymentMode && usage.payments_mode === mode;
   const canBuyMembership =
@@ -446,8 +447,7 @@ export default function MembershipPage() {
   const loadHistory = async () => {
     if (
       !authenticated ||
-      !catalog?.capabilities.orders ||
-      !usage?.capabilities.orders
+      !catalog || !usage || catalog.environment !== usage.environment
     )
       return;
     historyRef.current?.abort();
@@ -1063,7 +1063,7 @@ export default function MembershipPage() {
             <Button
               onClick={() => void loadHistory()}
               disabled={
-                !catalog.capabilities.orders || !usage.capabilities.orders
+                !authenticated || catalog.environment !== usage.environment
               }
             >
               {t("membership:order_history", "订单记录")}
@@ -1164,6 +1164,9 @@ export default function MembershipPage() {
                   : t("membership:topup_arrival", "到账 {points} 积分", { points: points(selection.credits, number) })}
               </Typography>
             )}
+            {!order && mode === "live" && <Typography className="wechat-native-before-payment" variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t("membership:wechat_another_screen", "手机浏览时，请在另一块屏幕打开本页，再用手机微信扫码。")}
+            </Typography>}
             {!order && selection?.kind === "membership" && (
               <Typography variant="body2" color="text.secondary">
                 {t("membership:checkout_renewal_rule", "在已有会员到期后顺延，不重置当前额度。生效日期以付款后的服务端回执为准。")}
@@ -1177,7 +1180,7 @@ export default function MembershipPage() {
                 <Typography sx={{ overflowWrap: "anywhere", mb: 2 }}>
                   {order.id}
                 </Typography>
-                <Alert
+                {order.provider === "wechat" ? <WechatNativePayment order={order} /> : <Alert
                   severity={
                     order.status === "paid"
                       ? "success"
@@ -1189,7 +1192,7 @@ export default function MembershipPage() {
                   {order.status === "pending"
                     ? t("membership:pending_order_notice", "等待付款，页面将自动确认服务端状态。")
                     : orderStatus(order.status, t)}
-                </Alert>
+                </Alert>}
                 {order.status === "pending" && (
                   <Typography
                     variant="body2"
@@ -1235,18 +1238,18 @@ export default function MembershipPage() {
               </Alert>
             )}
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
+          <DialogActions sx={{ px: 3, pb: 2, flexWrap: "wrap", gap: 1, "& .MuiButton-root": { minHeight: 44 } }}>
             <Button onClick={close}>
               {order?.status === "paid" ? t("membership:done", "完成") : t("membership:close", "关闭")}
             </Button>
-            {!order && (
+            {order?.provider === "wechat" && order.status === "pending" && <Button onClick={() => void cancel()} disabled={checkout.busy || order.cancel_requested}>{checkout.cancelling ? t("membership:wechat_cancelling", "正在取消…") : t("membership:wechat_cancel", "取消订单")}</Button>}
+            {(!order || order.provider === "wechat" && !order.payment_url && !order.cancel_requested && order.status === "pending" && Date.parse(order.expires_at) > Date.now() && selection) && (
               <Button
                 variant="contained"
                 disabled={
                   !canPay ||
                   !confirmedSelection ||
-                  checkout?.busy ||
-                  !!checkout?.error
+                  checkout?.busy
                 }
                 onClick={() => {
                   if (
@@ -1254,10 +1257,10 @@ export default function MembershipPage() {
                     confirmedSelection &&
                     (mode === "mock" || mode === "live")
                   )
-                    void create(mode);
+                    void create(mode === "live" ? "wechat" : "mock");
                 }}
               >
-                {checkout?.busy ? t("membership:creating_order", "正在创建…") : t("membership:create_order", "创建订单")}
+                {checkout?.busy ? t("membership:creating_order", "正在创建…") : checkout.error || order ? t("membership:wechat_retry", "安全重试") : mode === "live" ? t("membership:wechat_pay", "微信支付") : t("membership:create_order", "创建订单")}
               </Button>
             )}
           </DialogActions>

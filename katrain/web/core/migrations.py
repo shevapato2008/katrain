@@ -1409,6 +1409,8 @@ MEMBERSHIP_COLUMNS = {
         "fulfilled_at": "TIMESTAMP",
         "refunded_at": "TIMESTAMP",
         "refund_ref": "VARCHAR(160)",
+        "payment_details": "JSON",
+        "payment_next_check_at": "TIMESTAMP",
     },
 }
 MEMBERSHIP_CHECKS = {
@@ -1481,5 +1483,5 @@ def migrate_membership_schema(engine) -> None:
                         ))
         for table_name in {"recharge_orders", "report_tasks"} & tables:
             for index in models_db.Base.metadata.tables[table_name].indexes:
-                if index.name.startswith("uq_recharge_order_") or index.name == "ix_report_tasks_operation_id":
+                if index.name.startswith("uq_recharge_order_") or index.name in {"ix_report_tasks_operation_id", "ix_recharge_orders_payment_next_check_at"}:
                     index.create(bind=conn, checkfirst=True)

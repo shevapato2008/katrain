@@ -467,6 +467,9 @@ class RepositoryDispatcher:
     async def billing_get_order(self, order_id: str, *, expected_user_id):
         return await self._membership_remote_only("billing_get_order", order_id, expected_user_id=expected_user_id)
 
+    async def billing_cancel_order(self, order_id: str, *, expected_user_id):
+        return await self._membership_remote_only("billing_cancel_order", order_id, expected_user_id=expected_user_id)
+
     async def paid_position(self, data: Dict, *, expected_user_id):
         return await self._membership_remote_only("paid_position", data, expected_user_id=expected_user_id)
 

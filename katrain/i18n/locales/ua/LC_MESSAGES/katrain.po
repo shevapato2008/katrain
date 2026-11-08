@@ -8484,3 +8484,55 @@ msgstr "Перша сторінка"
 
 msgid "kifu:last_page"
 msgstr "Остання сторінка"
+
+msgid "membership:order_cancelled"
+msgstr "Замовлення скасовано"
+
+msgid "membership:wechat_another_screen"
+msgstr ""
+"Якщо ви переглядаєте сторінку на телефоні, відкрийте її на іншому екрані та відскануйте код через WeChat на телефоні."
+
+msgid "membership:wechat_cancel"
+msgstr "Скасувати замовлення"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "Перевіряємо результат скасування. Якщо оплату вже здійснено, пріоритет має платіжна квитанція."
+
+msgid "membership:wechat_cancelling"
+msgstr "Скасування…"
+
+msgid "membership:wechat_close_help"
+msgstr "Закриття лише приховує цю сторінку. Її можна знову відкрити з історії замовлень."
+
+msgid "membership:wechat_confirming"
+msgstr "Перевіряємо результат оплати. Будь ласка, не створюйте повторне замовлення."
+
+msgid "membership:wechat_paid"
+msgstr "Оплата через WeChat Pay успішна. Синхронізуємо обліковий запис."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "QR-код для оплати через WeChat Pay"
+
+msgid "membership:wechat_qr_error"
+msgstr "Зараз не вдається показати QR-код. Повторіть перевірку цього замовлення."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "QR-код поки не готовий. Перевіряємо ваше замовлення."
+
+msgid "membership:wechat_retry"
+msgstr "Безпечна повторна спроба"
+
+msgid "membership:wechat_scan"
+msgstr "Відскануйте для оплати"
+
+msgid "membership:wechat_scan_help"
+msgstr "Відскануйте QR-код за допомогою функції сканування у WeChat на телефоні."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR-код дійсний ще {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "Очікуємо підтвердження від WeChat Pay"

@@ -7,6 +7,7 @@ mapping, the strict SHOW-ack path, queue-full dropping, and reconnect.
 
 import importlib.util
 import logging
+import os
 import subprocess
 import sys
 import threading
@@ -93,6 +94,8 @@ class HandshakeSerial(FakeSerial):
         self._buf.clear()
 
     def read(self, size=1):
+        if self.clock is not None:
+            self.clock.advance(self.read_advance)
         data = bytearray()
         while size and self._buf:
             line = self._buf[0]
@@ -174,7 +177,8 @@ class DelayedReadySerial:
         self.reset_calls = 0
         self.write_times = []
         self.closed = False
-        self._responses = list(bright_response)
+        self._bright_response = list(bright_response)
+        self._responses = []
 
     @property
     def in_waiting(self):
@@ -184,7 +188,9 @@ class DelayedReadySerial:
         self.reset_calls += 1
 
     def write(self, data: bytes):
-        self.write_times.append((data.decode("ascii").strip(), self.clock()))
+        command = data.decode("ascii").strip()
+        self.write_times.append((command, self.clock()))
+        self._responses.extend(self._bright_response if command.startswith("BRIGHT") else ["OK"])
 
     def readline(self) -> bytes:
         if not self.ready_sent:
@@ -193,7 +199,7 @@ class DelayedReadySerial:
             return b"READY\n"
         if self._responses:
             return (self._responses.pop(0) + "\n").encode("ascii")
-        self.clock.advance(2.0)
+        self.clock.advance(min(2.0, self.timeout))
         return b""
 
     def close(self):
@@ -474,7 +480,7 @@ class TestColorsAndProtocol:
                 blank_before=True,
             )
             assert result["ok"] is True
-            assert fake.written[1:6] == ["CLEAR", "SHOW", "CLEAR", f"SETI {rc2idx(3, 16)} 0 96 0", "SHOW"]
+            assert fake.written[3:8] == ["CLEAR", "SHOW", "CLEAR", f"SETI {rc2idx(3, 16)} 0 96 0", "SHOW"]
         finally:
             svc.stop()
 
@@ -585,7 +591,7 @@ class TestConnectionHandshake:
         svc = LedService(LedServiceConfig(serial_port="tty-test", baud_rate=57600, handshake_timeout=1.25))
 
         assert svc._default_serial_factory() is expected
-        assert calls == [(("tty-test", 57600), {"timeout": 1.25})]
+        assert calls == [(("tty-test", 57600), {"timeout": 1.25, "write_timeout": 0.2})]
 
     def test_stale_ok_is_drained_before_fresh_bright_ok_connects(self):
         clock = FakeClock()
@@ -599,8 +605,9 @@ class TestConnectionHandshake:
         svc._open_serial()
 
         assert svc.is_connected() is True
-        assert fake.written == ["BRIGHT 255"]
+        assert fake.written == ["CLEAR", "SHOW", "BRIGHT 255"]
         assert fake._buf == []
+        svc._close_serial()
 
     def test_delayed_ready_precedes_bright_and_fresh_ok_connects(self):
         clock = FakeClock()
@@ -613,9 +620,10 @@ class TestConnectionHandshake:
 
         svc._open_serial()
 
-        assert fake.reset_calls == 1
-        assert fake.write_times == [("BRIGHT 255", 1000.25)]
+        assert fake.reset_calls == 3
+        assert fake.write_times == [("CLEAR", 1000.25), ("SHOW", 1000.25), ("BRIGHT 255", 1000.25)]
         assert svc.is_connected() is True
+        svc._close_serial()
 
     def test_ready_banner_does_not_replace_postwrite_ok(self):
         clock = FakeClock()
@@ -628,7 +636,7 @@ class TestConnectionHandshake:
 
         svc._open_serial()
 
-        assert fake.write_times == [("BRIGHT 255", 1000.25)]
+        assert fake.write_times == [("CLEAR", 1000.25), ("SHOW", 1000.25), ("BRIGHT 255", 1000.25)]
         assert svc.is_connected() is False
         assert fake.closed is True
 
@@ -646,7 +654,7 @@ class TestConnectionHandshake:
         assert fake.reset_calls == 1
         assert fake.prewrite_reads == 0
         assert clock.t == 1000.0
-        assert fake.written == ["BRIGHT 255"]
+        assert fake.written == ["CLEAR"]
         assert svc.is_connected() is False
 
     def test_bright_err_closes_without_connecting(self):
@@ -713,10 +721,10 @@ class TestConnectionHandshake:
     def test_bright_read_exception_closes_without_connecting(self):
         fake = HandshakeSerial()
 
-        def fail_read():
+        def fail_read(size=1):
             raise OSError("read failed")
 
-        fake.readline = fail_read
+        fake.read = fail_read
         svc = LedService(
             LedServiceConfig(enabled=True, serial_port="fake"), serial_factory=lambda: fake, clock=FakeClock()
         )
@@ -853,10 +861,10 @@ class TestNonStrictErrorSurfacing:
     def test_non_strict_batch_logs_firmware_errors_instead_of_swallowing_them(self, caplog):
         """MAX_ON=200:第 201 颗起固件回 ERR maxon。非严格路径以前把它们存进
         没人读的对象、一行日志都不打 —— HTTP 说 ok,盘上半块不亮。"""
-        # start() writes BRIGHT first (handshake), THEN set_points([one point])
+        # start() writes CLEAR, SHOW, BRIGHT (handshake), THEN set_points([one point])
         # emits CLEAR, SETI, SHOW — script the SETI ack as the firmware error while
         # BRIGHT/CLEAR/SHOW all still ack OK.
-        fake = SequencedReplySerial(replies=["OK", "OK", "ERR maxon", "OK"])
+        fake = SequencedReplySerial(replies=["OK", "OK", "OK", "OK", "ERR maxon", "OK"])
         svc = LedService(
             LedServiceConfig(enabled=True, serial_port="fake"), serial_factory=lambda: fake, clock=lambda: 0.0
         )
@@ -888,7 +896,7 @@ class ErrorThenRaiseSerial(FakeSerial):
 
     def __init__(self):
         super().__init__(ack="OK")
-        self._first_batch_replies = ["OK", "OK", "ERR maxon", "OK"]  # BRIGHT, CLEAR, SETI, SHOW
+        self._first_batch_replies = ["OK", "OK", "OK", "OK", "ERR maxon", "OK"]  # handshake, CLEAR, SETI, SHOW
         self.raise_after_first_batch = False
 
     def write(self, data: bytes):
@@ -941,7 +949,7 @@ class TestLastErrorsAggregatesAllFinishPaths:
 def _capturing_service():
     svc = LedService(LedServiceConfig(), serial_factory=lambda: FakeSerial())
     sent = []
-    svc._submit = lambda commands, strict: sent.append(list(commands)) or {"ok": True}
+    svc._submit = lambda commands, strict, **kwargs: sent.append(list(commands)) or {"ok": True}
     return svc, sent
 
 
@@ -1210,7 +1218,7 @@ def test_worker_polls_link_between_complete_batches_and_backs_off_old_firmware(r
         deadline = time.monotonic() + 1
         while serial.written.count("LINK") < 1 and time.monotonic() < deadline:
             time.sleep(0.01)
-        assert serial.written == ["CLEAR", "SETI 0 255 0 0", "SHOW", "CLEAR", "SHOW", "LINK"]
+        assert serial.written == ["CLEAR", "SETI 0 255 0 0", "SHOW", "LINK", "CLEAR", "SHOW"]
         clock.advance(poll_interval - 0.1)
         time.sleep(0.25)
         assert serial.written.count("LINK") == 1
@@ -1224,3 +1232,477 @@ def test_worker_polls_link_between_complete_batches_and_backs_off_old_firmware(r
         svc._stop.set()
         svc._queue.put(_led_service._SENTINEL)
         worker.join(timeout=1)
+
+
+# Hot-plug recovery: all protocol checks use fake ports, never physical devices.
+
+
+def test_reconnect_blackouts_retained_frame_before_bright_can_render_it():
+    fake = FakeSerial()
+    svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=lambda: fake)
+    try:
+        svc._open_serial()
+        assert svc.is_connected()
+        assert fake.written == ["CLEAR", "SHOW", "BRIGHT 255"]
+    finally:
+        svc._close_serial()
+
+
+def test_no_ack_aborts_before_seti_and_show_and_disconnects_transport():
+    svc, serial, _ = _link_service(_link_line())
+    serial.ack = ""
+    serial.write = lambda data: serial.written.append(data.decode().strip())
+    batch = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    svc._run_batch(batch)
+    assert serial.written == ["CLEAR"]
+    assert batch.result["ok"] is False
+    assert batch.result["connected"] is False
+    assert serial.closed
+
+
+@pytest.mark.parametrize("response", ["", "LINK invalid"])
+def test_idle_silent_link_closes_after_three_failures_but_legacy_err_keeps_transport(response):
+    svc, serial, clock = _link_service(response)
+    for failure in range(3):
+        svc._poll_board_link()
+        if failure < 2:
+            assert svc.is_connected()
+            assert svc._next_link_poll == pytest.approx(clock() + 2.0)
+    assert not svc.is_connected()
+    assert serial.closed
+
+    svc, serial, clock = _link_service("ERR cmd")
+    for _ in range(4):
+        svc._poll_board_link()
+        assert svc.is_connected()
+        assert svc._next_link_poll == pytest.approx(clock() + 10.0)
+    svc._close_serial()
+
+
+def test_due_link_poll_is_not_starved_by_queued_batches():
+    svc, serial, _ = _link_service(_link_line())
+    svc._queue.put(_led_service._Batch(["CLEAR", "SHOW"], strict=False))
+    svc._maybe_poll_board_link()
+    assert serial.written == ["LINK"]
+    svc._close_serial()
+
+
+def test_reconnected_transport_rejects_old_capture_batch():
+    svc, serial, _ = _link_service(_link_line())
+    svc._submit(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=False)
+    old = svc._queue.get_nowait()
+    svc._close_serial()
+    replacement = FakeSerial()
+    svc._serial_factory = lambda: replacement
+    try:
+        svc._open_serial()
+        handshake = list(replacement.written)
+        svc._run_batch(old)
+        assert old.result["ok"] is False
+        assert replacement.written == handshake
+    finally:
+        svc._close_serial()
+
+
+def test_board_a_up_refreshes_current_guidance_once_without_reopening_board_b():
+    svc, serial, _ = _link_service(_link_line("OPEN", "ABSENT", "DOWN"))
+    svc._poll_board_link()
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    svc._run_batch(svc._queue.get_nowait())
+    serial.written.clear()
+    serial.response = _link_line()
+    svc._poll_board_link()
+    assert serial.written == ["LINK", "CLEAR", f"SETI {rc2idx(1, 1)} 0 255 0", "SHOW"]
+    serial.written.clear()
+    svc._poll_board_link()
+    assert serial.written == ["LINK"]
+    assert svc._serial is serial
+    svc._close_serial()
+
+
+@pytest.mark.parametrize("replacement", ["clear", "rgb", "strict"])
+def test_recovery_and_brightness_never_resurrect_replaced_guidance(replacement):
+    svc, sent = _capturing_service()
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    if replacement == "clear":
+        svc.clear()
+    elif replacement == "rgb":
+        svc.set_rgb_points([{"row": 2, "col": 2, "rgb": (0, 50, 0)}])
+    else:
+        svc.set_points([{"row": 2, "col": 2, "color": "black"}], strict=True)
+    previous = list(sent)
+    svc.set_guidance_scale(0.5)
+    assert sent == previous
+
+
+def test_missing_linux_alias_uses_stat_and_reappearance_bypasses_reconnect_cooldown(monkeypatch):
+    clock = FakeClock()
+    available = {"present": False}
+    calls = []
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(os.path, "exists", lambda path: available["present"])
+    svc = LedService(
+        LedServiceConfig(serial_port="/dev/serial/by-id/test-board"),
+        serial_factory=lambda: calls.append(clock()) or FakeSerial(),
+        clock=clock,
+    )
+    try:
+        svc._open_serial()
+        for _ in range(5):
+            svc._maybe_reconnect()
+        assert calls == []
+        available["present"] = True
+        clock.advance(0.2)
+        svc._maybe_reconnect()
+        assert len(calls) == 1
+        assert svc.is_connected()
+    finally:
+        svc._close_serial()
+
+
+def test_strict_five_second_deadline_includes_queue_wait_and_cancels_late_commands(monkeypatch):
+    svc, serial, clock = _link_service(_link_line())
+    captured = []
+    waits = []
+
+    class Event:
+        def wait(self, timeout):
+            waits.append(timeout)
+            clock.advance(timeout)
+            return False
+
+        def set(self):
+            pass
+
+    class Queue:
+        def put(self, batch, timeout):
+            captured.append(batch)
+            clock.advance(2.0)
+
+    monkeypatch.setattr(_led_service.threading, "Event", Event)
+    svc._queue = Queue()
+    result = svc._submit(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    assert result["ok"] is False
+    assert waits[0] <= 3.0 + 0.0001
+    svc._run_batch(captured[0])
+    assert serial.written == []
+    svc._close_serial()
+
+
+def test_all_serial_writes_have_a_finite_remaining_budget():
+    svc, serial, _ = _link_service(_link_line())
+    limits = []
+    original_write = serial.write
+
+    def write(data):
+        limits.append(getattr(serial, "write_timeout", None))
+        original_write(data)
+
+    serial.write = write
+    svc._poll_board_link()
+    svc._run_batch(_led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True))
+    assert limits and all(value is not None and 0 < value <= 0.2 for value in limits)
+    svc._close_serial()
+
+
+def test_boot_unterminated_input_cannot_extend_handshake_timeout():
+    clock = FakeClock()
+
+    class Unterminated(FakeSerial):
+        timeout = 2.0
+
+        def read(self, size=1):
+            clock.advance(min(self.timeout, 0.03))
+            return b"x" * size
+
+        def readline(self):
+            clock.advance(10.0)
+            return b"x"
+
+    serial = Unterminated()
+    svc = LedService(LedServiceConfig(handshake_timeout=0.2), serial_factory=lambda: serial, clock=clock)
+    svc._serial = serial
+    svc._wait_for_boot_ready()
+    assert clock() <= 1000.2 + 0.0001
+    svc._close_serial()
+
+
+def test_existing_linux_alias_disappearance_closes_before_any_more_commands(monkeypatch):
+    svc, serial, _ = _link_service(_link_line())
+    svc.config.serial_port = "/dev/serial/by-id/test-board"
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(os.path, "exists", lambda path: False)
+    svc._maybe_poll_board_link()
+    assert not svc.is_connected()
+    assert serial.closed
+    assert serial.written == []
+
+
+def test_unknown_link_marks_current_guidance_for_refresh_when_up_returns():
+    svc, serial, _ = _link_service(_link_line())
+    svc._poll_board_link()
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    svc._run_batch(svc._queue.get_nowait())
+    serial.response = ""
+    svc._poll_board_link()
+    serial.written.clear()
+    serial.response = _link_line()
+    svc._poll_board_link()
+    assert serial.written == ["LINK", "CLEAR", f"SETI {rc2idx(1, 1)} 0 255 0", "SHOW"]
+    svc._close_serial()
+
+
+def test_slow_strict_batch_uses_one_total_deadline_and_never_shows_partial_frame():
+    clock = FakeClock()
+
+    class SlowAck(FakeSerial):
+        def read(self, size=1):
+            if self._buf:
+                clock.advance(min(self.timeout, 0.6))
+                data = self._buf[0][:size]
+                self._buf[0] = self._buf[0][size:]
+                if not self._buf[0]:
+                    self._buf.pop(0)
+                return data
+            clock.advance(self.timeout)
+            return b""
+
+    serial = SlowAck()
+    svc = LedService(LedServiceConfig(handshake_timeout=2.0), clock=clock)
+    svc._serial = serial
+    svc._connected = True
+    svc._run_batch(batch := _led_service._Batch(["CLEAR"] + [f"SETI {i} 255 0 0" for i in range(8)] + ["SHOW"], True))
+    assert clock() <= 1005.0 + 0.0001
+    assert batch.result["ok"] is False
+    assert "SHOW" not in serial.written
+    assert not svc.is_connected()
+
+
+def test_timeout_during_clear_cancels_remaining_commands_even_if_ack_arrives(monkeypatch):
+    svc, serial, clock = _link_service(_link_line())
+    original_write = serial.write
+    svc._submit(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=False)
+    batch = svc._queue.get_nowait()
+
+    def write(data):
+        original_write(data)
+        batch.cancelled = True
+
+    serial.write = write
+    svc._run_batch(batch)
+    assert serial.written == ["CLEAR"]
+    assert not svc.is_connected()
+    assert batch.result["shown_at"] is None
+
+
+@pytest.mark.parametrize("replacement", ["clear", "rgb", "strict"])
+def test_reconnect_never_replays_strict_or_superseded_guidance(replacement):
+    svc, serial, clock = _link_service(_link_line())
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    svc._run_batch(svc._queue.get_nowait())
+    if replacement == "clear":
+        svc.clear()
+    elif replacement == "rgb":
+        svc.set_rgb_points([{"row": 2, "col": 2, "rgb": (0, 50, 0)}])
+    else:
+        # A strict request with no worker times out; it still invalidates guidance.
+        svc._submit = lambda commands, strict: {"ok": False}
+        svc.set_points([{"row": 2, "col": 2, "color": "black"}], strict=True)
+    svc._close_serial()
+    fresh = LinkSerial(_link_line(), clock)
+    fresh._buf.append(b"READY\n")
+    svc._serial_factory = lambda: fresh
+    try:
+        svc._open_serial()
+        svc._poll_board_link()
+        assert fresh.written == ["CLEAR", "SHOW", "BRIGHT 255", "LINK"]
+        svc.set_guidance_scale(0.25)
+        assert svc._queue.qsize() <= 1
+    finally:
+        svc._close_serial()
+
+
+def test_clear_replaces_recovery_intent_before_later_seti_or_show():
+    svc, serial, _ = _link_service(_link_line("OPEN", "ABSENT", "DOWN"))
+    svc._poll_board_link()
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    svc._run_batch(svc._queue.get_nowait())
+    original_write = serial.write
+    serial.written.clear()
+    serial.response = _link_line()
+
+    def write(data):
+        original_write(data)
+        if data == b"CLEAR\n":
+            svc.clear()
+
+    serial.write = write
+    svc._poll_board_link()
+    assert serial.written == ["LINK", "CLEAR"]
+    serial.write = original_write
+    svc._run_batch(svc._queue.get_nowait())
+    assert serial.written == ["LINK", "CLEAR", "CLEAR", "SHOW"]
+    svc._poll_board_link()
+    assert serial.seti_lines() == []
+    svc._close_serial()
+
+
+def test_clear_handshake_failure_never_sends_show_or_bright():
+    fake = FakeSerial(ack="ERR clear")
+    svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=lambda: fake)
+    svc._open_serial()
+    assert fake.written == ["CLEAR"]
+    assert not svc.is_connected()
+    assert fake.closed
+
+
+def test_handshake_clear_show_and_bright_share_one_budget():
+    clock = FakeClock()
+
+    class HandshakeBudget(FakeSerial):
+        def readline(self):
+            if not self._buf:
+                return b""
+            clock.advance(min(self.timeout, 0.4))
+            return super().readline()
+
+    serial = HandshakeBudget()
+    svc = LedService(
+        LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}", handshake_timeout=0.7),
+        serial_factory=lambda: serial,
+        clock=clock,
+    )
+    svc._open_serial()
+    assert clock() <= 1000.7 + 0.0001
+    assert serial.written == ["CLEAR", "SHOW"]
+    assert not svc.is_connected()
+
+
+def test_partial_serial_write_is_transport_failure_and_aborts_the_batch():
+    svc, serial, _ = _link_service(_link_line())
+    serial.write = lambda data: serial.written.append(data.decode().strip()) or 1
+    svc._queue.put(_led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], True))
+    svc._queue.put(_led_service._SENTINEL)
+    svc._worker()
+    assert serial.written == ["CLEAR"]
+    assert not svc.is_connected()
+    assert serial.closed
+
+
+def test_blocked_reconnect_open_returning_after_strict_deadline_sends_nothing():
+    clock = FakeClock()
+    serial = FakeSerial()
+
+    def late_open():
+        clock.advance(6.0)
+        return serial
+
+    svc = LedService(
+        LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"),
+        serial_factory=late_open,
+        clock=clock,
+    )
+    batch = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], True)
+    batch.deadline = clock() + 5.0
+    batch.real_deadline = time.monotonic() + 5.0
+    batch.generation = svc._generation
+    svc._queue.put(batch)
+    svc._queue.put(_led_service._SENTINEL)
+    svc._worker()
+    assert batch.result["ok"] is False
+    assert serial.written == []
+    assert serial.closed
+
+
+def test_raw_calibration_submission_is_never_tagged_as_recoverable_guidance():
+    svc, serial, _ = _link_service(_link_line())
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    svc._queue.get_nowait()
+    svc._submit(["CLEAR", "SETI 0 0 50 0", "SHOW"], strict=False)
+    assert svc._queue.get_nowait().guidance_revision is None
+    svc._close_serial()
+
+
+def test_handshake_show_requires_its_own_ack_instead_of_extra_clear_ack():
+    class ExtraClearAck(FakeSerial):
+        def reset_input_buffer(self):
+            self._buf.clear()
+
+        def write(self, data):
+            command = data.decode().strip()
+            self.written.append(command)
+            if command == "CLEAR":
+                self._buf.extend([b"OK clear\n", b"OK stale\n"])
+            elif command.startswith("BRIGHT"):
+                self._buf.append(b"OK bright\n")
+            # SHOW deliberately never acknowledges.
+
+    serial = ExtraClearAck()
+    svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=lambda: serial)
+    try:
+        svc._open_serial()
+        assert not svc.is_connected()
+        assert serial.written == ["CLEAR", "SHOW"]
+    finally:
+        svc._close_serial()
+
+
+def test_board_b_reconnect_refreshes_only_latest_current_guidance_after_valid_up():
+    svc, serial, clock = _link_service(_link_line())
+    svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+    old = svc._queue.get_nowait()
+    svc.set_points([{"row": 2, "col": 2, "color": "black"}])
+    latest_old_connection = svc._queue.get_nowait()
+    svc._close_serial()
+    fresh = LinkSerial(_link_line(), clock)
+    fresh._buf.append(b"READY\n")
+    svc._serial_factory = lambda: fresh
+    try:
+        svc._open_serial()
+        assert fresh.seti_lines() == []
+        svc._poll_board_link()
+        svc._run_batch(old)
+        svc._run_batch(latest_old_connection)
+        svc._poll_board_link()
+        assert fresh.seti_lines() == [f"SETI {rc2idx(2, 2)} 255 0 0"]
+        assert old.result["ok"] is False
+        assert latest_old_connection.result["ok"] is False
+    finally:
+        svc._close_serial()
+
+
+def test_idle_silent_transport_with_present_alias_reopens_once_after_three_link_failures(monkeypatch):
+    svc, serial, clock = _link_service("")
+    svc.config.serial_port = f"/dev/serial/by-id/test-{uuid.uuid4().hex}"
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(os.path, "exists", lambda path: True)
+    replacement = LinkSerial(_link_line(), clock)
+    replacement._buf.append(b"READY\n")
+    opens = []
+    svc._serial_factory = lambda: opens.append(True) or replacement
+    svc._last_reconnect = clock()
+    worker = threading.Thread(target=svc._worker, name="led-serial")
+    worker.start()
+
+    def wait_for(predicate):
+        deadline = time.monotonic() + 2.0
+        while not predicate() and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert predicate()
+
+    try:
+        for count in (1, 2, 3):
+            wait_for(lambda: serial.written.count("LINK") >= count)
+            if count < 3:
+                clock.advance(2.1)
+        wait_for(lambda: serial.closed)
+        assert svc.is_connected() is False
+        clock.advance(5.0)
+        wait_for(lambda: svc.is_board_connected() is True)
+        assert opens == [True]
+        assert replacement.written == ["CLEAR", "SHOW", "BRIGHT 255", "LINK"]
+    finally:
+        svc._stop.set()
+        svc._queue.put(_led_service._SENTINEL)
+        worker.join(timeout=2)
+        assert not worker.is_alive()

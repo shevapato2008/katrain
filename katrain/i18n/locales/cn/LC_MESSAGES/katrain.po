@@ -5536,7 +5536,7 @@ msgid "platform:challenge_send"
 msgstr "发出挑战"
 
 msgid "platform:challenge_sent"
-msgstr "挑战已发出。对方接受后要去 {name} 上下，不会回到这台盒子。"
+msgstr "挑战已发出。对方接受后，这里会出现“继续对局”。"
 
 msgid "platform:challenge_failed"
 msgstr "挑战没发出去"
@@ -8040,6 +8040,5200 @@ msgstr "请求未返回结果，请以星阵账号实际道具数为准。重新
 #: katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx
 msgid "game:territory_items"
 msgstr "星阵道具 · 查询使用道具"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_overexposed_title"
+msgstr "画面过亮，暂时无法可靠识别"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_underexposed_title"
+msgstr "画面过暗，暂时无法可靠识别"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_warning_body"
+msgstr "请移开遮挡；仍有提示时，请换到光线均匀、合适的地方再试。"
+
+#. Native Go kiosk UI.
+msgid "game:local_got_it"
+msgstr "知道了"
+
+#. Native Go kiosk UI.
+msgid "vision:grid_not_visible"
+msgstr "网格暂未识别，将通过 LED 定位棋盘"
+
+#. Native Go kiosk UI.
+msgid "auth:hall_privacy_note"
+msgstr "未登录时不显示棋友名单和进行中的对局。"
+
+#. Native Go kiosk UI.
+msgid "login:box_gate_body"
+msgstr "智星盒的账号是整台设备共用的：在主页登录一次，围棋和其他棋类模块就都是同一个身份。"
+
+#. Native Go kiosk UI.
+msgid "login:box_gate_hint"
+msgstr "如果你刚才还在下棋，多半是这台盒子上的会话过期了 —— 回主页重新进入围棋即可，已下的棋不会丢。"
+
+#. Native Go kiosk UI.
+msgid "Choose how to play"
+msgstr "选择对弈方式"
+
+#. Native Go kiosk UI.
+msgid "platform:connected_enter"
+msgstr "已连接 · 进入平台专页"
+
+#. Native Go kiosk UI.
+msgid "Connected"
+msgstr "已连接"
+
+#. Native Go kiosk UI.
+msgid "ladder:box_picks_reason"
+msgstr "能挑对手强弱,升降级就不是升降级了"
+
+#. Native Go kiosk UI.
+msgid "ladder:status_offline"
+msgstr "连不上云端。升降级对弈要联网，检查网络后点「重试」"
+
+#. Native Go kiosk UI.
+msgid "ladder:start_offline"
+msgstr "连不上云端。升降级对弈要联网，本次没有开局，也不影响你的段位；检查网络后再试"
+
+#. Native Go kiosk UI.
+msgid "ladder:start_engine_cannot_serve"
+msgstr "这台盒子的引擎现在带不动这一档对手。本次没有开局，也不影响你的段位"
+
+#. Native Go kiosk UI.
+msgid "ladder:start_cloud_unconfirmed"
+msgstr "云端还没确认这一局的状态，先别重复开局；回到这一屏会显示它的状态"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_undelivered"
+msgstr "成绩未送达"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_never_started"
+msgstr "未开始"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_playing"
+msgstr "对局中"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_interrupted"
+msgstr "已中断"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_unsettled"
+msgstr "未了结"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_undelivered"
+msgstr "这一局已经下完，成绩还没送到云端。"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_never_started"
+msgstr "这一局登记了，但棋盘没能开起来 —— 两边都没有人在下。"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_unfinished"
+msgstr "你有一局正式对局尚未结束。"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_no_local_record"
+msgstr "这一局就在这台设备上，只是本机没有它的记录。"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_unknown_device"
+msgstr "这一局还没了结，但本机认不出它在哪一台设备上。"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_other_device"
+msgstr "这一局在你的另一台设备上，还没了结。"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_current"
+msgstr "当前设备"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_other"
+msgstr "其他设备"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_unknown"
+msgstr "设备未知"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_current"
+msgstr "本机心跳"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_other"
+msgstr "对方设备心跳"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_unknown"
+msgstr "对局设备心跳"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_button"
+msgstr "让掉它，在这里开新局"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_cost"
+msgstr "那一局没能开起来，让掉它不记成绩"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_title"
+msgstr "让掉那一局？"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_confirm"
+msgstr "确认让掉"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_body"
+msgstr "那一局只在云端登记过，棋盘没能在任何设备上开起来。让掉它不会记成绩，也不影响升降级。"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_button"
+msgstr "放弃未送达成绩，在这里开新局"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_cost"
+msgstr "放弃会丢失真实成绩，按一场负局计入升降级"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_title"
+msgstr "放弃这局未送达的成绩？"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_confirm"
+msgstr "确认放弃成绩"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_button"
+msgstr "认输那一局，在这里开新局"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_cost_remote"
+msgstr "那一局会记为本局负；它若其实已下完，真实结果会被顶掉"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_cost"
+msgstr "那一局会记为本局负，并计入升降级"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_title"
+msgstr "认输那一局？"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_confirm"
+msgstr "确认认输"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_body"
+msgstr ""
+"那一局已经下完了，但成绩还没送到云端。放弃后会按一场负局了结并计入升降级，真实棋谱和结果将无法再作为本局成绩补交。若成绩仍可重试，请先送达成绩；若云端拒收，请联系维护人员修复。此操作不可撤销。"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_local"
+msgstr "你还有一局正式对局没有下完。在这里开新局需要先认输那一局，它将计为本局负并计入升降级。此操作不可撤销。"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_remote"
+msgstr ""
+"你在另一台设备上还有一局没有了结。在这里开新局需要先认输那一局，它将计为本局负并计入升降级。如果那台设备上这局其实已经下完、结果还没传上来，那个结果会被这一场负顶掉。此操作不可撤销。"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_unheld"
+msgstr ""
+"本机接不回来这一局，也看不到它的进度。在这里开新局需要先认输它，它将计为本局负并计入升降级。如果它其实已经下完、结果还没传上来，那个结果会被这一场负顶掉。此操作不可撤销。"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_refused"
+msgstr "云端拒收了这一局的成绩，再试也是同一个答复。"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_exhausted"
+msgstr "连试 {max} 次都没送到。恢复联网后会自动继续送。"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_waiting"
+msgstr "重试 {n}/{max} · {countdown} 后自动重试"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_synced"
+msgstr "成绩已送达，正在更新段位…"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_imminent"
+msgstr "重试 {n}/{max} · 即将重试…"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_sending"
+msgstr "正在把成绩送到云端…"
+
+#. Native Go kiosk UI.
+msgid "setup:help"
+msgstr "说明"
+
+#. Native Go kiosk UI.
+msgid "setup:terms_help"
+msgstr "路数、规则、让子在开局前确定；贴目由规则和让子推导，开局后不可更改。"
+
+#. Native Go kiosk UI.
+msgid "setup:note_r2"
+msgstr "这几项<b>开局后都不能改</b>,中途换等于换了一局棋;自由对弈<b>不计入段位</b>。"
+
+#. Native Go kiosk UI.
+msgid "ladder:analysis_help"
+msgstr "此局计入段位，全程封分析；盘面条件由服务器固定。"
+
+#. Native Go kiosk UI.
+msgid "setup:strength_help"
+msgstr "拟人对手目前为第 {n} 档，共 29 档，范围为 20k 到 9d。"
+
+#. Native Go kiosk UI.
+msgid "setup:free_unrated"
+msgstr "自由对弈不计入段位。"
+
+#. Native Go kiosk UI.
+msgid "setup:seat_help"
+msgstr "实体盘仅支持已标定的 19 路；屏幕可直接点棋盘落子。选好落子、执子和用时后开始对局。"
+
+#. Native Go kiosk UI.
+msgid "setup:free_sub"
+msgstr "不计入段位"
+
+#. Native Go kiosk UI.
+msgid "ladder:current_rank"
+msgstr "当前段位"
+
+#. Native Go kiosk UI.
+msgid "ladder:placing"
+msgstr "定级中"
+
+#. Native Go kiosk UI.
+msgid "setup:strength"
+msgstr "棋力"
+
+#. Native Go kiosk UI.
+msgid "local:board_check_not_ready"
+msgstr "棋盘检查未就绪，请保持盘面稳定后重试"
+
+#. Native Go kiosk UI.
+msgid "local:board_check_failed"
+msgstr "检查棋盘失败，请检查连接后重试"
+
+#. Native Go kiosk UI.
+msgid "local:device_check_pending"
+msgstr "正在读取设备状态，请稍后再试"
+
+#. Native Go kiosk UI.
+msgid "local:return_setup"
+msgstr "返回设置"
+
+#. Native Go kiosk UI.
+msgid "local:prestart_calibration"
+msgstr "先检查棋盘标定"
+
+#. Native Go kiosk UI.
+msgid "local:return_setup_retry"
+msgstr "请返回设置后重试"
+
+#. Native Go kiosk UI.
+msgid "local:entering_game"
+msgstr "正在进入对局…"
+
+#. Native Go kiosk UI.
+msgid "local:prestart_calibration_resume"
+msgstr "标定成功后自动进入对局；失败可重试，返回设置保留参数"
+
+#. Native Go kiosk UI.
+msgid "local:setup_face_to_face"
+msgstr "两人面对面"
+
+#. Native Go kiosk UI.
+msgid "local:checking_board"
+msgstr "检查棋盘…"
+
+#. Native Go kiosk UI.
+msgid "local:terms_help"
+msgstr "两人下棋前请谈妥路数、规则、让子和贴目。先行方及贴目方向以当前设置为准；开局后不可更改。"
+
+#. Native Go kiosk UI.
+msgid "local:input_help"
+msgstr "实体盘仅支持已标定的 19 路；屏幕落子时直接点棋盘，双方在各自一侧确认。"
+
+#. Native Go kiosk UI.
+msgid "local:note3_line1"
+msgstr "屏上<b>不给提示和形势判断</b>;双方各停一手后<b>自动数子</b>，死活按引擎判断。"
+
+#. Native Go kiosk UI.
+msgid "local:note3_line2"
+msgstr "这一局<b>只留档，不动段位</b>；中途退出<b>不存谱</b>。"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_short"
+msgstr "OGS 数子中"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_paused_short"
+msgstr "OGS 暂停中"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_turn"
+msgstr "对方回合"
+
+#. Native Go kiosk UI.
+msgid "game:waiting_for_opponent"
+msgstr "等待对方"
+
+#. Native Go kiosk UI.
+msgid "game:waiting_for_black"
+msgstr "等待黑方"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_wait"
+msgstr "等待 OGS 计时"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_paused"
+msgstr "OGS 已暂停 · 上次同步"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_byo_sync"
+msgstr "读秒 · OGS 上次同步"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_sync"
+msgstr "OGS 上次同步"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_accept_no_dead"
+msgstr "确认无死子"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_no_dead"
+msgstr "当前未同步 OGS 死子标记；将按无死子确认"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_reject"
+msgstr "继续下棋"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_wait"
+msgstr "由 OGS 进入计分阶段后才能操作"
+
+#. Native Go kiosk UI.
+msgid "game:players"
+msgstr "对局双方"
+
+#. Native Go kiosk UI.
+msgid "game:eval_title_short"
+msgstr "胜率 · KataGo"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_paused"
+msgstr "OGS 对局已暂停"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_result_wait"
+msgstr "等待 OGS 结果同步"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_disabled"
+msgstr "数子由 OGS 裁定，双方停一手后进入计分"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_first_retry"
+msgstr "先拿回尚未确认的棋子，再移开双手，重新准备实体盘。"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_empty"
+msgstr "请先清空棋盘并移开双手，准备好后再落子。"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_existing"
+msgstr "对齐电子棋谱，拿回未确认棋子，再移开双手。"
+
+#. Native Go kiosk UI.
+msgid "game:local_physical_steps"
+msgstr "落子、拿除提子后，移开双手，再按确认。"
+
+#. Native Go kiosk UI.
+msgid "game:local_screen_steps"
+msgstr "点击棋盘选点，可再次点击改选，最后按确认。"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_overexposed_short"
+msgstr "画面过亮"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_underexposed_short"
+msgstr "画面过暗"
+
+#. Native Go kiosk UI.
+msgid "game:local_multiple_stones"
+msgstr "请只保留这一手"
+
+#. Native Go kiosk UI.
+msgid "game:local_capture_remaining"
+msgstr "请拿除提子"
+
+#. Native Go kiosk UI.
+msgid "game:local_no_stone"
+msgstr "还没看到新棋子"
+
+#. Native Go kiosk UI.
+msgid "game:local_illegal_move"
+msgstr "请重新选择落点"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_title"
+msgstr "请先准备好实体盘"
+
+#. Native Go kiosk UI.
+msgid "game:local_retry_title"
+msgstr "这一手尚未确认"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_warning_short"
+msgstr "移开遮挡；仍有提示请换个位置。"
+
+#. Native Go kiosk UI.
+msgid "game:local_multiple_steps"
+msgstr "拿回多下的棋子，再确认。"
+
+#. Native Go kiosk UI.
+msgid "game:local_capture_steps"
+msgstr "拿除叉号处的棋子，再确认。"
+
+#. Native Go kiosk UI.
+msgid "game:local_no_stone_steps"
+msgstr "落下一颗棋子，再确认。"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_retry"
+msgstr "整理盘面，检查相机与标定。"
+
+#. Native Go kiosk UI.
+msgid "game:local_screen_retry"
+msgstr "可改选位置，再确认。"
+
+#. Native Go kiosk UI.
+msgid "game:local_physical_retry"
+msgstr "移开双手，盘面稳定后重试。"
+
+#. Native Go kiosk UI.
+msgid "game:local_move_number"
+msgstr "第 {n} 手"
+
+#. Native Go kiosk UI.
+msgid "game:local_guide"
+msgstr "落子说明"
+
+#. Native Go kiosk UI.
+msgid "game:local_both_paused"
+msgstr "双方计时已暂停"
+
+#. Native Go kiosk UI.
+msgid "game:local_change_selection"
+msgstr "可改选位置"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirming"
+msgstr "确认中"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_short"
+msgstr "请稍候"
+
+#. Native Go kiosk UI.
+msgid "game:local_needs_attention"
+msgstr "待处理"
+
+#. Native Go kiosk UI.
+msgid "game:local_preparing_short"
+msgstr "准备中"
+
+#. Native Go kiosk UI.
+msgid "game:local_playing"
+msgstr "走棋中"
+
+#. Native Go kiosk UI.
+msgid "game:local_waiting"
+msgstr "等待中"
+
+#. Native Go kiosk UI.
+msgid "game:local_byoyomi"
+msgstr "读秒时间"
+
+#. Native Go kiosk UI.
+msgid "game:local_main_left"
+msgstr "剩余主时间"
+
+#. Native Go kiosk UI.
+msgid "game:local_clock_running"
+msgstr "计时中"
+
+#. Native Go kiosk UI.
+msgid "game:local_clock_paused"
+msgstr "已暂停"
+
+#. Native Go kiosk UI.
+msgid "game:local_periods_left"
+msgstr "剩 {n} 次"
+
+#. Native Go kiosk UI.
+msgid "game:seconds"
+msgstr "秒"
+
+#. Native Go kiosk UI.
+msgid "game:times"
+msgstr "次"
+
+#. Native Go kiosk UI.
+msgid "game:local_recognizing"
+msgstr "正在识别"
+
+#. Native Go kiosk UI.
+msgid "game:local_submitting"
+msgstr "正在确认"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait"
+msgstr "等待"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_failed"
+msgstr "实体盘准备失败"
+
+#. Native Go kiosk UI.
+msgid "game:local_preparing"
+msgstr "正在准备实体盘"
+
+#. Native Go kiosk UI.
+msgid "game:local_selected"
+msgstr "已选"
+
+#. Native Go kiosk UI.
+msgid "game:local_your_turn"
+msgstr "轮到你落子"
+
+#. Native Go kiosk UI.
+msgid "game:local_board_display"
+msgstr "棋盘显示"
+
+#. Native Go kiosk UI.
+msgid "game:local_count_threshold"
+msgstr "数子需满 {n} 手"
+
+#. Native Go kiosk UI.
+msgid "game:count_stones"
+msgstr "数子"
+
+#. Native Go kiosk UI.
+msgid "game:abandon_local"
+msgstr "弃局"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_again"
+msgstr "重新准备实体盘"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_again"
+msgstr "重新确认"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_move"
+msgstr "确认落子"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_before_move"
+msgstr "准备好后再落子"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_switch"
+msgstr "确认后换方"
+
+#. Native Go kiosk UI.
+msgid "game:local_select_first"
+msgstr "先在棋盘选点"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_confirm"
+msgstr "对方确认后再落子"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_confirm"
+msgstr "确认停一手？"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_confirm"
+msgstr "确认弃局？"
+
+#. Native Go kiosk UI.
+msgid "game:local_resign_question"
+msgstr "认输？"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_discard"
+msgstr "停一手会放弃当前预选位置。"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_physical"
+msgstr "请确认实体盘没有尚未确认的落子。"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_body"
+msgstr "停一手后将轮到对方。"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_body"
+msgstr "弃局后不保留任何对局记录，也不会出现在复盘页面。"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_failed"
+msgstr "弃局未完成，请重试；当前对局仍然保留。"
+
+#. Native Go kiosk UI.
+msgid "game:local_guide_clock"
+msgstr "确认时双方计时暂停，成功后对方计时；失败仍由本方计时。听到确认音、对方区域亮起后，再下下一手。"
+
+#. Native Go kiosk UI.
+msgid "game:local_play_guide"
+msgstr "播放说明"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandoning"
+msgstr "正在弃局…"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_accept"
+msgstr "确认弃局"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_accept"
+msgstr "确认停一手"
+
+#. Native Go kiosk UI.
+msgid "game:local_black_resign_accept"
+msgstr "确认黑方认输"
+
+#. Native Go kiosk UI.
+msgid "game:local_white_resign_accept"
+msgstr "确认白方认输"
+
+#. Native Go kiosk UI.
+msgid "local:recovery_failed"
+msgstr "识别还未恢复，请检查连接和盘面后重试"
+
+#. Native Go kiosk UI.
+msgid "local:recover_physical"
+msgstr "恢复实体盘识别"
+
+#. Native Go kiosk UI.
+msgid "local:recover_confirmed_stones"
+msgstr "保留已确认的棋子，拿回还未确认的子；对齐外框后，按原棋谱重新检查识别。"
+
+#. Native Go kiosk UI.
+msgid "local:recover_empty_option"
+msgstr "对齐外框不亮灯、不用清盘；空盘标定需要拿走全部棋子，完成后按棋谱摆回。"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration"
+msgstr "空盘标定"
+
+#. Native Go kiosk UI.
+msgid "local:retry_geometry"
+msgstr "重新检查"
+
+#. Native Go kiosk UI.
+msgid "local:recovering"
+msgstr "检查中…"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_check_point"
+msgstr "请看左侧紫圈标出的交叉点，再核对实体棋盘。"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_stone"
+msgstr "相机识别到"
+
+#. Native Go kiosk UI.
+msgid "game:stone_suffix"
+msgstr "子"
+
+#. Native Go kiosk UI.
+msgid "game:no_move_at_point"
+msgstr "当前棋谱在此处没有落子"
+
+#. Native Go kiosk UI.
+msgid "game:extra_stone"
+msgstr "多出"
+
+#. Native Go kiosk UI.
+msgid "game:missing_stone"
+msgstr "缺少"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_led"
+msgstr "实体盘对应位置闪紫灯。"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_not_stone_hint"
+msgstr "这里没有新棋子时，点“不是落子”；若确实落子，请调整棋子后等待自动识别。"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_restore_hint"
+msgstr "按紫圈位置调整实体棋盘，识别恢复后会自动继续。"
+
+#. Native Go kiosk UI.
+msgid "Not a move"
+msgstr "不是落子"
+
+#. Native Go kiosk UI.
+msgid "game:ranked_ai_adjudication"
+msgstr "未完成棋盘由云端 AI 按中国规则估分判定"
+
+#. Native Go kiosk UI.
+msgid "game:lobby_move_unconfirmed"
+msgstr "这手尚未确认，请核对盘面后重试"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_conflict"
+msgstr "OGS 未确认这手棋，请先核对盘面，勿重复落子"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_unavailable"
+msgstr "OGS 暂时不可用，这手尚未确认，请检查连接"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_unconfirmed"
+msgstr "这手没有得到 OGS 确认，请核对后再操作"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_failed"
+msgstr "OGS 操作未送达"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_sending"
+msgstr "正在发送给 OGS…"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_waiting"
+msgstr "等待 OGS 确认"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_retry"
+msgstr "请检查连接后重试"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_authority"
+msgstr "本机不提前裁定胜负"
+
+#. Native Go kiosk UI.
+msgid "local:return_original_game"
+msgstr "返回原局"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration_title"
+msgstr "空盘标定 · 原局保留"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration_sub"
+msgstr "先拿走棋子；完成后按棋谱摆回已确认棋子，再重新检查"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_confirm_title"
+msgstr "确认无死子"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_confirm_body"
+msgstr "盒子尚未同步 OGS 死子标记；确认会向 OGS 发送无死子。若有待提子的棋，请点继续下棋"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_cancel"
+msgstr "取消无死子确认"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_send"
+msgstr "确认发送无死子"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_title"
+msgstr "还有归属未定的位置"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_body"
+msgstr "星阵尚未给出胜负裁定，这局继续进行。"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_led"
+msgstr "紫圈标出电子棋盘位置，实体棋盘对应位置闪紫灯。"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_help_label"
+msgstr "近一年练棋说明"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_help"
+msgstr "每格一天，统计当天下完的对局与新解出的题；颜色越亮，完成越多。白框标出今天。"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_loading"
+msgstr "正在读练棋记录…"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_sun"
+msgstr "日"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_grid_aria"
+msgstr "近一年有 {n} 天练棋记录，每列一周，从周一至周日；白框表示今天"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_week"
+msgstr "每列一周 · 周一至周日"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_legend"
+msgstr "练棋次数由少至多"
+
+#. Native Go kiosk UI.
+msgid "growth:rank_help_label"
+msgstr "盒内段位说明"
+
+#. Native Go kiosk UI.
+msgid "growth:rank_help"
+msgstr "盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。"
+
+#. Native Go kiosk UI.
+msgid "growth:trend_short"
+msgstr "升降级对局不足两天，暂不连线"
+
+#. Native Go kiosk UI.
+msgid "growth:trend_unplaced_short"
+msgstr "定级完成后开始记录档位走势"
+
+#. Native Go kiosk UI.
+msgid "growth:tabs_label"
+msgstr "成长记录"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_overview"
+msgstr "概览"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_diagnosis"
+msgstr "能力诊断"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_opponents"
+msgstr "对手"
+
+#. Native Go kiosk UI.
+msgid "growth:local_note_short"
+msgstr "本机记录 · 可能少几局"
+
+#. Native Go kiosk UI.
+msgid "growth:unknown_seat_short"
+msgstr "局未计入胜率"
+
+#. Native Go kiosk UI.
+msgid "growth:winrate_help_label"
+msgstr "胜率口径说明"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_help_label"
+msgstr "按对手强度说明"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_help"
+msgstr "这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local"
+msgstr "本机记录；云端可能还有几局。"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_failed"
+msgstr "对手战绩没读到"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_failed_p"
+msgstr "稍后再看一次。"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_loading"
+msgstr "正在读对手战绩…"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local_empty_h"
+msgstr "本机暂无战绩"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local_empty_p"
+msgstr "当前只读到本机记录；云端可能还有升降级对局。联网后再看。"
+
+#. Native Go kiosk UI.
+msgid "growth:help_title"
+msgstr "说明"
+
+#. Native Go kiosk UI.
+msgid "growth:help_close"
+msgstr "知道了"
+
+#. Native Go kiosk UI.
+msgid "Training"
+msgstr "训练营"
+
+#. Native Go kiosk UI.
+msgid "tsumego:boardPreview"
+msgstr "左侧为棋形预览"
+
+#. Native Go kiosk UI.
+msgid "tsumego:enterProblem"
+msgstr "进入做题屏"
+
+#. Native Go kiosk UI.
+msgid "tsumego:isLast"
+msgstr "这是最后一题"
+
+#. Native Go kiosk UI.
+msgid ""
+"Find the one move — judged on placement, a wrong move is taken straight "
+"back."
+msgstr "找出那一手 —— 落子即判，走错当场退回。"
+
+#. Native Go kiosk UI.
+msgid "tsumego:physicalBoardShort"
+msgstr "实体盘"
+
+#. Native Go kiosk UI.
+msgid "tsumego:physRestoreInitial"
+msgstr "保留正确棋子，取走红 × 标记的多余或错色棋子，按红灯补黑子、绿灯补白子。棋盘一致后自动开始。"
+
+#. Native Go kiosk UI.
+msgid "tsumego:physRestoreCounts"
+msgstr "（待取走 {extra} 颗，待补回 {missing} 颗）"
+
+#. Native Go kiosk UI.
+msgid "research:new_setup_notice"
+msgstr "摆子编辑已建立新局面，原行棋历史已清除。"
+
+#. Native Go kiosk UI.
+msgid "research:analysis_on_request"
+msgstr "按需分析当前局面"
+
+#. Native Go kiosk UI.
+msgid "report:physical_board_short"
+msgstr "实体盘"
+
+#. Native Go kiosk UI.
+msgid "kifu:japanese_rules_default_source"
+msgstr "SGF 未记录规则；按贴目 6.5 默认采用日本规则，未核验赛事实际规则。"
+
+#. Native Go kiosk UI.
+msgid "kifu:chinese_rules_default_source"
+msgstr "SGF 未记录规则；按贴目 7.5 默认采用中国规则，未核验赛事实际规则。"
+
+#. Native Go kiosk UI.
+msgid "report:trend_help"
+msgstr "绿线为黑方胜率，橙线为黑方领先目数。横轴为手数；点击图表跳转到对应局面，缺少分析的局面不补值。"
+
+#. Native Go kiosk UI.
+msgid "report:chart_help"
+msgstr "说明"
+
+#. Native Go kiosk UI.
+msgid "live:recommend_tab"
+msgstr "推荐"
+
+#. Native Go kiosk UI.
+msgid "report:collapse_workspace"
+msgstr "收起分析工作区"
+
+#. Native Go kiosk UI.
+msgid "report:expand_workspace"
+msgstr "放大当前分析图表或推荐列表"
+
+#. Native Go kiosk UI.
+msgid "report:recommend_help"
+msgstr ""
+"推荐度是 AI "
+"对候选着点的选择倾向，不是人类落子的概率。目差和胜率以待落子方为基准；正目差表示该方领先。点按候选可预览变化，实战着点不在前五时追加显示；缺少评估以 —"
+" 表示。"
+
+#. Native Go kiosk UI.
+msgid "report:game_details"
+msgstr "对局详情"
+
+#. Native Go kiosk UI.
+msgid "report:ai_recommendation"
+msgstr "AI推荐"
+
+#. Native Go kiosk UI.
+msgid "report:to_play"
+msgstr "方待落子"
+
+#. Native Go kiosk UI.
+msgid "report:after_move"
+msgstr "第 {n} 手后"
+
+#. Native Go kiosk UI.
+msgid "report:actual_move_short"
+msgstr "实战"
+
+#. Native Go kiosk UI.
+msgid "report:no_position_analysis"
+msgstr "当前局面暂无分析数据"
+
+#. Native Go kiosk UI.
+msgid "report:even_position"
+msgstr "形势均衡"
+
+#. Native Go kiosk UI.
+msgid "report:leads"
+msgstr "领先"
+
+#. Native Go kiosk UI.
+msgid "report:position_number"
+msgstr "第 {n} 手"
+
+#. Native Go kiosk UI.
+msgid "live:pause"
+msgstr "暂停"
+
+#. Native Go kiosk UI.
+msgid "live:play"
+msgstr "播放"
+
+#. Native Go kiosk UI.
+msgid "common:back"
+msgstr "返回"
+
+#. Native Go kiosk UI.
+msgid "baipu:auto_recognize"
+msgstr "识别后自动继续"
+
+#. Native Go kiosk UI.
+msgid "baipu:led_problem"
+msgstr "指示灯未亮"
+
+#. Native Go kiosk UI.
+msgid "baipu:hint_paused_title"
+msgstr "AI支招 · 识别暂停"
+
+#. Native Go kiosk UI.
+msgid "baipu:hint_resume"
+msgstr "再按AI支招继续摆谱"
+
+#. Native Go kiosk UI.
+msgid "baipu:panel_tabs"
+msgstr "摆谱信息"
+
+#. Native Go kiosk UI.
+msgid "baipu:moves_tab"
+msgstr "着法"
+
+#. Native Go kiosk UI.
+msgid "baipu:info_tab"
+msgstr "棋谱"
+
+#. Native Go kiosk UI.
+msgid "game:board_size_unit"
+msgstr "路"
+
+#. Native Go kiosk UI.
+msgid "game:komi"
+msgstr "贴目"
+
+#. Native Go kiosk UI.
+msgid "baipu:guard_sub_camera"
+msgstr "摆谱识子要先让摄像头看清盘面"
+
+#. Native Go kiosk UI.
+msgid "settings:nav_typography"
+msgstr "字体与字号"
+
+#. Native Go kiosk UI.
+msgid "settings:typography_scope"
+msgstr "中文字体应用于围棋界面的汉字；英文字母与数字保持原样。"
+
+#. Native Go kiosk UI.
+msgid "settings:font"
+msgstr "字体"
+
+#. Native Go kiosk UI.
+msgid "report:library_players_title"
+msgstr "{black} 对 {white}"
+
+#. Native Go kiosk UI.
+msgid "report:library_game_accessible"
+msgstr "{title}，黑方 {black} 对 白方 {white}"
+
+#. Native Go kiosk UI.
+msgid "review:open_replay"
+msgstr "查看棋谱"
+
+#. Native Go kiosk UI.
+msgid "review:analysis_report"
+msgstr "分析报告"
+
+#. Native Go kiosk UI.
+msgid "review:tier_view"
+msgstr "查看"
+
+#. Native Go kiosk UI.
+msgid "review:tier_working"
+msgstr "分析中"
+
+#. Native Go kiosk UI.
+msgid "review:tier_generate"
+msgstr "生成"
+
+#. Native Go kiosk UI.
+msgid "review:history_search_toggle"
+msgstr "显示或收起历史搜索"
+
+#. Native Go kiosk UI.
+msgid "review:back_review_full"
+msgstr "返回复盘"
+
+#. Native Go kiosk UI.
+msgid "report:komi"
+msgstr "贴目"
+
+#. Native Go kiosk UI.
+msgid "platform:phone_digits_only"
+msgstr "手机号只能输入数字"
+
+#. Native Go kiosk UI.
+msgid "platform:connect_account_hint"
+msgstr "使用{name}账号连接"
+
+#. Native Go kiosk UI.
+msgid "Info"
+msgstr "说明"
+
+#. Native Go kiosk UI.
+msgid "platform:not_connected"
+msgstr "尚未连接"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_play"
+msgstr "返回对弈"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy"
+msgstr "星阵围棋"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_connection"
+msgstr "正在读取星阵连接"
+
+#. Native Go kiosk UI.
+msgid "platform:connection_check_failed"
+msgstr "没能读取星阵连接状态"
+
+#. Native Go kiosk UI.
+msgid "platform:connect_golaxy"
+msgstr "连接星阵"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy_login_expired"
+msgstr "星阵登录已失效"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy_reconnect"
+msgstr "星阵登录已失效，重新连接"
+
+#. Native Go kiosk UI.
+msgid "platform:start_game"
+msgstr "开一局"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_match"
+msgstr "快速匹配"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_setup"
+msgstr "按星阵规则匹配棋友"
+
+#. Native Go kiosk UI.
+msgid "platform:rooms"
+msgstr "房间"
+
+#. Native Go kiosk UI.
+msgid "platform:room_setup"
+msgstr "创建或按房号加入"
+
+#. Native Go kiosk UI.
+msgid "platform:engine_play"
+msgstr "人机对弈"
+
+#. Native Go kiosk UI.
+msgid "platform:engine_setup"
+msgstr "星阵 AI · 选档开局"
+
+#. Native Go kiosk UI.
+msgid "platform:lobby"
+msgstr "对战大厅"
+
+#. Native Go kiosk UI.
+msgid "platform:all_games"
+msgstr "全部对局"
+
+#. Native Go kiosk UI.
+msgid "platform:online_players"
+msgstr "在线棋友"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_rooms"
+msgstr "正在读取星阵对局"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_users"
+msgstr "正在读取在线棋友"
+
+#. Native Go kiosk UI.
+msgid "platform:rooms_failed"
+msgstr "没能读取星阵对局"
+
+#. Native Go kiosk UI.
+msgid "platform:no_rooms"
+msgstr "暂无对局"
+
+#. Native Go kiosk UI.
+msgid "platform:no_users"
+msgstr "暂无在线棋友"
+
+#. Native Go kiosk UI.
+msgid "platform:room_suffix"
+msgstr "房"
+
+#. Native Go kiosk UI.
+msgid "platform:room"
+msgstr "房间"
+
+#. Native Go kiosk UI.
+msgid "platform:even_game"
+msgstr "分先"
+
+#. Native Go kiosk UI.
+msgid "platform:handicap"
+msgstr "让"
+
+#. Native Go kiosk UI.
+msgid "platform:stones"
+msgstr "子"
+
+#. Native Go kiosk UI.
+msgid "platform:unknown_player"
+msgstr "棋手信息待返回"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_pregame"
+msgstr "落子位置与匹配用时在开局前设置"
+
+#. Native Go kiosk UI.
+msgid "platform:room_pregame"
+msgstr "创建、找回或按房号进入星阵房间"
+
+#. Native Go kiosk UI.
+msgid "platform:pregame_preview"
+msgstr "19 路 · 空盘预览"
+
+#. Native Go kiosk UI.
+msgid "platform:match_times"
+msgstr "匹配用时 · 可多选"
+
+#. Native Go kiosk UI.
+msgid "platform:allow_ai_match"
+msgstr "允许匹配 AI 对手"
+
+#. Native Go kiosk UI.
+msgid "platform:ai_match_unavailable"
+msgstr "AI 对手暂不可用，当前只匹配棋友"
+
+#. Native Go kiosk UI.
+msgid "platform:room_mode"
+msgstr "房间方式"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room"
+msgstr "创建房间"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room"
+msgstr "我的房间"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room"
+msgstr "加入房间"
+
+#. Native Go kiosk UI.
+msgid "platform:create_golaxy_room"
+msgstr "创建星阵房间"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room_hint"
+msgstr "创建后在房间内设置对局，再等待另一位棋手加入。"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room_rules"
+msgstr "创建后与棋友确认对局规则。"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_hint"
+msgstr "显示星阵返回的当前账号所建房间。"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_unavailable"
+msgstr "尚未接通我的房间"
+
+#. Native Go kiosk UI.
+msgid "platform:join_golaxy_room"
+msgstr "加入星阵房间"
+
+#. Native Go kiosk UI.
+msgid "platform:room_number"
+msgstr "房间号"
+
+#. Native Go kiosk UI.
+msgid "platform:enter_room_number"
+msgstr "请输入星阵房间号"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room_role"
+msgstr "按房号进入可能是观战身份，仍需确认可对弈席位。"
+
+#. Native Go kiosk UI.
+msgid "platform:match_times_hint"
+msgstr "可多选用时；至少选择一种。星阵完成匹配后才进入对局。"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room_hint"
+msgstr "加入房间后仍需确认对局身份和开局状态。"
+
+#. Native Go kiosk UI.
+msgid "platform:pvp_start_unavailable"
+msgstr "星阵开局功能暂不可用，请稍后再试。"
+
+#. Native Go kiosk UI.
+msgid "platform:match_unavailable"
+msgstr "开始匹配 · 暂不可用"
+
+#. Native Go kiosk UI.
+msgid "platform:create_unavailable"
+msgstr "创建房间 · 暂不可用"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_open_unavailable"
+msgstr "打开我的房间 · 暂不可用"
+
+#. Native Go kiosk UI.
+msgid "platform:join_unavailable"
+msgstr "加入房间 · 暂不可用"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_lobby"
+msgstr "对战大厅"
+
+#. Native Go kiosk UI.
+msgid "platform:spectate"
+msgstr "对局观战"
+
+#. Native Go kiosk UI.
+msgid "platform:spectator_board"
+msgstr "星阵观战棋盘"
+
+#. Native Go kiosk UI.
+msgid "platform:moves_suffix"
+msgstr "手"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_golaxy"
+msgstr "返回星阵"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_audio"
+msgstr "带音频"
+
+#. Native Go kiosk UI.
+msgid "auth:checking_identity"
+msgstr "身份确认中"
+
+#. Native Go kiosk UI.
+msgid "auth:unavailable_identity"
+msgstr "身份待确认"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_lock_title"
+msgstr "摄像头曝光没有锁定"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_lock_body"
+msgstr "没能确认固定曝光状态，这次标定已停止。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_camera_action"
+msgstr "检查摄像头连接，再重新开始标定。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_bright_title"
+msgstr "摄像头画面过亮"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_dark_title"
+msgstr "摄像头画面过暗"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_lighting_body"
+msgstr "盘面细节看不清，这次标定无法继续。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_lighting_action"
+msgstr "换到光线合适的位置，再重新开始标定。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_title"
+msgstr "曝光收敛没有完成"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_body"
+msgstr "摄像头未能完成曝光调整和锁定。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_title"
+msgstr "没找到 {point} 这个点的灯"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_body"
+msgstr "多半是这三种:那个点上压着一颗子、这一带的灯太暗、或者摄像头被挪过。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_action"
+msgstr "把 {point} 附近清空，再看一眼摄像头有没有动过。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_title"
+msgstr "棋盘和上次标定的位置对不上了"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_body"
+msgstr "摄像头或棋盘被挪动过，之前那份几何已经不能用了。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_action"
+msgstr "把棋盘摆回原位；摆不回去就重新标定一次。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_baseline_title"
+msgstr "生成基线时盘上还有子"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_baseline_body"
+msgstr "空盘基线是之后识子的底片，底片上有子，之后每一手都会认错。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_clear_action"
+msgstr "把盘清空，再重新开始标定。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_led_title"
+msgstr "灯没能全部熄灭"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_frames_title"
+msgstr "基线照片没拍够"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_finish_body"
+msgstr "前面五个点都找到了，卡在最后一步。多半是灯带或摄像头这一刻掉线了。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_wiring_action"
+msgstr "检查灯带和摄像头的接线，再重新开始标定。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_title"
+msgstr "这次标定没有完成"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_body"
+msgstr "没有拿到能用的棋盘几何。"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_action"
+msgstr "先确认盘是空的、摄像头没被挪过，再重新开始标定。"
+
+#. Native Go kiosk UI.
+msgid "vision:step_done"
+msgstr "完成"
+
+#. Native Go kiosk UI.
+msgid "vision:step_waiting"
+msgstr "等待中"
+
+#. Native Go kiosk UI.
+msgid "vision:step_running"
+msgstr "进行中"
+
+#. Native Go kiosk UI.
+msgid "vision:step_paused"
+msgstr "已暂停"
+
+#. Native Go kiosk UI.
+msgid "vision:step_failed"
+msgstr "失败"
+
+#. Native Go kiosk UI.
+msgid "vision:step_done_count"
+msgstr "完成 · {n} / 5"
+
+#. Native Go kiosk UI.
+msgid "vision:step_cancelled"
+msgstr "已取消"
+
+#. Native Go kiosk UI.
+msgid "vision:step_pending"
+msgstr "未开始"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_complete"
+msgstr "5 / 5 已定位"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_count"
+msgstr "已完成 {n} 个点"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_stopped"
+msgstr "标定已停止，请重新开始"
+
+#. Native Go kiosk UI.
+msgid "vision:led_off"
+msgstr "灯已熄灭"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_continue"
+msgstr "继续标定"
+
+#. Native Go kiosk UI.
+msgid "vision:caption_auto_led"
+msgstr "双手离开后自动点灯"
+
+#. Native Go kiosk UI.
+msgid "vision:caption_five_points"
+msgstr "四角 + 天元 · 共 5 个定位点"
+
+#. Native Go kiosk UI.
+msgid "vision:completed"
+msgstr "已完成"
+
+#. Native Go kiosk UI.
+msgid "vision:stopped_step"
+msgstr "停在第 {n} 步"
+
+#. Native Go kiosk UI.
+msgid "vision:step_one"
+msgstr "第 1 / 4 步"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibration"
+msgstr "标定"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibrated"
+msgstr "已标定"
+
+#. Native Go kiosk UI.
+msgid "vision:status_invalid"
+msgstr "已失效"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_hands"
+msgstr "等待移手"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_light"
+msgstr "等待调光"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_stable"
+msgstr "等待稳定"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibrating"
+msgstr "标定中"
+
+#. Native Go kiosk UI.
+msgid "vision:status_confirm"
+msgstr "待确认"
+
+#. Native Go kiosk UI.
+msgid "vision:status_uncalibrated"
+msgstr "未标定"
+
+#. Native Go kiosk UI.
+msgid "vision:status_camera"
+msgstr "摄像头"
+
+#. Native Go kiosk UI.
+msgid "vision:status_connected"
+msgstr "已连接"
+
+#. Native Go kiosk UI.
+msgid "vision:status_disconnected"
+msgstr "未连接"
+
+#. Native Go kiosk UI.
+msgid "vision:status_unknown"
+msgstr "未确认"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_running"
+msgstr "标定进行中"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_camera_missing"
+msgstr "摄像头未连接，无法核对网格"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_current"
+msgstr "这一局已经在用这次标定"
+
+#. Native Go kiosk UI.
+msgid "vision:recalibrate_board"
+msgstr "重新标定棋盘"
+
+#. Native Go kiosk UI.
+msgid "vision:confirm_empty_recalibrate"
+msgstr "已清空，确认重新标定"
+
+#. Native Go kiosk UI.
+msgid "vision:restart_calibration"
+msgstr "重新开始标定"
+
+#. Native Go kiosk UI.
+msgid "vision:reading_device_status"
+msgstr "正在读取设备状态"
+
+#. Native Go kiosk UI.
+msgid "vision:device_disconnected"
+msgstr "设备未连接"
+
+#. Native Go kiosk UI.
+msgid "vision:camera_disconnected"
+msgstr "摄像头未连接"
+
+#. Native Go kiosk UI.
+msgid "vision:led_unknown"
+msgstr "LED 未确认"
+
+#. Native Go kiosk UI.
+msgid "vision:led_disconnected"
+msgstr "LED 未连接"
+
+#. Native Go kiosk UI.
+msgid "vision:action_failed_title"
+msgstr "操作没有生效"
+
+#. Native Go kiosk UI.
+msgid "vision:action_failed_help"
+msgstr "再试一次；一直不行就检查摄像头和灯带的接线。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_title"
+msgstr "画面过亮，棋盘细节可能看不清"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_title"
+msgstr "画面过暗，棋盘细节可能看不清"
+
+#. Native Go kiosk UI.
+msgid "vision:light_title"
+msgstr "当前光线可能影响棋盘识别"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_guidance"
+msgstr "请拉上窗帘，避开阳光直射棋盘。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_guidance"
+msgstr "请打开室内灯，或换到光线均匀的位置。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_guidance"
+msgstr "请调整为均匀、柔和的光线。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_voice"
+msgstr "光线太亮，请拉上窗帘，避开直射光。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_voice"
+msgstr "光线太暗，请打开室内灯。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_voice"
+msgstr "请调整棋盘周围的光线。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_checking"
+msgstr "正在检测光线"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright"
+msgstr "光线过亮"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark"
+msgstr "光线过暗"
+
+#. Native Go kiosk UI.
+msgid "vision:light_pending"
+msgstr "光线待调整"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_done"
+msgstr "标定完成"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_running"
+msgstr "正在标定"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_move_hands"
+msgstr "请把手移开棋盘上方"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_unstable"
+msgstr "画面不稳定，请保持棋盘上方无遮挡"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_obstructed"
+msgstr "检测到遮挡，标定已暂停"
+
+#. Native Go kiosk UI.
+msgid "vision:light_rechecking"
+msgstr "正在重新检测光线"
+
+#. Native Go kiosk UI.
+msgid "vision:light_adjust"
+msgstr "光线需要调整"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_paused"
+msgstr "标定已暂停"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_stable_auto"
+msgstr "稳定后自动开始"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_retained"
+msgstr "{n} 点已保留"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_completed_count"
+msgstr "已完成 {n} / 5"
+
+#. Native Go kiosk UI.
+msgid "vision:raw_alt"
+msgstr "摄像头原始画面"
+
+#. Native Go kiosk UI.
+msgid "vision:raw_overlay"
+msgstr "原始画面棋盘几何叠加层"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_alt"
+msgstr "俯视矫正画面"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_wait_running"
+msgstr "标定进行中，俯视画面在完成后重新生成"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_wait"
+msgstr "完成 LED 标定后生成俯视画面"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_overlay"
+msgstr "俯视画面棋盘几何叠加层"
+
+#. Native Go kiosk UI.
+msgid "vision:help_title"
+msgstr "标定说明"
+
+#. Native Go kiosk UI.
+msgid "vision:view_raw"
+msgstr "原始画面"
+
+#. Native Go kiosk UI.
+msgid "vision:view_warped"
+msgstr "俯视矫正"
+
+#. Native Go kiosk UI.
+msgid "vision:view_label"
+msgstr "画面"
+
+#. Native Go kiosk UI.
+msgid "vision:help_body"
+msgstr "。棋盘稳定后才开始；遮挡时灯熄灭，移手后从未完成的点继续。失败时屏幕会给出具体诊断。"
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_title"
+msgstr "这台盒子没有配摄像头"
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_body"
+msgstr "实体棋盘识别、摆谱、实体做题都用不了；"
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_screen_ok"
+msgstr "屏幕上的功能不受影响"
+
+#. Native Go kiosk UI.
+msgid "vision:sentence_end"
+msgstr "。"
+
+#. Native Go kiosk UI.
+msgid "vision:overlay_failed"
+msgstr "几何叠加读取失败"
+
+#. Native Go kiosk UI.
+msgid "vision:led_advisory"
+msgstr "LED 只在你按下之后才亮，不会自动点亮 LED"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_blocked"
+msgstr "「沿用上次标定」此刻按不了：{reason}。"
+
+#. Native Go kiosk UI.
+msgid "vision:recognition_not_ready"
+msgstr "棋盘已标定，但识别模型还没就绪。"
+
+#. Native Go kiosk UI.
+msgid "vision:light_paused_eyebrow"
+msgstr "光线提醒 · 标定已暂停"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck_help"
+msgstr "调整后重新检测光线，已完成的 {n} 个点会保留。"
+
+#. Native Go kiosk UI.
+msgid "vision:voice_prompt"
+msgstr "语音提示"
+
+#. Native Go kiosk UI.
+msgid "vision:light_check_busy"
+msgstr "正在检测…"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck"
+msgstr "调整后重新检测"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_reconnecting"
+msgstr "画面重连中…"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_connecting"
+msgstr "画面连接中…"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_failed"
+msgstr "视频流连接中断"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_title"
+msgstr "先标定棋盘"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_play_sub"
+msgstr "在实体盘上对弈，要先让摄像头看清盘面"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_tsumego_sub"
+msgstr "实体做题要先让摄像头看清盘面"
+
+#. Native Go kiosk UI.
+msgid "vision:step_empty"
+msgstr "等待棋盘稳定"
+
+#. Native Go kiosk UI.
+msgid "vision:step_exposure"
+msgstr "确认并锁定曝光"
+
+#. Native Go kiosk UI.
+msgid "vision:step_points"
+msgstr "定位棋盘"
+
+#. Native Go kiosk UI.
+msgid "vision:step_baseline"
+msgstr "生成空盘基线"
+
+#. Native Go kiosk UI.
+msgid "vision:layout_unsynced"
+msgstr "棋盘几何版本未同步"
+
+#. Native Go kiosk UI.
+msgid "vision:layout_failed"
+msgstr "无法读取棋盘几何"
+
+#. Native Go kiosk UI.
+msgid "vision:start_failed"
+msgstr "启动标定失败"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_failed"
+msgstr "沿用上次标定失败"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck_failed"
+msgstr "光线重检没有启动，请再试一次。"
+
+#. Native Go kiosk UI.
+msgid "game:local_side_resigns"
+msgstr "{side}认输？"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_retry"
+msgstr "重试"
+
+#. Native Go kiosk UI.
+msgid "成绩未送达"
+msgstr "成绩未送达"
+
+#. Native Go kiosk UI.
+msgid "我执"
+msgstr "我执"
+
+#. Native Go kiosk UI.
+msgid "继续对局"
+msgstr "继续对局"
+
+#. Native Go kiosk UI.
+msgid "正在重试…"
+msgstr "正在重试…"
+
+#. Native Go kiosk UI.
+msgid "取消"
+msgstr "取消"
+
+#. Native Go kiosk UI.
+msgid "第"
+msgstr "第"
+
+#. Native Go kiosk UI.
+msgid "档"
+msgstr "档"
+
+#. Native Go kiosk UI.
+msgid "领地"
+msgstr "领地"
+
+#. Native Go kiosk UI.
+msgid "确定"
+msgstr "确定"
+
+#. Native Go kiosk UI.
+msgid "实体盘"
+msgstr "实体盘"
+
+#. Native Go kiosk UI.
+msgid "重试"
+msgstr "重试"
+
+#. Native Go kiosk UI.
+msgid "黑方"
+msgstr "黑方"
+
+#. Native Go kiosk UI.
+msgid "白方"
+msgstr "白方"
+
+#. Native Go kiosk UI.
+msgid "加载更多"
+msgstr "加载更多"
+
+#. Native Go kiosk UI.
+msgid "查看棋谱"
+msgstr "查看棋谱"
+
+#. Native Go kiosk UI.
+msgid "确认"
+msgstr "确认"
+
+#. Native Go kiosk UI.
+msgid "黑"
+msgstr "黑"
+
+#. Native Go kiosk UI.
+msgid "白"
+msgstr "白"
+
+#. Native Go kiosk UI.
+msgid "返回"
+msgstr "返回"
+
+#. Native Go kiosk UI.
+msgid "已结束"
+msgstr "已结束"
+
+#. Native Go kiosk UI.
+msgid "观战"
+msgstr "观战"
+
+#. Native Go kiosk UI.
+msgid "开"
+msgstr "开"
+
+#. Native Go kiosk UI.
+msgid "关"
+msgstr "关"
+
+#. Native Go kiosk UI.
+msgid "上一手"
+msgstr "上一手"
+
+#. Native Go kiosk UI.
+msgid "尚未连接"
+msgstr "尚未连接"
+
+#. Native Go kiosk UI.
+msgid "落子"
+msgstr "落子"
+
+#. Native Go kiosk UI.
+msgid "屏幕"
+msgstr "屏幕"
+
+#. Native Go kiosk UI.
+msgid "路数"
+msgstr "路数"
+
+#. Native Go kiosk UI.
+msgid "19 路"
+msgstr "19 路"
+
+#. Native Go kiosk UI.
+msgid "快速匹配"
+msgstr "快速匹配"
+
+#. Native Go kiosk UI.
+msgid "发起挑战"
+msgstr "发起挑战"
+
+#. Native Go kiosk UI.
+msgid "接受"
+msgstr "接受"
+
+#. Native Go kiosk UI.
+msgid "按用户名找人"
+msgstr "按用户名找人"
+
+#. Native Go kiosk UI.
+msgid "没能从平台取回名单"
+msgstr "没能从平台取回名单"
+
+#. Native Go kiosk UI.
+msgid "正在读…"
+msgstr "正在读…"
+
+#. Native Go kiosk UI.
+msgid "那边没有这个人"
+msgstr "那边没有这个人"
+
+#. Native Go kiosk UI.
+msgid "对局中"
+msgstr "对局中"
+
+#. Native Go kiosk UI.
+msgid "空闲"
+msgstr "空闲"
+
+#. Native Go kiosk UI.
+msgid "挑战"
+msgstr "挑战"
+
+#. Native Go kiosk UI.
+msgid "发出挑战"
+msgstr "发出挑战"
+
+#. Native Go kiosk UI.
+msgid "次"
+msgstr "次"
+
+#. Native Go kiosk UI.
+msgid "训练营"
+msgstr "训练营"
+
+#. Native Go kiosk UI.
+msgid "题"
+msgstr "题"
+
+#. Native Go kiosk UI.
+msgid "题型"
+msgstr "题型"
+
+#. Native Go kiosk UI.
+msgid "做题记录没读到"
+msgstr "做题记录没读到"
+
+#. Native Go kiosk UI.
+msgid "单元"
+msgstr "单元"
+
+#. Native Go kiosk UI.
+msgid "错题"
+msgstr "错题"
+
+#. Native Go kiosk UI.
+msgid "课程"
+msgstr "课程"
+
+#. Native Go kiosk UI.
+msgid "带音频"
+msgstr "带音频"
+
+#. Native Go kiosk UI.
+msgid "退出对局"
+msgstr "退出对局"
+
+#. Native Go kiosk UI.
+msgid "手"
+msgstr "手"
+
+#. Native Go kiosk UI.
+msgid "不限时"
+msgstr "不限时"
+
+#. Native Go kiosk UI.
+msgid "轮到你"
+msgstr "轮到你"
+
+#. Native Go kiosk UI.
+msgid "对方回合"
+msgstr "对方回合"
+
+#. Native Go kiosk UI.
+msgid "等待中"
+msgstr "等待中"
+
+#. Native Go kiosk UI.
+msgid "提子"
+msgstr "提子"
+
+#. Native Go kiosk UI.
+msgid "已连接"
+msgstr "已连接"
+
+#. Native Go kiosk UI.
+msgid "未连接"
+msgstr "未连接"
+
+#. Native Go kiosk UI.
+msgid "棋盘显示"
+msgstr "棋盘显示"
+
+#. Native Go kiosk UI.
+msgid "坐标"
+msgstr "坐标"
+
+#. Native Go kiosk UI.
+msgid "手数"
+msgstr "手数"
+
+#. Native Go kiosk UI.
+msgid "数子"
+msgstr "数子"
+
+#. Native Go kiosk UI.
+msgid "停一手"
+msgstr "停一手"
+
+#. Native Go kiosk UI.
+msgid "认输"
+msgstr "认输"
+
+#. Native Go kiosk UI.
+msgid "知道了"
+msgstr "知道了"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘"
+msgstr "实体棋盘"
+
+#. Native Go kiosk UI.
+msgid "暂不可用"
+msgstr "暂不可用"
+
+#. Native Go kiosk UI.
+msgid "在线大厅"
+msgstr "在线大厅"
+
+#. Native Go kiosk UI.
+msgid "登录后进在线大厅"
+msgstr "登录后进在线大厅"
+
+#. Native Go kiosk UI.
+msgid "前往登录"
+msgstr "前往登录"
+
+#. Native Go kiosk UI.
+msgid "返回对弈"
+msgstr "返回对弈"
+
+#. Native Go kiosk UI.
+msgid "开一局"
+msgstr "开一局"
+
+#. Native Go kiosk UI.
+msgid "对战大厅"
+msgstr "对战大厅"
+
+#. Native Go kiosk UI.
+msgid "在线棋友"
+msgstr "在线棋友"
+
+#. Native Go kiosk UI.
+msgid "当前没有进行中的对局。"
+msgstr "当前没有进行中的对局。"
+
+#. Native Go kiosk UI.
+msgid "房"
+msgstr "房"
+
+#. Native Go kiosk UI.
+msgid "分先"
+msgstr "分先"
+
+#. Native Go kiosk UI.
+msgid "执黑"
+msgstr "执黑"
+
+#. Native Go kiosk UI.
+msgid "执白"
+msgstr "执白"
+
+#. Native Go kiosk UI.
+msgid "这是你"
+msgstr "这是你"
+
+#. Native Go kiosk UI.
+msgid "邀请"
+msgstr "邀请"
+
+#. Native Go kiosk UI.
+msgid "拒绝"
+msgstr "拒绝"
+
+#. Native Go kiosk UI.
+msgid "接受并开局"
+msgstr "接受并开局"
+
+#. Native Go kiosk UI.
+msgid "返回大厅"
+msgstr "返回大厅"
+
+#. Native Go kiosk UI.
+msgid "当前段位"
+msgstr "当前段位"
+
+#. Native Go kiosk UI.
+msgid "取消匹配"
+msgstr "取消匹配"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_rejected"
+msgstr "数子请求已被拒绝"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_timeout"
+msgstr "数子请求已超时"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_declined"
+msgstr "已拒绝数子请求"
+
+#. Native Go kiosk UI.
+msgid "game:count_response_failed"
+msgstr "回应数子请求失败，请重试"
+
+#. Native Go kiosk UI.
+msgid "game:count_identity_unavailable"
+msgstr "无法确认中央账号身份，暂不能处理数子请求"
+
+#. Native Go kiosk UI.
+msgid "game:central_disconnected"
+msgstr "中央连接中断"
+
+#. Native Go kiosk UI.
+msgid "game:central_disconnected_body"
+msgstr "对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。"
+
+#. Native Go kiosk UI.
+msgid "game:central_reconnecting"
+msgstr "正在重新连接…"
+
+#. Native Go kiosk UI.
+msgid "game:central_reconnect"
+msgstr "重新连接"
+
+#. Native Go kiosk UI.
+msgid "game:back_online_lobby"
+msgstr "返回在线大厅"
+
+#. Native Go kiosk UI.
+msgid "game:count_identity_retry"
+msgstr "重试身份"
+
+#. Native Go kiosk UI.
+msgid "game:count_recounting"
+msgstr "正在重新数子…"
+
+#. Native Go kiosk UI.
+msgid "game:count_waiting_opponent"
+msgstr "等待对方确认数子"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_failed"
+msgstr "自动数子失败"
+
+#. Native Go kiosk UI.
+msgid "game:count_result_pending"
+msgstr "棋局已停手，数子成功后才会显示正式结果。"
+
+#. Native Go kiosk UI.
+msgid "game:count_retry"
+msgstr "重试数子"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_running"
+msgstr "正在自动数子"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_pending_body"
+msgstr "双方已停手，结果尚未确定。请稍候。"
+
+#. Native Go kiosk UI.
+msgid "game:count_waiting_body"
+msgstr "对方接受后会显示正式结果。"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_title"
+msgstr "对方请求数子"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_status"
+msgstr "请选择是否结束这局。"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_body"
+msgstr "{name}请求结束对局并数子，是否同意？"
+
+#. Native Go kiosk UI.
+msgid "game:count_decline"
+msgstr "拒绝数子"
+
+#. Native Go kiosk UI.
+msgid "game:count_accept"
+msgstr "接受数子"
+
+#. Native Go kiosk UI.
+msgid "game:local_seat_panel"
+msgstr "{side}玩家面板"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_side"
+msgstr "等待{side}"
+
+#. Native Go kiosk UI.
+msgid "{label} · {value2}"
+msgstr "{label} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "未完成对局"
+msgstr "未完成对局"
+
+#. Native Go kiosk UI.
+msgid "对手档位"
+msgstr "对手档位"
+
+#. Native Go kiosk UI.
+msgid "● 黑棋"
+msgstr "● 黑棋"
+
+#. Native Go kiosk UI.
+msgid "○ 白棋"
+msgstr "○ 白棋"
+
+#. Native Go kiosk UI.
+msgid "未收到过"
+msgstr "未收到过"
+
+#. Native Go kiosk UI.
+msgid "成绩已压"
+msgstr "成绩已压"
+
+#. Native Go kiosk UI.
+msgid "不适用"
+msgstr "不适用"
+
+#. Native Go kiosk UI.
+msgid "立即重试"
+msgstr "立即重试"
+
+#. Native Go kiosk UI.
+msgid "你是"
+msgstr "你是"
+
+#. Native Go kiosk UI.
+msgid ",配到"
+msgstr ",配到"
+
+#. Native Go kiosk UI.
+msgid "领地判断：本局剩余 {value1} 次"
+msgstr "领地判断：本局剩余 {value1} 次"
+
+#. Native Go kiosk UI.
+msgid "正在自动数子"
+msgstr "正在自动数子"
+
+#. Native Go kiosk UI.
+msgid "自动数子失败，请按「数子」重试"
+msgstr "自动数子失败，请按「数子」重试"
+
+#. Native Go kiosk UI.
+msgid "{who}{value2}"
+msgstr "{who}{value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {point}"
+msgstr "{value1} {point}"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{value2}"
+msgstr "{value1}，{value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1}{value2}"
+msgstr "{value1}{value2}"
+
+#. Native Go kiosk UI.
+msgid "{white}{value2} {value3} {value4}"
+msgstr "{white}{value2} {value3} {value4}"
+
+#. Native Go kiosk UI.
+msgid " · {value1}"
+msgstr " · {value1}"
+
+#. Native Go kiosk UI.
+msgid "屏幕点击 + 实体落子"
+msgstr "屏幕点击 + 实体落子"
+
+#. Native Go kiosk UI.
+msgid "棋盘检测异常"
+msgstr "棋盘检测异常"
+
+#. Native Go kiosk UI.
+msgid "棋盘检测异常，请检查摄像头和棋盘位置"
+msgstr "棋盘检测异常，请检查摄像头和棋盘位置"
+
+#. Native Go kiosk UI.
+msgid "{value1}{backLabel}"
+msgstr "{value1}{backLabel}"
+
+#. Native Go kiosk UI.
+msgid "棋友资料"
+msgstr "棋友资料"
+
+#. Native Go kiosk UI.
+msgid "关闭棋友资料"
+msgstr "关闭棋友资料"
+
+#. Native Go kiosk UI.
+msgid "星阵号"
+msgstr "星阵号"
+
+#. Native Go kiosk UI.
+msgid "对弈战绩"
+msgstr "对弈战绩"
+
+#. Native Go kiosk UI.
+msgid "邀请偏好"
+msgstr "邀请偏好"
+
+#. Native Go kiosk UI.
+msgid "关注结果尚未确认。"
+msgstr "关注结果尚未确认。"
+
+#. Native Go kiosk UI.
+msgid "重新读取关注状态"
+msgstr "重新读取关注状态"
+
+#. Native Go kiosk UI.
+msgid "邀请这位棋友进行星阵人人对弈"
+msgstr "邀请这位棋友进行星阵人人对弈"
+
+#. Native Go kiosk UI.
+msgid "本机落子方式"
+msgstr "本机落子方式"
+
+#. Native Go kiosk UI.
+msgid "屏幕落子"
+msgstr "屏幕落子"
+
+#. Native Go kiosk UI.
+msgid "邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。"
+msgstr "邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。"
+
+#. Native Go kiosk UI.
+msgid "的星阵人人对弈棋谱"
+msgstr "的星阵人人对弈棋谱"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋谱…"
+msgstr "正在读取棋谱…"
+
+#. Native Go kiosk UI.
+msgid "棋谱暂时无法读取。"
+msgstr "棋谱暂时无法读取。"
+
+#. Native Go kiosk UI.
+msgid "暂无人人对弈棋谱"
+msgstr "暂无人人对弈棋谱"
+
+#. Native Go kiosk UI.
+msgid "{board_size} 路"
+msgstr "{board_size} 路"
+
+#. Native Go kiosk UI.
+msgid "{move_number} 手"
+msgstr "{move_number} 手"
+
+#. Native Go kiosk UI.
+msgid "邀请已发送 · 等待{username}回应"
+msgstr "邀请已发送 · 等待{username}回应"
+
+#. Native Go kiosk UI.
+msgid "没能发送对局邀请"
+msgstr "没能发送对局邀请"
+
+#. Native Go kiosk UI.
+msgid "等待星阵确认结果。接受、拒绝、超时或取消后显示明确结果。"
+msgstr "等待星阵确认结果。接受、拒绝、超时或取消后显示明确结果。"
+
+#. Native Go kiosk UI.
+msgid "对方状态可能已改变，请返回资料后重试。"
+msgstr "对方状态可能已改变，请返回资料后重试。"
+
+#. Native Go kiosk UI.
+msgid "邀请对局"
+msgstr "邀请对局"
+
+#. Native Go kiosk UI.
+msgid "正在更新"
+msgstr "正在更新"
+
+#. Native Go kiosk UI.
+msgid "取消关注"
+msgstr "取消关注"
+
+#. Native Go kiosk UI.
+msgid "添加关注"
+msgstr "添加关注"
+
+#. Native Go kiosk UI.
+msgid "返回资料"
+msgstr "返回资料"
+
+#. Native Go kiosk UI.
+msgid "邀请对局暂不可用"
+msgstr "邀请对局暂不可用"
+
+#. Native Go kiosk UI.
+msgid "发送邀请"
+msgstr "发送邀请"
+
+#. Native Go kiosk UI.
+msgid "取消邀请尚未接通"
+msgstr "取消邀请尚未接通"
+
+#. Native Go kiosk UI.
+msgid "取消邀请"
+msgstr "取消邀请"
+
+#. Native Go kiosk UI.
+msgid "当前账号"
+msgstr "当前账号"
+
+#. Native Go kiosk UI.
+msgid "昵称未获取"
+msgstr "昵称未获取"
+
+#. Native Go kiosk UI.
+msgid "星阵账号 ·"
+msgstr "星阵账号 ·"
+
+#. Native Go kiosk UI.
+msgid "当前账号已连接。切换账号会先断开当前星阵连接，再进入星阵登录页。"
+msgstr "当前账号已连接。切换账号会先断开当前星阵连接，再进入星阵登录页。"
+
+#. Native Go kiosk UI.
+msgid "切换账号"
+msgstr "切换账号"
+
+#. Native Go kiosk UI.
+msgid "退出星阵"
+msgstr "退出星阵"
+
+#. Native Go kiosk UI.
+msgid "断开当前账号并切换"
+msgstr "断开当前账号并切换"
+
+#. Native Go kiosk UI.
+msgid "退出当前星阵账号"
+msgstr "退出当前星阵账号"
+
+#. Native Go kiosk UI.
+msgid "没能断开星阵账号，请重试。"
+msgstr "没能断开星阵账号，请重试。"
+
+#. Native Go kiosk UI.
+msgid "重试断开"
+msgstr "重试断开"
+
+#. Native Go kiosk UI.
+msgid "正在断开"
+msgstr "正在断开"
+
+#. Native Go kiosk UI.
+msgid "点选一局进入只读观战 · 按星阵状态更新"
+msgstr "点选一局进入只读观战 · 按星阵状态更新"
+
+#. Native Go kiosk UI.
+msgid "级别、胜负和状态以星阵返回为准"
+msgstr "级别、胜负和状态以星阵返回为准"
+
+#. Native Go kiosk UI.
+msgid "全部棋友"
+msgstr "全部棋友"
+
+#. Native Go kiosk UI.
+msgid "同级别"
+msgstr "同级别"
+
+#. Native Go kiosk UI.
+msgid "我的关注"
+msgstr "我的关注"
+
+#. Native Go kiosk UI.
+msgid "胜负与状态以星阵为准"
+msgstr "胜负与状态以星阵为准"
+
+#. Native Go kiosk UI.
+msgid "{room_number} {value2}"
+msgstr "{room_number} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {handicap} {value3}"
+msgstr "{value1} {handicap} {value3}"
+
+#. Native Go kiosk UI.
+msgid "人在房间"
+msgstr "人在房间"
+
+#. Native Go kiosk UI.
+msgid "查看{username}的个人资料"
+msgstr "查看{username}的个人资料"
+
+#. Native Go kiosk UI.
+msgid "正在更新列表…"
+msgstr "正在更新列表…"
+
+#. Native Go kiosk UI.
+msgid "正在加载更多…"
+msgstr "正在加载更多…"
+
+#. Native Go kiosk UI.
+msgid "没能读取更多，请重试"
+msgstr "没能读取更多，请重试"
+
+#. Native Go kiosk UI.
+msgid "重试加载更多"
+msgstr "重试加载更多"
+
+#. Native Go kiosk UI.
+msgid "没有更多了"
+msgstr "没有更多了"
+
+#. Native Go kiosk UI.
+msgid "加载更多对局"
+msgstr "加载更多对局"
+
+#. Native Go kiosk UI.
+msgid "加载更多棋友"
+msgstr "加载更多棋友"
+
+#. Native Go kiosk UI.
+msgid "读秒 {period_seconds} 秒 · 剩余 {periods_remaining} 次"
+msgstr "读秒 {period_seconds} 秒 · 剩余 {periods_remaining} 次"
+
+#. Native Go kiosk UI.
+msgid "星阵时钟快照"
+msgstr "星阵时钟快照"
+
+#. Native Go kiosk UI.
+msgid "计时信息未返回"
+msgstr "计时信息未返回"
+
+#. Native Go kiosk UI.
+msgid "{room_number} 房 · "
+msgstr "{room_number} 房 · "
+
+#. Native Go kiosk UI.
+msgid "· 星阵棋谱快照"
+msgstr "· 星阵棋谱快照"
+
+#. Native Go kiosk UI.
+msgid "正在同步星阵棋谱"
+msgstr "正在同步星阵棋谱"
+
+#. Native Go kiosk UI.
+msgid "正在检查星阵连接"
+msgstr "正在检查星阵连接"
+
+#. Native Go kiosk UI.
+msgid "对局与观战信息"
+msgstr "对局与观战信息"
+
+#. Native Go kiosk UI.
+msgid "{room_number} 房"
+msgstr "{room_number} 房"
+
+#. Native Go kiosk UI.
+msgid "对局状态"
+msgstr "对局状态"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {handicap}"
+msgstr "{value1} · {handicap}"
+
+#. Native Go kiosk UI.
+msgid "等待星阵棋谱"
+msgstr "等待星阵棋谱"
+
+#. Native Go kiosk UI.
+msgid "同步中"
+msgstr "同步中"
+
+#. Native Go kiosk UI.
+msgid "最新：{value1} {value2} · 第 {move_number} 手"
+msgstr "最新：{value1} {value2} · 第 {move_number} 手"
+
+#. Native Go kiosk UI.
+msgid "第 {move_number} 手 · 暂无落子"
+msgstr "第 {move_number} 手 · 暂无落子"
+
+#. Native Go kiosk UI.
+msgid "等待星阵最新落子"
+msgstr "等待星阵最新落子"
+
+#. Native Go kiosk UI.
+msgid "回看棋谱时仍接收新快照"
+msgstr "回看棋谱时仍接收新快照"
+
+#. Native Go kiosk UI.
+msgid "正在同步，当前为上次快照"
+msgstr "正在同步，当前为上次快照"
+
+#. Native Go kiosk UI.
+msgid "胜负结果尚未返回"
+msgstr "胜负结果尚未返回"
+
+#. Native Go kiosk UI.
+msgid "星阵棋谱快照 · 每 2 秒同步"
+msgstr "星阵棋谱快照 · 每 2 秒同步"
+
+#. Native Go kiosk UI.
+msgid "房间成员"
+msgstr "房间成员"
+
+#. Native Go kiosk UI.
+msgid "对局双方与观战棋友 · {length} 人"
+msgstr "对局双方与观战棋友 · {length} 人"
+
+#. Native Go kiosk UI.
+msgid "成员信息未返回"
+msgstr "成员信息未返回"
+
+#. Native Go kiosk UI.
+msgid "对局 · 黑"
+msgstr "对局 · 黑"
+
+#. Native Go kiosk UI.
+msgid "对局 · 白"
+msgstr "对局 · 白"
+
+#. Native Go kiosk UI.
+msgid "身份未返回"
+msgstr "身份未返回"
+
+#. Native Go kiosk UI.
+msgid "星阵尚未提供可展示的房间成员名单。"
+msgstr "星阵尚未提供可展示的房间成员名单。"
+
+#. Native Go kiosk UI.
+msgid "重新连接"
+msgstr "重新连接"
+
+#. Native Go kiosk UI.
+msgid "落子音："
+msgstr "落子音："
+
+#. Native Go kiosk UI.
+msgid "已经是第一手之前"
+msgstr "已经是第一手之前"
+
+#. Native Go kiosk UI.
+msgid "回到最新"
+msgstr "回到最新"
+
+#. Native Go kiosk UI.
+msgid "正在看最新"
+msgstr "正在看最新"
+
+#. Native Go kiosk UI.
+msgid " · {move_number} 手"
+msgstr " · {move_number} 手"
+
+#. Native Go kiosk UI.
+msgid "{total} {value2}"
+msgstr "{total} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {value2} {value3}"
+msgstr "{value1} {value2} {value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {value2}"
+msgstr "{value1} {value2}"
+
+#. Native Go kiosk UI.
+msgid "已连接 ·"
+msgstr "已连接 ·"
+
+#. Native Go kiosk UI.
+msgid "账号名未返回"
+msgstr "账号名未返回"
+
+#. Native Go kiosk UI.
+msgid "连接状态读取失败"
+msgstr "连接状态读取失败"
+
+#. Native Go kiosk UI.
+msgid "正在读取账号"
+msgstr "正在读取账号"
+
+#. Native Go kiosk UI.
+msgid "没能读取 OGS 账号状态"
+msgstr "没能读取 OGS 账号状态"
+
+#. Native Go kiosk UI.
+msgid "OGS 尚未连接。请先连接账号。"
+msgstr "OGS 尚未连接。请先连接账号。"
+
+#. Native Go kiosk UI.
+msgid "落子方式"
+msgstr "落子方式"
+
+#. Native Go kiosk UI.
+msgid "实体盘只下 19 路"
+msgstr "实体盘只下 19 路"
+
+#. Native Go kiosk UI.
+msgid "未接通实体盘"
+msgstr "未接通实体盘"
+
+#. Native Go kiosk UI.
+msgid "OGS 有进行中的对局"
+msgstr "OGS 有进行中的对局"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋盘…"
+msgstr "正在读取棋盘…"
+
+#. Native Go kiosk UI.
+msgid "等待 {username} 接受挑战"
+msgstr "等待 {username} 接受挑战"
+
+#. Native Go kiosk UI.
+msgid "等待对方接受挑战"
+msgstr "等待对方接受挑战"
+
+#. Native Go kiosk UI.
+msgid "正在取消…"
+msgstr "正在取消…"
+
+#. Native Go kiosk UI.
+msgid "取消约战"
+msgstr "取消约战"
+
+#. Native Go kiosk UI.
+msgid "没能确认这局的棋盘路数，请重试进入对局"
+msgstr "没能确认这局的棋盘路数，请重试进入对局"
+
+#. Native Go kiosk UI.
+msgid "没能读取进行中的 OGS 对局"
+msgstr "没能读取进行中的 OGS 对局"
+
+#. Native Go kiosk UI.
+msgid "盒上尚未接通"
+msgstr "盒上尚未接通"
+
+#. Native Go kiosk UI.
+msgid "找人下"
+msgstr "找人下"
+
+#. Native Go kiosk UI.
+msgid "按用户名直接约战"
+msgstr "按用户名直接约战"
+
+#. Native Go kiosk UI.
+msgid "棋局筛选"
+msgstr "棋局筛选"
+
+#. Native Go kiosk UI.
+msgid "全部实时局"
+msgstr "全部实时局"
+
+#. Native Go kiosk UI.
+msgid "搜索用户名"
+msgstr "搜索用户名"
+
+#. Native Go kiosk UI.
+msgid "刷新公开挑战"
+msgstr "刷新公开挑战"
+
+#. Native Go kiosk UI.
+msgid "连接 OGS 后可查看公开挑战"
+msgstr "连接 OGS 后可查看公开挑战"
+
+#. Native Go kiosk UI.
+msgid "正在读取公开挑战…"
+msgstr "正在读取公开挑战…"
+
+#. Native Go kiosk UI.
+msgid "没能取回公开挑战"
+msgstr "没能取回公开挑战"
+
+#. Native Go kiosk UI.
+msgid "没有符合条件的公开挑战"
+msgstr "没有符合条件的公开挑战"
+
+#. Native Go kiosk UI.
+msgid "暂无公开挑战"
+msgstr "暂无公开挑战"
+
+#. Native Go kiosk UI.
+msgid "路 ·"
+msgstr "路 ·"
+
+#. Native Go kiosk UI.
+msgid "计等级分"
+msgstr "计等级分"
+
+#. Native Go kiosk UI.
+msgid "不计等级分"
+msgstr "不计等级分"
+
+#. Native Go kiosk UI.
+msgid "输入用户名后回车"
+msgstr "输入用户名后回车"
+
+#. Native Go kiosk UI.
+msgid "输入用户名回车找人"
+msgstr "输入用户名回车找人"
+
+#. Native Go kiosk UI.
+msgid "向"
+msgstr "向"
+
+#. Native Go kiosk UI.
+msgid "发起挑战？"
+msgstr "发起挑战？"
+
+#. Native Go kiosk UI.
+msgid "· 19 路 · 中国规则 · 计分局。"
+msgstr "· 19 路 · 中国规则 · 计分局。"
+
+#. Native Go kiosk UI.
+msgid "发出后可取消；对方接受后可在本页继续对局。"
+msgstr "发出后可取消；对方接受后可在本页继续对局。"
+
+#. Native Go kiosk UI.
+msgid "正在发送…"
+msgstr "正在发送…"
+
+#. Native Go kiosk UI.
+msgid "的公开挑战？"
+msgstr "的公开挑战？"
+
+#. Native Go kiosk UI.
+msgid "。接受后将在这台盒子上进入对局。"
+msgstr "。接受后将在这台盒子上进入对局。"
+
+#. Native Go kiosk UI.
+msgid "重试接受"
+msgstr "重试接受"
+
+#. Native Go kiosk UI.
+msgid "正在接受…"
+msgstr "正在接受…"
+
+#. Native Go kiosk UI.
+msgid "确认接受"
+msgstr "确认接受"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {value2} + {value3}"
+msgstr "{value1} · {value2} + {value3}"
+
+#. Native Go kiosk UI.
+msgid "分析报告档位"
+msgstr "分析报告档位"
+
+#. Native Go kiosk UI.
+msgid "每手"
+msgstr "每手"
+
+#. Native Go kiosk UI.
+msgid "霞鹜楷体"
+msgstr "霞鹜楷体"
+
+#. Native Go kiosk UI.
+msgid "楷体"
+msgstr "楷体"
+
+#. Native Go kiosk UI.
+msgid "隶书"
+msgstr "隶书"
+
+#. Native Go kiosk UI.
+msgid "黑体"
+msgstr "黑体"
+
+#. Native Go kiosk UI.
+msgid "{levelName} · {value2}"
+msgstr "{levelName} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "{totalCount} 题 · {length} 类"
+msgstr "{totalCount} 题 · {length} 类"
+
+#. Native Go kiosk UI.
+msgid "{completed} / {total} 题"
+msgstr "{completed} / {total} 题"
+
+#. Native Go kiosk UI.
+msgid "{count} 题"
+msgstr "{count} 题"
+
+#. Native Go kiosk UI.
+msgid "左右滑动卡片，选择棋力"
+msgstr "左右滑动卡片，选择棋力"
+
+#. Native Go kiosk UI.
+msgid "棋力范围"
+msgstr "棋力范围"
+
+#. Native Go kiosk UI.
+msgid "15–11 级"
+msgstr "15–11 级"
+
+#. Native Go kiosk UI.
+msgid "10–6 级"
+msgstr "10–6 级"
+
+#. Native Go kiosk UI.
+msgid "5–1 级"
+msgstr "5–1 级"
+
+#. Native Go kiosk UI.
+msgid "1–7 段"
+msgstr "1–7 段"
+
+#. Native Go kiosk UI.
+msgid "棋力卡片轮播"
+msgstr "棋力卡片轮播"
+
+#. Native Go kiosk UI.
+msgid " · 你的水平"
+msgstr " · 你的水平"
+
+#. Native Go kiosk UI.
+msgid "{name} {count}题"
+msgstr "{name} {count}题"
+
+#. Native Go kiosk UI.
+msgid "题型构成暂不可用"
+msgstr "题型构成暂不可用"
+
+#. Native Go kiosk UI.
+msgid "道题"
+msgstr "道题"
+
+#. Native Go kiosk UI.
+msgid "进入"
+msgstr "进入"
+
+#. Native Go kiosk UI.
+msgid "上一棋力"
+msgstr "上一棋力"
+
+#. Native Go kiosk UI.
+msgid "下一棋力"
+msgstr "下一棋力"
+
+#. Native Go kiosk UI.
+msgid "手指拖动 · 松手吸附"
+msgstr "手指拖动 · 松手吸附"
+
+#. Native Go kiosk UI.
+msgid " · 19路版（原{source_size}路）"
+msgstr " · 19路版（原{source_size}路）"
+
+#. Native Go kiosk UI.
+msgid "原{source_size}路题：{reason}"
+msgstr "原{source_size}路题：{reason}"
+
+#. Native Go kiosk UI.
+msgid " · {value1} {value2}"
+msgstr " · {value1} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {value2}"
+msgstr "{value1} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "{levelName} · {categoryName} · {value3}"
+msgstr "{levelName} · {categoryName} · {value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {judged}"
+msgstr "{value1} · {judged}"
+
+#. Native Go kiosk UI.
+msgid "正在读取做题记录…"
+msgstr "正在读取做题记录…"
+
+#. Native Go kiosk UI.
+msgid "本单元现在没有做错过的题"
+msgstr "本单元现在没有做错过的题"
+
+#. Native Go kiosk UI.
+msgid "题目筛选"
+msgstr "题目筛选"
+
+#. Native Go kiosk UI.
+msgid "错题数量待读取"
+msgstr "错题数量待读取"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{state}{value3}"
+msgstr "{value1}，{state}{value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} 次"
+msgstr "{value1} 次"
+
+#. Native Go kiosk UI.
+msgid "{value1} 秒"
+msgstr "{value1} 秒"
+
+#. Native Go kiosk UI.
+msgid "19路版（原{source_size}路）"
+msgstr "19路版（原{source_size}路）"
+
+#. Native Go kiosk UI.
+msgid "没有可做的错题"
+msgstr "没有可做的错题"
+
+#. Native Go kiosk UI.
+msgid "训练内容"
+msgstr "训练内容"
+
+#. Native Go kiosk UI.
+msgid "错题簿"
+msgstr "错题簿"
+
+#. Native Go kiosk UI.
+msgid "做题记录没读到，进入后可重试"
+msgstr "做题记录没读到，进入后可重试"
+
+#. Native Go kiosk UI.
+msgid "这一类现在有 {wrongCount} 道错题"
+msgstr "这一类现在有 {wrongCount} 道错题"
+
+#. Native Go kiosk UI.
+msgid "其他教材"
+msgstr "其他教材"
+
+#. Native Go kiosk UI.
+msgid "书"
+msgstr "书"
+
+#. Native Go kiosk UI.
+msgid "一本书"
+msgstr "一本书"
+
+#. Native Go kiosk UI.
+msgid "分若干章"
+msgstr "分若干章"
+
+#. Native Go kiosk UI.
+msgid "章"
+msgstr "章"
+
+#. Native Go kiosk UI.
+msgid "一章讲一块"
+msgstr "一章讲一块"
+
+#. Native Go kiosk UI.
+msgid "比如「吃子」是一章"
+msgstr "比如「吃子」是一章"
+
+#. Native Go kiosk UI.
+msgid "节"
+msgstr "节"
+
+#. Native Go kiosk UI.
+msgid "节才是「一课」"
+msgstr "节才是「一课」"
+
+#. Native Go kiosk UI.
+msgid "翻完一节的图就算看完"
+msgstr "翻完一节的图就算看完"
+
+#. Native Go kiosk UI.
+msgid "图"
+msgstr "图"
+
+#. Native Go kiosk UI.
+msgid "节里是一张张棋图"
+msgstr "节里是一张张棋图"
+
+#. Native Go kiosk UI.
+msgid "每张图带一段人声旁白，还能一键摆到实体盘上"
+msgstr "每张图带一段人声旁白，还能一键摆到实体盘上"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸视频"
+msgstr "RK3562 · 7英寸视频"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸视频尚未生成"
+msgstr "RK3562 · 7英寸视频尚未生成"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸"
+msgstr "RK3562 · 7英寸"
+
+#. Native Go kiosk UI.
+msgid "棋子颜色待确认"
+msgstr "棋子颜色待确认"
+
+#. Native Go kiosk UI.
+msgid "视频加载失败"
+msgstr "视频加载失败"
+
+#. Native Go kiosk UI.
+msgid "大厅对局"
+msgstr "大厅对局"
+
+#. Native Go kiosk UI.
+msgid "{value1}方玩家"
+msgstr "{value1}方玩家"
+
+#. Native Go kiosk UI.
+msgid "{name}{value2}"
+msgstr "{name}{value2}"
+
+#. Native Go kiosk UI.
+msgid "等待重连"
+msgstr "等待重连"
+
+#. Native Go kiosk UI.
+msgid "等待确认"
+msgstr "等待确认"
+
+#. Native Go kiosk UI.
+msgid "在线对局状态"
+msgstr "在线对局状态"
+
+#. Native Go kiosk UI.
+msgid "大厅对局说明"
+msgstr "大厅对局说明"
+
+#. Native Go kiosk UI.
+msgid "本局已有正式结果"
+msgstr "本局已有正式结果"
+
+#. Native Go kiosk UI.
+msgid "正式结果尚未确定"
+msgstr "正式结果尚未确定"
+
+#. Native Go kiosk UI.
+msgid "满 {countMin} 手可数子"
+msgstr "满 {countMin} 手可数子"
+
+#. Native Go kiosk UI.
+msgid "仅供参考，正式胜负以数子为准"
+msgstr "仅供参考，正式胜负以数子为准"
+
+#. Native Go kiosk UI.
+msgid "大厅对局不计升降段位。满"
+msgstr "大厅对局不计升降段位。满"
+
+#. Native Go kiosk UI.
+msgid ""
+"手后可请求数子，由对方确认；停一手仅在自己的回合可用。 领地仅供本人参考，不决定正式胜负。局面变化后需重新查询。退出时可先离开，或确认认输并退出。"
+msgstr ""
+"手后可请求数子，由对方确认；停一手仅在自己的回合可用。 领地仅供本人参考，不决定正式胜负。局面变化后需重新查询。退出时可先离开，或确认认输并退出。"
+
+#. Native Go kiosk UI.
+msgid "识别的盘面还没接进来"
+msgstr "识别的盘面还没接进来"
+
+#. Native Go kiosk UI.
+msgid "这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。"
+msgstr "这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。"
+
+#. Native Go kiosk UI.
+msgid "请提走棋子"
+msgstr "请提走棋子"
+
+#. Native Go kiosk UI.
+msgid "请提走"
+msgstr "请提走"
+
+#. Native Go kiosk UI.
+msgid "跳过"
+msgstr "跳过"
+
+#. Native Go kiosk UI.
+msgid "← 返回对弈"
+msgstr "← 返回对弈"
+
+#. Native Go kiosk UI.
+msgid "登录后，棋友可以在名单中看到你并邀请你对局。"
+msgstr "登录后，棋友可以在名单中看到你并邀请你对局。"
+
+#. Native Go kiosk UI.
+msgid "连接中"
+msgstr "连接中"
+
+#. Native Go kiosk UI.
+msgid "已断开"
+msgstr "已断开"
+
+#. Native Go kiosk UI.
+msgid "我的段位"
+msgstr "我的段位"
+
+#. Native Go kiosk UI.
+msgid "段位读取失败"
+msgstr "段位读取失败"
+
+#. Native Go kiosk UI.
+msgid "尚未定级"
+msgstr "尚未定级"
+
+#. Native Go kiosk UI.
+msgid "读取中"
+msgstr "读取中"
+
+#. Native Go kiosk UI.
+msgid "按当前段位找棋友 · 不计升降段位"
+msgstr "按当前段位找棋友 · 不计升降段位"
+
+#. Native Go kiosk UI.
+msgid "邀请棋友"
+msgstr "邀请棋友"
+
+#. Native Go kiosk UI.
+msgid "直接邀请任意段位的空闲棋友"
+msgstr "直接邀请任意段位的空闲棋友"
+
+#. Native Go kiosk UI.
+msgid "段位状态暂时无法读取。"
+msgstr "段位状态暂时无法读取。"
+
+#. Native Go kiosk UI.
+msgid "重试段位"
+msgstr "重试段位"
+
+#. Native Go kiosk UI.
+msgid "无法确认中央账号身份，请重试。"
+msgstr "无法确认中央账号身份，请重试。"
+
+#. Native Go kiosk UI.
+msgid "大厅数据读取失败。"
+msgstr "大厅数据读取失败。"
+
+#. Native Go kiosk UI.
+msgid "大厅连接已断开，请稍后重试。"
+msgstr "大厅连接已断开，请稍后重试。"
+
+#. Native Go kiosk UI.
+msgid "大厅内容"
+msgstr "大厅内容"
+
+#. Native Go kiosk UI.
+msgid "进行中对局"
+msgstr "进行中对局"
+
+#. Native Go kiosk UI.
+msgid "点选棋局可观战 · 大厅对局不计升降段位"
+msgstr "点选棋局可观战 · 大厅对局不计升降段位"
+
+#. Native Go kiosk UI.
+msgid "未定级也可邀请任意段位的空闲棋友"
+msgstr "未定级也可邀请任意段位的空闲棋友"
+
+#. Native Go kiosk UI.
+msgid "正在读取对局…"
+msgstr "正在读取对局…"
+
+#. Native Go kiosk UI.
+msgid "观战人数未返回"
+msgstr "观战人数未返回"
+
+#. Native Go kiosk UI.
+msgid "{count} 人观战"
+msgstr "{count} 人观战"
+
+#. Native Go kiosk UI.
+msgid "{value1} {player_b} 对 {player_w}，{viewers}"
+msgstr "{value1} {player_b} 对 {player_w}，{viewers}"
+
+#. Native Go kiosk UI.
+msgid "黑棋在左，白棋在右；自己的对局可返回棋盘。"
+msgstr "黑棋在左，白棋在右；自己的对局可返回棋盘。"
+
+#. Native Go kiosk UI.
+msgid "棋友筛选"
+msgstr "棋友筛选"
+
+#. Native Go kiosk UI.
+msgid "同段位"
+msgstr "同段位"
+
+#. Native Go kiosk UI.
+msgid "在线"
+msgstr "在线"
+
+#. Native Go kiosk UI.
+msgid "人"
+msgstr "人"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋友…"
+msgstr "正在读取棋友…"
+
+#. Native Go kiosk UI.
+msgid "当前筛选下没有在线棋友。"
+msgstr "当前筛选下没有在线棋友。"
+
+#. Native Go kiosk UI.
+msgid "空闲棋友可邀请；快速匹配需先完成定级。"
+msgstr "空闲棋友可邀请；快速匹配需先完成定级。"
+
+#. Native Go kiosk UI.
+msgid "接受后直接开局；这局不计升降段位。"
+msgstr "接受后直接开局；这局不计升降段位。"
+
+#. Native Go kiosk UI.
+msgid "对方空闲。未定级也可邀请任意段位棋友，本局不计升降段位。"
+msgstr "对方空闲。未定级也可邀请任意段位棋友，本局不计升降段位。"
+
+#. Native Go kiosk UI.
+msgid "对方段位 ·"
+msgstr "对方段位 ·"
+
+#. Native Go kiosk UI.
+msgid "快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。你仍可直接邀请空闲棋友。"
+msgstr "快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。你仍可直接邀请空闲棋友。"
+
+#. Native Go kiosk UI.
+msgid "先寻找同段位真人，稍后由同段位棋手接局；匹配成功后直接进入棋盘。"
+msgstr "先寻找同段位真人，稍后由同段位棋手接局；匹配成功后直接进入棋盘。"
+
+#. Native Go kiosk UI.
+msgid "{label} · 不计升降段位"
+msgstr "{label} · 不计升降段位"
+
+#. Native Go kiosk UI.
+msgid "已等 {elapsed} 秒"
+msgstr "已等 {elapsed} 秒"
+
+#. Native Go kiosk UI.
+msgid "稍后再说"
+msgstr "稍后再说"
+
+#. Native Go kiosk UI.
+msgid "去升降级对弈"
+msgstr "去升降级对弈"
+
+#. Native Go kiosk UI.
+msgid "大厅对局观战"
+msgstr "大厅对局观战"
+
+#. Native Go kiosk UI.
+msgid "大厅观战棋盘"
+msgstr "大厅观战棋盘"
+
+#. Native Go kiosk UI.
+msgid "暂无可展示的对局快照"
+msgstr "暂无可展示的对局快照"
+
+#. Native Go kiosk UI.
+msgid "已暂停同步"
+msgstr "已暂停同步"
+
+#. Native Go kiosk UI.
+msgid "只读观战"
+msgstr "只读观战"
+
+#. Native Go kiosk UI.
+msgid "等待棋手信息"
+msgstr "等待棋手信息"
+
+#. Native Go kiosk UI.
+msgid "轮到落子"
+msgstr "轮到落子"
+
+#. Native Go kiosk UI.
+msgid "对局棋手"
+msgstr "对局棋手"
+
+#. Native Go kiosk UI.
+msgid "第 {current_node_index} 手{value2}"
+msgstr "第 {current_node_index} 手{value2}"
+
+#. Native Go kiosk UI.
+msgid "等待最新盘面"
+msgstr "等待最新盘面"
+
+#. Native Go kiosk UI.
+msgid "实时盘面 · 每 2 秒同步"
+msgstr "实时盘面 · 每 2 秒同步"
+
+#. Native Go kiosk UI.
+msgid "当前显示上次同步盘面"
+msgstr "当前显示上次同步盘面"
+
+#. Native Go kiosk UI.
+msgid "正在连接对局"
+msgstr "正在连接对局"
+
+#. Native Go kiosk UI.
+msgid "{spectatorCount} 人观战"
+msgstr "{spectatorCount} 人观战"
+
+#. Native Go kiosk UI.
+msgid "观战说明"
+msgstr "观战说明"
+
+#. Native Go kiosk UI.
+msgid "观看实时盘面，不参与对局。此画面每 2 秒从大厅同步一次。"
+msgstr "观看实时盘面，不参与对局。此画面每 2 秒从大厅同步一次。"
+
+#. Native Go kiosk UI.
+msgid "Disconnected"
+msgstr "未连接"
+
+#. Native Go kiosk UI.
+msgid "未确认"
+msgstr "未确认"
+
+#. Native Go kiosk UI.
+msgid "已标定"
+msgstr "已标定"
+
+#. Native Go kiosk UI.
+msgid "异常"
+msgstr "异常"
+
+#. Native Go kiosk UI.
+msgid "需校准"
+msgstr "需校准"
+
+#. Native Go kiosk UI.
+msgid "{count} 颗黑子"
+msgstr "{count} 颗黑子"
+
+#. Native Go kiosk UI.
+msgid "{count} 颗白子"
+msgstr "{count} 颗白子"
+
+#. Native Go kiosk UI.
+msgid "请提走 {stones}"
+msgstr "请提走 {stones}"
+
+#. Native Go kiosk UI.
+msgid "、"
+msgstr "、"
+
+#. Native Go kiosk UI.
+msgid "rank:kyu"
+msgstr "{n}级"
+
+#. Native Go kiosk UI.
+msgid "rank:pro"
+msgstr "{n}职业段"
+
+#. Native Go kiosk UI.
+msgid "rank:dan"
+msgstr "{n}段"
+
+#. Native Go kiosk UI.
+msgid "rank:provisional"
+msgstr "准{rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:amateur"
+msgstr "业余 {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:professional_rank"
+msgstr "职业 {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:account_unrated"
+msgstr "账号尚未定级"
+
+#. Native Go kiosk UI.
+msgid "rank:professional"
+msgstr "职业"
+
+#. Native Go kiosk UI.
+msgid "rank:top_professional"
+msgstr "职业顶尖"
+
+#. Native Go kiosk UI.
+msgid "rank:super_professional"
+msgstr "超职业"
+
+#. Native Go kiosk UI.
+msgid "rank:katago_medium"
+msgstr "KataGo中等"
+
+#. Native Go kiosk UI.
+msgid "rank:unknown"
+msgstr "等级未知"
+
+#. Native Go kiosk UI.
+msgid "rank:unrated"
+msgstr "尚未定级"
+
+#. Native Go kiosk UI.
+msgid "rank:account_source"
+msgstr "账号等级"
+
+#. Native Go kiosk UI.
+msgid "rank:ai_source"
+msgstr "AI 难度"
+
+#. Native Go kiosk UI.
+msgid "rank:platform_source"
+msgstr "平台等级"
+
+#. Native Go kiosk UI.
+msgid "rank:ai_estimate"
+msgstr "AI 估计难度"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_sfx"
+msgstr "落子音效"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_sfx_sub"
+msgstr "落子、提子、做题对错 · 出厂就是开的"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_voice"
+msgstr "语音提示"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_voice_sub"
+msgstr "摆棋和做题时的引导语 · 只在用实体棋盘时会响"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_fast"
+msgstr "快棋"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_fast_details"
+msgstr "1 分 · 15 秒 × 3"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_normal"
+msgstr "普通"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_normal_details"
+msgstr "10 分 · 30 秒 × 3"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_slow"
+msgstr "慢棋"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_slow_details"
+msgstr "30 分 · 40 秒 × 3"
+
+#. Native Go kiosk UI.
+msgid "auth:box_login"
+msgstr "去盒子主页登录"
+
+#. Native Go kiosk UI.
+msgid "auth:checking"
+msgstr "正在确认"
+
+#. Native Go kiosk UI.
+msgid "auth:continue_browsing"
+msgstr "继续浏览"
+
+#. Native Go kiosk UI.
+msgid "auth:login_continue"
+msgstr "登录并继续"
+
+#. Native Go kiosk UI.
+msgid "auth:retry"
+msgstr "重试"
+
+#. Native Go kiosk UI.
+msgid " {value1}"
+msgstr " {value1}"
+
+#. Native Go kiosk UI.
+msgid " 返回对弈"
+msgstr " 返回对弈"
+
+#. Native Go kiosk UI.
+msgid "选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。"
+msgstr "选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。"
+
+#. Native Go kiosk UI.
+msgid "棋"
+msgstr "棋"
+
+#. Native Go kiosk UI.
+msgid "来下一局"
+msgstr "来下一局"
+
+#. Native Go kiosk UI.
+msgid "匹配同段位对手，或直接邀请棋友"
+msgstr "匹配同段位对手，或直接邀请棋友"
+
+#. Native Go kiosk UI.
+msgid "快速匹配 →"
+msgstr "快速匹配 →"
+
+#. Native Go kiosk UI.
+msgid "友"
+msgstr "友"
+
+#. Native Go kiosk UI.
+msgid "进行中的对局"
+msgstr "进行中的对局"
+
+#. Native Go kiosk UI.
+msgid "点击对局即可观战；自己的对局可返回棋盘。"
+msgstr "点击对局即可观战；自己的对局可返回棋盘。"
+
+#. Native Go kiosk UI.
+msgid "全部棋友　同段位　我的关注"
+msgstr "全部棋友　同段位　我的关注"
+
+#. Native Go kiosk UI.
+msgid "我的棋谱"
+msgstr "我的棋谱"
+
+#. Native Go kiosk UI.
+msgid "本局挑战"
+msgstr "本局挑战"
+
+#. Native Go kiosk UI.
+msgid "复盘报告"
+msgstr "复盘报告"
+
+#. Native Go kiosk UI.
+msgid "登录后使用"
+msgstr "登录后使用"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘说明"
+msgstr "实体棋盘说明"
+
+#. Native Go kiosk UI.
+msgid "Got it"
+msgstr "知道了"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_lead"
+msgstr "书"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_t"
+msgstr "一本书"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_s"
+msgstr "分若干章"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_lead"
+msgstr "章"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_t"
+msgstr "一章讲一块"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_s"
+msgstr "比如「吃子」是一章"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_lead"
+msgstr "节"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_t"
+msgstr "节才是「一课」"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_s"
+msgstr "翻完一节的图就算看完"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_lead"
+msgstr "图"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_t"
+msgstr "节里是一张张棋图"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_s"
+msgstr "每张图带一段人声旁白，还能一键摆到实体盘上"
+
+#. Native Go kiosk UI.
+msgid "轮到你落子"
+msgstr "轮到你落子"
+
+#. Native Go kiosk UI.
+msgid "让先"
+msgstr "让先"
+
+#. Native Go kiosk UI.
+msgid "连接尚未就绪"
+msgstr "连接尚未就绪"
+
+#. Native Go kiosk UI.
+msgid "本局已结束"
+msgstr "本局已结束"
+
+#. Native Go kiosk UI.
+msgid "正在数子"
+msgstr "正在数子"
+
+#. Native Go kiosk UI.
+msgid "等待对方落子"
+msgstr "等待对方落子"
+
+#. Native Go kiosk UI.
+msgid "请先不要继续落子，恢复后核对最新盘面。"
+msgstr "请先不要继续落子，恢复后核对最新盘面。"
+
+#. Native Go kiosk UI.
+msgid "正式结果以服务端终局为准。"
+msgstr "正式结果以服务端终局为准。"
+
+#. Native Go kiosk UI.
+msgid "结果尚未确定，请稍候。"
+msgstr "结果尚未确定，请稍候。"
+
+#. Native Go kiosk UI.
+msgid "请落{value1}子，识别确认后自动同步给对方。"
+msgstr "请落{value1}子，识别确认后自动同步给对方。"
+
+#. Native Go kiosk UI.
+msgid "请在棋盘落{value1}子。"
+msgstr "请在棋盘落{value1}子。"
+
+#. Native Go kiosk UI.
+msgid "对方落子后，棋盘和下一手提示会自动更新。"
+msgstr "对方落子后，棋盘和下一手提示会自动更新。"
+
+#. Native Go kiosk UI.
+msgid "正在查询领地…"
+msgstr "正在查询领地…"
+
+#. Native Go kiosk UI.
+msgid "领地未取得，请重试"
+msgstr "领地未取得，请重试"
+
+#. Native Go kiosk UI.
+msgid "领地参考 · 黑 {value1} · 白 {value2}"
+msgstr "领地参考 · 黑 {value1} · 白 {value2}"
+
+#. Native Go kiosk UI.
+msgid "星阵在线棋友"
+msgstr "星阵在线棋友"
+
+#. Native Go kiosk UI.
+msgid "发送对局邀请"
+msgstr "发送对局邀请"
+
+#. Native Go kiosk UI.
+msgid "等待对方回应"
+msgstr "等待对方回应"
+
+#. Native Go kiosk UI.
+msgid "邀请未发送"
+msgstr "邀请未发送"
+
+#. Native Go kiosk UI.
+msgid "历史棋谱"
+msgstr "历史棋谱"
+
+#. Native Go kiosk UI.
+msgid "让子信息待返回"
+msgstr "让子信息待返回"
+
+#. Native Go kiosk UI.
+msgid "让 {value1} 子"
+msgstr "让 {value1} 子"
+
+#. Native Go kiosk UI.
+msgid "{value1}邀你下一局"
+msgstr "{value1}邀你下一局"
+
+#. Native Go kiosk UI.
+msgid "邀请 {value1} 对局"
+msgstr "邀请 {value1} 对局"
+
+#. Native Go kiosk UI.
+msgid "需要先完成定级"
+msgstr "需要先完成定级"
+
+#. Native Go kiosk UI.
+msgid "正在寻找同段位对手"
+msgstr "正在寻找同段位对手"
+
+#. Native Go kiosk UI.
+msgid "SGF含pass、压缩点或本次不支持的坐标"
+msgstr "SGF含pass、压缩点或本次不支持的坐标"
+
+#. Native Go kiosk UI.
+msgid "初始棋子格式不受支持"
+msgstr "初始棋子格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "三个变体是引征、选择征吃方向或判断能否征吃，必须完整证明所有征路与引征；基础证书不覆盖。"
+msgstr "三个变体是引征、选择征吃方向或判断能否征吃，必须完整证明所有征路与引征；基础证书不覆盖。"
+
+#. Native Go kiosk UI.
+msgid "已核对全部记录分支解除当前打吃"
+msgstr "已核对全部记录分支解除当前打吃"
+
+#. Native Go kiosk UI.
+msgid "完整题面尚无与当前目标一致的审核证据"
+msgstr "完整题面尚无与当前目标一致的审核证据"
+
+#. Native Go kiosk UI.
+msgid "两变体都声明全局终盘并数所有单官；扩盘新增大量空点，源答案不适用。"
+msgstr "两变体都声明全局终盘并数所有单官；扩盘新增大量空点，源答案不适用。"
+
+#. Native Go kiosk UI.
+msgid "来源内容已改变，需重新审核"
+msgstr "来源内容已改变，需重新审核"
+
+#. Native Go kiosk UI.
+msgid "源答案行棋方不交替"
+msgstr "源答案行棋方不交替"
+
+#. Native Go kiosk UI.
+msgid "比较气数未指定固定初始棋块"
+msgstr "比较气数未指定固定初始棋块"
+
+#. Native Go kiosk UI.
+msgid "题面要求判断对杀胜负，本次未能确认该目标"
+msgstr "题面要求判断对杀胜负，本次未能确认该目标"
+
+#. Native Go kiosk UI.
+msgid "证书缺少固定初始目标"
+msgstr "证书缺少固定初始目标"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了重复局面关系"
+msgstr "扩盘改变了重复局面关系"
+
+#. Native Go kiosk UI.
+msgid "教程含本次不支持的结构字段"
+msgstr "教程含本次不支持的结构字段"
+
+#. Native Go kiosk UI.
+msgid "答案根节点格式不受支持"
+msgstr "答案根节点格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认局部目标，待补充该目标的专项证书"
+msgstr "本次未能确认局部目标，待补充该目标的专项证书"
+
+#. Native Go kiosk UI.
+msgid "源SGF尺寸与题目不一致"
+msgstr "源SGF尺寸与题目不一致"
+
+#. Native Go kiosk UI.
+msgid "题面要求连接黑棋，本次未能确认连接目标"
+msgstr "题面要求连接黑棋，本次未能确认连接目标"
+
+#. Native Go kiosk UI.
+msgid "源初始棋子与SGF不一致"
+msgstr "源初始棋子与SGF不一致"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了棋块连接或气集合"
+msgstr "扩盘改变了棋块连接或气集合"
+
+#. Native Go kiosk UI.
+msgid "证书救出目标不是初始一气棋块"
+msgstr "证书救出目标不是初始一气棋块"
+
+#. Native Go kiosk UI.
+msgid "没有可认证的局部目标"
+msgstr "没有可认证的局部目标"
+
+#. Native Go kiosk UI.
+msgid "源答案叶未明确区分正确与失败"
+msgstr "源答案叶未明确区分正确与失败"
+
+#. Native Go kiosk UI.
+msgid "源树在非叶节点判终局，本次未认证"
+msgstr "源树在非叶节点判终局，本次未认证"
+
+#. Native Go kiosk UI.
+msgid "三个连续步骤声明完整终局、清死子和黑24目白22目胜负；扩盘改变全盘终局语义。"
+msgstr "三个连续步骤声明完整终局、清死子和黑24目白22目胜负；扩盘改变全盘终局语义。"
+
+#. Native Go kiosk UI.
+msgid "本次没有该选择题的局部证书"
+msgstr "本次没有该选择题的局部证书"
+
+#. Native Go kiosk UI.
+msgid "棋盘尺寸不在本次支持范围"
+msgstr "棋盘尺寸不在本次支持范围"
+
+#. Native Go kiosk UI.
+msgid "初始棋子重叠"
+msgstr "初始棋子重叠"
+
+#. Native Go kiosk UI.
+msgid "视窗格式不受支持"
+msgstr "视窗格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "解除打吃目标并非初始一气棋块"
+msgstr "解除打吃目标并非初始一气棋块"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部解除打吃目标"
+msgstr "已核对题面与局部解除打吃目标"
+
+#. Native Go kiosk UI.
+msgid "整盘终局教学保留原盘"
+msgstr "整盘终局教学保留原盘"
+
+#. Native Go kiosk UI.
+msgid "答案结构不受支持"
+msgstr "答案结构不受支持"
+
+#. Native Go kiosk UI.
+msgid "选择题结构不受支持"
+msgstr "选择题结构不受支持"
+
+#. Native Go kiosk UI.
+msgid "已核对源题与全部记录分支的局部提吃目标"
+msgstr "已核对源题与全部记录分支的局部提吃目标"
+
+#. Native Go kiosk UI.
+msgid "SGF节点落子格式不受支持"
+msgstr "SGF节点落子格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "本次没有该目标的局部证书"
+msgstr "本次没有该目标的局部证书"
+
+#. Native Go kiosk UI.
+msgid "SGF含本次不支持的属性或节点setup"
+msgstr "SGF含本次不支持的属性或节点setup"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认局部目标"
+msgstr "本次未能确认局部目标"
+
+#. Native Go kiosk UI.
+msgid "本次未审核该来源的局部目标"
+msgstr "本次未审核该来源的局部目标"
+
+#. Native Go kiosk UI.
+msgid "答案节点格式不受支持"
+msgstr "答案节点格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "源初始棋块无气"
+msgstr "源初始棋块无气"
+
+#. Native Go kiosk UI.
+msgid "中英题面行棋方或目标颜色冲突，本次保留原题"
+msgstr "中英题面行棋方或目标颜色冲突，本次保留原题"
+
+#. Native Go kiosk UI.
+msgid "题面未唯一指定所问连接分量"
+msgstr "题面未唯一指定所问连接分量"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了落子或提子结果"
+msgstr "扩盘改变了落子或提子结果"
+
+#. Native Go kiosk UI.
+msgid "原树接受全部源空点；扩19后仅接受原9路子区，与任意空点落子教学冲突。"
+msgstr "原树接受全部源空点；扩19后仅接受原9路子区，与任意空点落子教学冲突。"
+
+#. Native Go kiosk UI.
+msgid "五种题面都明确征子；延长到新空白的路径与征子终点/引征要全程证明，基础有限树不足。"
+msgstr "五种题面都明确征子；延长到新空白的路径与征子终点/引征要全程证明，基础有限树不足。"
+
+#. Native Go kiosk UI.
+msgid "源答案出现重复局面，本次未认证规则"
+msgstr "源答案出现重复局面，本次未认证规则"
+
+#. Native Go kiosk UI.
+msgid "标记坐标格式不受支持"
+msgstr "标记坐标格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "未能确认源题轮到方"
+msgstr "未能确认源题轮到方"
+
+#. Native Go kiosk UI.
+msgid "源答案没有明确正确叶"
+msgstr "源答案没有明确正确叶"
+
+#. Native Go kiosk UI.
+msgid "重算答案与源选择键不符"
+msgstr "重算答案与源选择键不符"
+
+#. Native Go kiosk UI.
+msgid "全课明确对局结束后谁赢，胜负基于全盘计目而非局部题。"
+msgstr "全课明确对局结束后谁赢，胜负基于全盘计目而非局部题。"
+
+#. Native Go kiosk UI.
+msgid "本语言尚无已审核19路版本"
+msgstr "本语言尚无已审核19路版本"
+
+#. Native Go kiosk UI.
+msgid "源答案含未解决的劫重复"
+msgstr "源答案含未解决的劫重复"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部提吃目标"
+msgstr "已核对题面与局部提吃目标"
+
+#. Native Go kiosk UI.
+msgid "全部题面要求做劫并引用既有黑1；包含劫的性质、历史和替代连接选择，当前基础证书不覆盖。"
+msgstr "全部题面要求做劫并引用既有黑1；包含劫的性质、历史和替代连接选择，当前基础证书不覆盖。"
+
+#. Native Go kiosk UI.
+msgid "相反两边均参与，19路平移不能保持边界"
+msgstr "相反两边均参与，19路平移不能保持边界"
+
+#. Native Go kiosk UI.
+msgid "局部目标证书校验不一致"
+msgstr "局部目标证书校验不一致"
+
+#. Native Go kiosk UI.
+msgid "命名点的合法性不符合源题面"
+msgstr "命名点的合法性不符合源题面"
+
+#. Native Go kiosk UI.
+msgid "命名的落子点已有棋子"
+msgstr "命名的落子点已有棋子"
+
+#. Native Go kiosk UI.
+msgid "源答案含自杀手"
+msgstr "源答案含自杀手"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了初始棋块或气集合"
+msgstr "扩盘改变了初始棋块或气集合"
+
+#. Native Go kiosk UI.
+msgid "源切断点不能连接所问两块棋"
+msgstr "源切断点不能连接所问两块棋"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部连接目标"
+msgstr "已核对题面与局部连接目标"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部切断目标"
+msgstr "已核对题面与局部切断目标"
+
+#. Native Go kiosk UI.
+msgid "含立即禁反提、依赖劫规的提子与劫材；第3步虽仅写连接，仍是此源劫题的上下文，不以短正文绕过劫审查。"
+msgstr "含立即禁反提、依赖劫规的提子与劫材；第3步虽仅写连接，仍是此源劫题的上下文，不以短正文绕过劫审查。"
+
+#. Native Go kiosk UI.
+msgid "正文明确比较9×9/13×13/19×19，当前13路本身是教学示例，改盘宽会改变展示对象。"
+msgstr "正文明确比较9×9/13×13/19×19，当前13路本身是教学示例，改盘宽会改变展示对象。"
+
+#. Native Go kiosk UI.
+msgid "题面要求分断白棋，本次未能确认分断目标"
+msgstr "题面要求分断白棋，本次未能确认分断目标"
+
+#. Native Go kiosk UI.
+msgid "源答案在已有棋子处落子"
+msgstr "源答案在已有棋子处落子"
+
+#. Native Go kiosk UI.
+msgid "正确或失败分支未满足固定局部目标证书"
+msgstr "正确或失败分支未满足固定局部目标证书"
+
+#. Native Go kiosk UI.
+msgid "当前语言题面内容已改变，需重新审核"
+msgstr "当前语言题面内容已改变，需重新审核"
+
+#. Native Go kiosk UI.
+msgid "两种题面全部明确征吃，不能因源树可平移就假定扩盘征子结果。"
+msgstr "两种题面全部明确征吃，不能因源树可平移就假定扩盘征子结果。"
+
+#. Native Go kiosk UI.
+msgid "三种题面均需重建黑1前后局面判断白立即反提，当前setup和树拓扑不包含完整前态保证。"
+msgstr "三种题面均需重建黑1前后局面判断白立即反提，当前setup和树拓扑不包含完整前态保证。"
+
+#. Native Go kiosk UI.
+msgid "原生19路"
+msgstr "原生19路"
+
+#. Native Go kiosk UI.
+msgid "源题含长程或全盘目标，本次保留原盘"
+msgstr "源题含长程或全盘目标，本次保留原盘"
+
+#. Native Go kiosk UI.
+msgid "正确或失败叶未证明完整提吃同一初始目标棋块"
+msgstr "正确或失败叶未证明完整提吃同一初始目标棋块"
+
+#. Native Go kiosk UI.
+msgid "打吃证书缺少唯一目标"
+msgstr "打吃证书缺少唯一目标"
+
+#. Native Go kiosk UI.
+msgid "证书目标不是指定方的固定初始棋块"
+msgstr "证书目标不是指定方的固定初始棋块"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部数值或打吃目标"
+msgstr "已核对题面与局部数值或打吃目标"
+
+#. Native Go kiosk UI.
+msgid "源官子题依赖原盘边界与目数，本次保留原盘"
+msgstr "源官子题依赖原盘边界与目数，本次保留原盘"
+
+#. Native Go kiosk UI.
+msgid "坐标越界或格式不受支持"
+msgstr "坐标越界或格式不受支持"
+
+#. Native Go kiosk UI.
+msgid "连接证书缺少固定初始棋块"
+msgstr "连接证书缺少固定初始棋块"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部填气目标"
+msgstr "已核对题面与局部填气目标"
+
+#. Native Go kiosk UI.
+msgid "题面要求反击指定白棋错着，本次未能确认完整目标"
+msgstr "题面要求反击指定白棋错着，本次未能确认完整目标"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认较长变化的局部目标"
+msgstr "本次未能确认较长变化的局部目标"
+
+#. Native Go kiosk UI.
+msgid "数气证书缺少唯一目标"
+msgstr "数气证书缺少唯一目标"
+
+#. Native Go kiosk UI.
+msgid "重算结果与源选择题答案不符"
+msgstr "重算结果与源选择题答案不符"
+
+#. Native Go kiosk UI.
+msgid "登录后使用引擎分析"
+msgstr "登录后使用引擎分析"
+
+#. Native Go kiosk UI.
+msgid "登录后查看{feature}"
+msgstr "登录后查看{feature}"
+
+#. Native Go kiosk UI.
+msgid "登录后继续{feature}"
+msgstr "登录后继续{feature}"
+
+#. Native Go kiosk UI.
+msgid "登录后进入{feature}"
+msgstr "登录后进入{feature}"
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效。当前棋盘仍会保留。登录后可继续使用。"
+msgstr "登录状态已失效。当前棋盘仍会保留。登录后可继续使用。"
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效。已暂停读取{feature}中的个人内容。登录后可继续使用。"
+msgstr "登录状态已失效。已暂停读取{feature}中的个人内容。登录后可继续使用。"
+
+#. Native Go kiosk UI.
+msgid "登录后返回当前棋谱分组，当前棋盘不会被清空。"
+msgstr "登录后返回当前棋谱分组，当前棋盘不会被清空。"
+
+#. Native Go kiosk UI.
+msgid "登录后仍需确认原操作，当前棋盘不会被清空。"
+msgstr "登录后仍需确认原操作，当前棋盘不会被清空。"
+
+#. Native Go kiosk UI.
+msgid "继续浏览"
+msgstr "继续浏览"
+
+#. Native Go kiosk UI.
+msgid "{wins} 胜 · {losses} 负"
+msgstr "{wins} 胜 · {losses} 负"
+
+#. Native Go kiosk UI.
+msgid "{type} · {handicap} · 19 路"
+msgstr "{type} · {handicap} · 19 路"
+
+#. Native Go kiosk UI.
+msgid "对局类型待返回"
+msgstr "对局类型待返回"
+
+#. Native Go kiosk UI.
+msgid "同步失败"
+msgstr "同步失败"
+
+#. Native Go kiosk UI.
+msgid "快照同步"
+msgstr "快照同步"
+
+#. Native Go kiosk UI.
+msgid "类型未返回"
+msgstr "类型未返回"
+
+#. Native Go kiosk UI.
+msgid "{n} 题"
+msgstr "{n} 题"
+
+#. Native Go kiosk UI.
+msgid "进入 {level} 题型"
+msgstr "进入 {level} 题型"
+
+#. Native Go kiosk UI.
+msgid "{head} · 第 {n} 题"
+msgstr "{head} · 第 {n} 题"
+
+#. Native Go kiosk UI.
+msgid "{n} 手"
+msgstr "{n} 手"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_black_stone"
+msgstr "相机识别到黑子"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_white_stone"
+msgstr "相机识别到白子"
+
+#. Native Go kiosk UI.
+msgid "tsumego:level_dan"
+msgstr "{n} 段"
+
+#. Native Go kiosk UI.
+msgid "tsumego:level_kyu"
+msgstr "{n} 级"
+
+#. Native Go kiosk UI.
+msgid "盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。"
+msgstr "盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。"
+
+#. Native Go kiosk UI.
+msgid "这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。"
+msgstr "这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。"
+
+#. Native Go kiosk UI.
+msgid "正在同步"
+msgstr "正在同步"
+
+#. Native Go kiosk UI.
+msgid "{n} 秒"
+msgstr "{n} 秒"
+
+#. Native Go kiosk UI.
+msgid "登录后查看会员用量、API 积分与订单。"
+msgstr "登录后查看会员用量、API 积分与订单。"
+
+#. Native Go kiosk UI.
+msgid "自由对弈"
+msgstr "自由对弈"
+
+#. Native Go kiosk UI.
+msgid "对弈"
+msgstr "对弈"
+
+#. Native Go kiosk UI.
+msgid "升降级对弈"
+msgstr "升降级对弈"
+
+#. Native Go kiosk UI.
+msgid "退出"
+msgstr "退出"
+
+#. Native Go kiosk UI.
+msgid "成长记录"
+msgstr "成长记录"
+
+#. Native Go kiosk UI.
+msgid "教程"
+msgstr "教程"
+
+#. Native Go kiosk UI.
+msgid "棋谱库"
+msgstr "棋谱库"
+
+#. Native Go kiosk UI.
+msgid "会员与用量"
+msgstr "会员与用量"
+
+#. Native Go kiosk UI.
+msgid "进行中"
+msgstr "进行中"
+
+#. Native Go kiosk UI.
+msgid "登录"
+msgstr "登录"
+
+#. Native Go kiosk UI.
+msgid "死活题"
+msgstr "死活题"
+
+#. Native Go kiosk UI.
+msgid "跨平台对弈"
+msgstr "跨平台对弈"
+
+#. Native Go kiosk UI.
+msgid "设置"
+msgstr "设置"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘镜像:识别的盘面还没接进来"
+msgstr "实体棋盘镜像:识别的盘面还没接进来"
+
+#. Native Go kiosk UI.
+msgid "面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。"
+msgstr "面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {at} / {totalMoves} {value4}"
+msgstr "{value1} · {at} / {totalMoves} {value4}"
+
+#. Native Go kiosk UI.
+msgid "{requested_visits} visits · {move_count} {value3}"
+msgstr "{requested_visits} visits · {move_count} {value3}"
+
+#. Native Go kiosk UI.
+msgid "邀请已发送，等待对方回应。"
+msgstr "邀请已发送，等待对方回应。"
+
+#. Native Go kiosk UI.
+msgid "胜负记在 OGS 账上"
+msgstr "胜负记在 OGS 账上"
+
+#. Native Go kiosk UI.
+msgid "公开挑战"
+msgstr "公开挑战"
+
+#. Native Go kiosk UI.
+msgid "段位来自 OGS"
+msgstr "段位来自 OGS"
+
+#. Native Go kiosk UI.
+msgid "国家或地区区号"
+msgstr "国家或地区区号"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{totalCount} 题，{value3}"
+msgstr "{value1}，{totalCount} 题，{value3}"
+
+#. Native Go kiosk UI.
+msgid "结算中"
+msgstr "结算中"
+
+#. Native Go kiosk UI.
+msgid "已结束{value1}"
+msgstr "已结束{value1}"
+
+#. Native Go kiosk UI.
+msgid "等待对局快照"
+msgstr "等待对局快照"
+
+#. Native Go kiosk UI.
+msgid "实时快照"
+msgstr "实时快照"
+
+#. Native Go kiosk UI.
+msgid "星猛虎"
+msgstr "星猛虎"
+
+#. Native Go kiosk UI.
+msgid "星雄狮"
+msgstr "星雄狮"
+
+#. Native Go kiosk UI.
+msgid "星巨象"
+msgstr "星巨象"
+
+#. Native Go kiosk UI.
+msgid "星壮牛"
+msgstr "星壮牛"
+
+#. Native Go kiosk UI.
+msgid "星蓝鲸"
+msgstr "星蓝鲸"
+
+#. Native Go kiosk UI.
+msgid "星美鹿"
+msgstr "星美鹿"
+
+#. Native Go kiosk UI.
+msgid "星孤狼"
+msgstr "星孤狼"
+
+#. Native Go kiosk UI.
+msgid "星奇豚"
+msgstr "星奇豚"
+
+#. Native Go kiosk UI.
+msgid "星萌猪"
+msgstr "星萌猪"
+
+#. Native Go kiosk UI.
+msgid "星骏马"
+msgstr "星骏马"
+
+#. Native Go kiosk UI.
+msgid "星呆羊"
+msgstr "星呆羊"
+
+#. Native Go kiosk UI.
+msgid "星跳鼠"
+msgstr "星跳鼠"
+
+#. Native Go kiosk UI.
+msgid "星云鹤"
+msgstr "星云鹤"
+
+#. Native Go kiosk UI.
+msgid "星灵狐"
+msgstr "星灵狐"
+
+#. Native Go kiosk UI.
+msgid "星白鹭"
+msgstr "星白鹭"
+
+#. Native Go kiosk UI.
+msgid "星智狗"
+msgstr "星智狗"
+
+#. Native Go kiosk UI.
+msgid "星巧猫"
+msgstr "星巧猫"
+
+#. Native Go kiosk UI.
+msgid "星皮猴"
+msgstr "星皮猴"
+
+#. Native Go kiosk UI.
+msgid "星乖兔"
+msgstr "星乖兔"
+
+#. Native Go kiosk UI.
+msgid "星树熊"
+msgstr "星树熊"
+
+#. Native Go kiosk UI.
+msgid "星长蛇"
+msgstr "星长蛇"
+
+#. Native Go kiosk UI.
+msgid "星铠虾"
+msgstr "星铠虾"
+
+#. Native Go kiosk UI.
+msgid "星夜鹰"
+msgstr "星夜鹰"
+
+#. Native Go kiosk UI.
+msgid "星憨鹅"
+msgstr "星憨鹅"
+
+#. Native Go kiosk UI.
+msgid "星刺头"
+msgstr "星刺头"
+
+#. Native Go kiosk UI.
+msgid "星黄鸭"
+msgstr "星黄鸭"
+
+#. Native Go kiosk UI.
+msgid "星轻燕"
+msgstr "星轻燕"
+
+#. Native Go kiosk UI.
+msgid "星绿蛙"
+msgstr "星绿蛙"
+
+#. Native Go kiosk UI.
+msgid "星老龟"
+msgstr "星老龟"
+
+#. Native Go kiosk UI.
+msgid "星钳蟹"
+msgstr "星钳蟹"
+
+#. Native Go kiosk UI.
+msgid "星尾鱼"
+msgstr "星尾鱼"
+
+#. Native Go kiosk UI.
+msgid "星敏螳"
+msgstr "星敏螳"
+
+#. Native Go kiosk UI.
+msgid "星鸣蝉"
+msgstr "星鸣蝉"
+
+#. Native Go kiosk UI.
+msgid "星飞蜓"
+msgstr "星飞蜓"
+
+#. Native Go kiosk UI.
+msgid "星舞蝶"
+msgstr "星舞蝶"
+
+#. Native Go kiosk UI.
+msgid "星忙蜂"
+msgstr "星忙蜂"
+
+#. Native Go kiosk UI.
+msgid "星慢蜗"
+msgstr "星慢蜗"
+
+#. Native Go kiosk UI.
+msgid "星花虫"
+msgstr "星花虫"
+
+#. Native Go kiosk UI.
+msgid "星小蚁"
+msgstr "星小蚁"
+
+#. Native Go kiosk UI.
+msgid "数子失败"
+msgstr "数子失败"
+
+#. Native Go kiosk UI.
+msgid "本局 3 次机会已用完"
+msgstr "本局 3 次机会已用完"
+
+#. Native Go kiosk UI.
+msgid "（你）"
+msgstr "（你）"
+
+#. Native Go kiosk UI.
+msgid "恭喜答对！"
+msgstr "恭喜答对！"
+
+#. Native Go kiosk UI.
+msgid "{n} 分"
+msgstr "{n} 分"
+
+#. Native Go kiosk UI.
+msgid "{main} · 读秒 {seconds} 秒 × {periods}"
+msgstr "{main} · 读秒 {seconds} 秒 × {periods}"
+
+#. Native Go kiosk UI.
+msgid "rank:golaxy_stars"
+msgstr "星阵{n}星"
+
+#. Native Go kiosk UI.
+msgid "game:realtime_rejected"
+msgstr "实时连接被拒绝（{reason}），棋盘不会自动更新，请重新登录后重试"
+
+#. Native Go kiosk UI.
+msgid "创建"
+msgstr "创建"
+
+#. Native Go kiosk UI.
+msgid "登录后查看自己的成绩、活动与成长记录。"
+msgstr "登录后查看自己的成绩、活动与成长记录。"
+
+#. Native Go kiosk UI.
+msgid "个人棋谱"
+msgstr "个人棋谱"
+
+#. Native Go kiosk UI.
+msgid "返回首页"
+msgstr "返回首页"
+
+#. Native Go kiosk UI.
+msgid "登录后浏览教程与章节内容。"
+msgstr "登录后浏览教程与章节内容。"
+
+#. Native Go kiosk UI.
+msgid "登录后开始双人对弈，并保存自己的棋谱。"
+msgstr "登录后开始双人对弈，并保存自己的棋谱。"
+
+#. Native Go kiosk UI.
+msgid "登录后查看自己的云端棋谱与分组。"
+msgstr "登录后查看自己的云端棋谱与分组。"
+
+#. Native Go kiosk UI.
+msgid "个人复盘"
+msgstr "个人复盘"
+
+#. Native Go kiosk UI.
+msgid "定级与升降级成绩需要记录到你的账号。"
+msgstr "定级与升降级成绩需要记录到你的账号。"
+
+#. Native Go kiosk UI.
+msgid "做题中"
+msgstr "做题中"
+
+#. Native Go kiosk UI.
+msgid "登录后可继续当前对弈设置。"
+msgstr "登录后可继续当前对弈设置。"
+
+#. Native Go kiosk UI.
+msgid "答对"
+msgstr "答对"
+
+#. Native Go kiosk UI.
+msgid "AI解题中"
+msgstr "AI解题中"
+
+#. Native Go kiosk UI.
+msgid "绿"
+msgstr "绿"
+
+#. Native Go kiosk UI.
+msgid "红"
+msgstr "红"
+
+#. Native Go kiosk UI.
+msgid "自由战"
+msgstr "自由战"
+
+#. Native Go kiosk UI.
+msgid "摆放黑棋"
+msgstr "摆放黑棋"
+
+#. Native Go kiosk UI.
+msgid "本地双人对弈"
+msgstr "本地双人对弈"
+
+#. Native Go kiosk UI.
+msgid "升降战"
+msgstr "升降战"
+
+#. Native Go kiosk UI.
+msgid "rank:fox_reference"
+msgstr "野狐9D"
+
+#. Native Go kiosk UI.
+msgid "查看你的棋谱与复盘报告，继续分析对局。"
+msgstr "查看你的棋谱与复盘报告，继续分析对局。"
+
+#. Native Go kiosk UI.
+msgid "登录后进入研究棋盘，继续摆谱。"
+msgstr "登录后进入研究棋盘，继续摆谱。"
+
+#. Native Go kiosk UI.
+msgid "棋盘已重新检测到"
+msgstr "棋盘已重新检测到"
+
+#. Native Go kiosk UI.
+msgid "登录后浏览棋谱，回放对局或摆到实体棋盘。"
+msgstr "登录后浏览棋谱，回放对局或摆到实体棋盘。"
+
+#. Native Go kiosk UI.
+msgid "检测质量下降，请检查光线"
+msgstr "检测质量下降，请检查光线"
+
+#. Native Go kiosk UI.
+msgid "登录后进入训练营，继续做题。"
+msgstr "登录后进入训练营，继续做题。"
+
+#. Native Go kiosk UI.
+msgid "研究分析"
+msgstr "研究分析"
+
+#. Native Go kiosk UI.
+msgid "game:session_gone"
+msgstr "这一局在服务器上已经没有了，可以离开这一页。"
+
+#. Native Go kiosk UI.
+msgid "蓝"
+msgstr "蓝"
+
+#. Native Go kiosk UI.
+msgid "研究棋盘"
+msgstr "研究棋盘"
+
+#. Native Go kiosk UI.
+msgid "登录后进入设备视觉与棋盘标定工作台。"
+msgstr "登录后进入设备视觉与棋盘标定工作台。"
+
+#. Native Go kiosk UI.
+msgid "先登录智星盒，再连接你的星阵或 OGS 账号。"
+msgstr "先登录智星盒，再连接你的星阵或 OGS 账号。"
+
+#. Native Go kiosk UI.
+msgid "答错拿除"
+msgstr "答错拿除"
+
+#. Native Go kiosk UI.
+msgid "标定工作台"
+msgstr "标定工作台"
+
+#. Native Go kiosk UI.
+msgid "星阵返回的棋谱内容不完整"
+msgstr "星阵返回的棋谱内容不完整"
+
+#. Native Go kiosk UI.
+msgid "离线"
+msgstr "离线"
+
+#. Native Go kiosk UI.
+msgid "登录后可使用引擎分析，当前棋盘与设置将保留。"
+msgstr "登录后可使用引擎分析，当前棋盘与设置将保留。"
+
+#. Native Go kiosk UI.
+msgid "登录后查看并调整围棋设置。"
+msgstr "登录后查看并调整围棋设置。"
+
+#. Native Go kiosk UI.
+msgid "拒绝邀请"
+msgstr "拒绝邀请"
+
+#. Native Go kiosk UI.
+msgid "棋谱内容与当前房间不一致"
+msgstr "棋谱内容与当前房间不一致"
+
+#. Native Go kiosk UI.
+msgid "状态未返回"
+msgstr "状态未返回"
+
+#. Native Go kiosk UI.
+msgid "rank:pro_fox_reference"
+msgstr "职业/野狐9D+"
+
+#. Native Go kiosk UI.
+msgid "研究中"
+msgstr "研究中"
+
+#. Native Go kiosk UI.
+msgid "查看正在进行的对局，邀请棋友或匹配对手。"
+msgstr "查看正在进行的对局，邀请棋友或匹配对手。"
+
+#. Native Go kiosk UI.
+msgid "允许邀请"
+msgstr "允许邀请"
+
+#. Native Go kiosk UI.
+msgid "忙碌"
+msgstr "忙碌"
+
+#. Native Go kiosk UI.
+msgid "应手"
+msgstr "应手"
+
+#. Native Go kiosk UI.
+msgid "当前棋盘路数暂不支持观战"
+msgstr "当前棋盘路数暂不支持观战"
+
+#. Native Go kiosk UI.
+msgid "星阵登录已失效"
+msgstr "星阵登录已失效"
+
+#. Native Go kiosk UI.
+msgid "common:close"
+msgstr "关闭"
+
+#. Native Go kiosk UI.
+msgid "kifu:preview_failed"
+msgstr "棋谱预览加载失败"
+
+#. Native Go kiosk UI.
+msgid "kifu:selected_game"
+msgstr "选中这一局"
+
+#. Native Go kiosk UI.
+msgid "kifu:open_replay"
+msgstr "查看棋谱"
+
+#. Native Go kiosk UI.
+msgid "report:event"
+msgstr "赛事"
+
+#. Native Go kiosk UI.
+msgid "report:date"
+msgstr "日期"
+
+#. Native Go kiosk UI.
+msgid "report:result"
+msgstr "结果"
+
+#. Native Go kiosk UI.
+msgid "report:rules"
+msgstr "规则"
+
+#. Native Go kiosk UI.
+msgid "report:source"
+msgstr "来源"
+
+#. Native Go kiosk UI.
+msgid "该局型暂不支持观战"
+msgstr "该局型暂不支持观战"
+
+#. Native Go kiosk UI.
+msgid "没能同步星阵棋谱"
+msgstr "没能同步星阵棋谱"
+
+#. Native Go kiosk UI.
+msgid "请先连接星阵账号"
+msgstr "请先连接星阵账号"
+
+#. Native Go kiosk UI.
+msgid "星阵账号未连接"
+msgstr "星阵账号未连接"
+
+#. Native Go kiosk UI.
+msgid "没能检查星阵连接"
+msgstr "没能检查星阵连接"
+
+#. Native Go kiosk UI.
+msgid "请重新登录后观战。"
+msgstr "请重新登录后观战。"
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效，请重新登录。"
+msgstr "登录状态已失效，请重新登录。"
+
+#. Native Go kiosk UI.
+msgid "对局已结束，已保留最后终局。"
+msgstr "对局已结束，已保留最后终局。"
+
+#. Native Go kiosk UI.
+msgid "对局不存在或已结束。"
+msgstr "对局不存在或已结束。"
+
+#. Native Go kiosk UI.
+msgid "观战同步失败，请重试。"
+msgstr "观战同步失败，请重试。"
+
+#. Native Go kiosk UI.
+msgid "观战快照内容不完整，请重试。"
+msgstr "观战快照内容不完整，请重试。"
+
+#. Native Go kiosk UI.
+msgid "中央对局连接中断"
+msgstr "中央对局连接中断"
+
+#. Native Go kiosk UI.
+msgid "实时连接已断开，棋盘不会自动更新，请刷新页面"
+msgstr "实时连接已断开，棋盘不会自动更新，请刷新页面"
+
+#. Native Go kiosk UI.
+msgid "Failed to connect to game"
+msgstr "无法连接对局"
+
+#. Native Go kiosk UI.
+msgid "邀请已过期，请对方重新邀请。"
+msgstr "邀请已过期，请对方重新邀请。"
+
+#. Native Go kiosk UI.
+msgid "操作失败，请重试。"
+msgstr "操作失败，请重试。"
+
+#. Native Go kiosk UI.
+msgid "OGS 没有返回挑战编号"
+msgstr "OGS 没有返回挑战编号"
+
+#. Native Go kiosk UI.
+msgid "约战已取消"
+msgstr "约战已取消"
+
+#. Native Go kiosk UI.
+msgid "取消约战失败"
+msgstr "取消约战失败"
+
+#. Native Go kiosk UI.
+msgid "OGS 没有返回对局编号"
+msgstr "OGS 没有返回对局编号"
+
+#. Native Go kiosk UI.
+msgid "接受挑战失败"
+msgstr "接受挑战失败"
+
+#. Native Go kiosk UI.
+msgid "AI 引擎准备中，稍后即可开始"
+msgstr "AI 引擎准备中，稍后即可开始"
+
+#. Native Go kiosk UI.
+msgid "AI 引擎暂未就绪，请稍后重试"
+msgstr "AI 引擎暂未就绪，请稍后重试"
+
+#. Native Go kiosk UI.
+msgid " · 最新落子 {coord}"
+msgstr " · 最新落子 {coord}"
+
+#. Native Go kiosk UI.
+msgid "当前不是实时态。"
+msgstr "当前不是实时态。"
+
+#. Native Go kiosk UI.
+msgid "{n} 分钟"
+msgstr "{n} 分钟"
+
+#. Native Go kiosk UI.
+msgid "{n} 小时"
+msgstr "{n} 小时"
+
+#. Native Go kiosk UI.
+msgid "{duration}前"
+msgstr "{duration}前"
+
+#. Native Go kiosk UI.
+msgid "返回对局"
+msgstr "返回对局"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：棋力服务未能正常完成对局"
+msgstr "本局不计入升降级：棋力服务未能正常完成对局"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对局没有形成有效胜负"
+msgstr "本局不计入升降级：对局没有形成有效胜负"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：本局对手尚未通过计分认证"
+msgstr "本局不计入升降级：本局对手尚未通过计分认证"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对手档位与开局快照不一致"
+msgstr "本局不计入升降级：对手档位与开局快照不一致"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对局类型不符合升降级规则"
+msgstr "本局不计入升降级：对局类型不符合升降级规则"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：服务器判定本局不计入"
+msgstr "本局不计入升降级：服务器判定本局不计入"
+
+#. Native Go kiosk UI.
+msgid "这台盒子上现在连的不是你的账号"
+msgstr "这台盒子上现在连的不是你的账号"
+
+#. Native Go kiosk UI.
+msgid "扫码请求太频繁,请稍后再试"
+msgstr "扫码请求太频繁,请稍后再试"
+
+#. Native Go kiosk UI.
+msgid "扫码会话不存在或已过期"
+msgstr "扫码会话不存在或已过期"
+
+#. Native Go kiosk UI.
+msgid "这条扫码登录不是你发起的"
+msgstr "这条扫码登录不是你发起的"
+
+#. Native Go kiosk UI.
+msgid "扫码会话已过期"
+msgstr "扫码会话已过期"
+
+#. Native Go kiosk UI.
+msgid "还没在手机上确认"
+msgstr "还没在手机上确认"
+
+#. Native Go kiosk UI.
+msgid "扫码登录失败"
+msgstr "扫码登录失败"
+
+#. Native Go kiosk UI.
+msgid "连不上星阵"
+msgstr "连不上星阵"
+
+#. Native Go kiosk UI.
+msgid "platform:account_busy"
+msgstr "这台盒子上现在连着别人的{platform}账号 · 去设置里断开后再登录"
+
+#. Native Go kiosk UI.
+msgid "platform:scan_unsupported"
+msgstr "{platform} 不支持扫码登录"
+
+#. Native Go kiosk UI.
+msgid "platform:scan_connection_detail"
+msgstr "连不上星阵: {detail}"
+
+#. Native Go kiosk UI.
+msgid "ladder:matched_rung_summary"
+msgstr "你是{rank}，配到{rung} —— {reason}。"
+
+#. Native Go kiosk UI.
+msgid "ladder:rung_number"
+msgstr "第 {n} 档"
+
+#. Native Go kiosk UI.
+msgid "report:color_leads_points"
+msgstr "{color}领先 {points} 目"
+
+#. Native Go kiosk UI.
+msgid "report:color_winrate"
+msgstr "{color}胜率 {percentage}"
+
+#. Native Go kiosk UI.
+msgid "Golaxy"
+msgstr "星阵"
+
+#. Native Go kiosk UI.
+msgid "Fox Weiqi"
+msgstr "野狐"
 
 msgid "membership:order_cancelled"
 msgstr "订单已取消"

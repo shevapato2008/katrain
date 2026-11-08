@@ -55,13 +55,14 @@ vi.mock('../components/vision/CameraGeometryOverlay', () => ({
   },
 }));
 
-const screenTree = (allowExistingReuse?: boolean) => (
+const screenTree = (allowExistingReuse?: boolean, t?: (key: string, fallback?: string) => string) => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter>
       <GeometryCalibrationScreen
         backLabel="设置" onBack={vi.fn()}
         title="棋盘标定" sub="先把棋盘清空 · 四角和天元共 5 个定位点"
         allowExistingReuse={allowExistingReuse}
+        t={t}
       />
     </MemoryRouter>
   </ThemeProvider>
@@ -675,5 +676,53 @@ describe('屏 26 棋盘标定', () => {
     expect(at('T1')).toEqual([1002, 1002]);
     canvas.mockRestore();
     vi.unstubAllGlobals();
+  });
+});
+
+
+describe('shared translator seam', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    status = { phase: 'failed', session_calibrated: false, last_valid: true,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: false }, error: 'anchor_not_found:3,15' };
+    loaded = true;
+    vi.mocked(GeometryAPI.layout).mockRejectedValue(new Error('geometry request failed 409'));
+  });
+  const dictionary = (locale: 'en' | 'ko') => (key: string, fallback?: string) => ({
+    'vision:step_empty': locale === 'en' ? 'Wait for a stable board' : '바둑판 안정 대기',
+    'vision:diagnostic_anchor_title': locale === 'en' ? 'LED not found at {point}' : '{point} LED를 찾지 못했습니다',
+    'vision:help_title': locale === 'en' ? 'Calibration help' : '보정 안내',
+    'vision:relocate_no_board': locale === 'en' ? 'Clear the board edges and retry.' : '가장자리의 장애물을 치운 후 다시 시도하세요.',
+  }[key] ?? fallback ?? key);
+
+  it('refreshes an open diagnostic and help dialog without restarting calibration or layout requests', () => {
+    const tree = render(screenTree(undefined, dictionary('en')));
+    expect(steps()[0]).toHaveTextContent('Wait for a stable board');
+    expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('LED not found at Q16');
+    fireEvent.click(screen.getByRole('button', { name: 'Calibration help' }));
+    const requests = vi.mocked(GeometryAPI.layout).mock.calls.length;
+    tree.rerender(screenTree(undefined, dictionary('ko')));
+    expect(screen.getByRole('dialog')).toHaveTextContent('보정 안내');
+    expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('Q16 LED를 찾지 못했습니다');
+    expect(GeometryAPI.layout).toHaveBeenCalledTimes(requests);
+    expect(startCalibration).not.toHaveBeenCalled();
+  });
+
+  it('preserves an unknown technical error even when it matches an object prototype property', async () => {
+    status = { ...status, phase: 'required', last_valid: false };
+    startCalibration.mockRejectedValueOnce(new Error('constructor'));
+    render(screenTree(undefined, dictionary('en')));
+    fireEvent.click(within(acts()).getByRole('button', { name: '重新开始标定' }));
+    await waitFor(() => expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('constructor'));
+  });
+
+  it('keeps relocation failure as a reason and translates the same failure on refresh', async () => {
+    relocate.mockRejectedValueOnce(new Error('no_board_detected'));
+    const tree = render(screenTree(undefined, dictionary('en')));
+    fireEvent.click(screen.getByTestId('calib-relocate'));
+    await waitFor(() => expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('Clear the board edges and retry.'));
+    tree.rerender(screenTree(undefined, dictionary('ko')));
+    expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('가장자리의 장애물을 치운 후 다시 시도하세요.');
+    expect(relocate).toHaveBeenCalledTimes(1);
   });
 });

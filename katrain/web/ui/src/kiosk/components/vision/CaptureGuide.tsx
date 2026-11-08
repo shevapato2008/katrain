@@ -1,3 +1,5 @@
+import { interpolate } from '../../utils/interpolate';
+import { useTranslation } from '../../../hooks/useTranslation';
 import { useState, useEffect, useRef } from 'react';
 import { KIOSK_MONO } from '../../theme';
 import {
@@ -32,9 +34,6 @@ function toGTP(row: number, col: number): string {
   return `${letter}${number}`;
 }
 
-function colorLabel(color: number): string {
-  return color === 1 ? '黑' : '白';
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -43,6 +42,7 @@ function colorLabel(color: number): string {
 const SKIP_DELAY_MS = 30_000;
 
 const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
+  const { t } = useTranslation();
   const [showSkip, setShowSkip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -62,7 +62,7 @@ const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
   }, {});
 
   const summaryParts = Object.entries(colorCounts).map(
-    ([color, count]) => `${count} 颗${colorLabel(Number(color))}子`,
+    ([color, count]) => interpolate(Number(color) === 1 ? t('{count} 颗黑子', '{count} 颗黑子') : t('{count} 颗白子', '{count} 颗白子'), { count }),
   );
 
   const gtpList = positions.map((p) => toGTP(p.row, p.col)).join(', ');
@@ -82,12 +82,11 @@ const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
           pt: 2,
         }}
       >
-        请提走棋子
-      </DialogTitle>
+        {t("请提走棋子", "请提走棋子")}</DialogTitle>
 
       <DialogContent sx={{ textAlign: 'center' }}>
         <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>
-          请提走 {summaryParts.join('、')}
+          {interpolate(t('请提走 {stones}', '请提走 {stones}'), { stones: summaryParts.join(t('、', '、')) })}
         </Typography>
 
         <Box
@@ -111,8 +110,7 @@ const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
       {showSkip && onDismiss && (
         <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
           <Button variant="outlined" color="warning" size="large" onClick={onDismiss}>
-            跳过
-          </Button>
+            {t("跳过", "跳过")}</Button>
         </DialogActions>
       )}
     </Dialog>

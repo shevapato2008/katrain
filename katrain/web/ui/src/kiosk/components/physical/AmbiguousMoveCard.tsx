@@ -1,3 +1,4 @@
+import { interpolate } from '../../utils/interpolate';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { rcToGtpLabel, rcToXy } from './BoardMismatchDialog';
@@ -41,10 +42,10 @@ const AmbiguousMoveCard = ({ row, col, boardSize, color, unbacked, from, onConfi
       <DialogTitle>
         {unbacked ? (
           relocationText ?? (who
-            ? `${who}${t('vision:offcenter_at', ' 子没放正')}`
+            ? interpolate(t("{who}{value2}", "{who}{value2}"), { who: who, value2: t('vision:offcenter_at', ' 子没放正') })
             : t('vision:offcenter_plain', '这颗子没放正'))
         ) : (
-          `${t('Possible move detected at', '检测到疑似落子于')} ${point}`
+          interpolate(t("{value1} {point}", "{value1} {point}"), { value1: t('Possible move detected at', '检测到疑似落子于'), point: point })
         )}
       </DialogTitle>
       <DialogContent>
@@ -60,7 +61,7 @@ const AmbiguousMoveCard = ({ row, col, boardSize, color, unbacked, from, onConfi
         {/* 摆偏那一档里「确认落子」仍然留着:用户可能就是想下在那儿,懒得挪子。
             但它不再是唯一的出口,也不再是那句唯一的话。 */}
         <Button variant="contained" onClick={() => { const { x, y } = rcToXy(row, col, boardSize); onConfirm(x, y); }}>
-          {unbacked ? `${t('vision:play_here_anyway', '就下在')} ${point}` : t('Confirm', '确认落子')}
+          {unbacked ? interpolate(t("{value1} {point}", "{value1} {point}"), { value1: t('vision:play_here_anyway', '就下在'), point: point }) : t('Confirm', '确认落子')}
         </Button>
         {/* 「忽略」说的是「这次别管」,下次照样弹。用户真正在回答的是一个事实问题:
             那一格到底有没有子。说成「不是落子」,这一按就变成一条可以拿去用的证据 ——

@@ -1,3 +1,4 @@
+import { rankLabel } from '../../utils/playerRank';
 import { useId, useState } from 'react';
 
 import {
@@ -79,7 +80,7 @@ const KioskAiLadderRows = ({ status, onRetry }: { status: AiLadderStatus; onRetr
         <span className="kiosk-row__t">
           <b>
             {placement.phase === 'placed'
-              ? `${AI_LADDER_COPY.currentRankPrefix}${placement.rung.rank_name}`
+              ? `${AI_LADDER_COPY.currentRankPrefix}${rankLabel(placement.rung.rank_name, t)}`
               : formatPlacementProgress(placement.completed_games, placement.total_games)}
           </b>
           <em>{formatNetScore(score)}</em>
@@ -110,7 +111,7 @@ const KioskAiLadderRows = ({ status, onRetry }: { status: AiLadderStatus; onRetr
           {placement.phase === 'placement' && status.current_opponent && (
             <div className="kiosk-row">
               <span className="kiosk-row__t">
-                <b>{`${AI_LADDER_COPY.currentOpponentPrefix}${status.current_opponent.rank_name}`}</b>
+                <b>{`${AI_LADDER_COPY.currentOpponentPrefix}${rankLabel(status.current_opponent.rank_name, t)}`}</b>
               </span>
             </div>
           )}

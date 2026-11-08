@@ -1,3 +1,4 @@
+import { interpolate } from '../../kiosk/utils/interpolate';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Box, IconButton, Popover, useTheme } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -52,13 +53,13 @@ export function ChartTabHelp({ label, children, active = true }: { label: string
   const style = anchor ? getComputedStyle(anchor) : null;
   return <>
     <IconButton className={`chart-tab-help${active ? '' : ' chart-tab-help--inactive'}`}
-      aria-label={`${label} · ${t('report:chart_help', '说明')}`} aria-expanded={!!anchor} aria-haspopup="dialog"
+      aria-label={interpolate(t("{label} · {value2}", "{label} · {value2}"), { label: label, value2: t('report:chart_help', '说明') })} aria-expanded={!!anchor} aria-haspopup="dialog"
       onMouseEnter={event => { const target = event.currentTarget; clear(); timer.current = setTimeout(() => setAnchor(target), 550); }}
       onMouseLeave={clear} onClick={event => { clear(); setAnchor(anchor ? null : event.currentTarget); }}
       sx={{ width: 44, height: 44, p: 0, pl: '4px', justifyContent: 'flex-start', flexShrink: 0, fontFamily: 'inherit', color: 'inherit', '& svg': { fontSize: 20 } }}><InfoOutlinedIcon /></IconButton>
     <Popover open={!!anchor} anchorEl={anchor} onClose={() => { clear(); setAnchor(null); }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      slotProps={{ paper: { role: 'dialog', 'aria-label': `${label} · ${t('report:chart_help', '说明')}`,
+      slotProps={{ paper: { role: 'dialog', 'aria-label': interpolate(t("{label} · {value2}", "{label} · {value2}"), { label: label, value2: t('report:chart_help', '说明') }),
         sx: { p: 2, width: 380, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 32px)', boxSizing: 'border-box',
           fontFamily: style?.fontFamily || theme.typography.fontFamily, fontSize: 14, lineHeight: 1.6,
           bgcolor: style?.getPropertyValue('--panel').trim() || 'background.paper', color: style?.getPropertyValue('--text').trim() || 'text.primary',

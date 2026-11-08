@@ -1,3 +1,4 @@
+import { interpolate } from '../utils/interpolate';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -112,8 +113,8 @@ const PlayPage = () => {
 
   const engineReady = engineReadiness === 'ready';
   const engineUnavailableSub = engineReadiness === 'warming'
-    ? 'AI 引擎准备中，稍后即可开始'
-    : 'AI 引擎暂未就绪，请稍后重试';
+    ? t('AI 引擎准备中，稍后即可开始', 'AI 引擎准备中，稍后即可开始')
+    : t('AI 引擎暂未就绪，请稍后重试', 'AI 引擎暂未就绪，请稍后重试');
 
   return (
     <KioskScrollZone className="kiosk-play-home">
@@ -222,7 +223,7 @@ const PlayPage = () => {
             const sub = p.connected
               ? t('platform:connected_enter', '已连接 · 进入平台专页')
               : meta.login
-                ? `${t('Tap to connect', '点击登录')} · ${t(meta.login.userLabel, meta.login.userLabelCn)} + ${t(meta.login.passLabel, meta.login.passLabelCn)}`
+                ? interpolate(t("{value1} · {value2} + {value3}", "{value1} · {value2} + {value3}"), { value1: t('Tap to connect', '点击登录'), value2: t(meta.login.userLabel, meta.login.userLabelCn), value3: t(meta.login.passLabel, meta.login.passLabelCn) })
                 : t('Tap to connect', '点击登录');
             return (
               <KioskCard

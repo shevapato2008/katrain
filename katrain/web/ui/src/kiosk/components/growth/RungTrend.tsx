@@ -1,3 +1,4 @@
+import { rankLabel } from '../../utils/playerRank';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { GrowthTrendPoint } from '../../api/growthApi';
 import { TREND_H, TREND_W, trendGeometry } from './trendGeometry';
@@ -20,7 +21,7 @@ const todayUtc = () => new Date().toISOString().slice(0, 10);
 const RungTrend = ({ points, days, placed }: { points: GrowthTrendPoint[]; days: number; placed: boolean }) => {
   const { t } = useTranslation();
   const geo = trendGeometry(points, { endDate: todayUtc(), days });
-  const peakName = geo ? (geo.peak.point.rank_name ?? `#${geo.peak.point.rung}`) : '';
+  const peakName = geo ? ((geo.peak.point.rank_name ? rankLabel(geo.peak.point.rank_name, t) : undefined) ?? `#${geo.peak.point.rung}`) : '';
 
   // fragment 不是 div:小标题的样式是 `.panel > h3`,包一层就吃不到(第一版就是这样,标题变成了大号字)。
   return (

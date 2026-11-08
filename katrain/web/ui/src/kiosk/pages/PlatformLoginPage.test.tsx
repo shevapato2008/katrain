@@ -1,3 +1,4 @@
+import { renderUiMessage, uiError } from '../utils/uiMessage';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -23,6 +24,9 @@ import { KioskRoutes } from '../KioskApp';
  * 这里只用**永远拒绝**的 `platformScanStart` 把星阵默认落到扫码的「不可用」态 ——
  * 图省事之外,这也是这份文件里所有需要密码/验证码字段的用例都要先切一次「密码」
  * 标签的原因:默认标签换了,不是它们的断言坏了。 */
+
+const translate = vi.hoisted(() => vi.fn((key: string, fallback?: string) => fallback ?? key));
+vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: translate, lang: 'cn' }) }));
 
 const {
   platformLogin, platformSmsRequest, platformEngineLevels, platformStatus, platformScanStart,
@@ -52,6 +56,7 @@ vi.mock('../context/VisionContext', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  translate.mockImplementation((key, fallback) => fallback ?? key);
   platformLogin.mockResolvedValue({});
   platformSmsRequest.mockResolvedValue({});
   platformEngineLevels.mockResolvedValue({ levels: [] });
@@ -66,7 +71,7 @@ function LocationProbe() {
   return <div data-testid="__loc">{location.pathname}{location.search}</div>;
 }
 
-const renderLogin = (platform: string) => render(
+const loginTree = (platform: string) => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter initialEntries={[`/kiosk/play/cross-platform/login/${platform}`]}>
       <Routes>
@@ -74,8 +79,10 @@ const renderLogin = (platform: string) => render(
         <Route path="*" element={<LocationProbe />} />
       </Routes>
     </MemoryRouter>
-  </ThemeProvider>,
+  </ThemeProvider>
 );
+
+const renderLogin = (platform: string) => render(loginTree(platform));
 
 /** 星阵默认落在扫码标签(Task 6)——这份文件测密码/验证码字段的用例都要先点一下「密码」。 */
 const toPasswordTab = async () => {
@@ -283,4 +290,31 @@ describe('登录独立成页', () => {
     await userEvent.click(screen.getByTestId('login-submit'));
     expect(await screen.findByTestId('__loc')).toHaveTextContent('/kiosk/play/cross-platform/ogs');
   });
+});
+
+
+it('relocalizes a backend ownership error while preserving the login fields and request lifetime', async () => {
+  const source = '这台盒子上现在连的不是你的账号';
+  platformLogin.mockRejectedValue({ status: 403, detail: source });
+  translate.mockImplementation((key, fallback) => key === source ? 'The connected account is not yours' : fallback ?? key);
+  const view = renderLogin('ogs');
+  await userEvent.type(screen.getByTestId('login-field-user'), 'name_$&');
+  await userEvent.type(screen.getByTestId('login-field-password'), 'pw');
+  await userEvent.click(screen.getByTestId('login-submit'));
+  expect(await screen.findByText('The connected account is not yours')).toBeInTheDocument();
+  translate.mockImplementation((key, fallback) => key === source ? '연결된 계정은 내 계정이 아닙니다' : fallback ?? key);
+  view.rerender(loginTree('ogs'));
+  expect(screen.getByText('연결된 계정은 내 계정이 아닙니다')).toBeInTheDocument();
+  expect(screen.getByTestId('login-field-user')).toHaveValue('name_$&');
+  expect(platformLogin).toHaveBeenCalledTimes(1);
+});
+
+
+it('preserves opaque platform and diagnostic values in the known conflict envelope', () => {
+  const t = (key: string, fallback?: string) => key === 'platform:account_busy' ? 'Another {platform} account is connected' : fallback ?? key;
+  const platform = 'ogs_$&';
+  const detail = `这台盒子上现在连着别人的${platform}账号 · 去设置里断开后再登录`;
+  expect(renderUiMessage(uiError({ status: 409, detail }, 'platform:login_failed', '登录失败'), t)).toBe(`Another ${platform} account is connected`);
+  const unknown = 'operator_$& 原始诊断';
+  expect(renderUiMessage(uiError({ status: 502, detail: unknown }, 'platform:login_failed', '登录失败'), t)).toBe(unknown);
 });

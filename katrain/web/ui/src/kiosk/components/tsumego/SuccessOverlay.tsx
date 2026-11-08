@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../hooks/useTranslation';
 /**
  * SuccessOverlay — kiosk version (self-contained; does NOT import galaxy's overlay).
  *
@@ -51,10 +52,11 @@ interface ConfettiParticle {
 
 const SuccessOverlay = ({
   show,
-  message = '恭喜答对！',
+  message,
   onComplete,
   delayMs = 1500,
 }: SuccessOverlayProps) => {
+  const { t } = useTranslation();
   // Confetti is randomized, so it can't be computed during render (must stay pure). Generate
   // a fresh batch in an effect each time the overlay becomes visible.
   const [particles, setParticles] = useState<ConfettiParticle[]>([]);
@@ -127,7 +129,7 @@ const SuccessOverlay = ({
             textShadow: '0 2px 8px rgba(0,0,0,0.5)',
           }}
         >
-          {message}
+          {message ?? t('恭喜答对！', '恭喜答对！')}
         </Typography>
       </Box>
     </Box>

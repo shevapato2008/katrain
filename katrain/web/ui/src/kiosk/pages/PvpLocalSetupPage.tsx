@@ -112,7 +112,8 @@ const PvpLocalSetupPage = () => {
     attempt.current.busy = false;
     navigate('/kiosk/play');
   };
-  const [error, setError] = useState('');
+  const [errorReason, setError] = useState<{ key: string; fallback: string } | { message: string } | null>(null);
+  const error = errorReason ? 'key' in errorReason ? t(errorReason.key, errorReason.fallback) : errorReason.message : '';
   const [help, setHelp] = useState<'game' | 'players' | 'seat' | null>(null);
   const groupTitles = { game: t('setup:game_terms', '这局棋'), players: t('local:players', '对局双方'), seat: t('setup:seat', '怎么坐') };
   const sectionHead = (topic: keyof typeof groupTitles) => (
@@ -208,7 +209,7 @@ const PvpLocalSetupPage = () => {
     let createdSession: string | null = null;
     let published = false;
     let checkingBoard = intent.onBoard;
-    setError('');
+    setError(null);
     setLoading(true);
     setChecking(checkingBoard);
     try {
@@ -219,7 +220,7 @@ const PvpLocalSetupPage = () => {
           if (!resuming && ['required', 'degraded', 'failed', 'cancelled'].includes(result.status.phase)) {
             pendingStart.current = intent;
             setCalibrationOpen(true);
-          } else setError(t('local:board_check_not_ready', '棋盘检查未就绪，请保持盘面稳定后重试'));
+          } else setError({ key: 'local:board_check_not_ready', fallback: '棋盘检查未就绪，请保持盘面稳定后重试' });
           return;
         }
       }
@@ -242,8 +243,8 @@ const PvpLocalSetupPage = () => {
       navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: intent.backState });
     } catch (e) {
       if (current()) setError(checkingBoard
-        ? t('local:board_check_failed', '检查棋盘失败，请检查连接后重试')
-        : e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
+        ? { key: 'local:board_check_failed', fallback: '检查棋盘失败，请检查连接后重试' }
+        : e instanceof Error ? { message: e.message } : { key: 'Failed to create game', fallback: '创建对局失败' });
     } finally {
       if (createdSession && !published) await API.deleteSession(createdSession).catch(() => undefined);
       if (current()) {
@@ -252,12 +253,12 @@ const PvpLocalSetupPage = () => {
         setChecking(false);
       }
     }
-  }, [preflight, token, t, navigate]);
+  }, [preflight, token, navigate]);
 
   const handleStart = () => {
     if (attempt.current.busy) return;
     if (visionLoaded === false && playInput.onBoard) {
-      setError(t('local:device_check_pending', '正在读取设备状态，请稍后再试'));
+      setError({ key: 'local:device_check_pending', fallback: '正在读取设备状态，请稍后再试' });
       return;
     }
     void startGame(captureStart());
@@ -280,11 +281,12 @@ const PvpLocalSetupPage = () => {
     attempt.current.busy = false;
     setLoading(false);
     setChecking(false);
-    setError('');
+    setError(null);
     setCalibrationOpen(false);
   };
 
   if (calibrationOpen) return <GeometryCalibrationScreen
+      t={t}
     backLabel={t('local:return_setup', '返回设置')} onBack={returnToSetup}
     title={t('local:prestart_calibration', '先检查棋盘标定')}
     sub={error

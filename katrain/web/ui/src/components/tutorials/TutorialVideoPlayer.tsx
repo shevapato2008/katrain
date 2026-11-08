@@ -1,3 +1,4 @@
+import { useTranslation } from '../../hooks/useTranslation';
 import { useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 
@@ -24,6 +25,7 @@ interface Props {
  * "no Referer → allow" path then serves the bytes (and the poster).
  */
 export default function TutorialVideoPlayer({ src, poster, onError, fill = false, maxHeight = '60vh' }: Props) {
+  const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
 
   // Reset the failed state when the source changes (e.g. stepping to another figure),
@@ -46,7 +48,7 @@ export default function TutorialVideoPlayer({ src, poster, onError, fill = false
           borderRadius: 2,
         }}
       >
-        <Typography color="text.secondary">视频加载失败</Typography>
+        <Typography color="text.secondary">{t("视频加载失败", "视频加载失败")}</Typography>
       </Box>
     );
   }

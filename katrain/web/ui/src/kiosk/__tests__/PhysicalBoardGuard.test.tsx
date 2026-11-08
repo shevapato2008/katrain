@@ -59,7 +59,7 @@ describe('PhysicalBoardGuard', () => {
     // 口径换了、意图一字未改:「挡住了没有」原来看那句 `phaseHint`(已随四步清单一起撤掉),
     // 现在看四步清单的第 1 步 —— 它说的是同一件事,而且多说了前后文。
     expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
-    expect(screen.getAllByTestId('calib-step')[0]).toHaveTextContent('准备空盘标定');
+    expect(screen.getAllByTestId('calib-step')[0]).toHaveTextContent('等待棋盘稳定');
     fireEvent.click(screen.getByRole('button', { name: '重新开始标定' }));
     await waitFor(() => expect(GeometryAPI.calibrate).toHaveBeenCalledWith('auto'));
   });

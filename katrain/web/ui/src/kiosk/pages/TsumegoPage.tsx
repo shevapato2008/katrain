@@ -1,3 +1,4 @@
+import { interpolate } from '../utils/interpolate';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -108,13 +109,13 @@ const TsumegoPage = () => {
 
   const colors = ['#6bc78a', '#dfb561', '#6cabc9', '#aa8cc8', '#cd8276', '#86b99e'];
   return (
-    <section className="u-train-carousel-home" aria-label="训练营">
-      <div className="u-train-carousel-heading"><div><strong>{t('Training', '训练营')}</strong><span>左右滑动卡片，选择棋力</span></div>
-        <div className="u-train-carousel-groups" role="tablist" aria-label="棋力范围">
-          {['15–11 级', '10–6 级', '5–1 级', '1–7 段'].map((label, i) => <button key={label} role="tab" aria-selected={group === i} disabled={!groups[i].length} onClick={() => { setGroup(i); setIndex(0); }}>{label}</button>)}
+    <section className="u-train-carousel-home" aria-label={t("训练营", "训练营")}>
+      <div className="u-train-carousel-heading"><div><strong>{t('Training', '训练营')}</strong><span>{t("左右滑动卡片，选择棋力", "左右滑动卡片，选择棋力")}</span></div>
+        <div className="u-train-carousel-groups" role="tablist" aria-label={t("棋力范围", "棋力范围")}>
+          {[t("15–11 级", "15–11 级"), t("10–6 级", "10–6 级"), t("5–1 级", "5–1 级"), t("1–7 段", "1–7 段")].map((label, i) => <button key={label} role="tab" aria-selected={group === i} disabled={!groups[i].length} onClick={() => { setGroup(i); setIndex(0); }}>{label}</button>)}
         </div>
       </div>
-      <div className={`u-train-carousel-deck${pointer.current ? ' is-dragging' : ''}`} tabIndex={0} role="region" aria-label="棋力卡片轮播"
+      <div className={`u-train-carousel-deck${pointer.current ? ' is-dragging' : ''}`} tabIndex={0} role="region" aria-label={t("棋力卡片轮播", "棋力卡片轮播")}
         onKeyDown={event => { if (event.key === 'ArrowRight') choose(index + 1); if (event.key === 'ArrowLeft') choose(index - 1); }}
         onPointerDown={event => { if (event.button !== 0) return; pointer.current = { x: event.clientX, moved: false }; suppressClick.current = false; }}
         onPointerMove={event => { if (!pointer.current) return; const distance = event.clientX - pointer.current.x; if (Math.abs(distance) > 8) { pointer.current.moved = true; event.currentTarget.setPointerCapture?.(event.pointerId); } setDrag(distance); }}
@@ -128,16 +129,16 @@ const TsumegoPage = () => {
           let cumulative = 0;
           const stops = categories.map(([, count], j) => { const start = cumulative; cumulative += count / sum * 100; return `${colors[j % colors.length]} ${start}% ${cumulative}%`; });
           return <article key={level.level} className={`u-train-carousel-card${i === index ? ' is-center' : ''}${!sum ? ' is-unknown' : ''}`} style={{ transform: `translate(calc(-50% + ${delta * 360}px), calc(-50% + ${Math.min(Math.abs(delta), 1) * 35}px)) scale(${1 - Math.min(Math.abs(delta), 1) * .56}) rotateY(${-delta * 4}deg)`, opacity: Math.abs(delta) > 2 ? 0 : 1, zIndex: 20 - Math.round(Math.abs(delta) * 5), pointerEvents: Math.abs(delta) > 2 ? 'none' : undefined, transition: drag ? 'none' : undefined }} onClick={() => { if (i !== index) choose(i); }}>
-            <div className="u-train-carousel-card-head"><strong>{levelChinese(level.level)}</strong><span>{level.total} 题{level.level === lastLevel ? ' · 你的水平' : ''}</span></div>
-            <div className="u-train-carousel-card-body"><div className="u-train-carousel-pie" style={{ '--u-train-pie': sum ? `conic-gradient(${stops.join(',')})` : undefined } as CSSProperties} role="img" aria-label={sum ? categories.map(([name, count]) => `${CATEGORY_META[name]?.zh ?? name} ${count}题`).join('，') : '题型构成暂不可用'}><div><strong>{sum || '—'}</strong><span>道题</span></div></div>
-              {sum ? <div className="u-train-carousel-legend">{categories.map(([name, count], j) => <div key={name} style={{ '--u-train-swatch': colors[j % colors.length] } as CSSProperties}><i /><span>{t(`tsumego:${name}`, CATEGORY_META[name]?.zh ?? name)}</span><b>{(count / sum * 100).toFixed(1)}%</b><small>{count}题</small></div>)}</div> : <div className="u-train-carousel-unavailable">题型构成暂不可用</div>}
+            <div className="u-train-carousel-card-head"><strong>{levelChinese(level.level, t)}</strong><span>{interpolate(t('{n} 题', '{n} 题'), { n: level.total })}{level.level === lastLevel ? t(" · 你的水平", " · 你的水平") : ''}</span></div>
+            <div className="u-train-carousel-card-body"><div className="u-train-carousel-pie" style={{ '--u-train-pie': sum ? `conic-gradient(${stops.join(',')})` : undefined } as CSSProperties} role="img" aria-label={sum ? categories.map(([name, count]) => interpolate(t("{name} {count}题", "{name} {count}题"), { name: t(`tsumego:${name}`, CATEGORY_META[name]?.zh ?? name), count: count })).join('，') : t("题型构成暂不可用", "题型构成暂不可用")}><div><strong>{sum || '—'}</strong><span>{t("道题", "道题")}</span></div></div>
+              {sum ? <div className="u-train-carousel-legend">{categories.map(([name, count], j) => <div key={name} style={{ '--u-train-swatch': colors[j % colors.length] } as CSSProperties}><i /><span>{t(`tsumego:${name}`, CATEGORY_META[name]?.zh ?? name)}</span><b>{(count / sum * 100).toFixed(1)}%</b><small>{interpolate(t('{n} 题', '{n} 题'), { n: count })}</small></div>)}</div> : <div className="u-train-carousel-unavailable">{t("题型构成暂不可用", "题型构成暂不可用")}</div>}
             </div>
-            <button tabIndex={i === index ? 0 : -1} className="u-train-carousel-enter" onClick={() => { if (i === index) navigate(`/kiosk/tsumego/${level.level}`); }}>进入 {levelChinese(level.level)} 题型</button>
+            <button tabIndex={i === index ? 0 : -1} className="u-train-carousel-enter" onClick={() => { if (i === index) navigate(`/kiosk/tsumego/${level.level}`); }}>{interpolate(t('进入 {level} 题型', '进入 {level} 题型'), { level: levelChinese(level.level, t) })}</button>
           </article>;
         })}
       </div>
-      <button className="u-train-carousel-nav is-prev" aria-label="上一棋力" disabled={index === 0} onClick={() => choose(index - 1)}>‹</button><button className="u-train-carousel-nav is-next" aria-label="下一棋力" disabled={index >= cards.length - 1} onClick={() => choose(index + 1)}>›</button>
-      <div className="u-train-carousel-foot"><span>{index + 1} / {cards.length}</span><div>{cards.map((level, i) => <i key={level.level} className={i === index ? 'is-active' : ''} />)}</div><span>手指拖动 · 松手吸附</span></div>
+      <button className="u-train-carousel-nav is-prev" aria-label={t("上一棋力", "上一棋力")} disabled={index === 0} onClick={() => choose(index - 1)}>‹</button><button className="u-train-carousel-nav is-next" aria-label={t("下一棋力", "下一棋力")} disabled={index >= cards.length - 1} onClick={() => choose(index + 1)}>›</button>
+      <div className="u-train-carousel-foot"><span>{index + 1} / {cards.length}</span><div>{cards.map((level, i) => <i key={level.level} className={i === index ? 'is-active' : ''} />)}</div><span>{t("手指拖动 · 松手吸附", "手指拖动 · 松手吸附")}</span></div>
     </section>
   );
 };

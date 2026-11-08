@@ -1,4 +1,4 @@
-import { knownRank } from '../utils/playerRank';
+import { knownRank, presentPlayerRank } from '../utils/playerRank';
 import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
@@ -696,7 +696,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       <div className="kiosk-rail">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={`${t('common:back', '返回')}${backLabel}`}
+          backLabel={interpolate(t("{value1}{backLabel}", "{value1}{backLabel}"), { value1: t('common:back', '返回'), backLabel: backLabel })}
           onBack={() => setExitOpen(true)}
           title={title}
           sub={interpolate(
@@ -779,8 +779,8 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
         </div>}
 
         <div className="baipu-players ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>{!collect && ([
-          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑'), rank: knownRank(meta?.player_black_rank) },
-          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白'), rank: knownRank(meta?.player_white_rank) },
+          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑'), rank: presentPlayerRank(knownRank(meta?.player_black_rank), t) },
+          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白'), rank: presentPlayerRank(knownRank(meta?.player_white_rank), t) },
         ]).map(({ color, name, side, rank }, index) => {
           const turn = nextColor === color && phase !== 'done' && mood !== 'trying' && mood !== 'hint';
           return (

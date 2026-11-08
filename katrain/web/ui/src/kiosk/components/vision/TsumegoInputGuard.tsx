@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../hooks/useTranslation';
 import { useState, type ReactNode } from 'react';
 import PhysicalBoardGuard from './PhysicalBoardGuard';
 import { readPhysicalMode } from '../../pages/tsumegoUnits';
@@ -22,9 +23,10 @@ import { readPhysicalMode } from '../../pages/tsumegoUnits';
  * 已知边角:同一次进入里先关掉开关、之后几何又失效,这一次仍会被标定台拦下 —— 按返回再进就好。
  */
 const TsumegoInputGuard = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation();
   const [onBoard] = useState(readPhysicalMode);
   return onBoard
-    ? <PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面" fallback="/kiosk/tsumego">{children}</PhysicalBoardGuard>
+    ? <PhysicalBoardGuard sub={t('vision:guard_tsumego_sub', '实体做题要先让摄像头看清盘面')} fallback="/kiosk/tsumego">{children}</PhysicalBoardGuard>
     : <>{children}</>;
 };
 

@@ -40,7 +40,7 @@ Files: 本计划；`output/wechat-native/official-contract.md`；`docs/superpowe
 - [x] 读取项目、发布回执、代码，核实云端/实体/配置 presence，保留 11 语。
 - [x] 官方 Native 创建/查询/关闭/通知与安全文档核实，记录直接链接。
 - [x] 独立 Astra Max 计划审核两轮，修复阻塞问题，最终 Approved。
-- [ ] 使用 ui-ux-pro-max 在既有结账弹窗中设计二维码/确认中/终态；1024×600 Kiosk、网站桌面和 375px 手机预览，保持现有设计系统。
+- [x] 使用 ui-ux-pro-max 在既有结账弹窗中设计二维码/确认中/终态；1024×600 Kiosk、网站桌面和 375px 手机预览，保持现有设计系统。
 
 ## Chunk 2: 共享支付基础
 
@@ -48,23 +48,23 @@ Files: 本计划；`output/wechat-native/official-contract.md`；`docs/superpowe
 
 Files: create `katrain/web/core/wechat_native.py`, `tests/web_ui/test_wechat_native.py`; modify `katrain/web/core/config.py`, dependency declaration if required。
 
-- [ ] 先写 MockTransport/临时 RSA/AES 密钥测试，证明错误签名/序列号/重放/密文失败拒绝。
-- [ ] 文件配置校验与 readiness，默认无配置不发任何网络请求。对外错误只稳定代码。
-- [ ] 实现 Native create/query/close 与 webhook decode；查询必须精确编码，签名 canonical URL 与发送 URL 一致。
-- [ ] 测试包含 204 空正文、合法/非法响应、网络未知结果、参数检查，原始签名字节保留。
-- [ ] `python -m pytest tests/web_ui/test_wechat_native.py -q` 通过后自审。
+- [x] 先写 MockTransport/临时 RSA/AES 密钥测试，证明错误签名/序列号/重放/密文失败拒绝。
+- [x] 文件配置校验与 readiness，默认无配置不发任何网络请求。对外错误只稳定代码。
+- [x] 实现 Native create/query/close 与 webhook decode；查询必须精确编码，签名 canonical URL 与发送 URL 一致。
+- [x] 测试包含 204 空正文、合法/非法响应、网络未知结果、参数检查，原始签名字节保留。
+- [x] `python -m pytest tests/web_ui/test_wechat_native.py -q` 通过后自审。
 
 ### Task 3: 订单与真实渠道原子集成（Task 2 接口稳定后）
 
 Files: `payments.py`, new `wechat_payments.py`, `models_db.py`, `migrations.py`, `billing_environment.py` as needed; `api/v1/endpoints/billing.py`, new `payment_wechat.py`, router registration; `server.py`; `remote_client.py`, `repository.py`。
 
-- [ ] 隔离 PostgreSQL 写先失败测试，涵盖会员与充值、并发重复通知/查询、金额/商户/AppID/交易号冲突和事务回滚。
-- [ ] additive payment_details migration；新 provider、冻结绑定、32 字符以内单号、创建双阶段；外部请求不在账务锁/DB事务内。
-- [ ] 保留 mock require_mock_database；抽取共享发放，不使 mock 可写生产。成功通知在 disabled/paused 时可处理既有单。
-- [ ] webhook 原始正文限长、先验签解密再查本地订单，成功提交后 204，失败非 2xx；无登录、只在云有效，no-store，不信任客户端。
-- [ ] 按订单节流查询与关单竞态；结果未知保留 pending，成功不可降级，后台单笔隔离。公开状态至少 pending/paid/expired/failed/cancelled/refunded。
-- [ ] owner-only cancel API 与设备云身份代理；列表避免同步批量网络查单。
-- [ ] 测试 paused/disabled、新单拒绝、既有到账、迟到通知、取消与成功竞态、回调重复、超时恢复与后台单笔失败；复跑原有 mock 边界和盒端代理测试。
+- [x] 隔离 PostgreSQL 写先失败测试，涵盖会员与充值、并发重复通知/查询、金额/商户/AppID/交易号冲突和事务回滚。
+- [x] additive payment_details migration；新 provider、冻结绑定、32 字符以内单号、创建双阶段；外部请求不在账务锁/DB事务内。
+- [x] 保留 mock require_mock_database；抽取共享发放，不使 mock 可写生产。成功通知在 disabled/paused 时可处理既有单。
+- [x] webhook 原始正文限长、先验签解密再查本地订单，成功提交后 204，失败非 2xx；无登录、只在云有效，no-store，不信任客户端。
+- [x] 按订单节流查询与关单竞态；结果未知保留 pending，成功不可降级，后台单笔隔离。公开状态至少 pending/paid/expired/failed/cancelled/refunded。
+- [x] owner-only cancel API 与设备云身份代理；列表避免同步批量网络查单。
+- [x] 测试 paused/disabled、新单拒绝、既有到账、迟到通知、取消与成功竞态、回调重复、超时恢复与后台单笔失败；复跑原有 mock 边界和盒端代理测试。
 
 ## Chunk 3: 双端、国际化与验证
 
@@ -72,21 +72,21 @@ Files: `payments.py`, new `wechat_payments.py`, `models_db.py`, `migrations.py`,
 
 Files: new `features/membership/WechatNativePayment.tsx` (+ CSS/test); `types.ts`, `api/membershipApi.ts`; Galaxy MembershipPage/checkout hook；Kiosk MembershipPage/order hook；聚焦现有测试。
 
-- [ ] 先组件/Hook 测试 pending QR→paid/failed/expired/cancelled、查询失败、身份切换和同键重试。
-- [ ] live capability 为服务端权威，按钮“微信支付”；mock 提示继续明确区分。用现有 qrcode 生成原样 code_url，验证协议，不使用外链或 raw HTML。
-- [ ] 真实倒计时只管显示，零点不自行宣告账务终态。取消与返回分别表意；支付成功刷新用量/钱包。
-- [ ] 焦点、可读状态、触控与 1024×600 可滚动布局；375px 显示另一屏幕扫码指引。
-- [ ] 保留现有语义键，提供新键清单交翻译；切换语言不改订单、幂等键或轮询身份。
+- [x] 先组件/Hook 测试 pending QR→paid/failed/expired/cancelled、查询失败、身份切换和同键重试。
+- [x] live capability 为服务端权威，按钮“微信支付”；mock 提示继续明确区分。用现有 qrcode 生成原样 code_url，验证协议，不使用外链或 raw HTML。
+- [x] 真实倒计时只管显示，零点不自行宣告账务终态。取消与返回分别表意；支付成功刷新用量/钱包。
+- [x] 焦点、可读状态、触控与 1024×600 可滚动布局；375px 显示另一屏幕扫码指引。
+- [x] 保留现有语义键，提供新键清单交翻译；切换语言不改订单、幂等键或轮询身份。
 
 ### Task 5: 11 语与完整本地旅程
 
 Files: `scripts/wechat_native_translations.json` (或现有 membership JSON), `scripts/batch_translate_galaxy.py`, 11 PO/MO；`tests/test_membership_i18n.py`, focused Playwright spec。
 
-- [ ] 新键精确覆盖 11 语，placeholder parity；重新编译所有 11 MO，既有 328 键不得丢失。避免 i18n.py 既有缺键造成无关目录归一化。
-- [ ] 后端密码学→模拟微信传输→真实隔离 DB→HTTP→前端完整会员/充值旅程；模拟仅测试层，无生产假数据或假收款按钮。
-- [ ] 网站/Galaxy（同一应用不同入口）与 Kiosk 分别记录流程。真实盒只读现状，不安装候选代码；本地 1024×600 验证不是盒端实机支付通过。
-- [ ] 运行普通前端构建、严格 Kiosk 构建、聚焦前后端/国际化测试；检查真实二维码解码原文与长文布局。
-- [ ] 独立 Astra Max 代码/安全/翻译/视觉审核，修复到通过；检查秘密与非预期改动。
+- [x] 新键精确覆盖 11 语，placeholder parity；重新编译所有 11 MO，既有 328 键不得丢失。避免 i18n.py 既有缺键造成无关目录归一化。
+- [x] 后端密码学→模拟微信传输→真实隔离 DB→HTTP→前端完整会员/充值旅程；模拟仅测试层，无生产假数据或假收款按钮。
+- [x] 网站/Galaxy（同一应用不同入口）与 Kiosk 分别记录流程。真实盒只读现状，不安装候选代码；本地 1024×600 验证不是盒端实机支付通过。
+- [x] 运行普通前端构建、严格 Kiosk 构建、聚焦前后端/国际化测试；检查真实二维码解码原文与长文布局。
+- [x] 独立 Astra Max 代码/安全/翻译/视觉审核，修复到通过；检查秘密与非预期改动。
 
 ## Chunk 4: 可审核上线方案（本轮交付终点）
 
@@ -94,13 +94,17 @@ Files: `scripts/wechat_native_translations.json` (或现有 membership JSON), `s
 
 Files: `docs/operations/wechat-native-rollout-2026-11-08.md`；相关操作指引链接。
 
-- [ ] 记录最终提交、测试/未测试、截图、各端旅程、默认关闭证据和回滚限制。
-- [ ] 提供配置示例：AppID/商户号；容器 `/run/secrets/wechat-pay/` 文件只读挂载与主机私有 0700/0600；微信支付公钥 ID、商户证书序列号和 API v3 密钥/私钥需用户安全填写，不要在聊天传秘密。
-- [ ] callback 计划 `https://modelstella.com/api/v1/payments/wechat/notify`，HTTPS/反向代理原始请求头正文/无登录/无重定向、持久 DB、时钟、出网核实清单；平台关联、Native 产品权限及商户通知已切微信支付公钥模式须上线前确认；迁移中旧证书回调不会被未知序列号绕过，应先完成平台切换或另行配置受信证书。
-- [ ] 按现有四步集成：同步 develop/功能分支推送→develop→父 vendor→先 TEST 后 PROD；本轮不执行发布，不改生产。先关闭新收款发布代码、验证配置/通知，再单独明确授权开启 live 与 membership enabled。
-- [ ] 单独列真实小额充值/会员、手机微信扫桌面/盒屏、断网恢复/通知重试/重复到账检查及退款恢复方案；每项在用户确认具体方案后执行。不能把本地模拟当正式收款。
+- [x] 记录最终提交、测试/未测试、截图、各端旅程、默认关闭证据和回滚限制。
+- [x] 提供配置示例：AppID/商户号；容器 `/run/secrets/wechat-pay/` 文件只读挂载与主机私有 0700/0600；微信支付公钥 ID、商户证书序列号和 API v3 密钥/私钥需用户安全填写，不要在聊天传秘密。
+- [x] callback 计划 `https://modelstella.com/api/v1/payments/wechat/notify`，HTTPS/反向代理原始请求头正文/无登录/无重定向、持久 DB、时钟、出网核实清单；平台关联、Native 产品权限及商户通知已切微信支付公钥模式须上线前确认；迁移中旧证书回调不会被未知序列号绕过，应先完成平台切换或另行配置受信证书。
+- [x] 按现有四步集成：同步 develop/功能分支推送→develop→父 vendor→先 TEST 后 PROD；本轮不执行发布，不改生产。先关闭新收款发布代码、验证配置/通知，再单独明确授权开启 live 与 membership enabled。
+- [x] 单独列真实小额充值/会员、手机微信扫桌面/盒屏、断网恢复/通知重试/重复到账检查及退款恢复方案；每项在用户确认具体方案后执行。不能把本地模拟当正式收款。
 
 ## 官方依据
 
 - Native 产品介绍：https://pay.wechatpay.cn/doc/v3/merchant/4012791874
 - 其余 Native/API v3 安全直接文档见 `output/wechat-native/official-contract.md`，完成研究后复制必要链接至上线说明。
+
+## 本轮收尾
+
+源码候选 `4af8cb3ffd5599f22b6994b9306a0bd98e610081` 已本地提交，Astra Max最终审核Approved。暂停后用户恢复，仅补文档和聚焦核验（80 passed），源码不变。完整结果213 Python / 80前端 / 6浏览器、普通与严格构建通过。此计划到“可审核上线方案”已完成；四步发布、生产配置、真实收款及实体升级仍明确待用户授权，没有执行。独占本地测试PG保持停止。

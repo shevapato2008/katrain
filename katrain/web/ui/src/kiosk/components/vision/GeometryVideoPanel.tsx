@@ -46,13 +46,17 @@ const GeometryVideoPanel = ({
 
     const pull = async () => {
       const started = performance.now();
-      request = new AbortController();
-      const deadline = setTimeout(() => request?.abort(), 1500);
+      const controller = new AbortController();
+      request = controller;
+      const deadline = setTimeout(() => controller.abort(), 1500);
+      let bitmap: ImageBitmap | undefined;
+      let failed = true;
       try {
-        const response = await fetch(src, { cache: 'no-store', signal: request.signal });
+        const response = await fetch(src, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(`snapshot ${response.status}`);
-        const bitmap = await createImageBitmap(await response.blob());
-        if (!live) { bitmap.close(); return; }
+        if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
+        bitmap = await createImageBitmap(await response.blob());
+        if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
         const canvas = canvasRef.current;
         const context = canvas?.getContext('2d', { alpha: false });
         if (!canvas || !context) throw new Error('canvas unavailable');
@@ -66,15 +70,19 @@ const GeometryVideoPanel = ({
           reportedSize = size;
           onImageLoadRef.current?.({ width: bitmap.width, height: bitmap.height });
         }
-        bitmap.close();
         setSnapshotReady(true);
         setSnapshotError(false);
+        failed = false;
       } catch {
-        if (live) setSnapshotError(true);
+        if (live) {
+          setSnapshotReady(false);
+          setSnapshotError(true);
+        }
       } finally {
+        bitmap?.close();
         clearTimeout(deadline);
       }
-      if (live) timer = setTimeout(pull, Math.max(0, 200 - (performance.now() - started)));
+      if (live) timer = setTimeout(pull, failed ? 1000 : Math.max(0, 200 - (performance.now() - started)));
     };
     void pull();
     return () => {

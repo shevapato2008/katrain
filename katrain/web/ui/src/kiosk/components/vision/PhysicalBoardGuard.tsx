@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../hooks/useTranslation';
 import type { ReactNode } from 'react';
 import { useGeometry } from '../../context/GeometryContext';
 import { useBackTo } from '../../hooks/useBackTo';
@@ -23,6 +24,7 @@ const PhysicalBoardGuard = ({
   /** 打开这一屏的那一页没写明返回去哪儿(继续上一局进来的)时,去这里(本模块首页)。 */
   fallback?: string;
 }) => {
+  const { t } = useTranslation();
   const { status } = useGeometry();
   const back = useBackTo(fallback);
   const ready = status.phase === 'disabled' || (
@@ -34,9 +36,10 @@ const PhysicalBoardGuard = ({
 
   return (
     <GeometryCalibrationScreen
-      backLabel="返回"
+      t={t}
+      backLabel={t('Back', '返回')}
       onBack={back}
-      title="先标定棋盘"
+      title={t('vision:guard_title', '先标定棋盘')}
       sub={sub}
       requireRecognition={requireRecognition}
     />

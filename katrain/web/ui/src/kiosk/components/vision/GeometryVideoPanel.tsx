@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { Refresh, VideocamOff } from '@mui/icons-material';
 
+import { geometrySourceText, type GeometryTranslator } from './geometryText';
+
 interface GeometryVideoPanelProps {
+  t?: GeometryTranslator;
   title?: string;
   src?: string;
   alt: string;
@@ -17,6 +20,7 @@ interface GeometryVideoPanelProps {
 }
 
 const GeometryVideoPanel = ({
+  t = geometrySourceText,
   title,
   src,
   alt,
@@ -122,26 +126,26 @@ const GeometryVideoPanel = ({
             />
             {!snapshotReady && (
               <Typography color="text.secondary" sx={{ position: 'absolute' }}>
-                {snapshotError ? '画面重连中…' : '画面连接中…'}
+                {snapshotError ? t('vision:stream_reconnecting', '画面重连中…') : t('vision:stream_connecting', '画面连接中…')}
               </Typography>
             )}
             {snapshotReady && snapshotError && (
               <Typography color="warning.main" sx={{ position: 'absolute', bottom: 8, left: 12, bgcolor: 'rgba(0,0,0,.72)', px: 1 }}>
-                画面重连中…
+                {t('vision:stream_reconnecting', '画面重连中…')}
               </Typography>
             )}
           </>
         ) : streamError ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
             <VideocamOff color="error" sx={{ fontSize: 44 }} />
-            <Typography color="error.light">视频流连接中断</Typography>
+            <Typography color="error.light">{t('vision:stream_failed', '视频流连接中断')}</Typography>
             <Button
               variant="outlined"
               color="error"
               startIcon={<Refresh />}
               onClick={() => { setStreamError(false); setStreamKey((value) => value + 1); }}
             >
-              重试
+              {t('vision:stream_retry', '重试')}
             </Button>
           </Box>
         ) : (

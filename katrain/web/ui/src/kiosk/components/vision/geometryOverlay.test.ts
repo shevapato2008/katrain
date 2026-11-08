@@ -41,8 +41,13 @@ describe('geometry overlay model', () => {
     expect(model.tone).toBe('normal');
     expect(model.lines).toHaveLength(38);
     expect(model.points).toHaveLength(361);
-    expect(model.corners.map((corner) => corner.label)).toEqual(['左上', '右上', '右下', '左下']);
+    expect(model.corners.map((corner) => corner.label)).toEqual(['A19', 'T19', 'T1', 'A1']);
     expect(model.starPoints).toHaveLength(9);
+  });
+
+  it('keeps backend labels and geometry untouched while presenting compact coordinates', () => {
+    buildRawGeometryModel(layout, 'ready', { width: 1000, height: 600 });
+    expect(layout.corners.map((corner) => corner.label)).toEqual(['左上', '右上', '右下', '左下']);
   });
 
   it('marks retained geometry as stale after displacement', () => {

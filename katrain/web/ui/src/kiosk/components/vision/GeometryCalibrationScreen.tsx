@@ -11,7 +11,7 @@ import { useGeometry } from '../../context/GeometryContext';
 import { GeometryAPI, type GeometryLayout, type GeometryPhase, type GeometryStatus, type LightingReason } from '../../../api/geometryApi';
 import LightingWarningDialog from './LightingWarningDialog';
 import { useLightingWarning } from '../../hooks/useLightingWarning';
-import { useTranslation } from '../../../hooks/useTranslation';
+import { geometrySourceText, type GeometryTranslator } from './geometryText';
 import { useVoice, type VoiceName } from '../../hooks/useVoice';
 import {
   buildAnchorGeometryModel, buildRawGeometryModel, buildWarpedGeometryModel,
@@ -25,10 +25,10 @@ import {
 
 /** 用户可见的四步；四角和天元合为一次五点定位。 */
 const STEPS = [
-  { key: 'empty', title: '等待棋盘稳定' },
-  { key: 'exposure', title: '确认并锁定曝光' },
-  { key: 'points', title: '定位棋盘' },
-  { key: 'baseline', title: '生成空盘基线' },
+  { key: 'empty', title: '等待棋盘稳定', titleKey: 'vision:step_empty' },
+  { key: 'exposure', title: '确认并锁定曝光', titleKey: 'vision:step_exposure' },
+  { key: 'points', title: '定位棋盘', titleKey: 'vision:step_points' },
+  { key: 'baseline', title: '生成空盘基线', titleKey: 'vision:step_baseline' },
 ] as const;
 
 /**
@@ -66,29 +66,29 @@ interface Diagnostic { title: string; body: string; action: string; detail?: str
  * 「失败时给**诊断**不给『重试』」是稿子写在屏上的承诺。兑现它的方式是失败那一刻出现的是
  * 一张**点名具体原因**的卡,而不是一颗孤零零的重试键。这段逐字保留自上一版,一个分支没删。
  */
-function buildDiagnostic(error?: string | null, stoppedPhase?: GeometryPhase | null): Diagnostic {
+function buildDiagnostic(t: GeometryTranslator, error?: string | null, stoppedPhase?: GeometryPhase | null): Diagnostic {
   const raw = error ?? '';
   if (/manual exposure lock|verified manual exposure/.test(raw)) {
     return {
-      title: '摄像头曝光没有锁定',
-      body: '没能确认固定曝光状态，这次标定已停止。',
-      action: '检查摄像头连接，再重新开始标定。',
+      title: t('vision:diagnostic_exposure_lock_title', '摄像头曝光没有锁定'),
+      body: t('vision:diagnostic_exposure_lock_body', '没能确认固定曝光状态，这次标定已停止。'),
+      action: t('vision:diagnostic_camera_action', '检查摄像头连接，再重新开始标定。'),
       detail: raw,
     };
   }
   if (raw === 'frame_overexposed' || raw === 'frame_underexposed') {
     return {
-      title: raw === 'frame_overexposed' ? '摄像头画面过亮' : '摄像头画面过暗',
-      body: '盘面细节看不清，这次标定无法继续。',
-      action: '换到光线合适的位置，再重新开始标定。',
+      title: raw === 'frame_overexposed' ? t('vision:diagnostic_bright_title', '摄像头画面过亮') : t('vision:diagnostic_dark_title', '摄像头画面过暗'),
+      body: t('vision:diagnostic_lighting_body', '盘面细节看不清，这次标定无法继续。'),
+      action: t('vision:diagnostic_lighting_action', '换到光线合适的位置，再重新开始标定。'),
       detail: raw,
     };
   }
   if (stoppedPhase === 'converging_exposure' || isExposureError(raw)) {
     return {
-      title: '曝光收敛没有完成',
-      body: '摄像头未能完成曝光调整和锁定。',
-      action: '检查摄像头连接，再重新开始标定。',
+      title: t('vision:diagnostic_exposure_title', '曝光收敛没有完成'),
+      body: t('vision:diagnostic_exposure_body', '摄像头未能完成曝光调整和锁定。'),
+      action: t('vision:diagnostic_camera_action', '检查摄像头连接，再重新开始标定。'),
       detail: raw || undefined,
     };
   }
@@ -97,45 +97,46 @@ function buildDiagnostic(error?: string | null, stoppedPhase?: GeometryPhase | n
     const row = Number(anchor[1]);
     const col = Number(anchor[2]);
     return {
-      title: `没找到 ${gtpPoint(row, col)} 这个点的灯`,
-      body: '多半是这三种:那个点上压着一颗子、这一带的灯太暗、或者摄像头被挪过。',
-      action: `把 ${gtpPoint(row, col)} 附近清空，再看一眼摄像头有没有动过。`,
+      title: t('vision:diagnostic_anchor_title', '没找到 {point} 这个点的灯').replace('{point}', gtpPoint(row, col)),
+      body: t('vision:diagnostic_anchor_body', '多半是这三种:那个点上压着一颗子、这一带的灯太暗、或者摄像头被挪过。'),
+      action: t('vision:diagnostic_anchor_action', '把 {point} 附近清空，再看一眼摄像头有没有动过。').replace('{point}', gtpPoint(row, col)),
       detail: raw,
     };
   }
   if (raw === 'board_moved' || raw === 'displaced') {
     return {
-      title: '棋盘和上次标定的位置对不上了',
-      body: '摄像头或棋盘被挪动过，之前那份几何已经不能用了。',
-      action: '把棋盘摆回原位；摆不回去就重新标定一次。',
+      title: t('vision:diagnostic_moved_title', '棋盘和上次标定的位置对不上了'),
+      body: t('vision:diagnostic_moved_body', '摄像头或棋盘被挪动过，之前那份几何已经不能用了。'),
+      action: t('vision:diagnostic_moved_action', '把棋盘摆回原位；摆不回去就重新标定一次。'),
     };
   }
   if (raw === 'non_empty_baseline') {
     return {
-      title: '生成基线时盘上还有子',
-      body: '空盘基线是之后识子的底片，底片上有子，之后每一手都会认错。',
-      action: '把盘清空，再重新开始标定。',
+      title: t('vision:diagnostic_baseline_title', '生成基线时盘上还有子'),
+      body: t('vision:diagnostic_baseline_body', '空盘基线是之后识子的底片，底片上有子，之后每一手都会认错。'),
+      action: t('vision:diagnostic_clear_action', '把盘清空，再重新开始标定。'),
       detail: raw,
     };
   }
   if (raw === 'led_clear_failed' || raw === 'baseline_frames_missing') {
     return {
-      title: raw === 'led_clear_failed' ? '灯没能全部熄灭' : '基线照片没拍够',
-      body: '前面五个点都找到了，卡在最后一步。多半是灯带或摄像头这一刻掉线了。',
-      action: '检查灯带和摄像头的接线，再重新开始标定。',
+      title: raw === 'led_clear_failed' ? t('vision:diagnostic_led_title', '灯没能全部熄灭') : t('vision:diagnostic_frames_title', '基线照片没拍够'),
+      body: t('vision:diagnostic_finish_body', '前面五个点都找到了，卡在最后一步。多半是灯带或摄像头这一刻掉线了。'),
+      action: t('vision:diagnostic_wiring_action', '检查灯带和摄像头的接线，再重新开始标定。'),
       detail: raw,
     };
   }
   return {
-    title: '这次标定没有完成',
-    body: '没有拿到能用的棋盘几何。',
-    action: '先确认盘是空的、摄像头没被挪过，再重新开始标定。',
+    title: t('vision:diagnostic_failed_title', '这次标定没有完成'),
+    body: t('vision:diagnostic_failed_body', '没有拿到能用的棋盘几何。'),
+    action: t('vision:diagnostic_failed_action', '先确认盘是空的、摄像头没被挪过，再重新开始标定。'),
     detail: raw || undefined,
   };
 }
 
 export interface GeometryCalibrationScreenProps {
   /** 页控条返回键上的字。**guard 和设置两条路不一样** —— 见页头注。 */
+  t?: GeometryTranslator;
   backLabel: string;
   onBack: () => void;
   title: string;
@@ -146,10 +147,9 @@ export interface GeometryCalibrationScreenProps {
 }
 
 export function GeometryCalibrationScreen({
-  backLabel, onBack, title, sub, requireRecognition = false, allowExistingReuse = true,
+  backLabel, onBack, title, sub, requireRecognition = false, allowExistingReuse = true, t = geometrySourceText,
 }: GeometryCalibrationScreenProps) {
   const { status, loaded, startCalibration, confirmExisting, cancelCalibration, recheckLighting, relocate } = useGeometry();
-  const { t } = useTranslation();
   const voice = useVoice();
   const { speak, stop } = voice;
   const lightingWarning = useLightingWarning(lightingReason(status), String(status.geometry_revision ?? 'unknown'), voice);
@@ -164,7 +164,7 @@ export function GeometryCalibrationScreen({
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [manualView, setManualView] = useState<'raw' | 'warped' | null>(null);
   const [relocating, setRelocating] = useState(false);
-  const [relocateError, setRelocateError] = useState<string | null>(null);
+  const [relocateError, setRelocateError] = useState<'no_board' | 'failed' | null>(null);
   const [lightError, setLightError] = useState<string | null>(null);
   const [rechecking, setRechecking] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -304,8 +304,7 @@ export function GeometryCalibrationScreen({
       // 失败要说话。最常见的一种是外框被人挡住 / 画面太暗,说得出来用户才知道怎么办。
       setRelocateError(
         err instanceof Error && /no_board_detected/.test(err.message)
-          ? t('vision:relocate_no_board', '画面里找不到棋盘外框，挪开挡住边框的东西再试一次。')
-          : t('vision:relocate_failed', '再试一次；一直不行就清空棋盘重新标定。'),
+          ? 'no_board' : 'failed',
       );
     } finally {
       setRelocating(false);
@@ -371,55 +370,55 @@ export function GeometryCalibrationScreen({
   const inliers = status.metrics?.inlier_count;
 
   const stepTag = (i: number, state: string): { text: string; cls: string } => {
-    if (state === 'done') return { text: '完成', cls: 'kiosk-tag--win' };
-    if (state === 'plain') return { text: '完成', cls: '' };
-    if (state === 'now') return { text: waitingForBoard && i === 0 ? '等待中' : '进行中', cls: '' };
-    if (state === 'paused') return { text: '已暂停', cls: 'kiosk-tag--warn' };
-    if (state === 'bad') return { text: '失败', cls: 'kiosk-tag--bad' };
+    if (state === 'done') return { text: t('vision:step_done', '完成'), cls: 'kiosk-tag--win' };
+    if (state === 'plain') return { text: t('vision:step_done', '完成'), cls: '' };
+    if (state === 'now') return { text: waitingForBoard && i === 0 ? t('vision:step_waiting', '等待中') : t('vision:step_running', '进行中'), cls: '' };
+    if (state === 'paused') return { text: t('vision:step_paused', '已暂停'), cls: 'kiosk-tag--warn' };
+    if (state === 'bad') return { text: t('vision:step_failed', '失败'), cls: 'kiosk-tag--bad' };
     // 第 4 步的 warn 是「完成但点数不足」,别的步骤的 warn 是「已取消」。
     if (state === 'warn') {
       return i === 3 && phase === 'ready'
-        ? { text: `完成 · ${inliers} / 5`, cls: 'kiosk-tag--warn' }
-        : { text: '已取消', cls: 'kiosk-tag--warn' };
+        ? { text: t('vision:step_done_count', '完成 · {n} / 5').replace('{n}', String(inliers)), cls: 'kiosk-tag--warn' }
+        : { text: t('vision:step_cancelled', '已取消'), cls: 'kiosk-tag--warn' };
     }
-    return { text: '未开始', cls: 'kiosk-tag--dim' };
+    return { text: t('vision:step_pending', '未开始'), cls: 'kiosk-tag--dim' };
   };
 
   // ── 摄像头画面底下那条 ─────────────────────────────────────────────────────
   const capLeft = (): string => {
-    if (phase === 'ready' || anchorCount === 5) return '5 / 5 已定位';
-    if (anchorCount > 0) return `已完成 ${anchorCount} 个点 · ${stopped ? '标定已停止，请重新开始' : paused ? '灯已熄灭' : '继续标定'}`;
-    return active ? '双手离开后自动点灯' : '四角 + 天元 · 共 5 个定位点';
+    if (phase === 'ready' || anchorCount === 5) return t('vision:anchors_complete', '5 / 5 已定位');
+    if (anchorCount > 0) return `${t('vision:anchors_count', '已完成 {n} 个点').replace('{n}', String(anchorCount))} · ${stopped ? t('vision:calibration_stopped', '标定已停止，请重新开始') : paused ? t('vision:led_off', '灯已熄灭') : t('vision:calibration_continue', '继续标定')}`;
+    return active ? t('vision:caption_auto_led', '双手离开后自动点灯') : t('vision:caption_five_points', '四角 + 天元 · 共 5 个定位点');
   };
   const capRight = (): string => {
-    if (phase === 'ready') return '已完成';
-    if (stopped) return `停在第 ${brokenStep + 1} 步`;
+    if (phase === 'ready') return t('vision:completed', '已完成');
+    if (stopped) return t('vision:stopped_step', '停在第 {n} 步').replace('{n}', String(brokenStep + 1));
     if (active) return `${anchorCount} / 5`;
-    return '第 1 / 4 步';
+    return t('vision:step_one', '第 1 / 4 步');
   };
 
   // ── 三格状态 ───────────────────────────────────────────────────────────────
   //
   // 没读到时不给 tone；LED 未确认不能当成未连接。
   const calibValue = (): StatusCell => {
-    if (phase === 'ready' && status.session_calibrated) return { label: '标定', value: '已标定', tone: 'good' };
-    if (phase === 'degraded') return { label: '标定', value: '已失效', tone: 'bad' };
-    if (phase === 'obstructed') return { label: '标定', value: '等待移手', tone: 'warn' };
-    if (phase === 'lighting_paused') return { label: '标定', value: '等待调光', tone: 'warn' };
-    if (phase === 'waiting_empty' || phase === 'waiting_stable') return { label: '标定', value: '等待稳定', tone: 'warn' };
-    if (active) return { label: '标定', value: '标定中', tone: 'warn' };
-    if (failed) return { label: '标定', value: '失败', tone: 'bad' };
-    if (cancelled) return { label: '标定', value: '已取消', tone: 'warn' };
-    if (allowExistingReuse && status.last_valid) return { label: '标定', value: '待确认', tone: 'warn' };
-    return { label: '标定', value: '未标定' };
+    if (phase === 'ready' && status.session_calibrated) return { label: t('vision:status_calibration', '标定'), value: t('vision:status_calibrated', '已标定'), tone: 'good' };
+    if (phase === 'degraded') return { label: t('vision:status_calibration', '标定'), value: t('vision:status_invalid', '已失效'), tone: 'bad' };
+    if (phase === 'obstructed') return { label: t('vision:status_calibration', '标定'), value: t('vision:status_wait_hands', '等待移手'), tone: 'warn' };
+    if (phase === 'lighting_paused') return { label: t('vision:status_calibration', '标定'), value: t('vision:status_wait_light', '等待调光'), tone: 'warn' };
+    if (phase === 'waiting_empty' || phase === 'waiting_stable') return { label: t('vision:status_calibration', '标定'), value: t('vision:status_wait_stable', '等待稳定'), tone: 'warn' };
+    if (active) return { label: t('vision:status_calibration', '标定'), value: t('vision:status_calibrating', '标定中'), tone: 'warn' };
+    if (failed) return { label: t('vision:status_calibration', '标定'), value: t('vision:step_failed', '失败'), tone: 'bad' };
+    if (cancelled) return { label: t('vision:status_calibration', '标定'), value: t('vision:step_cancelled', '已取消'), tone: 'warn' };
+    if (allowExistingReuse && status.last_valid) return { label: t('vision:status_calibration', '标定'), value: t('vision:status_confirm', '待确认'), tone: 'warn' };
+    return { label: t('vision:status_calibration', '标定'), value: t('vision:status_uncalibrated', '未标定') };
   };
   const cells: StatusCell[] = loaded ? [
-    { label: '摄像头', value: cameraReady ? '已连接' : '未连接', tone: cameraReady ? 'good' : 'bad' },
+    { label: t('vision:status_camera', '摄像头'), value: cameraReady ? t('vision:status_connected', '已连接') : t('vision:status_disconnected', '未连接'), tone: cameraReady ? 'good' : 'bad' },
     calibValue(),
-    { label: 'LED', value: ledReady == null ? '未确认' : ledReady ? t('settings:camera_connected', '已连接') : '未连接',
+    { label: 'LED', value: ledReady == null ? t('vision:status_unknown', '未确认') : ledReady ? t('vision:status_connected', '已连接') : t('vision:status_disconnected', '未连接'),
       tone: ledReady == null ? undefined : ledReady ? 'good' : 'warn' },
   ] : [
-    { label: '摄像头', value: '—' }, { label: '标定', value: '—' }, { label: 'LED', value: '未确认' },
+    { label: t('vision:status_camera', '摄像头'), value: '—' }, { label: t('vision:status_calibration', '标定'), value: '—' }, { label: 'LED', value: t('vision:status_unknown', '未确认') },
   ];
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────
@@ -427,75 +426,88 @@ export function GeometryCalibrationScreen({
   // `lock_moved`:degraded 之后重新标定又取消/失败,phase 会落回可沿用的三态,但锁还是挪动前那把。
   const canReuse = (phase === 'required' || phase === 'failed' || phase === 'cancelled')
     && status.last_valid && !status.lock_moved && cameraReady && !starting && !relocating && !active;
-  const reuseBlockedWhy = active ? '标定进行中'
-    : !cameraReady ? '摄像头未连接，无法核对网格'
-      : phase === 'ready' ? '这一局已经在用这次标定'
+  const reuseBlockedWhy = active ? t('vision:reuse_running', '标定进行中')
+    : !cameraReady ? t('vision:reuse_camera_missing', '摄像头未连接，无法核对网格')
+      : phase === 'ready' ? t('vision:reuse_current', '这一局已经在用这次标定')
         // 「按不了」永远要有话说:degraded 是唯一剩下的按不了的情形。新文案走 t(),译文在 Task 7b 收口。
         : phase === 'degraded' || status.lock_moved ? t('vision:reuse_blocked_moved', '棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定')
           : null;
 
-  const primaryLabel = phase === 'ready' && !confirmingManual ? '重新标定棋盘'
-    : confirmingManual ? '已清空，确认重新标定'
-      : '重新开始标定';
-  const startUnavailable = !loaded ? '正在读取设备状态'
-    : !cameraReady && ledReady === false ? '设备未连接'
-    : !cameraReady ? '摄像头未连接'
-      : ledReady === null ? 'LED 未确认'
-        : ledReady === false ? 'LED 未连接' : null;
+  const primaryLabel = phase === 'ready' && !confirmingManual ? t('vision:recalibrate_board', '重新标定棋盘')
+    : confirmingManual ? t('vision:confirm_empty_recalibrate', '已清空，确认重新标定')
+      : t('vision:restart_calibration', '重新开始标定');
+  const startUnavailable = !loaded ? t('vision:reading_device_status', '正在读取设备状态')
+    : !cameraReady && ledReady === false ? t('vision:device_disconnected', '设备未连接')
+    : !cameraReady ? t('vision:camera_disconnected', '摄像头未连接')
+      : ledReady === null ? t('vision:led_unknown', 'LED 未确认')
+        : ledReady === false ? t('vision:led_disconnected', 'LED 未连接') : null;
 
   // 刚按的「对齐外框」没成,排在最前;原来那条链接在它后面,一字不改。
+  const errorText = (message: string) => {
+    const owned: Record<string, [string, string]> = {
+      '启动标定失败': ['vision:start_failed', '启动标定失败'],
+      '沿用上次标定失败': ['vision:reuse_failed', '沿用上次标定失败'],
+      '光线重检没有启动，请再试一次。': ['vision:light_recheck_failed', '光线重检没有启动，请再试一次。'],
+    };
+    const copy = owned[message];
+    return copy ? t(copy[0], copy[1]) : message;
+  };
   const diagnostic: Diagnostic | null = relocateError
-    ? { kind: 'relocate', title: t('vision:relocate_failed_title', '没对上'), body: relocateError, action: '' }
-    : failed ? buildDiagnostic(status.error, status.stopped_phase)
-      : phase === 'degraded' ? buildDiagnostic('board_moved')
-        : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
+    ? { kind: 'relocate', title: t('vision:relocate_failed_title', '没对上'), body: relocateError === 'no_board'
+      ? t('vision:relocate_no_board', '画面里找不到棋盘外框，挪开挡住边框的东西再试一次。')
+      : t('vision:relocate_failed', '再试一次；一直不行就清空棋盘重新标定。'), action: '' }
+    : failed ? buildDiagnostic(t, status.error, status.stopped_phase)
+      : phase === 'degraded' ? buildDiagnostic(t, 'board_moved')
+        : actionError ? { title: t('vision:action_failed_title', '操作没有生效'), body: errorText(actionError), action: t('vision:action_failed_help', '再试一次；一直不行就检查摄像头和灯带的接线。') }
           : null;
 
   const lightingIssue = phase === 'lighting_paused' || phase === 'lighting_rechecking';
   const tooBright = status.pause_reason === 'frame_overexposed';
   const tooDark = status.pause_reason === 'frame_underexposed';
-  const lightTitle = tooBright ? '画面过亮，棋盘细节可能看不清'
-    : tooDark ? '画面过暗，棋盘细节可能看不清' : '当前光线可能影响棋盘识别';
+  const lightTitle = tooBright ? t('vision:light_bright_title', '画面过亮，棋盘细节可能看不清')
+    : tooDark ? t('vision:light_dark_title', '画面过暗，棋盘细节可能看不清') : t('vision:light_title', '当前光线可能影响棋盘识别');
   const lightGuidance = tooBright
-    ? '请拉上窗帘，避开阳光直射棋盘。'
-    : tooDark ? '请打开室内灯，或换到光线均匀的位置。' : '请调整为均匀、柔和的光线。';
-  const lightVoiceText = tooBright ? '光线太亮，请拉上窗帘，避开直射光。'
-    : tooDark ? '光线太暗，请打开室内灯。' : '请调整棋盘周围的光线。';
-  const previewLabel = waitingForBoard ? '等待棋盘稳定'
-    : phase === 'obstructed' ? '已暂停'
-      : lightingIssue ? (phase === 'lighting_rechecking' ? '正在检测光线' : tooBright ? '光线过亮' : tooDark ? '光线过暗' : '光线待调整')
-        : phase === 'ready' ? '标定完成' : '正在标定';
+    ? t('vision:light_bright_guidance', '请拉上窗帘，避开阳光直射棋盘。')
+    : tooDark ? t('vision:light_dark_guidance', '请打开室内灯，或换到光线均匀的位置。') : t('vision:light_guidance', '请调整为均匀、柔和的光线。');
+  const lightVoiceText = tooBright ? t('vision:light_bright_voice', '光线太亮，请拉上窗帘，避开直射光。')
+    : tooDark ? t('vision:light_dark_voice', '光线太暗，请打开室内灯。') : t('vision:light_voice', '请调整棋盘周围的光线。');
+  const previewLabel = waitingForBoard ? t('vision:step_empty', '等待棋盘稳定')
+    : phase === 'obstructed' ? t('vision:step_paused', '已暂停')
+      : lightingIssue ? (phase === 'lighting_rechecking' ? t('vision:light_checking', '正在检测光线') : tooBright ? t('vision:light_bright', '光线过亮') : tooDark ? t('vision:light_dark', '光线过暗') : t('vision:light_pending', '光线待调整'))
+        : phase === 'ready' ? t('vision:calibration_done', '标定完成') : t('vision:calibration_running', '正在标定');
   const previewBanner = waitingForBoard
-    ? (phase === 'waiting_empty' ? '请把手移开棋盘上方' : '画面不稳定，请保持棋盘上方无遮挡')
-    : phase === 'obstructed' ? '检测到遮挡，标定已暂停'
-      : lightingIssue ? (phase === 'lighting_rechecking' ? '正在重新检测光线' : `${tooBright ? '光线过亮' : tooDark ? '光线过暗' : '光线需要调整'}，标定已暂停`)
-        : '正在标定';
-  const previewDetail = waitingForBoard ? '稳定后自动开始'
-    : paused ? `${anchorCount} 点已保留`
-      : `已完成 ${anchorCount} / 5`;
+    ? (phase === 'waiting_empty' ? t('vision:preview_move_hands', '请把手移开棋盘上方') : t('vision:preview_unstable', '画面不稳定，请保持棋盘上方无遮挡'))
+    : phase === 'obstructed' ? t('vision:preview_obstructed', '检测到遮挡，标定已暂停')
+      : lightingIssue ? (phase === 'lighting_rechecking' ? t('vision:light_rechecking', '正在重新检测光线') : `${tooBright ? t('vision:light_bright', '光线过亮') : tooDark ? t('vision:light_dark', '光线过暗') : t('vision:light_adjust', '光线需要调整')} · ${t('vision:calibration_paused', '标定已暂停')}`)
+        : t('vision:calibration_running', '正在标定');
+  const previewDetail = waitingForBoard ? t('vision:preview_stable_auto', '稳定后自动开始')
+    : paused ? t('vision:anchors_retained', '{n} 点已保留').replace('{n}', String(anchorCount))
+      : t('vision:preview_completed_count', '已完成 {n} / 5').replace('{n}', String(anchorCount));
 
   const preview: ReactNode = view === 'raw' ? (
     <GeometryVideoPanel
       key="raw"
+      t={t}
       fill
       snapshot
       src={`/api/v1/geometry/snapshot?view=raw&scale=${RAW_STREAM_SCALE}`}
-      alt="摄像头原始画面"
+      alt={t('vision:raw_alt', '摄像头原始画面')}
       // 锚点坐标是相机原始像素 ⇒ 缩过的图要乘回去,覆盖层才对得上。
       onImageLoad={(s) => setRawFrame({ width: s.width * RAW_STREAM_SCALE, height: s.height * RAW_STREAM_SCALE })}
-      overlay={<CameraGeometryOverlay modelForViewport={rawModelForViewport} label="原始画面棋盘几何叠加层" />}
+      overlay={<CameraGeometryOverlay modelForViewport={rawModelForViewport} label={t('vision:raw_overlay', '原始画面棋盘几何叠加层')} />}
     />
   ) : (
     <GeometryVideoPanel
       key={`warped-${validLayout?.revision ?? 'waiting'}`}
+      t={t}
       fill
       snapshot
       /* ⚠️ `&& !active` 不是多余的:运行中 `layout` 往往非空(上一次的锁还在磁盘上),
          照播就是在放**一份正在被这次运行作废的**几何 —— 常驻分段方案里唯一会骗人的那一格。 */
       src={validLayout && !active ? `/api/v1/geometry/snapshot?view=warped&revision=${validLayout.revision}&scale=${WARPED_STREAM_SCALE}` : undefined}
-      alt="俯视矫正画面"
-      waitingText={active ? '标定进行中，俯视画面在完成后重新生成' : '完成 LED 标定后生成俯视画面'}
-      overlay={<CameraGeometryOverlay modelForViewport={warpedModelForViewport} label="俯视画面棋盘几何叠加层" />}
+      alt={t('vision:warped_alt', '俯视矫正画面')}
+      waitingText={active ? t('vision:warped_wait_running', '标定进行中，俯视画面在完成后重新生成') : t('vision:warped_wait', '完成 LED 标定后生成俯视画面')}
+      overlay={<CameraGeometryOverlay modelForViewport={warpedModelForViewport} label={t('vision:warped_overlay', '俯视画面棋盘几何叠加层')} />}
     />
   );
 
@@ -507,15 +519,15 @@ export function GeometryCalibrationScreen({
       title={<>
         {title}
         <button type="button" className="kiosk-pagebar__iconbtn calib-help-button"
-          aria-label="标定说明" aria-expanded={helpOpen} onClick={() => setHelpOpen(true)}>
+          aria-label={t('vision:help_title', '标定说明')} aria-expanded={helpOpen} onClick={() => setHelpOpen(true)}>
           <Icon name="info" />
         </button>
       </>}
       segment={active ? undefined : {
         value: view,
-        options: [['raw', '原始画面'], ['warped', '俯视矫正']] as const,
+        options: [['raw', t('vision:view_raw', '原始画面')], ['warped', t('vision:view_warped', '俯视矫正')]] as const,
         onChange: (next) => setManualView(next as 'raw' | 'warped'),
-        ariaLabel: '画面',
+        ariaLabel: t('vision:view_label', '画面'),
       }}
     />
   );
@@ -524,10 +536,10 @@ export function GeometryCalibrationScreen({
     <div className="calib-light-scrim">
       <section className="calib-light-dialog" role="dialog" aria-modal="true" aria-labelledby="calib-help-title"
         style={{ borderColor: 'var(--accent)' }}>
-        <h2 id="calib-help-title">标定说明</h2>
-        <p>{sub}。棋盘稳定后才开始；遮挡时灯熄灭，移手后从未完成的点继续。失败时屏幕会给出具体诊断。</p>
+        <h2 id="calib-help-title">{t('vision:help_title', '标定说明')}</h2>
+        <p>{sub}{t('vision:help_body', '。棋盘稳定后才开始；遮挡时灯熄灭，移手后从未完成的点继续。失败时屏幕会给出具体诊断。')}</p>
         <div className="calib-light-actions">
-          <button type="button" className="kiosk-btn kiosk-btn--primary" onClick={() => setHelpOpen(false)}>知道了</button>
+          <button type="button" className="kiosk-btn kiosk-btn--primary" onClick={() => setHelpOpen(false)}>{t('game:local_got_it', '知道了')}</button>
         </div>
       </section>
     </div>
@@ -543,8 +555,8 @@ export function GeometryCalibrationScreen({
       <div className="calib-screen" data-testid="calib-screen">
         {pagebar}
         <div className="empty" data-testid="calib-disabled">
-          <h4>这台盒子没有配摄像头</h4>
-          <p>实体棋盘识别、摆谱、实体做题都用不了；<b>屏幕上的功能不受影响</b>。</p>
+          <h4>{t('vision:no_camera_title', '这台盒子没有配摄像头')}</h4>
+          <p>{t('vision:no_camera_body', '实体棋盘识别、摆谱、实体做题都用不了；')}<b>{t('vision:no_camera_screen_ok', '屏幕上的功能不受影响')}</b>{t('vision:sentence_end', '。')}</p>
         </div>
         {helpDialog}
       </div>
@@ -552,7 +564,7 @@ export function GeometryCalibrationScreen({
   }
 
   return (<>
-    <LightingWarningDialog {...lightingWarning} />
+    <LightingWarningDialog t={t} {...lightingWarning} />
     <div className="calib-screen" data-testid="calib-screen">
       {pagebar}
       <div className="calib-body">
@@ -574,7 +586,7 @@ export function GeometryCalibrationScreen({
           <div className="cap" data-testid="calib-cap">
             <span>
               {capLeft()}
-              {layoutError && <b> · 几何叠加读取失败</b>}
+              {layoutError && <b> · {t('vision:overlay_failed', '几何叠加读取失败')}</b>}
             </span>
             <i>{capRight()}</i>
           </div>
@@ -606,7 +618,7 @@ export function GeometryCalibrationScreen({
                   >
                     <span className="kiosk-row__lead">{i + 1}</span>
                     <span className="kiosk-row__t">
-                      <b>{step.title}</b>
+                      <b>{t(step.titleKey, step.title)}</b>
                     </span>
                     <span className="kiosk-row__end">
                       <span className={`kiosk-tag ${tag.cls}`}>{tag.text}</span>
@@ -618,15 +630,15 @@ export function GeometryCalibrationScreen({
 
             <p className="setnote calib-note">
               {/* 第一行**永远在**:这是 Fan 定的硬规矩,不因为屏上正在发生什么而消失。 */}
-              <b data-testid="geometry-led-advisory">LED 只在你按下之后才亮，不会自动点亮 LED</b>
+              <b data-testid="geometry-led-advisory">{t('vision:led_advisory', 'LED 只在你按下之后才亮，不会自动点亮 LED')}</b>
               {active && status.grid_warning === 'grid_not_visible' && (
                 <><br /><span role="status">{t('vision:grid_not_visible', '网格暂未识别，将通过 LED 定位棋盘')}</span></>
               )}
               {allowExistingReuse && reuseBlockedWhy && status.last_valid && (
-                <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
+                <><br />{t('vision:reuse_blocked', '「沿用上次标定」此刻按不了：{reason}。').replace('{reason}', reuseBlockedWhy)}</>
               )}
               {requireRecognition && phase === 'ready' && !status.capabilities.recognition_ready && (
-                <><br />棋盘已标定，但识别模型还没就绪。</>
+                <><br />{t('vision:recognition_not_ready', '棋盘已标定，但识别模型还没就绪。')}</>
               )}
             </p>
           </KioskScrollZone>
@@ -703,18 +715,18 @@ export function GeometryCalibrationScreen({
       {lightingIssue && (
         <div className="calib-light-scrim">
           <section className="calib-light-dialog" role="dialog" aria-modal="true" aria-labelledby="calib-light-title">
-            <span className="calib-light-eyebrow">光线提醒 · 标定已暂停</span>
-            <h2 id="calib-light-title">{phase === 'lighting_rechecking' ? '正在重新检测光线' : lightTitle}</h2>
-            <p>{lightGuidance}调整后重新检测光线，已完成的 {anchorCount} 个点会保留。</p>
-            <div className="calib-light-voice"><b>语音提示</b>　{lightVoiceText}</div>
-            {lightError && <p className="calib-light-error" role="alert">{lightError}</p>}
+            <span className="calib-light-eyebrow">{t('vision:light_paused_eyebrow', '光线提醒 · 标定已暂停')}</span>
+            <h2 id="calib-light-title">{phase === 'lighting_rechecking' ? t('vision:light_rechecking', '正在重新检测光线') : lightTitle}</h2>
+            <p>{lightGuidance}{t('vision:light_recheck_help', '调整后重新检测光线，已完成的 {n} 个点会保留。').replace('{n}', String(anchorCount))}</p>
+            <div className="calib-light-voice"><b>{t('vision:voice_prompt', '语音提示')}</b>　{lightVoiceText}</div>
+            {lightError && <p className="calib-light-error" role="alert">{errorText(lightError)}</p>}
             <div className="calib-light-actions">
               <button type="button" className="kiosk-btn kiosk-btn--secondary is-danger" onClick={() => void cancelCalibration()}>
-                取消标定
+                {t('vision:cancel_calibration', '取消标定')}
               </button>
               <button type="button" className="kiosk-btn kiosk-btn--primary"
                 disabled={rechecking || phase === 'lighting_rechecking'} onClick={() => void handleRecheckLighting()}>
-                {phase === 'lighting_rechecking' || rechecking ? '正在检测…' : '调整后重新检测'}
+                {phase === 'lighting_rechecking' || rechecking ? t('vision:light_check_busy', '正在检测…') : t('vision:light_recheck', '调整后重新检测')}
               </button>
             </div>
           </section>

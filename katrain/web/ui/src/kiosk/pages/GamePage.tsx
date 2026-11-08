@@ -1422,6 +1422,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // Only visible content switches; the session hook, SGF and game identity remain mounted.
   if (localPhysicalGame && localRecovery.calibration) return <GeometryCalibrationScreen
+      t={t}
     backLabel={t('local:return_original_game', '返回原局')}
     onBack={() => setLocalRecovery(previous => ({ ...previous, calibration: false }))}
     title={t('local:empty_calibration_title', '空盘标定 · 原局保留')}

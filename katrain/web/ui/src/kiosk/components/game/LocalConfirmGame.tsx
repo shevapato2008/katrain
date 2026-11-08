@@ -181,7 +181,7 @@ export default function LocalConfirmGame({ gameState, playerRanks, input, point,
   };
 
   return <>
-    <LightingWarningDialog {...lightingWarning} />
+    <LightingWarningDialog t={t} {...lightingWarning} />
     {headerSlot ? createPortal(header, headerSlot) : null}
     <div className="lc-arena" data-testid="local-confirm-game">
       {seat('B')}

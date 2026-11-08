@@ -95,7 +95,7 @@ const gridModel = (
     starPoints,
     corners: corners.map((corner) => ({
       ...mapPoint(corner.row, corner.col, corner.x, corner.y, transform),
-      label: corner.label,
+      label: ({ '左上': 'A19', '右上': 'T19', '右下': 'T1', '左下': 'A1' } as Record<string, string>)[corner.label] ?? corner.label,
     })),
     anchors: [],
   };

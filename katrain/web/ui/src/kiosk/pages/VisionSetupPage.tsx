@@ -17,6 +17,7 @@ const VisionSetupPage = () => {
   const { t } = useTranslation();
   return (
     <GeometryCalibrationScreen
+      t={t}
       backLabel={fromSettings ? t('vision:back_settings', '返回设置') : t('Back', '返回')}
       onBack={back}
       title={t('vision:calibrate_title', '棋盘标定')}

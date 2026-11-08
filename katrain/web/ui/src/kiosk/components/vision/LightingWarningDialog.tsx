@@ -1,12 +1,12 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import type { LightingReason } from '../../../api/geometryApi';
-import { useTranslation } from '../../../hooks/useTranslation';
+import { geometrySourceText, type GeometryTranslator } from './geometryText';
 
-export default function LightingWarningDialog({ reason, onClose }: {
+export default function LightingWarningDialog({ reason, onClose, t = geometrySourceText }: {
+  t?: GeometryTranslator;
   reason: LightingReason | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
   return <Dialog open={reason !== null} onClose={onClose} maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
     <DialogTitle>{reason === 'frame_overexposed'
       ? t('vision:lighting_overexposed_title', '画面过亮，暂时无法可靠识别')

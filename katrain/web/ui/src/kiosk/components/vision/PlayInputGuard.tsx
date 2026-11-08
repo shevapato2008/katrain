@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../hooks/useTranslation';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import PhysicalBoardGuard from './PhysicalBoardGuard';
@@ -22,9 +23,10 @@ import { readSessionPlayOnBoard } from '../../utils/playInput';
  * 只在渲染时同步读,不订阅变化:这一局落在哪儿开局后不可改。
  */
 const PlayInputGuard = ({ children }: { children: ReactNode }) => {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   return readSessionPlayOnBoard(pathname).onBoard
-    ? <PhysicalBoardGuard requireRecognition sub="在实体盘上对弈，要先让摄像头看清盘面">{children}</PhysicalBoardGuard>
+    ? <PhysicalBoardGuard requireRecognition sub={t('vision:guard_play_sub', '在实体盘上对弈，要先让摄像头看清盘面')}>{children}</PhysicalBoardGuard>
     : <>{children}</>;
 };
 

@@ -285,6 +285,7 @@ const PvpLocalSetupPage = () => {
   };
 
   if (calibrationOpen) return <GeometryCalibrationScreen
+      t={t}
     backLabel={t('local:return_setup', '返回设置')} onBack={returnToSetup}
     title={t('local:prestart_calibration', '先检查棋盘标定')}
     sub={error

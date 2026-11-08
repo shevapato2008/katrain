@@ -1,3 +1,5 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
+import { interpolate } from '../utils/interpolate';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
@@ -49,12 +51,12 @@ const KifuPage = () => {
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [preview, setPreview] = useState<{ id: number; board: ReturnType<typeof buildReplayPosition>; size: number } | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<UiMessage | string | null>(null);
   const [showRecent, setShowRecent] = useState(false);
   const history = useBaipuHistory(showRecent);
   const recent = history.items;
   const auth = useAuth();
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<UiMessage | string | null>(null);
 
   // Preserve the current search and page when returning from Settings.
   const [initialSearch] = useState(readSearchSession);
@@ -127,7 +129,7 @@ const KifuPage = () => {
       const size = parsed.metadata.boardSize || album.board_size || 19;
       if (!cancelled) setPreview({ id: selectedId, size,
         board: buildReplayPosition(parsed.moves, parsed.moves.length, size, parsed.stoneColors, parsed.setupCount) });
-    }).catch(() => { if (!cancelled) setPreviewError(t('kifu:preview_failed', '棋谱预览加载失败')); });
+    }).catch(() => { if (!cancelled) setPreviewError(uiMessage('kifu:preview_failed', '棋谱预览加载失败')); });
     return () => { cancelled = true; };
   }, [selectedId, lang]);
 
@@ -151,7 +153,7 @@ const KifuPage = () => {
     const cached = getCachedSgf(entry.id, kioskActivityStorage(null, true));
     if (!cached) {
       // 谱是**整份缓存在本地**的,缓存没了就没法离线接着摆 —— 如实说,不假装还能点。
-      setSessionError(t('kifu:cache_gone', '这份谱的本地缓存没了,得重新选一次'));
+      setSessionError(uiMessage('kifu:cache_gone', '这份谱的本地缓存没了,得重新选一次'));
       history.refresh();
       return;
     }
@@ -170,7 +172,7 @@ const KifuPage = () => {
         <div className="archive-preview__board"><GoBoardSvg size={preview?.size ?? 19}
           black={preview?.board.black ?? []} white={preview?.board.white ?? []}
           last={preview?.board.last} muted={!preview} label={t('kifu:final_board', '选中棋谱的终局盘')} /></div>
-        <p role="status">{previewError ?? (selectedId == null ? t('kifu:select_game', '请选择棋谱') : !preview ? t('kifu:preview_loading', '正在加载棋谱') : t('kifu:final_position', '终局棋谱'))}</p>
+        <p role="status">{(previewError ? renderUiMessage(previewError, t) : null) ?? (selectedId == null ? t('kifu:select_game', '请选择棋谱') : !preview ? t('kifu:preview_loading', '正在加载棋谱') : t('kifu:final_position', '终局棋谱'))}</p>
         <div className="archive-preview__actions">
           <button type="button" className="kiosk-btn" disabled={!preview || preview.id !== selectedId} onClick={() => navigate(`/kiosk/kifu/${selectedId}/replay`)}>{t('kifu:open_replay', '查看棋谱')}</button>
           <button type="button" className="kiosk-btn" disabled={!preview || preview.id !== selectedId || !albums?.find(a => a.id === selectedId)?.has_analysis}
@@ -180,7 +182,7 @@ const KifuPage = () => {
     <div className="kiosk-side kifu-library">
       <div className="kiosk-greet archive-library-heading">
         <b>{t('kifu:professional_library', '职业棋谱')}</b>
-        <span>{total != null ? `${t('kifu:total_prefix', '共')} ${total.toLocaleString()} ${t('kifu:games_unit', '局')}` : ''}</span>
+        <span>{total != null ? interpolate(t("{value1} {value2} {value3}", "{value1} {value2} {value3}"), { value1: t('kifu:total_prefix', '共'), value2: total.toLocaleString(), value3: t('kifu:games_unit', '局') }) : ''}</span>
       </div>
       <div className="archive-library-tabs" role="group" aria-label={t('kifu:library_views', '棋谱分类')}>
         <button type="button" className="kiosk-btn" aria-pressed={!showRecent} onClick={() => setShowRecent(false)}>{t('kifu:famous_records', '名局棋谱')}</button>
@@ -207,7 +209,7 @@ const KifuPage = () => {
           {sessionError && (
             <div className="empty" role="alert" data-testid="kifu-action-error">
               <h4>{t('kifu:cannot_start', '这一份摆不了')}</h4>
-              <p>{sessionError}</p>
+              <p>{renderUiMessage(sessionError, t)}</p>
             </div>
           )}
           {resumable && (
@@ -251,13 +253,13 @@ const KifuPage = () => {
                     return (
                       <div className="kiosk-row" key={e.id}>
                         <span className="kiosk-row__lead">
-                          {done ? t('kifu:whole_game', '全谱') : `${e.progress?.k ?? 0} ${t('kifu:moves_unit', '手')}`}
+                          {done ? t('kifu:whole_game', '全谱') : interpolate(t("{value1} {value2}", "{value1} {value2}"), { value1: e.progress?.k ?? 0, value2: t('kifu:moves_unit', '手') })}
                         </span>
                         <span className="kiosk-row__t">
                           <b>{e.name}</b>
                           <em>
                             {done ? t('kifu:placed_all', '摆完')
-                              : `${t('kifu:placed_at', '摆到第')} ${e.progress?.k ?? 0} ${t('kifu:moves_unit', '手')}`}
+                              : interpolate(t("{value1} {value2} {value3}", "{value1} {value2} {value3}"), { value1: t('kifu:placed_at', '摆到第'), value2: e.progress?.k ?? 0, value3: t('kifu:moves_unit', '手') })}
                             {' · '}{whenLabel(e.savedAt, t)}
                             {e.record?.sync_state === 'pending' && <> · {t('kifu:history_pending', '已保存到本机，等待同步')}</>}
                             {e.record?.sync_state === 'conflict' && <> · {t('kifu:history_conflict', '进度冲突，请选择保留哪份')}</>}

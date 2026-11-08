@@ -1,4 +1,7 @@
-import { knownRank } from '../utils/playerRank';
+import { platformLabel } from '../utils/nativePresentation';
+import { translateResult } from '../../utils/resultTranslation';
+import { interpolate } from '../utils/interpolate';
+import { knownRank, presentPlayerRank } from '../utils/playerRank';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API, ApiError, type GolaxySpectatorPosition, type GolaxySpectatorSnapshot } from '../../api';
@@ -224,22 +227,22 @@ const GolaxySpectatorPage = () => {
     const active = ready?.clocks?.active_color === (color === 'black' ? 'B' : 'W');
     return <div className={`golaxy-spectator__clock-card kiosk-player-card${active ? ' is-turn' : ''}`} key={color}>
       <PlayerCardSurface left={color === 'black'} />
-      <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone golaxy-spectator__stone--${color}`} /><b title={person?.username}>{color === 'black' ? '黑' : '白'} · <span>{person?.username || t('platform:unknown_player', '棋手信息待返回')}</span></b><span className="kiosk-player-rank">{knownRank(person?.rank).label}</span></div>
+      <div className="golaxy-spectator__clock-name"><i className={`golaxy-spectator__stone golaxy-spectator__stone--${color}`} /><b title={person?.username}>{color === 'black' ? t("黑", "黑") : t("白", "白")} · <span>{person?.username || t('platform:unknown_player', '棋手信息待返回')}</span></b><span className="kiosk-player-rank">{presentPlayerRank(knownRank(person?.rank, '平台等级'), t).label}</span></div>
       <strong>{clock && Number.isFinite(clock.remaining_seconds) && clock.remaining_seconds >= 0 ? formatClock(clock.remaining_seconds) : '—'}</strong>
-      <small>{clock ? clock.period_seconds != null && clock.periods_remaining != null ? `读秒 ${clock.period_seconds} 秒 · 剩余 ${clock.periods_remaining} 次` : '星阵时钟快照' : '计时信息未返回'}</small>
+      <small>{clock ? clock.period_seconds != null && clock.periods_remaining != null ? interpolate(t("读秒 {period_seconds} 秒 · 剩余 {periods_remaining} 次", "读秒 {period_seconds} 秒 · 剩余 {periods_remaining} 次"), { period_seconds: clock.period_seconds, periods_remaining: clock.periods_remaining }) : t("星阵时钟快照", "星阵时钟快照") : t("计时信息未返回", "计时信息未返回")}</small>
     </div>;
   };
   const handicap = ready?.handicap === null || ready?.handicap === undefined
-    ? '让子信息待返回'
-    : ready.handicap === 0 ? '分先' : ready.handicap === -1 ? '让先' : `让 ${ready.handicap} 子`;
+    ? t("让子信息待返回", "让子信息待返回")
+    : ready.handicap === 0 ? t("分先", "分先") : ready.handicap === -1 ? t("让先", "让先") : interpolate(t("让 {value1} 子", "让 {value1} 子"), { value1: ready.handicap });
   const goHome = () => navigate(HOME);
 
   return <div className="kiosk-layout-b golaxy-spectator" data-testid="golaxy-spectator-page">
     <KioskPagebar
-      backLabel={<><span className="golaxy-spectator__sr-only">返回</span>{t('platform:back_to_lobby', '对战大厅')}</>}
+      backLabel={<><span className="golaxy-spectator__sr-only">{t("返回", "返回")}</span>{t('platform:back_to_lobby', '对战大厅')}</>}
       onBack={goHome}
-      title={<span className="golaxy-spectator__page-title"><img src={PLATFORM_MARKS.golaxy.src} alt="" />{ready?.room_number ? `${ready.room_number} 房 · ` : ''}{t('platform:spectate', '对局观战')}</span>}
-      status={<><span className="golaxy-spectator__info">{ready && `${ready.room_type || '对局类型待返回'} · ${handicap} · 19 路`}</span><span className="golaxy-spectator__sync">{view.kind === 'error' ? '同步失败' : '快照同步'}</span></>}
+      title={<span className="golaxy-spectator__page-title"><img src={PLATFORM_MARKS.golaxy.src} alt="" />{ready?.room_number ? interpolate(t("{room_number} 房 · ", "{room_number} 房 · "), { room_number: ready.room_number }) : ''}{t('platform:spectate', '对局观战')}</span>}
+      status={<><span className="golaxy-spectator__info">{ready && interpolate(t('{type} · {handicap} · 19 路', '{type} · {handicap} · 19 路'), { type: platformLabel(ready.room_type, t) || t('对局类型待返回', '对局类型待返回'), handicap })}</span><span className="golaxy-spectator__sync">{view.kind === 'error' ? t('同步失败', '同步失败') : t('快照同步', '快照同步')}</span></>}
     />
     <div className="golaxy-spectator__layout">
       <div className="golaxy-spectator__board-shell">
@@ -247,19 +250,19 @@ const GolaxySpectatorPage = () => {
           <div className="golaxy-spectator__ruler golaxy-spectator__ruler--top">{[...GO_COLS].map((column) => <span key={column}>{column}</span>)}</div>
           <div className="golaxy-spectator__ruler golaxy-spectator__ruler--left">{Array.from({ length: 19 }, (_, i) => <span key={i}>{19 - i}</span>)}</div>
           <GoBoardSvg size={19} black={position.black_stones} white={position.white_stones} last={position.last_move?.coordinate || undefined} label={t('platform:spectator_board', '星阵观战棋盘')} />
-        </div><small className="golaxy-spectator__sr-only">{position.move_number} {t('platform:moves_suffix', '手')} · 星阵棋谱快照</small></> :
+        </div><small className="golaxy-spectator__sr-only">{position.move_number} {t('platform:moves_suffix', '手')} {t("· 星阵棋谱快照", "· 星阵棋谱快照")}</small></> :
           <div className="golaxy-spectator__board-state" role={view.kind === 'error' ? 'alert' : 'status'}>
-            {view.kind === 'error' ? view.message : view.kind === 'syncing' ? '正在同步星阵棋谱' : '正在检查星阵连接'}
+            {view.kind === 'error' ? t(view.message, view.message) : view.kind === 'syncing' ? t("正在同步星阵棋谱", "正在同步星阵棋谱") : t("正在检查星阵连接", "正在检查星阵连接")}
           </div>}
       </div>
-      <aside className="golaxy-spectator__panel" aria-label="对局与观战信息">
-        <div className="golaxy-spectator__watch-head"><b>{ready?.room_number ? `${ready.room_number} 房` : '对局状态'}</b><span>{ready ? `${ready.room_type || '类型未返回'} · ${handicap}` : '等待星阵棋谱'}</span><span className="golaxy-spectator__sync">{ready?.result || ready?.phase || '同步中'}</span></div>
+      <aside className="golaxy-spectator__panel" aria-label={t("对局与观战信息", "对局与观战信息")}>
+        <div className="golaxy-spectator__watch-head"><b>{ready?.room_number ? interpolate(t("{room_number} 房", "{room_number} 房"), { room_number: ready.room_number }) : t("对局状态", "对局状态")}</b><span>{ready ? interpolate(t("{value1} · {handicap}", "{value1} · {handicap}"), { value1: platformLabel(ready.room_type, t) || t('类型未返回', '类型未返回'), handicap: handicap }) : t("等待星阵棋谱", "等待星阵棋谱")}</span><span className="golaxy-spectator__sync">{(ready?.result ? translateResult(ready.result, t) : platformLabel(ready?.phase, t)) || t("同步中", "同步中")}</span></div>
         <div className="golaxy-spectator__clocks kiosk-player-pair">{clockCard('black')}{clockCard('white')}</div>
-        <div className="golaxy-spectator__latest" aria-live="polite"><span className="golaxy-spectator__latest-dot">•</span><span><b>{ready ? lastMove ? `最新：${lastMove.color === 'B' ? '黑' : '白'} ${lastMove.coordinate || '停一手'} · 第 ${ready.move_number} 手` : `第 ${ready.move_number} 手 · 暂无落子` : '等待星阵最新落子'}</b><small>{historyMove !== null ? '回看棋谱时仍接收新快照' : view.kind === 'refreshing' ? '正在同步，当前为上次快照' : ready?.phase === '已结束' && !ready.result ? '胜负结果尚未返回' : '星阵棋谱快照 · 每 2 秒同步'}</small></span></div>
-        <div className="golaxy-spectator__members-head"><strong>房间成员</strong><span>{ready?.members ? `对局双方与观战棋友 · ${ready.members.length} 人` : '成员信息未返回'}</span></div>
-        <div className="golaxy-spectator__members">{ready?.members ? ready.members.map((member) => <div className="golaxy-spectator__member" key={member.user_id}><span className="golaxy-spectator__avatar">{member.username.slice(-1)}</span><b>{member.username}</b><small>{member.role === 'black' ? '对局 · 黑' : member.role === 'white' ? '对局 · 白' : member.role === 'spectator' ? '观战' : '身份未返回'}</small></div>) : <p className="golaxy-spectator__note">星阵尚未提供可展示的房间成员名单。</p>}</div>
-        {view.kind === 'error' && <div className="golaxy-spectator__error-actions"><button type="button" onClick={() => view.reconnect ? navigate('/kiosk/play/cross-platform/login/golaxy') : setRetry((count) => count + 1)}>{view.reconnect ? '重新连接' : '重试'}</button></div>}
-        <div className="golaxy-spectator__footer"><button type="button" aria-pressed={soundOn} onClick={() => setSoundOn(!soundOn)}>落子音：{soundOn ? '开' : '关'}</button><button type="button" disabled={!earlier} title={!earlier ? '已经是第一手之前' : undefined} onClick={() => earlier && selectHistoryMove(earlier.move_number)}>上一手</button><button className="golaxy-spectator__return-live" disabled={historyMove === null || !ready} onClick={() => selectHistoryMove(null)}>{historyMove !== null ? '回到最新' : '正在看最新'}{ready ? ` · ${ready.move_number} 手` : ''}</button></div>
+        <div className="golaxy-spectator__latest" aria-live="polite"><span className="golaxy-spectator__latest-dot">•</span><span><b>{ready ? lastMove ? interpolate(t("最新：{value1} {value2} · 第 {move_number} 手", "最新：{value1} {value2} · 第 {move_number} 手"), { value1: lastMove.color === 'B' ? t('Black', '黑') : t('White', '白'), value2: lastMove.coordinate || t('Pass', '停一手'), move_number: ready.move_number }) : interpolate(t("第 {move_number} 手 · 暂无落子", "第 {move_number} 手 · 暂无落子"), { move_number: ready.move_number }) : t("等待星阵最新落子", "等待星阵最新落子")}</b><small>{historyMove !== null ? t("回看棋谱时仍接收新快照", "回看棋谱时仍接收新快照") : view.kind === 'refreshing' ? t("正在同步，当前为上次快照", "正在同步，当前为上次快照") : ready?.phase === '已结束' && !ready.result ? t("胜负结果尚未返回", "胜负结果尚未返回") : t("星阵棋谱快照 · 每 2 秒同步", "星阵棋谱快照 · 每 2 秒同步")}</small></span></div>
+        <div className="golaxy-spectator__members-head"><strong>{t("房间成员", "房间成员")}</strong><span>{ready?.members ? interpolate(t("对局双方与观战棋友 · {length} 人", "对局双方与观战棋友 · {length} 人"), { length: ready.members.length }) : t("成员信息未返回", "成员信息未返回")}</span></div>
+        <div className="golaxy-spectator__members">{ready?.members ? ready.members.map((member) => <div className="golaxy-spectator__member" key={member.user_id}><span className="golaxy-spectator__avatar">{member.username.slice(-1)}</span><b>{member.username}</b><small>{member.role === 'black' ? t("对局 · 黑", "对局 · 黑") : member.role === 'white' ? t("对局 · 白", "对局 · 白") : member.role === 'spectator' ? t("观战", "观战") : t("身份未返回", "身份未返回")}</small></div>) : <p className="golaxy-spectator__note">{t("星阵尚未提供可展示的房间成员名单。", "星阵尚未提供可展示的房间成员名单。")}</p>}</div>
+        {view.kind === 'error' && <div className="golaxy-spectator__error-actions"><button type="button" onClick={() => view.reconnect ? navigate('/kiosk/play/cross-platform/login/golaxy') : setRetry((count) => count + 1)}>{view.reconnect ? t("重新连接", "重新连接") : t("重试", "重试")}</button></div>}
+        <div className="golaxy-spectator__footer"><button type="button" aria-pressed={soundOn} onClick={() => setSoundOn(!soundOn)}>{t("落子音：", "落子音：")}{soundOn ? t("开", "开") : t("关", "关")}</button><button type="button" disabled={!earlier} title={!earlier ? t("已经是第一手之前", "已经是第一手之前") : undefined} onClick={() => earlier && selectHistoryMove(earlier.move_number)}>{t("上一手", "上一手")}</button><button className="golaxy-spectator__return-live" disabled={historyMove === null || !ready} onClick={() => selectHistoryMove(null)}>{historyMove !== null ? t("回到最新", "回到最新") : t("正在看最新", "正在看最新")}{ready ? interpolate(t(" · {move_number} 手", " · {move_number} 手"), { move_number: ready.move_number }) : ''}</button></div>
       </aside>
     </div>
   </div>;

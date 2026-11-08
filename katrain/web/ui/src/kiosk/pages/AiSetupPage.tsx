@@ -1,3 +1,5 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
+import { rankLabel as presentRankLabel } from '../utils/playerRank';
 import { useCallback, useMemo, useState, useRef, useEffect, type ReactNode } from 'react';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -102,11 +104,12 @@ const AiSetupContent = () => {
   const [help, setHelp] = useState<'game' | 'opponent' | 'seat' | 'stake' | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [rankedFailure, setRankedFailure] = useState<string | null>(null);
+  const [error, setError] = useState<UiMessage | string | null>(null);
   /* 未登录时该说的那句话。与 `error` 分开:它不是故障,而且**要给可按的东西**。 */
-  const [authPrompt, setAuthPrompt] = useState('');
+  const [authPrompt, setAuthPrompt] = useState<UiMessage | string | null>(null);
   const [lifecyclePending, setLifecyclePending] = useState(false);
-  const [lifecycleError, setLifecycleError] = useState('');
+  const [lifecycleError, setLifecycleError] = useState<UiMessage | string | null>(null);
   const [syncRetryPending, setSyncRetryPending] = useState(false);
 
   const timePresets = TIME_PRESETS(t);
@@ -168,6 +171,7 @@ const AiSetupContent = () => {
   const handleStart = async () => {
     void unlockSound();
     setError('');
+    setRankedFailure(null);
     setAuthPrompt('');
     setLoading(true);
     const seatColor = color === 'nigiri' ? drawSeat() : color;
@@ -232,14 +236,15 @@ const AiSetupContent = () => {
       if (status === 401 || (status === 403 && !isAuthenticated)) {
         setError('');
         setAuthPrompt(isRanked
-          ? t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')
-          : t('play:login_required_free', '开始对局需要登录，请先登录后再试。'));
+          ? uiMessage('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')
+          : uiMessage('play:login_required_free', '开始对局需要登录，请先登录后再试。'));
       } else if (status === 503 && isRanked) {
         setAuthPrompt('');
-        setError(aiLadderStartUnavailableMessage(typeof e?.message === 'string' ? e.message : ''));
+        setRankedFailure(typeof e?.message === 'string' ? e.message : '');
+        setError('');
       } else {
         setAuthPrompt('');
-        setError(e.message || t('Failed to create game', '创建对局失败'));
+        setError(e.message || uiMessage('Failed to create game', '创建对局失败'));
       }
     } finally {
       setLoading(false);
@@ -272,9 +277,9 @@ const AiSetupContent = () => {
         setLifecycleError('');
         await retryAiLadderStatus();
       } else if (endError instanceof AiLadderApiError && (endError.status === 401 || endError.status === 403)) {
-        setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
+        setLifecycleError(uiMessage('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
       } else {
-        setLifecycleError(t('Could not end that game, please retry', '结束对局失败，请重试'));
+        setLifecycleError(uiMessage('Could not end that game, please retry', '结束对局失败，请重试'));
       }
     } finally {
       if (mounted.current) setLifecyclePending(false);
@@ -304,13 +309,13 @@ const AiSetupContent = () => {
     } catch (retryError) {
       if (!mounted.current) return;
       if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
-        setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
+        setLifecycleError(uiMessage('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
       } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
         // 队列里已经没有这一局了 —— 多半是后台那一轮刚把它送成。只有这一条 catch 该去
         // 复查:它意味着屏上这一格已经不成立了。
         await retryAiLadderStatus();
       } else {
-        setLifecycleError(t('Retry failed, please try again later', '重试失败，请稍后再试'));
+        setLifecycleError(uiMessage('Retry failed, please try again later', '重试失败，请稍后再试'));
       }
     } finally {
       if (mounted.current) setSyncRetryPending(false);
@@ -392,7 +397,7 @@ const AiSetupContent = () => {
   };
   const sectionHead = (topic: keyof typeof groupTitles) => (
     <KioskSecLabel zh={groupTitles[topic]} action={(
-      <button type="button" className="ai-setup-info" aria-label={`${groupTitles[topic]}${t('setup:help', '说明')}`}
+      <button type="button" className="ai-setup-info" aria-label={interpolate(t("{value1}{value2}", "{value1}{value2}"), { value1: groupTitles[topic], value2: t('setup:help', '说明') })}
         aria-haspopup="dialog" onClick={() => setHelp(topic)}><Icon name="info" /></button>
     )} />
   );
@@ -466,7 +471,7 @@ const AiSetupContent = () => {
             <KioskAiLadderBlockingPanel
               game={blockingGame}
               pending={lifecyclePending}
-              error={lifecycleError}
+              error={renderUiMessage(lifecycleError, t)}
               syncRetryPending={syncRetryPending}
               onContinue={handleContinue}
               onEndGame={handleEndGame}
@@ -501,10 +506,10 @@ const AiSetupContent = () => {
                     {compactKomi}
                   </SetupDerived>
                   {isRanked && <>
-                    <SetupFixed testId="setup-opponent" label={t('ladder:opponent', '对手')} value={activeEntry?.rank_name ?? '—'} />
+                    <SetupFixed testId="setup-opponent" label={t('ladder:opponent', '对手')} value={(activeEntry?.rank_name ? presentRankLabel(activeEntry?.rank_name, t) : undefined) ?? '—'} />
                     <SetupFixed testId="setup-current-rank" label={t('ladder:current_rank', '当前段位')}
                       value={readyStatus?.placement_state.phase === 'placed'
-                        ? readyStatus.placement_state.rung.rank_name : readyStatus ? t('ladder:placing', '定级中') : '—'} />
+                        ? presentRankLabel(readyStatus.placement_state.rung.rank_name, t) : readyStatus ? t('ladder:placing', '定级中') : '—'} />
                   </>}
                 </div>
                 {isRanked && showRankedStatus && <KioskAiLadderOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />}
@@ -514,7 +519,7 @@ const AiSetupContent = () => {
                 {sectionHead('opponent')}
                 <div className="su-row ai-setup-opponent-row">
                   <SetupSelect testId="setup-strength" label={t('setup:strength', '棋力')} value={String(rank)} columns={3}
-                    options={rankOptions.map((option) => ({ key: String(option.value), label: `${t('ladder:opponent', '对手')} ${rankLabel(t, option.value)}` }))}
+                    options={rankOptions.map((option) => ({ key: String(option.value), label: interpolate(t("{value1} {value2}", "{value1} {value2}"), { value1: t('ladder:opponent', '对手'), value2: rankLabel(t, option.value) }) }))}
                     onChange={(key) => setRank(Number(key))} />
                 </div>
               </section>}
@@ -547,7 +552,7 @@ const AiSetupContent = () => {
 
             {/* 出错时那条横幅在**滚动区外面** —— 它说的是「刚才那次开局失败了」,
                 跟着设置一起滚走就等于没说。 */}
-            {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+            {(error || rankedFailure !== null) && <Alert severity="error" sx={{ mb: 1 }}>{rankedFailure !== null ? aiLadderStartUnavailableMessage(rankedFailure) : renderUiMessage(error, t)}</Alert>}
 
             {/* 需要登录那一条。**与错误横幅互斥**(两个 setter 各自清掉对方),所以这一格
                 任何时刻最多只有一条横幅 —— 版式高度的上限没有变。
@@ -566,7 +571,7 @@ const AiSetupContent = () => {
                   </Button>
                 }
               >
-                {authPrompt}
+                {renderUiMessage(authPrompt, t)}
               </Alert>
             )}
 

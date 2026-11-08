@@ -17,7 +17,7 @@ import { Icon } from './icons';
  * 这串**曾经算错过 2px**(横向算了描边、纵向漏了),而标题行和状态格当时都没写 `flex:none`,
  * 被 flex 各压了 1px —— 肉眼看不出来。现在每块都 `flex:none`,再算错会顶破外框、当场看得见。
  */
-export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statuses, help }: {
+export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statuses, help, helpLabel = '实体棋盘说明', closeLabel = '知道了' }: {
   title: string;
   sub: string;
   board: ReactNode;
@@ -25,6 +25,8 @@ export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statu
   syncRight: string;
   statuses: readonly StatusCell[];
   help?: string;
+  helpLabel?: string;
+  closeLabel?: string;
 }) {
   const [helpOpen, setHelpOpen] = useState(false);
   return (
@@ -32,7 +34,7 @@ export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statu
       <div className="kiosk-console__title">
         <b>{title}</b>
         {help ? (
-          <button type="button" className="kiosk-console__help" aria-label="实体棋盘说明"
+          <button type="button" className="kiosk-console__help" aria-label={helpLabel}
             onClick={() => setHelpOpen(true)}><Icon name="info" /></button>
         ) : <em>{sub}</em>}
       </div>
@@ -43,10 +45,10 @@ export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statu
       <KioskStatusCells cells={statuses} />
       {helpOpen && (
         <div className="kiosk-console__help-scrim" role="presentation" onClick={() => setHelpOpen(false)}>
-          <div className="kiosk-console__help-dialog" role="dialog" aria-modal="true" aria-label="实体棋盘说明"
+          <div className="kiosk-console__help-dialog" role="dialog" aria-modal="true" aria-label={helpLabel}
             onClick={(event) => event.stopPropagation()}>
             <p>{help}</p>
-            <button type="button" className="kiosk-btn" onClick={() => setHelpOpen(false)}>知道了</button>
+            <button type="button" className="kiosk-btn" onClick={() => setHelpOpen(false)}>{closeLabel}</button>
           </div>
         </div>
       )}

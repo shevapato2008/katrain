@@ -1,3 +1,4 @@
+import { rankLabel } from '../../utils/playerRank';
 import { AI_LADDER_COPY, formatPlacementProgress, formatPlacementProgressLabel } from '../../../features/aiLadder/copy';
 import { isProvisionalSeating, isRungUnseatable } from '../../../features/aiLadder/startGate';
 import type { AiLadderStatus } from '../../../features/aiLadder/types';
@@ -34,7 +35,7 @@ const KioskAiLadderOpponent = ({ status, onRetry }: {
   onRetry?: () => void;
 }) => {
   // AI_LADDER_COPY 每一句都是 getter;没有这一行,语言切换后它们还念着首次渲染时那一种。
-  useTranslation();
+  const { t } = useTranslation();
 
   if (status.view_state === 'loading') {
     return (
@@ -66,6 +67,8 @@ const KioskAiLadderOpponent = ({ status, onRetry }: {
   // 一个没标定的档是可以坐下的,而在一颗能按的键旁边说它不可挑战,正是玩家会不信的那种自相矛盾。
   const unavailable = isRungUnseatable(status) || !activeEntry;
   const provisional = isProvisionalSeating(status);
+  const matchedParts = t('ladder:matched_rung_summary', '你是{rank}，配到{rung} —— {reason}。').split(/(\{rank\}|\{rung\}|\{reason\})/);
+  const matchedRung = t('ladder:rung_number', '第 {n} 档').replace('{n}', String(placement.phase === 'placed' ? placement.rung.rung : ''));
 
   return (
     <div data-testid="ladder-opponent">
@@ -74,7 +77,7 @@ const KioskAiLadderOpponent = ({ status, onRetry }: {
           {/* 前缀和档名放在**同一个元素**里:拆开之后 `getByText('定级对手:9级')` 会找不到,
               而那条断言问的正是「屏上有没有这句话」—— 一句话被标记切成两半,
               对读屏和对测试都是两句。 */}
-          <span>{AI_LADDER_COPY.placementOpponentPrefix}{status.current_opponent?.rank_name ?? '—'}</span>
+          <span>{AI_LADDER_COPY.placementOpponentPrefix}{(status.current_opponent?.rank_name ? rankLabel(status.current_opponent?.rank_name, t) : undefined) ?? '—'}</span>
           <br />
           {formatPlacementProgress(placement.completed_games, placement.total_games)}
           <progress
@@ -87,9 +90,10 @@ const KioskAiLadderOpponent = ({ status, onRetry }: {
       ) : (
         <p className="setexplain">
           {/* 稿子那一句。两个数都出自同一份 `rung` —— 升降级里你的档就是你的对手。 */}
-          你是 <b>{placement.rung.rank_name}</b>,配到 <b>第 {placement.rung.rung} 档</b>
-          {' —— '}
-          {AI_LADDER_COPY.boxPicksReason}。
+          {matchedParts.map((part) => part === '{rank}'
+            ? <b key="rank">{placement.phase === 'placed' ? rankLabel(placement.rung.rank_name, t) : ''}</b>
+            : part === '{rung}' ? <b key="rung">{matchedRung}</b>
+              : part === '{reason}' ? AI_LADDER_COPY.boxPicksReason : part)}
         </p>
       )}
 

@@ -293,7 +293,7 @@ export default function MoveGradePanel({
           onPick={(p) => { setPicked(p.move); onMoveClick(p.move); }}
           blackLabel={t('review:black', '黑')}
           whiteLabel={t('review:white', '白')}
-          label={`${t('grade:axis_brilliance', '妙度 1–5')}${t('grade:axis_aria', '，黑方在轴上方、白方在下方，横轴是手数')}`}
+          label={interpolate(t("{value1}{value2}", "{value1}{value2}"), { value1: t('grade:axis_brilliance', '妙度 1–5'), value2: t('grade:axis_aria', '，黑方在轴上方、白方在下方，横轴是手数') })}
         />
         {selLine(pts, brilliants, (p) => interpolate(
           t('grade:sel_brilliant', '第 {n} 手 {m} · {s} · 妙度 {k} —— AI初选概率仅为 {p}%，深入计算后成为首选'),
@@ -331,7 +331,7 @@ export default function MoveGradePanel({
           onPick={(p) => { setPicked(p.move); onMoveClick(p.move); }}
           blackLabel={t('review:black', '黑')}
           whiteLabel={t('review:white', '白')}
-          label={`${t('grade:axis_points_lost_short', '目损 · 目')}${t('grade:axis_aria', '，黑方在轴上方、白方在下方，横轴是手数')}`}
+          label={interpolate(t("{value1}{value2}", "{value1}{value2}"), { value1: t('grade:axis_points_lost_short', '目损 · 目'), value2: t('grade:axis_aria', '，黑方在轴上方、白方在下方，横轴是手数') })}
         />
         {selLine(pts, bads, (p) => interpolate(
           t('grade:sel_bad', '第 {n} 手 {m} · {s} · {g} · 目损 {x} 目'),

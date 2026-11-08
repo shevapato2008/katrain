@@ -1,10 +1,11 @@
+import { uiError, renderUiMessage, type UiMessage } from '../../utils/uiMessage';
+import { interpolate } from '../../utils/interpolate';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { Icon } from '../../shell/icons';
 import { useAuth } from '../../../context/AuthContext';
 import { API } from '../../../api';
-import { platformErrorMessage } from '../../utils/platformErrorMessage';
 
 /**
  * 星阵扫码登录面板(屏 07a,设计源 `go-kiosk.tmpl.html:1361-1372`,`.xpqr` 一段)。
@@ -57,7 +58,7 @@ export function GolaxyScanPanel({ platform, onDone }: GolaxyScanPanelProps) {
   const [qrSvg, setQrSvg] = useState('');
   const [scanState, setScanState] = useState<ScanState>('waiting');
   const [unavailable, setUnavailable] = useState(false);
-  const [confirmError, setConfirmError] = useState('');
+  const [confirmError, setConfirmError] = useState<UiMessage | string | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const aliveRef = useRef(true);
@@ -75,10 +76,10 @@ export function GolaxyScanPanel({ platform, onDone }: GolaxyScanPanelProps) {
       if (aliveRef.current) onDone();
     } catch (e) {
       if (aliveRef.current) {
-        setConfirmError(platformErrorMessage(e, t('platform:scan_confirm_failed', '确认登录失败')));
+        setConfirmError(uiError(e, 'platform:scan_confirm_failed', '确认登录失败'));
       }
     }
-  }, [platform, token, onDone, t]);
+  }, [platform, token, onDone]);
 
   const poll = useCallback(async (id: string) => {
     let state: ScanState;
@@ -175,7 +176,7 @@ export function GolaxyScanPanel({ platform, onDone }: GolaxyScanPanelProps) {
           data-testid="scan-qr-refresh"
           // 可及名把**当前状态**念进去,不写死「已失效」—— 取消那一支的原因不一样,
           // 读屏的人听到的必须和屏上那行字是同一件事。
-          aria-label={`${t(status.key, status.zh)}，${t('platform:scan_tap_to_refresh', '点此换一张')}`}
+          aria-label={interpolate(t("{value1}，{value2}", "{value1}，{value2}"), { value1: t(status.key, status.zh), value2: t('platform:scan_tap_to_refresh', '点此换一张') })}
           onClick={() => { void start(); }}
         >
           {qrInner}
@@ -193,7 +194,7 @@ export function GolaxyScanPanel({ platform, onDone }: GolaxyScanPanelProps) {
           <i className="led" aria-hidden="true" />
           {t(status.key, status.zh)}
         </span>
-        {confirmError && <p className="loginerr" data-testid="scan-confirm-error">{confirmError}</p>}
+        {confirmError && <p className="loginerr" data-testid="scan-confirm-error">{renderUiMessage(confirmError, t)}</p>}
         {scanId && (
           <button
             type="button"

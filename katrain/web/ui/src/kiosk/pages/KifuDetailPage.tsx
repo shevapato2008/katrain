@@ -1,3 +1,4 @@
+import { interpolate } from '../utils/interpolate';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
@@ -204,7 +205,7 @@ const KifuDetailPage = () => {
                 <em>{t('kifu:versus', '对')}</em>
                 <span>{album.display_player_white ?? album.player_white ?? t('game:white_side', '白方')}{whiteRank && <small>{whiteRank}</small>}<i className="kifu-record__stone kifu-record__stone--white" /></span>
               </div>
-              <small>{[album.date_played, `${total} ${t('kifu:moves_unit', '手')}`, translateResult(album.result, t, album.rules)].filter(Boolean).join(' · ')}</small>
+              <small>{[album.date_played, interpolate(t("{total} {value2}", "{total} {value2}"), { total: total, value2: t('kifu:moves_unit', '手') }), translateResult(album.result, t, album.rules)].filter(Boolean).join(' · ')}</small>
             </section>
             <section className="kifu-replay-pending" role="status">
               <strong>{album.has_analysis ? t('kifu:replay_only', '棋谱回放') : t('kifu:not_analyzed_yet', '尚未分析')}</strong>

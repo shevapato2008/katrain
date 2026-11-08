@@ -35,7 +35,7 @@ import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog'
 import HintPanel from '../components/physical/HintPanel';
 import { API, ApiError, type HintResponse, type OwnershipPoint, type JudgePoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { readActiveSession, writeActiveSession, clearActiveSession } from '../utils/activeSession';
-import { requestFailureKind } from '../../utils/requestFailure';
+import { requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
@@ -201,6 +201,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [countPending, setCountPending] = useState(false);
   const [countNotice, setCountNotice] = useState<string | null>(null);
   const [countResponding, setCountResponding] = useState(false);
+  const countNoticeText = countNotice === '数子请求已被拒绝' ? t('game:count_request_rejected', '数子请求已被拒绝')
+    : countNotice === '数子请求已超时' ? t('game:count_request_timeout', '数子请求已超时')
+      : countNotice === '已拒绝数子请求' ? t('game:count_request_declined', '已拒绝数子请求')
+        : countNotice === '回应数子请求失败，请重试' ? t('game:count_response_failed', '回应数子请求失败，请重试')
+          : countNotice === '无法确认中央账号身份，暂不能处理数子请求' ? t('game:count_identity_unavailable', '无法确认中央账号身份，暂不能处理数子请求') : null;
   useEffect(() => {
     if (!centralRoom || !isAuthenticated) return;
     if (!isStrictBoxKiosk) { setCentralUserId(user?.id ?? null); return; }
@@ -274,9 +279,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // supposed to defer to (board-loss precedence: escalation > recalibration > board-lost).
   const [escalationOpen, setEscalationOpen] = useState(() => session.physicalReminder?.kind === 'escalation');
   const [hint, setHint] = useState<HintResponse | null>(null);
-  const [hintError, setHintError] = useState<string | null>(null);
+  const [hintFailure, setHintError] = useState<'ranked' | 'disabled' | 'insufficient' | 'failed' | null>(null);
+  const hintError = hintFailure === 'ranked' ? t('Not available in ranked games', '升降级对局不可用')
+    : hintFailure === 'disabled' ? t('Hint is not enabled', '支招功能未开放')
+      : hintFailure === 'insufficient' ? t('Insufficient balance', '余额不足')
+        : hintFailure === 'failed' ? t('Hint failed', '支招失败，请稍后再试') : null;
   const [engineErrorToast, setEngineErrorToast] = useState(false);
-  const [timeoutError, setTimeoutError] = useState<{ scope: string; message: string } | null>(null);
+  const [timeoutError, setTimeoutError] = useState<{ scope: string; reason: RequestFailureKind | 'not_delivered' } | null>(null);
   const timeoutRequestRef = useRef(false);
   const timeoutAttemptRef = useRef<{
     key: string; checks: number; retries: number; timer: number | null;
@@ -297,14 +306,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (sessionIsGameOver) setShowExitConfirm(false);
   }, [sessionIsGameOver]);
 
-  const [countError, setCountError] = useState<string | null>(null);
+  const [countError, setCountError] = useState<{ error: unknown } | null>(null);
   // A12:数子可能要等几秒(当前手没有分数时服务端先补一次分析,上限 15 秒)。
   // ref 挡同一帧里的连点(state 要等下一次渲染才看得见),state 负责屏上那句「正在数子…」。
   const countingRef = useRef(false);
   const [counting, setCounting] = useState(false);
   const [ogsScoring, setOgsScoring] = useState<{ scope: string; status: 'sending' | 'waiting' | 'error' } | null>(null);
   const [ogsNoDeadConfirm, setOgsNoDeadConfirm] = useState<string | null>(null);
-  const [onlineMoveError, setOnlineMoveError] = useState<string | null>(null);
+  const [onlineMoveFailure, setOnlineMoveError] = useState<'lobby' | 'conflict' | 'unavailable' | 'unconfirmed' | null>(null);
+  const onlineMoveError = onlineMoveFailure === 'lobby' ? t('game:lobby_move_unconfirmed', '这手尚未确认，请核对盘面后重试')
+    : onlineMoveFailure === 'conflict' ? t('game:ogs_move_conflict', 'OGS 未确认这手棋，请先核对盘面，勿重复落子')
+      : onlineMoveFailure === 'unavailable' ? t('game:ogs_move_unavailable', 'OGS 暂时不可用，这手尚未确认，请检查连接')
+        : onlineMoveFailure === 'unconfirmed' ? t('game:ogs_move_unconfirmed', '这手没有得到 OGS 确认，请核对后再操作') : null;
   const ogsScoringRef = useRef<string | null>(null);
   const ogsPhaseForReset = session.platformPhase ?? session.gameState?.platform_phase ?? null;
   useEffect(() => {
@@ -312,7 +325,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setOgsScoring(null);
     setOgsNoDeadConfirm(null);
   }, [sessionId, ogsPhaseForReset]);
-  const [resignError, setResignError] = useState<string | null>(null);
+  const [resignFailure, setResignError] = useState<RequestFailureKind | null>(null);
+  const resignError = resignFailure ? failureLine(t('game:resign_failed', '认输没成'), resignFailure, t) : null;
   const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
   const sessionGone = session.connectionLost === 'gone';
 
@@ -773,15 +787,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   if (centralRoom && session.connectionLost === 'central') {
     return <Box data-testid="central-room-disconnected" sx={{ display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 2, height: '100%', px: 4, textAlign: 'center' }}>
-      <Typography sx={{ fontSize: 28 }}>中央连接中断</Typography>
+      <Typography sx={{ fontSize: 28 }}>{t('game:central_disconnected', '中央连接中断')}</Typography>
       <Typography sx={{ color: 'text.secondary', fontSize: 18, maxWidth: 520 }}>
-        对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。
+        {t('game:central_disconnected_body', '对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。')}
       </Typography>
       <button type="button" className="kiosk-btn" disabled={session.reconnecting} onClick={session.reconnect}>
-        {session.reconnecting ? '正在重新连接…' : '重新连接'}
+        {session.reconnecting ? t('game:central_reconnecting', '正在重新连接…') : t('game:central_reconnect', '重新连接')}
       </button>
       <button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/play/pvp/lobby')}>
-        返回在线大厅
+        {t('game:back_online_lobby', '返回在线大厅')}
       </button>
     </Box>;
   }
@@ -906,7 +920,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (!current()) return;
       const delay = [2000, 5000, 10000][attempt.retries++];
       if (delay !== undefined) later(delay);
-      else setTimeoutError({ scope: timeoutScope, message: t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局') });
+      else setTimeoutError({ scope: timeoutScope, reason: 'not_delivered' });
     };
     const send = async (): Promise<void> => {
       if (!current()) return;
@@ -970,7 +984,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (detail?.code === 'time_not_expired' && detail.state) {
         session.setGameState(detail.state);
       } else {
-        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '超时判定没有完成'), requestFailureKind(error), t) });
+        setTimeoutError({ scope: timeoutScope, reason: requestFailureKind(error) });
       }
     } finally {
       timeoutRequestRef.current = false;
@@ -1104,9 +1118,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         }
       } catch (error) {
         // 结构化原因来自本地对局 v2；旧服务端/统一终局冲突仍由字符串回退覆盖。
-        setCountError(error instanceof ApiError
-          ? countErrorMessage(error, t)
-          : countFailureMessage(error instanceof Error ? error.message : ''));
+        setCountError({ error });
       } finally {
         countingRef.current = false;
         setCounting(false);
@@ -1129,11 +1141,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setAiPlacementStatus(null);
     } catch (e) {
       if (onlineGame) {
-        setOnlineMoveError(lobbyGame ? t('game:lobby_move_unconfirmed', '这手尚未确认，请核对盘面后重试') : e instanceof ApiError && e.status === 409
-          ? t('game:ogs_move_conflict', 'OGS 未确认这手棋，请先核对盘面，勿重复落子')
+        setOnlineMoveError(lobbyGame ? 'lobby' : e instanceof ApiError && e.status === 409
+          ? 'conflict'
           : e instanceof ApiError && [502, 503, 504].includes(e.status)
-            ? t('game:ogs_move_unavailable', 'OGS 暂时不可用，这手尚未确认，请检查连接')
-            : t('game:ogs_move_unconfirmed', '这手没有得到 OGS 确认，请核对后再操作'));
+            ? 'unavailable'
+            : 'unconfirmed');
       } else {
         console.error(e);
         if (engineMode) setEngineErrorToast(true);
@@ -1184,7 +1196,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       await session.handleAction('resign', { color });
       setShowResignConfirm(false);
     } catch (error) {
-      setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+      setResignError(requestFailureKind(error));
     }
   };
 
@@ -1218,10 +1230,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     } catch (e) {
       const msg = String(e);
       setHintError(
-        msg.includes('ranked_forbidden') ? t('Not available in ranked games', '升降级对局不可用')
-        : msg.includes('disabled') ? t('Hint is not enabled', '支招功能未开放')
-        : msg.includes('insufficient') ? t('Insufficient balance', '余额不足')
-        : t('Hint failed', '支招失败，请稍后再试')
+        msg.includes('ranked_forbidden') ? 'ranked'
+        : msg.includes('disabled') ? 'disabled'
+        : msg.includes('insufficient') ? 'insufficient'
+        : 'failed'
       );
     }
   };
@@ -1346,31 +1358,34 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
   // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
   // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
+  const countErrorText = countError ? countError.error instanceof ApiError
+    ? countErrorMessage(countError.error, t)
+    : countFailureMessage(countError.error instanceof Error ? countError.error.message : '') : null;
   const statusSlot = lobbyGame && countIdentityError ? (
     <div className="gstatus" data-testid="lobby-count-identity-error" data-tone="bad" role="alert">
-      <div><b>无法确认中央账号身份，暂不能处理数子请求</b></div>
-      <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setIdentityRetry((n) => n + 1)}>重试身份</button>
+      <div><b>{t('game:count_identity_unavailable', '无法确认中央账号身份，暂不能处理数子请求')}</b></div>
+      <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setIdentityRetry((n) => n + 1)}>{t('game:count_identity_retry', '重试身份')}</button>
     </div>
   ) : lobbyCountRetry ? (
     <div className="gstatus" data-testid="lobby-count-error" data-tone={counting ? undefined : 'bad'} role="alert">
       {counting && <CircularProgress size={14} />}
       <div>
-        <b>{counting ? '正在重新数子…' : countPending ? '等待对方确认数子' : '自动数子失败'}</b>
-        <span>{countNotice ?? '棋局已停手，数子成功后才会显示正式结果。'}</span>
+        <b>{counting ? t('game:count_recounting', '正在重新数子…') : countPending ? t('game:count_waiting_opponent', '等待对方确认数子') : t('game:count_auto_failed', '自动数子失败')}</b>
+        <span>{countNoticeText ?? t('game:count_result_pending', '棋局已停手，数子成功后才会显示正式结果。')}</span>
       </div>
       <button type="button" className="kiosk-btn kiosk-btn--pill" disabled={counting || countPending}
-        onClick={() => { void handleAction('count'); }}>重试数子</button>
+        onClick={() => { void handleAction('count'); }}>{t('game:count_retry', '重试数子')}</button>
     </div>
   ) : lobbyAutoCountPending ? (
     <div className="gstatus" data-testid="lobby-auto-count-pending" role="status">
-      <div><b>正在自动数子</b><span>双方已停手，结果尚未确定。请稍候。</span></div>
+      <div><b>{t('game:count_auto_running', '正在自动数子')}</b><span>{t('game:count_auto_pending_body', '双方已停手，结果尚未确定。请稍候。')}</span></div>
     </div>
   ) : lobbyGame && countPending ? (
     <div className="gstatus" data-testid="lobby-count-pending" role="status">
-      <div><b>等待对方确认数子</b><span>对方接受后会显示正式结果。</span></div>
+      <div><b>{t('game:count_waiting_opponent', '等待对方确认数子')}</b><span>{t('game:count_waiting_body', '对方接受后会显示正式结果。')}</span></div>
     </div>
   ) : lobbyGame && countNotice ? (
-    <div className="gstatus" data-testid="lobby-count-notice" role="status"><div><b>{countNotice}</b></div></div>
+    <div className="gstatus" data-testid="lobby-count-notice" role="status"><div><b>{countNoticeText}</b></div></div>
   ) : onlineMoveError ? (
     <div className="gstatus" data-testid="ogs-move-error" data-tone="bad" role="alert">
       <div><b>{onlineMoveError}</b></div>
@@ -1422,6 +1437,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // Only visible content switches; the session hook, SGF and game identity remain mounted.
   if (localPhysicalGame && localRecovery.calibration) return <GeometryCalibrationScreen
+      t={t}
     backLabel={t('local:return_original_game', '返回原局')}
     onBack={() => setLocalRecovery(previous => ({ ...previous, calibration: false }))}
     title={t('local:empty_calibration_title', '空盘标定 · 原局保留')}
@@ -1605,8 +1621,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             isGameOver={isGameOver} physicalPlay={physicalPlay}
             blocked={countPending || !!opponentCountRequest} countDisabled={countIdentityError || centralUserId === null}
             counting={counting || lobbyAutoCountPending}
-            statusSlot={opponentCountRequest ? <div className="gstatus" role="status"><div><b>对方请求数子</b><span>请选择是否结束这局。</span></div></div>
-              : countError ? <div className="gstatus" role="alert" data-tone="bad"><div><b>{countError}</b></div></div>
+            statusSlot={opponentCountRequest ? <div className="gstatus" role="status"><div><b>{t('game:opponent_count_title', '对方请求数子')}</b><span>{t('game:opponent_count_status', '请选择是否结束这局。')}</span></div></div>
+              : countError ? <div className="gstatus" role="alert" data-tone="bad"><div><b>{countErrorText}</b></div></div>
               : statusSlot}
             hardwareFault={hardwareFault} analysisToggles={analysisToggles}
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
@@ -1724,14 +1740,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Dialog>
 
       <Dialog open={!!opponentCountRequest} className="kiosk-game-side-dialog">
-        <DialogTitle>对方请求数子</DialogTitle>
+        <DialogTitle>{t('game:opponent_count_title', '对方请求数子')}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{opponentCountRequest?.requester_name}请求结束对局并数子，是否同意？</DialogContentText>
-          {countNotice === '回应数子请求失败，请重试' && <Alert severity="error">{countNotice}</Alert>}
+          <DialogContentText>{t('game:opponent_count_body', '{name}请求结束对局并数子，是否同意？').replace('{name}', () => opponentCountRequest?.requester_name ?? '')}</DialogContentText>
+          {countNotice === '回应数子请求失败，请重试' && <Alert severity="error">{countNoticeText}</Alert>}
         </DialogContent>
         <DialogActions>
-          <Button disabled={countResponding} onClick={() => void respondToLobbyCount(false)}>拒绝数子</Button>
-          <Button disabled={countResponding} variant="contained" onClick={() => void respondToLobbyCount(true)}>接受数子</Button>
+          <Button disabled={countResponding} onClick={() => void respondToLobbyCount(false)}>{t('game:count_decline', '拒绝数子')}</Button>
+          <Button disabled={countResponding} variant="contained" onClick={() => void respondToLobbyCount(true)}>{t('game:count_accept', '接受数子')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -1766,7 +1782,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                   await session.handleAction('resign');
                   setShowResignConfirm(false);
                 } catch (error) {
-                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+                  setResignError(requestFailureKind(error));
                   return;
                 }
                 // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
@@ -1813,7 +1829,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                 try {
                   await session.handleAction('resign');
                 } catch (error) {
-                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+                  setResignError(requestFailureKind(error));
                   return;
                 }
                 // Same as the resign-confirm dialog above: this is another path that
@@ -1966,12 +1982,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Count (数子) error toast */}
       <Snackbar className="kiosk-game-toast" open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
+        <Alert severity="warning" onClose={() => setCountError(null)}>{countErrorText}</Alert>
       </Snackbar>
       <Snackbar open={!!timeoutError && timeoutError.scope === timeoutScope}
         className="kiosk-game-toast"
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} onClose={() => setTimeoutError(null)}>
-        <Alert severity="error" onClose={() => setTimeoutError(null)}>{timeoutError?.message}</Alert>
+        <Alert severity="error" onClose={() => setTimeoutError(null)}>{timeoutError?.reason === 'not_delivered'
+          ? t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局')
+          : timeoutError ? failureLine(t('game:timeout_failed', '超时判定没有完成'), timeoutError.reason, t) : null}</Alert>
       </Snackbar>
       <Snackbar className="kiosk-game-toast" open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>

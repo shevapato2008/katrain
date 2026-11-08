@@ -1,3 +1,4 @@
+import { rankLabel, aiOpponentName } from '../../utils/playerRank';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { interpolate } from '../../utils/interpolate';
 import { Icon } from '../../shell/icons';
@@ -33,6 +34,9 @@ const AiOpponentPlate = ({
   name, levelName, displayElo, refRank, index, total, onOpen, testId,
 }: AiOpponentPlateProps) => {
   const { t } = useTranslation();
+  name = aiOpponentName(name, t);
+  levelName = rankLabel(levelName, t);
+  refRank = refRank ? rankLabel(refRank, t) : refRank;
   const rung = interpolate(t('platform:rung_n', '第 {i} / {n} 档'), { i: index + 1, n: total });
   return (
     <button

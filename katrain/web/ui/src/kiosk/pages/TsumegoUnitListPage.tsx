@@ -1,3 +1,4 @@
+import { boardVariantReason } from '../utils/nativePresentation';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
@@ -137,7 +138,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   const categoryName = isAll
     ? t('Mixed training', '综合训练')
     : category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
-  const levelName = level ? levelChinese(level) : '';
+  const levelName = level ? levelChinese(level, t) : '';
   const backToUnits = () => navigate(`/kiosk/tsumego/${level}/${category}`);
 
   const unitIds = allIds ? allIds.slice(offset, offset + UNIT_SIZE) : [];
@@ -179,19 +180,19 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
       testId="problems-pagebar"
       title={
         isWrongSet
-          ? `${levelName} · ${categoryName} · ${t('tsumego:wrongSet', '错题')}`
-          : `${levelName} · ${categoryName} · ${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })}`
+          ? interpolate(t("{levelName} · {categoryName} · {value3}", "{levelName} · {categoryName} · {value3}"), { levelName: levelName, categoryName: categoryName, value3: t('tsumego:wrongSet', '错题') })
+          : interpolate(t("{levelName} · {categoryName} · {value3}", "{levelName} · {categoryName} · {value3}"), { levelName: levelName, categoryName: categoryName, value3: interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber }) })
       }
       // 题号范围 / 道数只在**真有**时写 —— 读不到 / 越界 / 0 道时写出来是在断言一件不知道的事。
       sub={
         listIds.length === 0
           ? undefined
           : isWrongSet
-            ? `${interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongIds.length })} · ${judged}`
-            : `${interpolate(t('tsumego:problemRange', '第 {start}-{end} 题'), {
+            ? interpolate(t("{value1} · {judged}", "{value1} · {judged}"), { value1: interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongIds.length }), judged: judged })
+            : interpolate(t("{value1} · {judged}", "{value1} · {judged}"), { value1: interpolate(t('tsumego:problemRange', '第 {start}-{end} 题'), {
                 start: offset + 1,
                 end: offset + unitIds.length,
-              })} · ${judged}`
+              }), judged: judged })
       }
       backLabel={t('Units', '单元')}
       onBack={backToUnits}
@@ -199,7 +200,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   );
 
   if ((isWrongSet || wrongOnly) && progressLoading) {
-    return <div className="kiosk-layout-b training-reviewed">{pagebar}<div role="status">正在读取做题记录…</div></div>;
+    return <div className="kiosk-layout-b training-reviewed">{pagebar}<div role="status">{t("正在读取做题记录…", "正在读取做题记录…")}</div></div>;
   }
 
   if (allIds === null || error || (listIds.length === 0 && !wrongOnly)) {
@@ -334,7 +335,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
           </div>
           {!preview && (
             <div className="tsumego-browser__board-message" role="status">
-              {wrongOnly && listIds.length === 0 ? <span>{unitWrongUnknown ? '做题记录没读到' : '本单元现在没有做错过的题'}</span> : activePreviewError ? (
+              {wrongOnly && listIds.length === 0 ? <span>{unitWrongUnknown ? t("做题记录没读到", "做题记录没读到") : t("本单元现在没有做错过的题", "本单元现在没有做错过的题")}</span> : activePreviewError ? (
                 <>
                   <span>{loadErrorCopy(t, activePreviewError).title}</span>
                   <button type="button" onClick={() => { setPreviewError(null); setPreviewRetry((n) => n + 1); }}>
@@ -353,7 +354,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
             <div className="tsumego-browser__stat"><strong>{avgTries == null ? '—' : avgTries.toFixed(1)}</strong><span>{t('Average tries', '平均尝试次数')}</span></div>
             <div className="tsumego-browser__stat"><strong>{avgSeconds == null ? '—' : avgSeconds < 60 ? <>{avgSeconds}<small> {t('sec', '秒')}</small></> : <>{Math.floor(avgSeconds / 60)}<small> {t('min', '分')} </small>{avgSeconds % 60}<small> {t('sec', '秒')}</small></>}</strong><span>{t('Average time', '平均用时')}</span></div>
           </div>
-          <div className="training-tabs" role="tablist" aria-label="题目筛选"><button role="tab" aria-selected={!wrongOnly} onClick={() => setWrongOnly(false)}>单元</button><button role="tab" aria-selected={wrongOnly} onClick={() => setWrongOnly(true)}>错题</button></div><div className="tsumego-browser__section"><b>{unitWrongUnknown ? '错题数量待读取' : interpolate(t('tsumego:these_n_problems', '这 {n} 道题'), { n: listIds.length })}</b><em>Problems</em></div>
+          <div className="training-tabs" role="tablist" aria-label={t("题目筛选", "题目筛选")}><button role="tab" aria-selected={!wrongOnly} onClick={() => setWrongOnly(false)}>{t("单元", "单元")}</button><button role="tab" aria-selected={wrongOnly} onClick={() => setWrongOnly(true)}>{t("错题", "错题")}</button></div><div className="tsumego-browser__section"><b>{unitWrongUnknown ? t("错题数量待读取", "错题数量待读取") : interpolate(t('tsumego:these_n_problems', '这 {n} 道题'), { n: listIds.length })}</b><em>Problems</em></div>
           <div className="qgrid tsumego-browser__grid" data-testid="problems-grid">
             {listIds.map((id) => {
               const done = !!progress[id]?.completed;
@@ -368,23 +369,23 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
                   className={`${done ? 'ok' : isNow ? 'now' : ''}${id === previewId ? ' selected' : ''}`}
                   aria-pressed={id === previewId}
                   aria-current={isNow ? 'step' : undefined}
-                  aria-label={`${interpolate(t('tsumego:problem_no', '第 {n} 题'), { n })}，${state}${tries > 0 ? `，${interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries })}` : ''}`}
+                  aria-label={interpolate(t("{value1}，{state}{value3}", "{value1}，{state}{value3}"), { value1: interpolate(t('tsumego:problem_no', '第 {n} 题'), { n }), state: state, value3: tries > 0 ? `，${interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries })}` : '' })}
                   onClick={() => { setPreviewError(null); setSelectedProblemId(id); }}
                 >
-                  <b>{n}</b><em>{triesOf(id) > 0 ? `${triesOf(id)} 次` : '—'}</em><small>{progress[id]?.lastDuration == null ? '—' : `${Math.round(progress[id].lastDuration!)} 秒`}</small>
+                  <b>{n}</b><em>{triesOf(id) > 0 ? interpolate(t("{value1} 次", "{value1} 次"), { value1: triesOf(id) }) : '—'}</em><small>{progress[id]?.lastDuration == null ? '—' : interpolate(t("{value1} 秒", "{value1} 秒"), { value1: Math.round(progress[id].lastDuration!) })}</small>
                 </button>
               );
             })}
           </div>
-          {wrongOnly && (unitWrongUnknown ? <div role="status">做题记录没读到 <button onClick={() => refresh()}>重试</button></div> : listIds.length === 0 ? <div role="status">本单元现在没有做错过的题</div> : null)}
+          {wrongOnly && (unitWrongUnknown ? <div role="status">{t("做题记录没读到", "做题记录没读到")} <button onClick={() => refresh()}>{t("重试", "重试")}</button></div> : listIds.length === 0 ? <div role="status">{t("本单元现在没有做错过的题", "本单元现在没有做错过的题")}</div> : null)}
           {previewId && <div className="tsumego-browser__selection" data-testid="problem-selection">
             <span className="tsumego-browser__selection-dot" />
             <b>{interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText })}</b>
             <span>{selectedState}</span>
-            <span className="tsumego-browser__selection-hint">{preview?.board_variant?.status === 'unavailable' ? `原${preview.board_variant.source_size}路题：${preview.board_variant.reason}` : preview?.board_variant?.status === 'adapted' ? `19路版（原${preview.board_variant.source_size}路）` : t('tsumego:boardPreview', '左侧为棋形预览')}</span>
+            <span className="tsumego-browser__selection-hint">{preview?.board_variant?.status === 'unavailable' ? interpolate(t("原{source_size}路题：{reason}", "原{source_size}路题：{reason}"), { source_size: preview.board_variant.source_size, reason: boardVariantReason(preview.board_variant.reason, t) }) : preview?.board_variant?.status === 'adapted' ? interpolate(t("19路版（原{source_size}路）", "19路版（原{source_size}路）"), { source_size: preview.board_variant.source_size }) : t('tsumego:boardPreview', '左侧为棋形预览')}</span>
           </div>}
           <button type="button" className="tsumego-browser__enter" data-testid="problem-enter" disabled={!previewId} onClick={() => previewId && openProblem(previewId)}>
-            <small>{previewId ? interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText }) : unitWrongUnknown ? '做题记录没读到' : '没有可做的错题'}</small>
+            <small>{previewId ? interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText }) : unitWrongUnknown ? t("做题记录没读到", "做题记录没读到") : t("没有可做的错题", "没有可做的错题")}</small>
             <b>{t('tsumego:enterProblem', '进入做题屏')}</b>
             <span aria-hidden="true">↗</span>
           </button>
@@ -480,7 +481,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
                 >
                   <b>{n}</b>
                   {/* 试过就写试了几次;一次没试过的那一格,只有「下一道」那张有话可说。 */}
-                  <em>{triesOf(id) > 0 ? `${triesOf(id)} 次` : '—'}</em><small>{progress[id]?.lastDuration == null ? '—' : `${Math.round(progress[id].lastDuration!)} 秒`}</small>
+                  <em>{triesOf(id) > 0 ? interpolate(t("{value1} 次", "{value1} 次"), { value1: triesOf(id) }) : '—'}</em><small>{progress[id]?.lastDuration == null ? '—' : interpolate(t("{value1} 秒", "{value1} 秒"), { value1: Math.round(progress[id].lastDuration!) })}</small>
                 </button>
               );
             })}

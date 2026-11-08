@@ -1,3 +1,4 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -84,8 +85,6 @@ export default function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { token, isAuthenticated, user, identityKey, status } = useAuth();
   const { t, lang } = useTranslation();
-  const translationRef = useRef(t);
-  translationRef.current = t;
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const query = searchParams.get('q') || '';
@@ -107,13 +106,14 @@ export default function ReportsPage() {
   const [gamesLoading, setGamesLoading] = useState(isAuthenticated);
   /** 列表读不到的**原因类别**。存类别不存原文:原文在盒上断网时是 `Request failed 503: {…}`。 */
   const [gamesFailure, setGamesFailure] = useState<RequestFailureKind | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const displayFailure = (value: (UiMessage & { kind?: RequestFailureKind }) | null) => value ? failureLine(renderUiMessage(value, t), value.kind ?? 'other', t) : '';
+  const [actionError, setActionError] = useState<(UiMessage & { kind?: RequestFailureKind }) | null>(null);
   const listRequestGenerationRef = useRef(0);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
   const [board, setBoard] = useState<(BoardState & { gameId: string }) | null>(null);
-  const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<(UiMessage & { kind?: RequestFailureKind }) | null>(null);
   const detailRequestRef = useRef(0);
 
   const [moves, setMoves] = useState<ReportTaskMove[] | null>(null);
@@ -121,7 +121,7 @@ export default function ReportsPage() {
 
   const [libraryImportOpen, setLibraryImportOpen] = useState(false);
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
-  const [libraryImportError, setLibraryImportError] = useState<string | null>(null);
+  const [libraryImportError, setLibraryImportError] = useState<(UiMessage & { kind?: RequestFailureKind }) | null>(null);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -201,7 +201,7 @@ export default function ReportsPage() {
           // 谱读不出来时**画空盘并说明**,不要摆一盘不是这一局的子当装饰(D11)。
           if (request !== detailRequestRef.current) return;
           setBoard(null);
-          setDetailError(translationRef.current('review:board_failed', '这一局的谱读不出来'));
+          setDetailError(uiMessage('review:board_failed', '这一局的谱读不出来'));
         }
       })
       .catch((error: Error) => {
@@ -210,7 +210,7 @@ export default function ReportsPage() {
         setSelectedGame(null);
         setBoard(null);
         // 预览读的是 GET /user-games/{id}:盒上云端失败会退本机缓存,缓存没有也回 404 ⇒ 404 不能说成「已经不在了」。
-        setDetailError(failureLine(translationRef.current('report:preview_failed', '棋谱预览加载失败'), cacheBackedReadFailureKind(error), translationRef.current));
+        setDetailError({ ...uiMessage('report:preview_failed', '棋谱预览加载失败'), kind: cacheBackedReadFailureKind(error) });
       });
     return () => { detailRequestRef.current += 1; };
   }, [isAuthenticated, selectedGameId, token]);
@@ -328,7 +328,7 @@ export default function ReportsPage() {
       } else {
         // 这个 catch 前面还有 `KifuAPI.getAlbum`:今天它抛的错不带 status ⇒ 那一步失败落 other、只说前半句。
         // kifu 赛道 T6 改抛 ApiError(status) 后自动分得出;本赛道不改 kifuApi.ts(归 kifu 赛道,改了必冲突)。
-        setLibraryImportError(failureLine(translationRef.current('report:library_import_failed', '从棋谱库导入失败'), requestFailureKind(error), translationRef.current));
+        setLibraryImportError({ ...uiMessage('report:library_import_failed', '从棋谱库导入失败'), kind: requestFailureKind(error) });
       }
     } finally {
       setLibraryImporting(null);
@@ -353,7 +353,7 @@ export default function ReportsPage() {
       setDeleteTarget(null);
     } catch (error) {
       console.warn('[review] delete', error);
-      setActionError(failureLine(translationRef.current('report:delete_failed', '删除对局失败'), requestFailureKind(error), translationRef.current));
+      setActionError({ ...uiMessage('report:delete_failed', '删除对局失败'), kind: requestFailureKind(error) });
     } finally {
       setDeleteLoading(false);
     }
@@ -416,7 +416,7 @@ export default function ReportsPage() {
               label={t('review:rail_board', '选中那一局的终局盘')}
             />
           )}
-          syncLeft={detailError ?? railSync.left}
+          syncLeft={detailError ? displayFailure(detailError) : railSync.left}
           syncRight={railSync.right}
           statuses={cells}
         />
@@ -425,7 +425,7 @@ export default function ReportsPage() {
             onClick={() => navigate(`/kiosk/research?user_game_id=${encodeURIComponent(selectedGameId!)}`)}>{t('review:open_replay', '查看棋谱')}</button>
           <button type="button" className="kiosk-btn personal-games-report-trigger" aria-haspopup="menu" aria-expanded={reportMenuOpen} disabled={!selectedSummary}
             onClick={() => setReportMenuOpen(value => !value)}>{t('review:analysis_report', '分析报告')} <Icon name="caret-down" /></button>
-          {reportMenuOpen && <div className="personal-games-tier-menu" role="group" aria-label="分析报告档位">
+          {reportMenuOpen && <div className="personal-games-tier-menu" role="group" aria-label={t("分析报告档位", "分析报告档位")}>
             {(['normal', 'deep'] as const).map(tier => {
               const status = selectedGameId ? reportStatesByGame[selectedGameId] : undefined;
               const completed = tier === 'normal' ? status?.completedNormal : status?.completedDeep;
@@ -437,7 +437,7 @@ export default function ReportsPage() {
                   else if (failed) void retryReport(failed.id).catch(() => undefined);
                   else if (selectedSummary) void createForGame(selectedSummary, tier).catch(() => undefined);
                   setReportMenuOpen(false);
-                }}><strong>{completed ? t('review:tier_view', '查看') : active ? t('review:tier_working', '分析中') : failed ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>每手 {tier === 'normal' ? 500 : 2000} 次</span></button>;
+                }}><strong>{completed ? t('review:tier_view', '查看') : active ? t('review:tier_working', '分析中') : failed ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>{t("每手", "每手")} {tier === 'normal' ? 500 : 2000} {t("次", "次")}</span></button>;
             })}
           </div>}
         </div>
@@ -548,7 +548,7 @@ export default function ReportsPage() {
                   {/* 报告任务那条错可能来自列表、创建或重试,前半句说不准是哪件 ⇒ 前半句固定说
                       「报告任务出错了」,后半句按类别接原因;分不出原因时只说前半句,不能只剩
                       一句「已经不在了」没有主语。不印原文(盒上断网时是 Request failed 503: {…})。 */}
-                  {actionError || (tasksBillingError ? tasksError : failureLine(t('review:tasks_failed', '报告任务出错了'), tasksErrorKind ?? 'other', t))}
+                  {(actionError ? displayFailure(actionError) : null) || (tasksBillingError ? tasksError : failureLine(t('review:tasks_failed', '报告任务出错了'), tasksErrorKind ?? 'other', t))}
                   <button
                     type="button" className="kiosk-btn kiosk-btn--pill"
                     onClick={() => { setActionError(null); clearTasksError(); void refreshTasks(); }}
@@ -572,7 +572,7 @@ export default function ReportsPage() {
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}
-        error={libraryImportError}
+        error={libraryImportError ? displayFailure(libraryImportError) : null}
         onClose={() => { setLibraryImportError(null); setLibraryImportOpen(false); }}
         onImport={handleLibraryImport}
       />

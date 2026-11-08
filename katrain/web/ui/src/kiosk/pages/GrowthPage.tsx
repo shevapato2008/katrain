@@ -1,3 +1,5 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
+import { rankLabel } from '../utils/playerRank';
 import { useEffect, useState } from 'react';
 import { KioskStatusCells } from '../shell/KioskStatusCells';
 import { useAuth } from '../../context/AuthContext';
@@ -94,7 +96,7 @@ const GrowthPage = () => {
   const ladder = useAiLadderStatus(token ?? undefined, true, identity);
   const { progress, serverLoadFailed } = useTsumegoProgress();
   const [tab, setTab] = useState<GrowthTab>('overview');
-  const [help, setHelp] = useState<string | null>(null);
+  const [help, setHelp] = useState<UiMessage | string | null>(null);
   const [summary, setSummary] = useState<GrowthSummary | null>(null);
   const [summaryFailed, setSummaryFailed] = useState(false);
 
@@ -150,7 +152,7 @@ const GrowthPage = () => {
   const rankText = placement === null
     ? t('growth:rank_unknown', '—')
     : placement.phase === 'placed'
-      ? placement.rung.rank_name
+      ? rankLabel(placement.rung.rank_name, t)
       // **不写「20 级」** —— 那是出厂值,把它当实力显示出来就是在编(稿子这句是对的)。
       : t('growth:rank_unplaced', '未定级');
   const placementLine = placement !== null && placement.phase === 'placement'
@@ -211,7 +213,7 @@ const GrowthPage = () => {
           {t('growth:rank_title', '盒内段位')}
           <GrowthHelp
             label={t('growth:rank_help_label', '盒内段位说明')}
-            onClick={() => setHelp(t('growth:rank_help', '盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。'))}
+            onClick={() => setHelp(uiMessage('growth:rank_help', "盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。"))}
           />
         </h3>
         <div className="grank" data-testid="growth-rank-value">{rankText}</div>
@@ -316,7 +318,7 @@ const GrowthPage = () => {
               {' '}{t('growth:unknown_seat_short', '局未计入胜率')}
               <GrowthHelp
                 label={t('growth:winrate_help_label', '胜率口径说明')}
-                onClick={() => setHelp(t('growth:unknown_seat_b', '面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。'))}
+                onClick={() => setHelp(uiMessage('growth:unknown_seat_b', "面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。"))}
               />
             </p>}
           </div>
@@ -330,7 +332,7 @@ const GrowthPage = () => {
             <h3>{t('growth:rung_title', '按对手强度')}
               <GrowthHelp
                 label={t('growth:rung_help_label', '按对手强度说明')}
-                onClick={() => setHelp(t('growth:rung_help', '这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。'))}
+                onClick={() => setHelp(uiMessage('growth:rung_help', "这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。"))}
               />
             </h3>
             {summary?.authority === 'local_cache' && summary.by_opponent_rung.length > 0 && (
@@ -347,7 +349,7 @@ const GrowthPage = () => {
               <div className="grungs">
                 {summary.by_opponent_rung.map((r) => (
                   <div className="grung" key={r.rung}>
-                    <b>{r.rank_name ?? `#${r.rung}`}</b>
+                    <b>{(r.rank_name ? rankLabel(r.rank_name, t) : undefined) ?? `#${r.rung}`}</b>
                     <span>
                       {t('growth:rung_w', '{n} 胜').replace('{n}', String(r.wins))}
                       {' · '}
@@ -372,7 +374,7 @@ const GrowthPage = () => {
         </section>}
       </div>
       {help && <div className="growth-help-popover" role="dialog" aria-label={t('growth:help_title', '说明')}>
-        <p>{help}</p>
+        <p>{renderUiMessage(help, t)}</p>
         <button type="button" onClick={() => setHelp(null)}>{t('growth:help_close', '知道了')}</button>
       </div>}
     </div>

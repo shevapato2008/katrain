@@ -1,3 +1,4 @@
+import { useTranslation } from '../../hooks/useTranslation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AiLadderApiError, getAiLadderStatus } from './api';
 import { AI_LADDER_COPY } from './copy';
@@ -40,6 +41,8 @@ export const AI_LADDER_BLOCKED_REFRESH_MS = 15_000;
  * 不传 = 与从前完全一致(galaxy 那几处调用方就不传)。
  */
 export const useAiLadderStatus = (token?: string, enabled = true, identity?: string | null) => {
+  useTranslation();
+  const [failure, setFailure] = useState<unknown>(null);
   const [status, setStatus] = useState<AiLadderStatus>({ view_state: 'loading' });
   const generation = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
@@ -50,6 +53,7 @@ export const useAiLadderStatus = (token?: string, enabled = true, identity?: str
     activeRequest.current?.abort();
     const controller = new AbortController();
     activeRequest.current = controller;
+    setFailure(null);
     setStatus({ view_state: 'loading' });
     try {
       const next = await getAiLadderStatus(token, controller.signal);
@@ -59,7 +63,8 @@ export const useAiLadderStatus = (token?: string, enabled = true, identity?: str
       setStatus(isAiLadderReadyStatus(next) ? next : { view_state: 'error', message: AI_LADDER_COPY.loadError });
     } catch (error) {
       if (controller.signal.aborted || generation.current !== requestGeneration) return;
-      setStatus({ view_state: 'error', message: aiLadderStatusErrorMessage(error) });
+      setFailure(error);
+      setStatus({ view_state: 'error', message: '' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- identity 不进回调体,它只负责「换人就重取」
   }, [enabled, token, identity]);
@@ -130,5 +135,5 @@ export const useAiLadderStatus = (token?: string, enabled = true, identity?: str
     };
   }, [load]);
 
-  return { status, retry: load, applyBlockingSync };
+  return { status: status.view_state === 'error' ? { ...status, message: failure ? aiLadderStatusErrorMessage(failure) : AI_LADDER_COPY.loadError } : status, retry: load, applyBlockingSync };
 };

@@ -1,3 +1,4 @@
+import { boardVariantReason } from '../utils/nativePresentation';
 import './trainingReviewed.css';
 import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
 import { Icon } from '../shell/icons';
@@ -217,7 +218,7 @@ const TsumegoProblemPage = () => {
     const journeyName = inMixedJourney
       ? t('Mixed training', '综合训练')
       : t(`tsumego:${problem.category}`, problem.category);
-    const head = `${levelChinese(problem.level)} · ${journeyName}`;
+    const head = `${levelChinese(problem.level, t)} · ${journeyName}`;
     writePracticeResume(
       inWrongSet
         ? {
@@ -225,7 +226,7 @@ const TsumegoProblemPage = () => {
             route: `/kiosk/tsumego/problem/${problem.id}?set=wrong${mixedWrongSet ? '&scope=all' : ''}`,
           }
         : {
-            label: `${head} · 第 ${currentIndex + 1} 题`,
+            label: interpolate(t('{head} · 第 {n} 题', '{head} · 第 {n} 题'), { head, n: currentIndex + 1 }),
             route: `/kiosk/tsumego/problem/${problem.id}${inAllSet ? '?set=all' : ''}`,
           },
     );
@@ -366,7 +367,7 @@ const TsumegoProblemPage = () => {
   // 稿子第三个标签「示意题面」也去掉:它标的是「这题是稿子上现摆的」,真题来自题库,挂着就是撒谎。
   const categoryName = problem ? t(`tsumego:${problem.category}`, CATEGORY_META[problem.category]?.zh ?? problem.category) : '';
   const journeyName = inMixedJourney ? t('Mixed training', '综合训练') : categoryName;
-  const levelName = problem ? levelChinese(problem.level) : '';
+  const levelName = problem ? levelChinese(problem.level, t) : '';
 
   // 这一题属于第几单元 —— 顺序表算得出来就算,算不出来(深链 + 取不到)就退回类目那一层。
   // 错题模式下没有「第几单元」:单元块画的是这份错题快照,返回去错题页(T1)。
@@ -553,7 +554,7 @@ const TsumegoProblemPage = () => {
         />
 
         <div className="panel">
-          <h3>{t('tsumego:thisProblem', '这一题')}{problem?.board_variant?.status === 'adapted' ? ` · 19路版（原${problem.board_variant.source_size}路）` : ''}</h3>
+          <h3>{t('tsumego:thisProblem', '这一题')}{problem?.board_variant?.status === 'adapted' ? interpolate(t(" · 19路版（原{source_size}路）", " · 19路版（原{source_size}路）"), { source_size: problem.board_variant.source_size }) : ''}</h3>
           <p className="qtext" data-testid="puzzle-statement">
             {problem?.hint ? <b>{problem.hint}。</b> : null}
             {t(
@@ -561,7 +562,7 @@ const TsumegoProblemPage = () => {
               '找出那一手 —— 落子即判，走错当场退回。',
             )}
           </p>
-          {problem?.board_variant?.status === 'unavailable' && <p className="qtext" data-testid="puzzle-original-board-reason">{`原${problem.board_variant.source_size}路题：${problem.board_variant.reason}`}</p>}
+          {problem?.board_variant?.status === 'unavailable' && <p className="qtext" data-testid="puzzle-original-board-reason">{interpolate(t("原{source_size}路题：{reason}", "原{source_size}路题：{reason}"), { source_size: problem.board_variant.source_size, reason: boardVariantReason(problem.board_variant.reason, t) })}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <span className="kiosk-tag">{categoryName}</span>
             <span className="kiosk-tag">{levelName}</span>
@@ -575,9 +576,9 @@ const TsumegoProblemPage = () => {
               {t('Time', '用时')} {inPhysicalSetup ? t('tsumego:preparingBoard', '准备中') : formatTime(elapsedTime)}
               {/* 一次都没试过时**不写「0 次」** —— 和屏 13 同一条:0 次是一个次数,
                   「还没开始」不是。做对的那一次要算进去(`attempts` 数的是失败的那几次)。 */}
-              {tries > 0 ? ` · ${interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries })}` : ''}
+              {tries > 0 ? interpolate(t(" · {value1}", " · {value1}"), { value1: interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries }) }) : ''}
               {lastDuration != null
-                ? ` · ${t('tsumego:lastTimeShort', '上次')} ${formatTime(lastDuration)}`
+                ? interpolate(t(" · {value1} {value2}", " · {value1} {value2}"), { value1: t('tsumego:lastTimeShort', '上次'), value2: formatTime(lastDuration) })
                 : ''}
             </b>
           </div>
@@ -713,10 +714,10 @@ const TsumegoProblemPage = () => {
         <div className="panel" data-testid="puzzle-unit">
           <h3>
             {inWrongSet
-              ? `${t('tsumego:wrongSet', '错题')} · ${interpolate(t('tsumego:wrong_total', '{n} 道'), { n: sequence.length })}`
+              ? interpolate(t("{value1} · {value2}", "{value1} · {value2}"), { value1: t('tsumego:wrongSet', '错题'), value2: interpolate(t('tsumego:wrong_total', '{n} 道'), { n: sequence.length }) })
               : unitNumber === null
                 ? t('tsumego:unitUnknown', '这一单元')
-                : `${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })} · ${interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length })}`}
+                : interpolate(t("{value1} · {value2}", "{value1} · {value2}"), { value1: interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber }), value2: interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length }) })}
           </h3>
           {unitIds.length > 0 ? (
             <div className="dots" data-testid="puzzle-dots">

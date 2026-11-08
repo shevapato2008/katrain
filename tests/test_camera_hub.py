@@ -538,3 +538,151 @@ def test_identified_frame_reads_do_not_reopen_a_stopped_hub():
     hub.stop()
     assert hub.read_frame_identified() == (None, 0, 0.0)
     assert camera.identified_reads == 1
+
+
+class HotplugMonitor:
+    instances = []
+    available = True
+
+    def __init__(self, path, callback):
+        self.path, self.callback = path, callback
+        self.started = False
+        self.stopped = False
+        self.instances.append(self)
+
+    def start(self):
+        self.started = True
+        return self.available
+
+    def stop(self):
+        self.stopped = True
+
+
+class HotplugCamera(RecoveringCamera):
+    def __init__(self):
+        super().__init__()
+        self.events = []
+        self.event_threads = []
+
+    def handle_device_event(self, action):
+        self.events.append(action)
+        self.event_threads.append(threading.current_thread().name)
+        if action == "remove":
+            self.is_connected = False
+
+
+@pytest.fixture
+def hotplug_monitor(monkeypatch):
+    from katrain.web.core import camera_hub
+
+    HotplugMonitor.instances = []
+    HotplugMonitor.available = True
+    monkeypatch.setattr(camera_hub, "UdevDeviceMonitor", HotplugMonitor, raising=False)
+    return HotplugMonitor
+
+
+def test_hub_subscribes_before_initial_open_and_arrival_wakes_owner_within_500ms(hotplug_monitor):
+    camera = HotplugCamera()
+    original_open = camera.open
+
+    def open_camera():
+        assert hotplug_monitor.instances[0].started, "initial reconcile ran before subscribing"
+        return original_open()
+
+    camera.open = open_camera
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    try:
+        hub.start(allow_unavailable=True)
+        camera.available = True
+        monitor = hotplug_monitor.instances[0]
+        started = time.monotonic()
+        monitor.callback("add")
+        assert camera.recovered.wait(0.5)
+        assert time.monotonic() - started < 0.5
+        assert camera.events == ["add"]
+        assert camera.event_threads == ["camera-recovery"]
+    finally:
+        hub.stop()
+    assert monitor.stopped
+
+
+def test_hub_coalesces_events_received_during_start_and_drops_late_events(hotplug_monitor):
+    camera = HotplugCamera()
+    original_open = camera.open
+
+    def open_camera():
+        monitor = hotplug_monitor.instances[0]
+        if camera.open_calls == 0:
+            monitor.callback("remove")
+            monitor.callback("add")
+            monitor.callback("add")
+        camera.available = True
+        return original_open()
+
+    camera.open = open_camera
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start(allow_unavailable=True)
+    try:
+        deadline = time.monotonic() + 1
+        while len(camera.events) < 2 and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert camera.events == ["remove", "add"]
+    finally:
+        hub.stop()
+    attempts = camera.open_calls
+    hotplug_monitor.instances[0].callback("add")
+    assert camera.events == ["remove", "add"]
+    assert camera.open_calls == attempts
+
+
+@pytest.mark.parametrize("monitor_available", [False, True])
+def test_monitor_failure_and_lost_events_retain_timer_recovery(monkeypatch, hotplug_monitor, monitor_available):
+    hotplug_monitor.available = monitor_available
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    camera = HotplugCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    try:
+        hub.start(allow_unavailable=True)
+        camera.available = True
+        assert camera.recovered.wait(1)
+        assert camera.events == []
+        assert len(hotplug_monitor.instances) == 1
+    finally:
+        hub.stop()
+
+
+def test_stop_queued_event_does_not_reopen_closed_camera(hotplug_monitor):
+    camera = HotplugCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start(allow_unavailable=True)
+    with hub._lifecycle_lock:
+        monitor = hotplug_monitor.instances[0]
+        monitor.callback("add")
+        # Withdraw pending recovery as shutdown does, before releasing lifecycle ownership.
+        hub._recovery_stop.set()
+    hub.stop()
+    assert camera.open_calls == 1
+    assert camera.events == []
+    assert monitor.stopped
+
+
+def test_idle_timer_reconciles_identity_even_while_cached_camera_is_ready(monkeypatch, hotplug_monitor):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    checked = threading.Event()
+    camera = HotplugCamera()
+    camera.available = True
+
+    def reconcile_device():
+        checked.set()
+        camera.is_connected = False
+        camera.available = False
+
+    camera.reconcile_device = reconcile_device
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    try:
+        hub.start()
+        assert hub.is_connected()
+        assert checked.wait(1)
+        assert not hub.is_connected()
+    finally:
+        hub.stop()

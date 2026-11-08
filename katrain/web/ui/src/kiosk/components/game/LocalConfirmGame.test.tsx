@@ -69,18 +69,34 @@ describe('local confirmation panels', () => {
     expect(screen.queryByText('实体盘准备失败')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /确认落子/ })).toBeEnabled();
   });
-  it('严重光照提示使用同一语音实例打断开局引导，关闭后停止，不触发对局动作', () => {
-    const p = props();
-    const opening = { ...game, current_node_index: 0, handicap: 0 };
-    const view = render(<LocalConfirmGame {...p} input="physical" gameState={opening} />);
-    expect(voice.speak).toHaveBeenLastCalledWith('local_confirm_physical');
-    view.rerender(<LocalConfirmGame {...p} input="physical" gameState={{ ...opening,
-      local_confirmation: { enabled: true, status: 'idle', reason: 'frame_overexposed' } }} />);
-    expect(screen.getByRole('dialog')).toHaveTextContent('画面过亮，暂时无法可靠识别');
-    expect(voice.speak).toHaveBeenLastCalledWith('lighting_overexposed');
-    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
-    expect(voice.stop).toHaveBeenCalledTimes(1);
-    for (const action of [p.onConfirm, p.onPass, p.onCount, p.onResign, p.onExit]) expect(action).not.toHaveBeenCalled();
+  it.each([
+    { locale: 'en', title: 'Image too bright for reliable recognition',
+      body: 'Remove any obstruction. If the warning remains, try a place with even, suitable lighting.', close: 'Got it' },
+    { locale: 'ko', title: '화면이 너무 밝아 정확히 인식할 수 없습니다',
+      body: '가리는 물체를 치우세요. 경고가 계속되면 밝기가 적절하고 고른 곳에서 다시 시도하세요.', close: '확인' },
+  ])('$locale lighting dialog receives the native translator and interrupts the same voice without game actions', ({ title, body, close }) => {
+    // The real native hook reads this bounded catalog fixture; the shared dialog is not mocked.
+    const messages: Record<string, string> = {
+      'vision:lighting_overexposed_title': title,
+      'vision:lighting_warning_body': body,
+      'game:local_got_it': close,
+    };
+    const translation = vi.spyOn(i18n, 't').mockImplementation((key, fallback) => messages[key] ?? fallback ?? key);
+    try {
+      const p = props();
+      const opening = { ...game, current_node_index: 0, handicap: 0 };
+      const view = render(<LocalConfirmGame {...p} input="physical" gameState={opening} />);
+      expect(voice.speak).toHaveBeenLastCalledWith('local_confirm_physical');
+      view.rerender(<LocalConfirmGame {...p} input="physical" gameState={{ ...opening,
+        local_confirmation: { enabled: true, status: 'idle', reason: 'frame_overexposed' } }} />);
+      expect(screen.getByRole('dialog')).toHaveTextContent(title);
+      expect(screen.getByRole('dialog')).toHaveTextContent(body);
+      expect(screen.getByRole('dialog')).not.toHaveTextContent('画面过亮，暂时无法可靠识别');
+      expect(voice.speak).toHaveBeenLastCalledWith('lighting_overexposed');
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: close }));
+      expect(voice.stop).toHaveBeenCalledTimes(1);
+      for (const action of [p.onConfirm, p.onPass, p.onCount, p.onResign, p.onExit]) expect(action).not.toHaveBeenCalled();
+    } finally { translation.mockRestore(); }
   });
   it('同一节点识别中的空reason不会重置提示，成功换节点后允许再提示', async () => {
     const p = props();

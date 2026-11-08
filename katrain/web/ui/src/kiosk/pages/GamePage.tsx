@@ -1742,7 +1742,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       <Dialog open={!!opponentCountRequest} className="kiosk-game-side-dialog">
         <DialogTitle>{t('game:opponent_count_title', '对方请求数子')}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{t('game:opponent_count_body', '{name}请求结束对局并数子，是否同意？').replace('{name}', opponentCountRequest?.requester_name ?? '')}</DialogContentText>
+          <DialogContentText>{t('game:opponent_count_body', '{name}请求结束对局并数子，是否同意？').replace('{name}', () => opponentCountRequest?.requester_name ?? '')}</DialogContentText>
           {countNotice === '回应数子请求失败，请重试' && <Alert severity="error">{countNoticeText}</Alert>}
         </DialogContent>
         <DialogActions>

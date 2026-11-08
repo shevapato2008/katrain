@@ -1328,6 +1328,7 @@ describe('GamePage', () => {
     });
 
     it('translates the same open count invitation and retained rejection notice without resending', async () => {
+      const requesterName = "停一手 A$&B $` $' $$";
       let locale = 'en';
       const messages: Record<string, Record<string, string>> = {
         en: { 'game:opponent_count_title': 'Opponent requests scoring', 'game:opponent_count_body': '{name} asks to end and score. Accept?', 'game:count_request_rejected': 'Scoring request declined' },
@@ -1339,12 +1340,12 @@ describe('GamePage', () => {
         mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
           players_info: { B: { ...basePlayer, player_type: 'player:human', name: 'Opponent' }, W: { ...basePlayer, player_type: 'player:human', name: 'Me' } } });
         const view = renderPage('/kiosk/play/pvp/room/test-session');
-        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 2, requester_name: '停一手' }));
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 2, requester_name: requesterName }));
         expect(screen.getByRole('dialog')).toHaveTextContent('Opponent requests scoring');
-        expect(screen.getByRole('dialog')).toHaveTextContent('停一手 asks to end and score. Accept?');
+        expect(screen.getByRole('dialog')).toHaveTextContent(`${requesterName} asks to end and score. Accept?`);
         locale = 'ko'; view.rerender(pageTree('/kiosk/play/pvp/room/test-session'));
         expect(screen.getByRole('dialog')).toHaveTextContent('상대의 계가 요청');
-        expect(screen.getByRole('dialog')).toHaveTextContent('停一手 님이');
+        expect(screen.getByRole('dialog')).toHaveTextContent(`${requesterName} 님이`);
         act(() => capturedSessionOptions.current?.onCountRejected?.());
         expect(screen.getByTestId('lobby-count-notice')).toHaveTextContent('계가 요청이 거절되었습니다');
         locale = 'en'; view.rerender(pageTree('/kiosk/play/pvp/room/test-session'));

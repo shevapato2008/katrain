@@ -1,6 +1,8 @@
-# 微信 Native 会员与充值上线草稿 — 2026-11-08
+# 微信 Native 会员与充值上线方案及授权前基线 — 2026-11-08
 
-**状态：实现与本地验证已完成，待授权上线；不是发布回执。** 已完成官方文档和运行状态核查、Native 实现、隔离 PostgreSQL/密码学/HTTP 测试及双端浏览器预览。本轮没有部署、重启远程服务、写生产配置、创建生产 secret、修改商户平台或调用真实商户 API，真实收款保持关闭。独立审核结论见[代码及视觉审核](../superpowers/reviews/2026-11-08-wechat-native-code-astra.md)。
+**后续发布更新：** 用户随后明确要求部署，四步集成、两云代码及实体事务的最终状态以[2026-11-09 发布回执](wechat-native-release-2026-11-09.md)为准；真实收款仍关闭，秘密尚未准备，见[资料操作指引](wechat-native-credentials.md)。下文“未部署/待授权”均保留为用户要求部署前的历史基线及分段方案，不代表当前运行状态。
+
+授权前已完成官方文档和运行状态核查、Native 实现、隔离 PostgreSQL/密码学/HTTP 测试及双端浏览器预览。独立审核结论见[代码及视觉审核](../superpowers/reviews/2026-11-08-wechat-native-code-astra.md)。
 
 本稿对应[实施计划](../superpowers/plans/2026-11-08-wechat-native.md)。只读原始记录在本地忽略目录 `output/wechat-native/runtime-audit-2026-11-08.md`，官方契约摘要在 `output/wechat-native/official-contract.md`；下文已保留发布决策所需的事实及官方直接链接，不依赖这两个文件随 Git 交付。
 

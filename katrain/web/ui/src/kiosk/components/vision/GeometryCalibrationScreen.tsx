@@ -449,7 +449,7 @@ export function GeometryCalibrationScreen({
       '沿用上次标定失败': ['vision:reuse_failed', '沿用上次标定失败'],
       '光线重检没有启动，请再试一次。': ['vision:light_recheck_failed', '光线重检没有启动，请再试一次。'],
     };
-    const copy = owned[message];
+    const copy = Object.prototype.hasOwnProperty.call(owned, message) ? owned[message] : undefined;
     return copy ? t(copy[0], copy[1]) : message;
   };
   const diagnostic: Diagnostic | null = relocateError

@@ -66,6 +66,16 @@ const mapPoint = (
   y: transform.offsetY + y * transform.scale,
 });
 
+const cornerLabel = (label: string): string => {
+  switch (label) {
+    case '左上': return 'A19';
+    case '右上': return 'T19';
+    case '右下': return 'T1';
+    case '左下': return 'A1';
+    default: return label;
+  }
+};
+
 const gridModel = (
   points: [number, number][][],
   corners: GeometryCorner[],
@@ -95,7 +105,7 @@ const gridModel = (
     starPoints,
     corners: corners.map((corner) => ({
       ...mapPoint(corner.row, corner.col, corner.x, corner.y, transform),
-      label: ({ '左上': 'A19', '右上': 'T19', '右下': 'T1', '左下': 'A1' } as Record<string, string>)[corner.label] ?? corner.label,
+      label: cornerLabel(corner.label),
     })),
     anchors: [],
   };

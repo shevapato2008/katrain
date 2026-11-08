@@ -50,6 +50,11 @@ describe('geometry overlay model', () => {
     expect(layout.corners.map((corner) => corner.label)).toEqual(['左上', '右上', '右下', '左下']);
   });
 
+  it('preserves unknown source labels even when they match object prototype properties', () => {
+    const source = { ...layout, corners: layout.corners.map((c) => ({ ...c, label: 'constructor' })) };
+    expect(buildRawGeometryModel(source, 'ready', { width: 1000, height: 600 }).corners[0].label).toBe('constructor');
+  });
+
   it('marks retained geometry as stale after displacement', () => {
     expect(buildRawGeometryModel(layout, 'degraded', { width: 1000, height: 600 }).tone).toBe('stale');
   });

@@ -21,6 +21,19 @@ const props = () => ({ gameState: game, input: 'screen' as const, point: null, b
 describe('local confirmation panels', () => {
   beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
 
+  it('translates seat aria labels and wait copy before inserting the side name', () => {
+    const translate = vi.spyOn(i18n, 't').mockImplementation((key, fallback) => ({
+      'game:black_side': 'Black', 'game:white_side': 'White', 'game:local_seat_panel': '{side} player panel',
+      'game:local_wait_side': 'Waiting for {side}',
+    }[key] ?? fallback ?? key));
+    try {
+      render(<LocalConfirmGame {...props()} />);
+      expect(screen.getByRole('region', { name: 'Black player panel' })).toBeInTheDocument();
+      expect(within(screen.getByRole('region', { name: 'White player panel' })).getByRole('button', { name: /Waiting for Black/ })).toBeDisabled();
+      expect(screen.getByText('张三')).toBeInTheDocument();
+    } finally { translate.mockRestore(); }
+  });
+
   it('physical preparation disables confirmation and delays the opening voice until readiness', () => {
     const p = props();
     const opening = { ...game, current_node_index: 0 };

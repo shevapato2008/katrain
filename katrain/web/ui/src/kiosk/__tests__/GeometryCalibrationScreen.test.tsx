@@ -708,6 +708,14 @@ describe('shared translator seam', () => {
     expect(startCalibration).not.toHaveBeenCalled();
   });
 
+  it('preserves an unknown technical error even when it matches an object prototype property', async () => {
+    status = { ...status, phase: 'required', last_valid: false };
+    startCalibration.mockRejectedValueOnce(new Error('constructor'));
+    render(screenTree(undefined, dictionary('en')));
+    fireEvent.click(within(acts()).getByRole('button', { name: '重新开始标定' }));
+    await waitFor(() => expect(screen.getByTestId('geometry-diagnostic-card')).toHaveTextContent('constructor'));
+  });
+
   it('keeps relocation failure as a reason and translates the same failure on refresh', async () => {
     relocate.mockRejectedValueOnce(new Error('no_board_detected'));
     const tree = render(screenTree(undefined, dictionary('en')));

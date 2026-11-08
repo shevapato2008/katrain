@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { i18n } from '../../i18n';
 import PvpLocalSetupPage from './PvpLocalSetupPage';
 import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
 import { openPick, pick } from '../__tests__/helpers/setupPick';
@@ -64,6 +65,22 @@ beforeEach(() => {
 });
 
 describe('PvpLocalSetupPage', () => {
+  it('translates an already displayed device readiness error on a locale refresh', async () => {
+    let locale = 'en';
+    const translate = vi.spyOn(i18n, 't').mockImplementation((key, fallback) => key === 'local:device_check_pending'
+      ? locale === 'en' ? 'Reading device status' : '장치 상태 확인 중' : fallback ?? key);
+    try {
+      vision.enabled = true; vision.loaded = false;
+      const view = renderPage();
+      fireEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+      expect(await screen.findByText('Reading device status')).toBeInTheDocument();
+      locale = 'ko';
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><PvpLocalSetupPage /></MemoryRouter></ThemeProvider>);
+      expect(screen.getByText('장치 상태 확인 중')).toBeInTheDocument();
+      expect(API.createSession).not.toHaveBeenCalled();
+    } finally { translate.mockRestore(); }
+  });
+
   it('starts a pvp_local game with both player names and navigates to the local game route', async () => {
     renderPage();
     await userEvent.type(screen.getByTestId('black-name-input'), '小明');

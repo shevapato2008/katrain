@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API, ApiError, type GameState } from '../../api';
+import { i18n } from '../../i18n';
 import GamePage, { deriveAiTurnState } from './GamePage';
 import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
@@ -1326,7 +1327,33 @@ describe('GamePage', () => {
       } finally { respond.mockRestore(); vi.unstubAllGlobals(); }
     });
 
-    it('can reject an opponent count request', async () => {
+    it('translates the same open count invitation and retained rejection notice without resending', async () => {
+      let locale = 'en';
+      const messages: Record<string, Record<string, string>> = {
+        en: { 'game:opponent_count_title': 'Opponent requests scoring', 'game:opponent_count_body': '{name} asks to end and score. Accept?', 'game:count_request_rejected': 'Scoring request declined' },
+        ko: { 'game:opponent_count_title': '상대의 계가 요청', 'game:opponent_count_body': '{name} 님이 종료와 계가를 요청합니다. 수락할까요?', 'game:count_request_rejected': '계가 요청이 거절되었습니다' },
+      };
+      const translate = vi.spyOn(i18n, 't').mockImplementation((key, fallback) => messages[locale][key] ?? fallback ?? key);
+      const respond = vi.spyOn(API, 'respondCount');
+      try {
+        mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+          players_info: { B: { ...basePlayer, player_type: 'player:human', name: 'Opponent' }, W: { ...basePlayer, player_type: 'player:human', name: 'Me' } } });
+        const view = renderPage('/kiosk/play/pvp/room/test-session');
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 2, requester_name: '停一手' }));
+        expect(screen.getByRole('dialog')).toHaveTextContent('Opponent requests scoring');
+        expect(screen.getByRole('dialog')).toHaveTextContent('停一手 asks to end and score. Accept?');
+        locale = 'ko'; view.rerender(pageTree('/kiosk/play/pvp/room/test-session'));
+        expect(screen.getByRole('dialog')).toHaveTextContent('상대의 계가 요청');
+        expect(screen.getByRole('dialog')).toHaveTextContent('停一手 님이');
+        act(() => capturedSessionOptions.current?.onCountRejected?.());
+        expect(screen.getByTestId('lobby-count-notice')).toHaveTextContent('계가 요청이 거절되었습니다');
+        locale = 'en'; view.rerender(pageTree('/kiosk/play/pvp/room/test-session'));
+        expect(screen.getByTestId('lobby-count-notice')).toHaveTextContent('Scoring request declined');
+        expect(respond).not.toHaveBeenCalled();
+      } finally { translate.mockRestore(); respond.mockRestore(); }
+    });
+
+    it('can reject an opponent count request' , async () => {
       mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
         players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
           W: { ...basePlayer, player_type: 'player:human', name: '我' } } });

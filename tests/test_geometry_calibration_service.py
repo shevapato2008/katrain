@@ -49,6 +49,71 @@ class FakeCapture:
         return True
 
 
+def test_usb_gate_covers_calibration_worker_and_resume(tmp_path):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    entered, finish = threading.Event(), threading.Event()
+
+    def resume():
+        assert gate.try_recovery() is None
+
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "g.npz", recovery_gate=gate, on_resume=resume
+    )
+
+    def run():
+        entered.set()
+        assert finish.wait(2)
+        resume()
+
+    service._run = run
+    try:
+        service.start(trigger="manual", empty_confirmed=True)
+        assert entered.wait(1)
+        assert gate.try_recovery() is None
+        finish.set()
+        assert service.wait(2)
+        recovery = gate.try_recovery()
+        assert recovery is not None
+        recovery.close()
+    finally:
+        finish.set()
+        service.stop()
+
+
+@pytest.mark.parametrize("operation", ["start", "preflight", "confirm_existing", "relocate"])
+def test_usb_recovery_atomically_refuses_geometry_operations(tmp_path, operation):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "g.npz", recovery_gate=gate
+    )
+    with gate.try_recovery():
+        with pytest.raises(CalibrationBusy):
+            getattr(service, operation)(
+                **({"trigger": "manual", "empty_confirmed": True} if operation == "start" else {})
+            )
+    service.stop()
+
+
+def test_thread_start_failure_releases_hardware_use(tmp_path, monkeypatch):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "g.npz", recovery_gate=gate
+    )
+    monkeypatch.setattr(threading.Thread, "start", lambda self: (_ for _ in ()).throw(RuntimeError("start failed")))
+    with pytest.raises(RuntimeError, match="start failed"):
+        service.start(trigger="manual", empty_confirmed=True)
+    recovery = gate.try_recovery()
+    assert recovery is not None
+    recovery.close()
+    service.stop()
+
+
 @pytest.mark.parametrize("board_connected", [True, False, None])
 def test_calibration_status_led_uses_board_a_cache(tmp_path, board_connected):
     led = FakeLed()

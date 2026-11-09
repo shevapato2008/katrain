@@ -1706,3 +1706,224 @@ def test_idle_silent_transport_with_present_alias_reopens_once_after_three_link_
         svc._queue.put(_led_service._SENTINEL)
         worker.join(timeout=2)
         assert not worker.is_alive()
+
+
+def test_usb_pause_closes_in_worker_retains_lease_and_drops_old_guidance():
+    closed_threads = []
+    first, second = FakeSerial(), FakeSerial()
+    original_close = first.close
+
+    def close():
+        closed_threads.append(threading.current_thread().name)
+        original_close()
+
+    first.close = close
+    serials = iter([first, second])
+    port = f"led-{uuid.uuid4().hex}"
+    svc = LedService(LedServiceConfig(serial_port=port), serial_factory=lambda: next(serials))
+    peer = LedService(LedServiceConfig(serial_port=port), serial_factory=FakeSerial)
+    svc.start()
+    try:
+        svc.set_points([{"row": 1, "col": 1, "color": "white"}])
+        assert svc.begin_usb_recovery(timeout=0.5)
+        assert closed_threads == ["led-serial"]
+        assert not svc.is_connected()
+        assert svc.set_points([{"row": 2, "col": 2}], strict=True)["ok"] is False
+        assert svc.set_rgb_points([{"row": 2, "col": 2, "rgb": [1, 2, 3]}])["ok"] is False
+        assert svc._last_guidance is None
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        svc.end_usb_recovery()
+        svc.end_usb_recovery()
+        deadline = time.monotonic() + 1
+        while not svc.is_connected() and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert svc.is_connected()
+        assert second.written[:3] == ["CLEAR", "SHOW", "BRIGHT 255"]
+        assert second.seti_lines() == []
+    finally:
+        peer.stop()
+        svc.stop()
+        svc.stop()
+
+
+def test_usb_pause_wakes_strict_waiter_but_does_not_ack_blocked_serial_or_close_cross_thread():
+    entered, finish = threading.Event(), threading.Event()
+    serial = FakeSerial()
+    svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=lambda: serial)
+    svc.start()
+    original_write = serial.write
+    original_close = serial.close
+    close_threads = []
+
+    def write(data):
+        if data == b"SETI 0 255 0 0\n":
+            entered.set()
+            assert finish.wait(1)
+        original_write(data)
+
+    def close():
+        close_threads.append(threading.current_thread().name)
+        original_close()
+
+    serial.write, serial.close = write, close
+    result = []
+    waiter = threading.Thread(
+        target=lambda: result.append(svc._submit(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True))
+    )
+    try:
+        waiter.start()
+        assert entered.wait(0.5)
+        assert not svc.begin_usb_recovery(timeout=0.03)
+        waiter.join(0.2)
+        assert result and result[0]["ok"] is False
+        assert close_threads == []
+        finish.set()
+        waiter.join(1)
+        time.sleep(0.05)
+        assert "SHOW" not in serial.written[3:]
+        assert all(name == "led-serial" for name in close_threads)
+        assert svc.set_points([], strict=False)["ok"] is True, "late ACK left an unowned pause"
+    finally:
+        finish.set()
+        waiter.join(1)
+        svc.stop()
+
+
+def test_led_startup_check_precedes_first_open_and_all_reconnects():
+    allowed = threading.Event()
+    opened = []
+    svc = LedService(
+        LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"),
+        serial_factory=lambda: opened.append(True) or FakeSerial(),
+        reconnect_interval=0,
+    )
+    svc.set_usb_startup_check(allowed.is_set)
+    svc.start()
+    try:
+        time.sleep(0.03)
+        assert opened == []
+        allowed.set()
+        deadline = time.monotonic() + 1
+        while not svc.is_connected() and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert opened == [True]
+        assert svc.begin_usb_recovery(timeout=0.5)
+        allowed.clear()
+        svc.end_usb_recovery()
+        time.sleep(0.25)
+        assert opened == [True]
+    finally:
+        svc.stop()
+
+
+def test_usb_pause_ack_waits_for_worker_serial_close_and_stop_cancels_waiter():
+    entered, release, requested = threading.Event(), threading.Event(), threading.Event()
+    serial = FakeSerial()
+    svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=lambda: serial)
+    svc.start()
+    original_close = serial.close
+
+    def close():
+        entered.set()
+        assert release.wait(1)
+        original_close()
+
+    serial.close = close
+    results = []
+
+    def pause():
+        requested.set()
+        results.append(svc.begin_usb_recovery(timeout=0.5))
+
+    waiter = threading.Thread(target=pause)
+    stopper = threading.Thread(target=svc.stop)
+    try:
+        waiter.start()
+        assert requested.wait(0.5) and entered.wait(0.5)
+        assert results == []
+        stopper.start()
+        waiter.join(0.2)
+        assert results == [False]
+        release.set()
+        stopper.join(1)
+        assert not stopper.is_alive()
+        svc.end_usb_recovery()
+        svc.stop()
+    finally:
+        release.set()
+        waiter.join(1)
+        if stopper.ident is not None:
+            stopper.join(1)
+        svc.stop()
+
+
+def test_usb_pause_full_wakeup_queue_still_acks_without_leaving_orphan_pause(monkeypatch):
+    import queue
+
+    svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=FakeSerial)
+    svc.start()
+    original_put = svc._queue.put_nowait
+
+    def put(item):
+        if item is _led_service._USB_WAKE:
+            raise queue.Full
+        return original_put(item)
+
+    monkeypatch.setattr(svc._queue, "put_nowait", put)
+    try:
+        assert svc.begin_usb_recovery(timeout=0.5)
+    finally:
+        svc.end_usb_recovery()
+        svc.stop()
+
+
+def test_usb_close_failure_never_acks_or_loses_handle_and_lease():
+    class CloseFailureSerial(FakeSerial):
+        def __init__(self):
+            super().__init__()
+            self.close_calls = []
+
+        def close(self):
+            self.close_calls.append(threading.current_thread().name)
+            raise OSError("handle still open")
+
+    serial = CloseFailureSerial()
+    opened = []
+    port = f"led-{uuid.uuid4().hex}"
+    svc = LedService(
+        LedServiceConfig(serial_port=port), serial_factory=lambda: opened.append(True) or serial, reconnect_interval=0
+    )
+    peer = LedService(LedServiceConfig(serial_port=port), serial_factory=FakeSerial)
+    svc.start()
+    lease = svc._device_lease
+    try:
+        assert svc.begin_usb_recovery(timeout=0.5) is False
+        assert serial.closed is False
+        assert svc._serial is serial
+        assert svc._device_lease is lease
+        assert not svc.is_connected()
+        assert svc.set_points([{"row": 2, "col": 2}])["ok"] is False
+        svc.end_usb_recovery()
+        svc.end_usb_recovery()
+        assert svc.begin_usb_recovery(timeout=0.01) is False
+        time.sleep(0.25)
+        assert opened == [True]
+        assert serial.close_calls == ["led-serial"]
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        svc.stop()
+        svc.stop()
+        assert svc._serial is serial
+        assert svc._device_lease is lease
+        assert serial.close_calls == ["led-serial"]
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        with pytest.raises(RuntimeError, match="close|closed"):
+            svc.start()
+    finally:
+        # The fake cannot be closed. Release only its test lease after every
+        # ownership assertion; production retains it until process exit.
+        svc.stop()
+        peer.stop()
+        lease.release()

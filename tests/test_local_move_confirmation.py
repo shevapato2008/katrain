@@ -198,6 +198,126 @@ def test_physical_full_board_and_clock_pause(client, monkeypatch):
     assert vision.closed[-1][1] == "accepted"
 
 
+@pytest.fixture
+def usb_local_client(client, monkeypatch):
+    # web_ui/conftest replaces the interface module during collection. Keep this
+    # focused test's real game implementation isolated and restore the seam.
+    import importlib.util
+    from pathlib import Path
+    from katrain.web import session as session_module
+
+    spec = importlib.util.spec_from_file_location(
+        "_usb_test_real_interface", Path(__file__).parents[1] / "katrain/web/interface.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(session_module, "WebKaTrain", module.WebKaTrain)
+    return client
+
+
+def test_usb_gate_covers_local_observation_through_real_play(usb_local_client, monkeypatch):
+    client = usb_local_client
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    session = start(client, monkeypatch)
+    board = np.zeros((9, 9), dtype=int)
+    board[5, 3] = 1
+    vision = WindowVision(session, [board], ConfirmedMove(col=3, row=5, color=1))
+    vision.recovery_gate = gate
+    client.app.state.vision = vision
+    read = vision.get_local_window_observation
+
+    def guarded_read(*args):
+        assert gate.try_recovery() is None
+        return read(*args)
+
+    vision.get_local_window_observation = guarded_read
+    play = session.katrain.game.play
+
+    def guarded_play(*args, **kwargs):
+        assert gate.try_recovery() is None
+        return play(*args, **kwargs)
+
+    monkeypatch.setattr(session.katrain.game, "play", guarded_play)
+    client.post(
+        "/api/local/ready",
+        json={"session_id": session.session_id, "expected_game_id": session.katrain.game.game_id, "input": "physical"},
+    )
+    result = client.post("/api/local/confirm", json=request_for(session, input="physical", coords=None))
+    assert result.json()["accepted"] is True
+    token = gate.try_recovery()
+    assert token is not None
+    token.close()
+
+
+def test_usb_gate_refuses_physical_pass_but_allows_screen(usb_local_client, monkeypatch):
+    client = usb_local_client
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    session = start(client, monkeypatch)
+    vision = WindowVision(session, [])
+    vision.recovery_gate = gate
+    client.app.state.vision = vision
+    with gate.try_recovery():
+        result = client.post("/api/local/confirm", json=request_for(session))
+        assert result.json()["accepted"] is True
+    client.post(
+        "/api/local/ready",
+        json={"session_id": session.session_id, "expected_game_id": session.katrain.game.game_id, "input": "physical"},
+    )
+    with gate.try_recovery():
+        result = client.post(
+            "/api/local/confirm",
+            json=request_for(session, input="physical", action="pass", coords=None, request_id="physical-pass"),
+        )
+        assert result.json()["accepted"] is False
+
+
+def test_usb_gate_does_not_reserve_entire_local_waiter(usb_local_client, monkeypatch):
+    import threading
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+    from katrain.web.core.local_confirmation import LocalConfirmationController
+
+    client = usb_local_client
+    gate = HardwareRecoveryGate()
+    session = start(client, monkeypatch)
+    vision = WindowVision(session, [])
+    vision.recovery_gate = gate
+    client.app.state.vision = vision
+    monkeypatch.setattr(LocalConfirmationController, "WINDOW_SECONDS", 0.5)
+    entered = threading.Event()
+    vision.get_local_window_observation = lambda token: entered.set() or None
+    client.post(
+        "/api/local/ready",
+        json={"session_id": session.session_id, "expected_game_id": session.katrain.game.game_id, "input": "physical"},
+    )
+    results = []
+    thread = threading.Thread(
+        target=lambda: results.append(
+            client.post("/api/local/confirm", json=request_for(session, input="physical", coords=None))
+        )
+    )
+    thread.start()
+    assert entered.wait(1)
+    recovery = None
+    deadline = time.monotonic() + 0.25
+    try:
+        while recovery is None and time.monotonic() < deadline:
+            recovery = gate.try_recovery()
+            if recovery is None:
+                time.sleep(0.001)
+        assert recovery is not None
+        assert thread.is_alive()
+        vision.local_confirmation_ready = False
+    finally:
+        if recovery is not None:
+            recovery.close()
+        thread.join(2)
+    assert results[0].json()["accepted"] is False
+
+
 def test_multiple_stones_fail_without_commit(client, monkeypatch):
     session = start(client, monkeypatch)
     board = np.zeros((9, 9), dtype=int)

@@ -1,5 +1,6 @@
 import { useTranslation } from '../../../hooks/useTranslation';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useGeometry } from '../../context/GeometryContext';
 import { useBackTo } from '../../hooks/useBackTo';
 import GeometryCalibrationScreen from './GeometryCalibrationScreen';
@@ -12,7 +13,8 @@ import GeometryCalibrationScreen from './GeometryCalibrationScreen';
  * 只能重启。返回去**打开被拦那一屏的那一页**(开局设置 / 单元列表 …,由那一页写进导航 state),
  * 不按浏览器历史后退:2026-09-21 板上卡顿时排队的 3 下点击连退出了 katrain(见 `useBackTo`)。
  *
- * 放行条件**一个字没动**(`disabled` 视为放行 —— 没摄像头的盒子不该被标定台挡住)。
+ * 首次放行仍检查全部就绪条件；同一路由已进入后，设备瞬断不卸载页面。
+ * `disabled` 视为放行 —— 没摄像头的盒子不该被标定台挡住。
  */
 const PhysicalBoardGuard = ({
   children, requireRecognition = false, sub, fallback = '/kiosk/play',
@@ -26,13 +28,22 @@ const PhysicalBoardGuard = ({
 }) => {
   const { t } = useTranslation();
   const { status } = useGeometry();
+  const location = useLocation();
+  const scope = `${location.key}|${location.pathname}`;
   const back = useBackTo(fallback);
+  const geometryValid = status.phase === 'ready' && status.session_calibrated && status.capabilities.geometry_ready;
   const ready = status.phase === 'disabled' || (
-    status.phase === 'ready' && status.session_calibrated && status.capabilities.geometry_ready
+    geometryValid
     && (!requireRecognition || status.capabilities.recognition_ready)
   );
+  const [admission, setAdmission] = useState({ scope, admitted: !!ready });
+  const admitted = admission.scope === scope && admission.admitted;
+  const keepPage = !!ready || (admitted && geometryValid);
+  if (admission.scope !== scope || admission.admitted !== keepPage) {
+    setAdmission({ scope, admitted: keepPage });
+  }
 
-  if (ready) return <>{children}</>;
+  if (keepPage) return <>{children}</>;
 
   return (
     <GeometryCalibrationScreen

@@ -11,7 +11,7 @@ RK3562内核5.10.209，Hub1-1为1a40:0101；port3 ESP303a:1001，port4 camera0ac
 - 仅RK board模式显式配置启用，默认及云端关闭。显式限定Hub拓扑、端口及VID/PID；读取sysfs动态busnum/devnum，不固定USB地址；未知同Hub设备/拓扑变化/身份不符/当前过流均禁止复位。
 - 复用CameraHub恢复线程的5秒轻量检查与现有udev唤醒；保留LED每2秒LINK。不因为LINK DOWN而复位：Type-C不产生Linux USB枚举，真实棋盘拔线与USB异常分开。
 - 目标physical=false视为真正拔除，绝不复位。自动候选收窄为已验证的失败终态：connected+powered+disabled、无reset/过流、child缺失且稳定10秒；enabled无child继续观察，不打断正常枚举。已有child但服务失败交原owner重试。
-- 单个异常episode最多一次整体Hub复位，最小冷却60秒。持久schema包含latched、last_attempt、inflight、attempt_id，破坏性静默前原子锁存；静默失败亦消费episode。只有操作退出、settle后核实Hub的新鲜外部0→1，或双端USB及实际服务健康30秒，才持久解除锁存；读取失败/Hub暂失不是0，冷却始终有效。时间异常、损坏、无权限均禁用自动恢复；部署/回滚不覆盖记录。
+- 单个异常episode最多一次整体Hub复位，最小冷却60秒。持久schema包含latched、last_attempt、inflight、attempt_id，破坏性静默前原子锁存；静默失败亦消费episode。操作退出、settle后核实Hub的新鲜外部0→1、可信同源Type-C新边沿，或双端USB及实际服务健康30秒，可持久解除锁存；读取失败/Hub暂失不是0，冷却始终有效。Type-C边沿需完整拓扑、动态非空ESP serial与地址连续、transport及新鲜LINK一致；DOWN→UP资格仅来自可信UP→DOWN，或构造时预算已armed、尚未见UP或启动attempt的初态，在operation/quiet/settle外稳定DOWN10秒。合格DOWN票只跨一次owned reset，20秒内同unit重建身份；自产未知事件不造票，quiet失败/未启动child/stop/foreign/重启弃票，已启动且真正退出的非零结果仍可重建原票，边沿在下次attempt前合并而不排队。详细规则与回归见计划2026-11-10验收补正。时间异常、损坏、无权限均禁用自动恢复；部署/回滚不覆盖记录。
 - 两个现有owner协同暂停：camera禁止返回缓存帧并停止旧reader；LED在自己的worker关闭串口、作废旧批次和灯光意图，停止新业务提交。无法在预算内静默则取消复位。不能在HTTP线程、udev回调或持有CameraHub生命周期锁时等待另一owner。
 - 共享Hub复位不可完全无感：两个USB设备会短暂离线。界面保持原页与登录，不刷新、不新增弹窗/动效、不虚报连接；摄像头与LED分别按实际状态恢复。
 - 一个小共享admission gate覆盖完整标定/preflight/relocate事务和已接受的物理落子提交；无使用者才原子进入恢复，新业务被拒绝，不持锁等待IO。in-process worker独立USB请求在推理循环边界ACK，暂停monitor/local confirmation等全部帧处理；服务/worker/WS旧队列与旧local-window token失效。保留绑定/权威棋盘，不覆盖hint/UI暂停。

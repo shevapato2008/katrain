@@ -44,6 +44,8 @@ class PortSnapshot:
     over_current: bool
     child_identity: tuple[str, str] | None = None
     child_path: str | None = None
+    child_address: tuple[int, int] | None = None
+    child_serial: str | None = None
 
     @property
     def candidate(self):
@@ -64,6 +66,7 @@ class HubSnapshot:
     identity: tuple[str, str] | None = None
     ports: dict[int, PortSnapshot] = field(default_factory=dict)
     reason: str = ""
+    address: tuple[int, int] | None = None
 
 
 class LinuxUsbHub:
@@ -97,6 +100,12 @@ class LinuxUsbHub:
     def _identity(self, path):
         return self._read(path, "idVendor"), self._read(path, "idProduct")
 
+    def _device_address(self, path):
+        address = (int(self._read(path, "busnum")), int(self._read(path, "devnum")))
+        if not all(1 <= n <= 999 for n in address):
+            raise ValueError("Invalid USB address")
+        return address
+
     def _address(self):
         hub = self.sysfs_root / self.hub_path
         if (
@@ -105,10 +114,7 @@ class LinuxUsbHub:
             or int(self._read(hub, "maxchild")) != 4
         ):
             raise ValueError("Hub identity/class/port count changed")
-        address = (int(self._read(hub, "busnum")), int(self._read(hub, "devnum")))
-        if not all(1 <= n <= 999 for n in address):
-            raise ValueError("Invalid USB address")
-        return address
+        return self._device_address(hub)
 
     def _open_usbfs(self):
         address = self._address()
@@ -177,6 +183,11 @@ class LinuxUsbHub:
             status, change = int.from_bytes(raw[:2], "little"), int.from_bytes(raw[2:], "little")
             child = self.sysfs_root / f"{self.hub_path}.{number}"
             ident = self._identity(child) if child.exists() else None
+            child_address = self._device_address(child) if ident else None
+            try:
+                child_serial = (child / "serial").read_text().strip() or None if ident else None
+            except FileNotFoundError:
+                child_serial = None
             port = PortSnapshot(
                 number,
                 bool(status & 1),
@@ -186,6 +197,8 @@ class LinuxUsbHub:
                 bool(status & 8),
                 ident,
                 child.name if ident else None,
+                child_address,
+                child_serial,
             )
             if port.over_current or change & 8 or port.reset or not port.powered:
                 raise ValueError("Unsafe USB port status")
@@ -198,7 +211,7 @@ class LinuxUsbHub:
             ports[number] = port
         if self._address() != self._opened_address:
             raise ValueError("USB address changed while reading ports")
-        return HubSnapshot(True, self.hub_path, self.HUB_ID, ports)
+        return HubSnapshot(True, self.hub_path, self.HUB_ID, ports, address=self._opened_address)
 
     def snapshot(self):
         fd = None

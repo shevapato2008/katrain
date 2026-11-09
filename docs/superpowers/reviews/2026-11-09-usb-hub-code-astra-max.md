@@ -23,3 +23,18 @@
 | native-release.py | `92769832dc735ceacb73eba79337bf3d6a066d429e0d8ae2e3594738feb5881c` |
 
 本任务native副本相对原审核reference `98e816ac...` 的精确差异已保存并复核：只允许code-only构建SHA环境补丁，fresh商业配置（paused/disabled或enabled/live）、微信参数和只读secret bind原样保留；prepare/apply同函数重建一致。原reference未修改。本次不会将其他授权会话新启用的会员/支付回退。
+
+## 连续 Type-C 补正审核（2026-11-10）
+
+同一独立 Astra Max 对 caf97c03d 之后的 A 四文件补正最终 **Approved**，无 Critical/Important。新增同源动态 ESP serial/地址与新鲜 LINK 证据，DOWN 票只跨一次已归属复位；初态 DOWN 资格仅在构造时 armed 且未见 UP/attempt 时建立。无票 settle 内 UP/DOWN/UP 不建预算，已消费票不再继承，下一 attempt 前边沿合并。已启动且真正退出的 child 即使非零，也只在原票同 unit 重建及后续真实 UP 后允许再授权；静默失败、未启动、stop、foreign 或重启弃票。原 schema、owner、公开 API、UI 与 10 秒稳定/60 秒冷却不变。
+
+独立 88 项 A 测试通过，另纯内存验证连续四轮边沿、冷却及 600 秒无第五次；控制器 A/owner/设备事件组 254 项、板端装配 15 项通过。前端输入相对 CAF 没有变化，复用锁文件构建的同一完整产物，发布时另绑定新 source SHA。
+
+冻结 SHA256：
+
+- linux_usb_hub.py：`e929ea76990063b3c33fc4a0d6febf57db10330174cf764cba2de469dbc35dcb`
+- usb_hub_recovery.py：`9b833090047b549cc6e19a77799faa667130e79b372554604308d4012441caf0`
+- test_linux_usb_hub.py：`80c7c0e0fa0b0fbefeb361cf9a55fa8cef26cf2fb329a83bb1fc7cb5172a53a7`
+- test_usb_hub_recovery.py：`ad0f092f2deae14534b530a4fcb854e355114b28f67fee8fba9020ce7a9da9f0`
+
+本结论不代替 RK 新的登录页/设备缺失发布器审核，也不冒充实机自动故障恢复、认证 Go 页面或物理拔插验收。两云当前商业 enabled/live、盒端 membership guard 和 activation marker 必须原样保留。

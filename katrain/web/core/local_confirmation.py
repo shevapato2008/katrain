@@ -153,6 +153,15 @@ class LocalConfirmationController:
         token = uuid.uuid4().hex
         accepted, reason, points = False, "unavailable", []
         opened = False
+        gate = getattr(vision, "recovery_gate", None) if request.input == "physical" else None
+        use = None
+
+        def release_use():
+            nonlocal use
+            if use is not None:
+                use.close()
+                use = None
+
         try:
             katrain.update_state()
             coords = None if request.action == "pass" else request.coords
@@ -184,6 +193,7 @@ class LocalConfirmationController:
                 last_camera_seq = -1
                 error_key, error_count = None, 0
                 while time.monotonic() < deadline:
+                    release_use()
                     if (
                         not self._current(request)
                         or vision.bound_session_id != self.session.session_id
@@ -191,6 +201,11 @@ class LocalConfirmationController:
                     ):
                         reason = "unavailable"
                         return False
+                    if gate is not None:
+                        use = gate.try_use()
+                        if use is None:
+                            reason = "unavailable"
+                            return False
                     obs = vision.get_local_window_observation(token)
                     if (
                         obs is None
@@ -203,6 +218,7 @@ class LocalConfirmationController:
                             or obs.camera_seq <= last_camera_seq
                         )
                     ):
+                        release_use()
                         await asyncio.sleep(0.05)
                         continue
                     last_seq = obs.observation_seq
@@ -225,6 +241,7 @@ class LocalConfirmationController:
                         ):
                             reason = exposure["reason"]
                             return False
+                        release_use()
                         await asyncio.sleep(0.05)
                         continue
                     board = np.asarray(obs.board, dtype=int)
@@ -276,8 +293,16 @@ class LocalConfirmationController:
                         and error_count >= required
                     ):
                         return False
+                    release_use()
                     await asyncio.sleep(0.05)
                 else:
+                    return False
+            # A qualified candidate keeps its token through play/forward; physical
+            # pass has no observation window but crosses the same admission boundary.
+            if gate is not None and use is None:
+                use = gate.try_use()
+                if use is None:
+                    reason = "unavailable"
                     return False
             with self.session.lock, katrain.ai_ladder_commit_lock:
                 if not self._current(request):
@@ -332,6 +357,7 @@ class LocalConfirmationController:
                         except Exception:
                             logger.exception("Failed to publish local confirmation result")
             finally:
+                release_use()
                 self._results[request.request_id] = (signature, accepted)
                 while len(self._results) > 64:
                     self._results.popitem(last=False)

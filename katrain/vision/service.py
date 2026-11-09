@@ -10,7 +10,7 @@ import asyncio
 import logging
 import time
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from threading import RLock
 from typing import Any, Callable
 
@@ -42,7 +42,7 @@ class VisionBindingSource:
 class VisionService:
     """Main-process controller for the vision worker."""
 
-    def __init__(self, config: VisionServiceConfig, frame_source=None):
+    def __init__(self, config: VisionServiceConfig, frame_source=None, *, recovery_gate=None):
         self._config = config
         self._frame_source = frame_source
         self._worker = None  # VisionWorkerProcess | InProcessAdapter
@@ -64,6 +64,54 @@ class VisionService:
         self._local_mode_generation = 0
         self._local_window_token: str | None = None
         self._local_window_deadline = 0.0
+        self.recovery_gate = recovery_gate
+        self._usb_requested = False
+        self._usb_recovery_callback = None
+
+    @property
+    def usb_business_blocked(self) -> bool:
+        return self._usb_requested or bool(self.recovery_gate is not None and self.recovery_gate.active)
+
+    def set_usb_recovery_callback(self, callback) -> None:
+        """Install the board loop's bounded WS queue retirement callback."""
+        self._usb_recovery_callback = callback
+
+    def begin_usb_recovery(self, timeout=2.0) -> bool:
+        begin = getattr(self._worker, "begin_usb_recovery", None)
+        if not callable(begin):
+            return False
+        started = time.monotonic()
+        with self._metadata_lock:
+            self._usb_requested = True
+        acknowledged = False
+        try:
+            if begin(timeout=timeout) is not True:
+                return False
+            with self._metadata_lock:
+                self._pending_moves.clear()
+                self._pending_events.clear()
+                self._pending_local_observations.clear()
+                self._local_window_token = None
+            if self._usb_recovery_callback is not None:
+                remaining = max(0.0, timeout - (time.monotonic() - started))
+                if self._usb_recovery_callback(remaining) is not True:
+                    return False
+            acknowledged = True
+            return True
+        except Exception:
+            logger.exception("Vision USB quiescence could not be acknowledged")
+            return False
+        finally:
+            if not acknowledged:
+                self.end_usb_recovery()
+
+    def end_usb_recovery(self) -> None:
+        end = getattr(self._worker, "end_usb_recovery", None)
+        try:
+            if callable(end):
+                end()
+        finally:
+            self._usb_requested = False
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -121,6 +169,8 @@ class VisionService:
             status = self._worker.get_status()
             if status is not None:
                 self._latest_status = status
+        if self.usb_business_blocked:
+            self._latest_status = replace(self._latest_status, recognition_ready=False, local_confirmation_ready=False)
 
     @property
     def last_motion_at(self) -> float | None:
@@ -342,7 +392,7 @@ class VisionService:
 
     @property
     def local_confirmation_ready(self) -> bool:
-        if not self.supports_local_confirmation:
+        if self.usb_business_blocked or not self.supports_local_confirmation:
             return False
         self.refresh_status()
         return bool(
@@ -401,26 +451,27 @@ class VisionService:
         expected_color: int,
         deadline_monotonic: float,
     ) -> bool:
-        opened = time.monotonic()
-        if not self.local_confirmation_ready or deadline_monotonic <= opened:
-            return False
-        self._local_window_token = token
-        self._local_window_deadline = deadline_monotonic
-        self._pending_local_observations.clear()
-        self._worker.send_command(
-            WorkerCommand(
-                action=CommandType.OPEN_LOCAL_WINDOW,
-                data={
-                    "token": token,
-                    "expected_board": expected_board.tolist(),
-                    "expected_node_id": expected_node_id,
-                    "expected_color": expected_color,
-                    "opened_monotonic": opened,
-                    "deadline_monotonic": deadline_monotonic,
-                },
+        with self._metadata_lock:
+            opened = time.monotonic()
+            if self.usb_business_blocked or not self.local_confirmation_ready or deadline_monotonic <= opened:
+                return False
+            self._local_window_token = token
+            self._local_window_deadline = deadline_monotonic
+            self._pending_local_observations.clear()
+            self._worker.send_command(
+                WorkerCommand(
+                    action=CommandType.OPEN_LOCAL_WINDOW,
+                    data={
+                        "token": token,
+                        "expected_board": expected_board.tolist(),
+                        "expected_node_id": expected_node_id,
+                        "expected_color": expected_color,
+                        "opened_monotonic": opened,
+                        "deadline_monotonic": deadline_monotonic,
+                    },
+                )
             )
-        )
-        return True
+            return True
 
     def cancel_local_window(self, token: str) -> bool:
         if not self.supports_local_confirmation or token != self._local_window_token:
@@ -507,6 +558,8 @@ class VisionService:
         Pulls fresh status first. The cached `_latest_status` is only refreshed by
         whoever last touched another status property, so it can be arbitrarily old.
         """
+        if self.usb_business_blocked:
+            return None
         self.refresh_status()
         return self._latest_status.detected_board
 
@@ -518,11 +571,15 @@ class VisionService:
         since. Callers must require a sequence strictly greater than the one stamped on
         the ConfirmedMove before treating an empty cell as a disappearance.
         """
+        if self.usb_business_blocked:
+            return None, 0
         self.refresh_status()
         return self._latest_status.detected_board, int(self._latest_status.observation_seq)
 
     def get_preview_jpeg(self) -> bytes | None:
         """Get latest JPEG preview frame from worker."""
+        if self.usb_business_blocked:
+            return None
         if self._worker:
             return self._worker.get_preview_jpeg()
         return None
@@ -556,33 +613,42 @@ class VisionService:
 
     def poll_events(self) -> list[Any]:
         """Read all pending dict events from worker (never consumes moves)."""
-        self._drain_worker()
-        events = list(self._pending_events)
-        self._pending_events.clear()
-        return events
+        with self._metadata_lock:
+            if self.usb_business_blocked:
+                return []
+            self._drain_worker()
+            events = list(self._pending_events)
+            self._pending_events.clear()
+            return events
 
     def get_confirmed_move(self) -> ConfirmedMove | None:
         """Read and consume the OLDEST pending confirmed move (FIFO — a stalled
         poller no longer silently drops intermediate moves)."""
-        self._drain_worker()
-        while self._pending_moves:
-            move = self._pending_moves.popleft()
-            if not move.binding_epoch or (
-                move.binding_epoch == self._binding_epoch and move.expected_revision == self._expected_revision
-            ):
-                return move
-        return None
+        with self._metadata_lock:
+            if self.usb_business_blocked:
+                return None
+            self._drain_worker()
+            while self._pending_moves:
+                move = self._pending_moves.popleft()
+                if not move.binding_epoch or (
+                    move.binding_epoch == self._binding_epoch and move.expected_revision == self._expected_revision
+                ):
+                    return move
+            return None
 
     def get_local_window_observation(self, token: str | None = None) -> LocalWindowObservation | None:
-        self._drain_worker()
-        if token is not None and token != self._local_window_token:
+        with self._metadata_lock:
+            if self.usb_business_blocked:
+                return None
+            self._drain_worker()
+            if token is not None and token != self._local_window_token:
+                return None
+            if time.monotonic() >= self._local_window_deadline:
+                self._pending_local_observations.clear()
+                return None
+            if self._pending_local_observations:
+                return self._pending_local_observations.pop()
             return None
-        if time.monotonic() >= self._local_window_deadline:
-            self._pending_local_observations.clear()
-            return None
-        if self._pending_local_observations:
-            return self._pending_local_observations.pop()
-        return None
 
     @property
     def is_alive(self) -> bool:

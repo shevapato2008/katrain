@@ -80,6 +80,7 @@ class Settings(BaseModel):
 
     # Board mode settings (see design.md Section 4.2)
     KATRAIN_MODE: str = "server"  # "server" or "board"
+    KATRAIN_USB_HUB_RECOVERY: bool = False
     REMOTE_API_URL: str = ""  # Remote server URL for board mode, e.g. "https://katrain.example.com"
     DEVICE_ID: str = ""  # Unique device identifier, auto-generated if empty
     KATRAIN_BOX_SSO: bool = False
@@ -219,6 +220,9 @@ class Settings(BaseModel):
 
         # Board mode settings
         data.setdefault("KATRAIN_MODE", os.getenv("KATRAIN_MODE", "server"))
+        data.setdefault(
+            "KATRAIN_USB_HUB_RECOVERY", os.getenv("KATRAIN_USB_HUB_RECOVERY", "false").lower() in ("1", "true", "yes")
+        )
         data.setdefault("REMOTE_API_URL", os.getenv("KATRAIN_REMOTE_URL", ""))
         data.setdefault(
             "KATRAIN_BOX_SSO",

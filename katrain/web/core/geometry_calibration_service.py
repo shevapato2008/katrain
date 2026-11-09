@@ -8,6 +8,8 @@ import shutil
 import tempfile
 import threading
 import time
+from contextlib import nullcontext
+from functools import wraps
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +64,15 @@ class LegacyPublishRollbackError(RuntimeError):
     """Legacy geometry publication failed and its previous files could not be restored."""
 
 
+def _hardware_transaction(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        with self._hardware_use():
+            return method(self, *args, **kwargs)
+
+    return guarded
+
+
 class GeometryCalibrationService:
     ACTIVE_PHASES = {"waiting_empty", "waiting_stable", "converging_exposure", "dark_reference",
                      "flashing_corners", "verifying", "building_baseline", "obstructed",
@@ -110,7 +121,9 @@ class GeometryCalibrationService:
         auto_relocate=AUTO_RELOCATE_ON_DRIFT,
         restore_auto_exposure_on_success=False,
         allow_existing_reuse=True,
+        recovery_gate=None,
     ):
+        self.recovery_gate = recovery_gate
         self.led = led
         self.capture = capture
         self.restore_auto_exposure_on_success = restore_auto_exposure_on_success
@@ -183,6 +196,26 @@ class GeometryCalibrationService:
         return self.selector
 
     def start(self, *, trigger: str, empty_confirmed: bool) -> None:
+        use = self._hardware_use()
+        try:
+            self._start_with_hardware_use(use, trigger=trigger, empty_confirmed=empty_confirmed)
+        except BaseException:
+            use.__exit__(None, None, None)
+            raise
+
+    def _hardware_use(self):
+        if self.recovery_gate is None:
+            return nullcontext()
+        use = self.recovery_gate.try_use()
+        if use is None:
+            raise CalibrationBusy("USB hardware recovery in progress")
+        return use
+
+    def _run_with_hardware_use(self, use):
+        with use:
+            self._run()
+
+    def _start_with_hardware_use(self, use, *, trigger, empty_confirmed):
         if self.led is None:
             raise ValueError("LED is required for geometry calibration")
         if not empty_confirmed:
@@ -208,8 +241,14 @@ class GeometryCalibrationService:
                 metrics={},
                 relocate_error=None,
             )
-            self._thread = threading.Thread(target=self._run, daemon=True, name="geometry-calibration")
-            self._thread.start()
+            self._thread = threading.Thread(
+                target=self._run_with_hardware_use, args=(use,), daemon=True, name="geometry-calibration"
+            )
+            try:
+                self._thread.start()
+            except BaseException:
+                self._thread = None
+                raise
 
     def cancel(self) -> None:
         with self._lock:
@@ -270,6 +309,7 @@ class GeometryCalibrationService:
 
     PREFLIGHT_TIMEOUT_S = 8.0
 
+    @_hardware_transaction
     def preflight(self) -> dict:
         """Check the existing reference against fresh, still camera frames on demand."""
         from katrain.vision.motion_filter import MotionFilter
@@ -426,6 +466,7 @@ class GeometryCalibrationService:
             reason = "timeout"
         return {"ready": reason is None, "reason": reason, "status": status}
 
+    @_hardware_transaction
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
@@ -1111,6 +1152,7 @@ class GeometryCalibrationService:
     def _init_drift_monitor(self, lock) -> None:
         self._drift_monitor = self._prepare_drift_monitor(lock)
 
+    @_hardware_transaction
     def _relocate(self, scenario, *, trigger: str, allowed_phases) -> str | None:
         """外框重定位一次:占住互斥 → 取帧 → 选择器 → relock → 交付 → 发布。成功回 None,失败回原因串。
 
@@ -1256,19 +1298,22 @@ class GeometryCalibrationService:
                 if self._status["phase"] != "ready" or self._preflighting:
                     continue
             try:
-                frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
-                if frame is None:
-                    continue
-                with self._lock:
-                    if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
+                with self._hardware_use():
+                    frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+                    if frame is None:
                         continue
-                with self._monitor_update_lock:
-                    if self._monitor_reset_pending is monitor:
-                        monitor.reset_streak()
-                        self._monitor_reset_pending = None
-                        continue
-                    drift = monitor.update(frame)
-                self._apply_drift(drift, monitor=monitor)
+                    with self._lock:
+                        if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
+                            continue
+                    with self._monitor_update_lock:
+                        if self._monitor_reset_pending is monitor:
+                            monitor.reset_streak()
+                            self._monitor_reset_pending = None
+                            continue
+                        drift = monitor.update(frame)
+                    self._apply_drift(drift, monitor=monitor)
+            except CalibrationBusy:
+                continue
             except Exception:
                 time.sleep(0.1)
 

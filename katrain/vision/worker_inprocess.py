@@ -269,6 +269,11 @@ class InProcessAdapter:
         self._config = config
         self._thread: threading.Thread | None = None
         self._running = False
+        self._usb_requested = threading.Event()
+        self._usb_ack = threading.Event()
+        self._usb_lock = threading.Lock()
+        self._usb_waiting_fresh = False
+        self._usb_resumed_at = 0.0
 
         self._event_queue: queue.Queue = queue.Queue()
         self._status: WorkerStatus = WorkerStatus()
@@ -1014,6 +1019,7 @@ class InProcessAdapter:
 
     def stop(self) -> None:
         self._running = False
+        self._usb_requested.clear()
         if self._thread:
             self._thread.join(timeout=5)
         if self._owns_camera:
@@ -1021,6 +1027,61 @@ class InProcessAdapter:
 
     def send_command(self, cmd: WorkerCommand) -> None:
         self._cmd_queue.put(cmd)
+
+    def begin_usb_recovery(self, timeout=2.0) -> bool:
+        # Never treat enqueueing a command as quiescence: only _loop may ACK.
+        with self._usb_lock:
+            self._usb_ack.clear()
+            self._usb_requested.set()
+        if self._usb_ack.wait(max(0.0, timeout)):
+            return True
+        with self._usb_lock:
+            self._usb_requested.clear()
+            self._usb_ack.clear()
+        return False
+
+    def end_usb_recovery(self) -> None:
+        with self._usb_lock:
+            self._usb_resumed_at = time.monotonic()
+            self._usb_requested.clear()
+            self._usb_ack.clear()
+
+    def _usb_boundary(self) -> bool:
+        with self._usb_lock:
+            if not self._usb_requested.is_set():
+                return False
+            if not self._usb_ack.is_set():
+                # Commands accepted before the request must settle before the
+                # old window is retired; none can resurrect it after the ACK.
+                self._drain_commands()
+                self._local_window = None
+                self._reset_local_accumulators()
+                self._sync.invalidate_confirmed_move()
+                # Retire frame-derived streaks while preserving expected, the
+                # current setup target and authoritative capture obligations.
+                self._sync._claimed_points.clear()
+                self._sync._mismatch_board = None
+                self._sync._mismatch_count = 0
+                self._sync._missing_since.clear()
+                self._sync._degraded_timer_start = None
+                self._sync._degraded_recovery_start = None
+                self._last_raw = None
+                self._last_ref_gray = None
+                self._glow_ref = None
+                self._glow_pending.clear()
+                if self._expected_np is not None:
+                    self._move_detector.force_sync(self._expected_np)
+                while True:
+                    try:
+                        self._event_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                with self._preview_lock:
+                    self._preview_jpeg = None
+                self._usb_waiting_fresh = True
+                self._publish_status(None)
+                self._usb_ack.set()
+            return True
 
     def get_event(self, timeout: float = 0) -> Any | None:
         try:
@@ -1080,6 +1141,11 @@ class InProcessAdapter:
         was_idle = False  # 只在真的空闲过一轮之后才需要清累积;启动时它本来就是空的
         while self._running:
             loop_start = time.monotonic()
+            if self._usb_boundary():
+                # Also suppress monitor, local windows and preview processing.
+                self._publish_status(None)
+                time.sleep(0.01)
+                continue
             self._drain_commands()
             self._expire_local_activity(loop_start)
 
@@ -1098,13 +1164,18 @@ class InProcessAdapter:
             tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
             observer = self._observer
-            identified = (observer is not None or self._local_confirmation_mode) and hasattr(
+            identified = (observer is not None or self._local_confirmation_mode or self._usb_waiting_fresh) and hasattr(
                 self._camera, "read_frame_identified"
             )
             if identified:
                 frame, camera_seq, camera_ts = self._camera.read_frame_identified()
             else:
                 frame, camera_seq, camera_ts = self._camera.read_frame(), None, None
+            if self._usb_waiting_fresh:
+                if frame is not None and (camera_ts is None or camera_ts > self._usb_resumed_at):
+                    self._usb_waiting_fresh = False
+                else:
+                    frame = None
             emit = observer is not None and loop_start - self._observer_last >= self._observer_interval
             board_detected = False
             observed_board = None
@@ -1634,7 +1705,11 @@ class InProcessAdapter:
     def needs_frames(self) -> bool:
         """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
         return bool(
-            self._bound or self._monitor or self._viewer_active or self._sync.state == SyncState.SETUP_IN_PROGRESS
+            self._usb_waiting_fresh
+            or self._bound
+            or self._monitor
+            or self._viewer_active
+            or self._sync.state == SyncState.SETUP_IN_PROGRESS
         )
 
     def _publish_status(self, observed_board) -> None:
@@ -1661,6 +1736,8 @@ class InProcessAdapter:
             and self._reference is not None
             and camera_connected
             and self._geometry is not None
+            and not self._usb_requested.is_set()
+            and not self._usb_waiting_fresh
         )
         if self._local_confirmation_mode:
             # Bootstrap validates the real reference against the current game. Local idle
@@ -1680,7 +1757,8 @@ class InProcessAdapter:
             camera_ready=bool(camera_connected),
             geometry_ready=self._geometry is not None or not self._require_geometry,
             model_ready=True,
-            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)),
+            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)
+                and not self._usb_requested.is_set() and not self._usb_waiting_fresh),
             observation_seq=self._observation_seq,
             local_confirmation_mode=self._local_confirmation_mode,
             local_confirmation_session_id=self._local_confirmation_session_id,

@@ -1,5 +1,7 @@
 # Simple Membership, Usage and Recharge Implementation Plan
 
+> **2026-11-09复核：** 本计划的软件实施已完成，原起始HEAD、旧缺口和“Max默认不可售”等段落保留历史。后续Max已获准开放、11语及Native代码已发布三端；当前两云实际仍paused/disabled。扣费规则和范围经只读复核与实现一致，无需重做商业设计；本期/本周不足时整次用API，不混扣。最新阶段及后续验收见[配置部署与计划复核](../../operations/wechat-native-config-release-2026-11-09.md)。
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在Galaxy与Kiosk交付云端权威的会员、百分比用量、积分充值、自动来源选择和隔离TEST模拟收银，并按已授权流程集成发布，诚实区分软件完成与真实收款。

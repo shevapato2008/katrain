@@ -1,5 +1,7 @@
 # 微信 Native 会员与充值实施计划
 
+> **2026-11-09配置完成：** 用户在代码三端发布后准备好本机证书、API v3密钥和微信公钥，平台截图显示公钥启用，并明确授权TEST和PROD配置；现两站配置及独立实际验收已通过。仍保持会员paused/支付disabled，没有调用真实商户HTTP API、扣款或开放收款。具体增量、实际新Web和余项见[后续回执](../../operations/wechat-native-config-release-2026-11-09.md)，下文初始“禁止部署/配置待授权”为当时历史，不撤销后续用户授权。
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development. Steps use checkbox syntax for tracking.
 
 **Goal:** 复用现有订单、权益与账本，实现网站 Galaxy、云 Kiosk 与实体盒代理的微信 Native 支付；本轮只做实现、本地验证与上线方案，真实收款默认关闭。
@@ -116,3 +118,11 @@ Files: `docs/operations/wechat-native-rollout-2026-11-08.md`；相关操作指�
 - 已发布功能分支 `47c56913a`，合并 develop 为 `4235a58238e805530cb07ef0eb8041ba93df586f`；组合聚焦检查96项Python及80项前端通过。
 - 父仓 main `fd7bc6bc922d43cf4da51e72f6d1cde511addf1c` 保留已在设备运行的前端历史，并将 vendor 指向上述 develop；RK发布链由五语扩为十一语，经独立审核及106项发布测试验证。
 - 按 TEST→新PROD→协调后的实体窗口执行；实际版本、配置保留、备份及验收/未验收边界见[2026-11-09回执](../../operations/wechat-native-release-2026-11-09.md)。未准备的秘密和真实微信联调仍需后续确认。
+
+## 后续凭据配置阶段（2026-11-09）
+
+- [x] 用户已准备证书/API v3密钥/微信公钥，完成本机配对、格式、应用readiness及非秘密公钥ID核对；截图显示公钥已启用。
+- [x] 用户明确授权TEST、PROD配置；有界配置操作器通过独立Astra规格和安全审核，保持同镜像、原用户和完整配置，仅Env8+只读bind+操作标签增量。
+- [x] TEST先配置、独立实际验收通过，再配置PROD并验收通过；均paused/disabled，11语和账务/其他服务保留，真实商户HTTP与扣款为0。完整回执见[配置部署与计划复核](../../operations/wechat-native-config-release-2026-11-09.md)。
+- [ ] 真实微信接口/手机跨屏扫码/会员及充值到账与消费联调：确定账户、金额上限、权益保留或退款安排，单独获批后执行。
+- [ ] 正式开放会员和真实收款，以及实体支付终验：分别确认，不随凭据配置自动开启。

@@ -1,5 +1,7 @@
 # 微信 Native 收款资料准备
 
+> **2026-11-09更新：** 本商户资料已准备完毕并获用户授权部署至TEST及PROD，文件readiness、健康及无扣款验收通过；仍paused/disabled，真实支付未验收。当前实际路径及结果见[配置回执](wechat-native-config-release-2026-11-09.md)。下文保留准备/换证指引，不要因重读本页而重新生成已设置的API v3密钥。
+
 代码发布与开启收款分开执行。当前仍为 `MEMBERSHIP_MODE=paused / PAYMENTS_MODE=disabled`；本指南不包含开启收款或真实扣款操作。已知 AppID 为 `wxb83dd544397ac964`，商户号为 `1003105536`，商户简称为“智星盒智能设备”。Native 不需要 AppSecret，也不需要开发小程序界面。
 
 ## 在商户平台准备
@@ -28,7 +30,7 @@
 
 ## 随后的受控配置和联调
 
-配置声明见仓库 [.env.example](../../.env.example) 与 [只读挂载 overlay](../../docker-compose.wechat-pay.yml)。候选主机目录为 `/etc/katrain/secrets/wechat-pay/`，容器目录为 `/run/secrets/wechat-pay/`；主机属主及容器可读权限须根据实际 Web 用户确认。**这些只是约定，本次没有安装秘密或添加挂载。** 只给云端 Web 注入所需配置，不给 Cron、GPU、前端或实体盒发放支付秘密，不用示例 `.env` 覆盖运行配置。
+配置声明见仓库 [.env.example](../../.env.example) 与 [只读挂载 overlay](../../docker-compose.wechat-pay.yml)。实际TEST主机目录为 `/home/fan/.config/katrain/secrets/wechat-pay/`，PROD为 `/etc/katrain/secrets/wechat-pay/`，容器均只读挂载到 `/run/secrets/wechat-pay/`；权限已按实际Web用户验证。配置只给云端 Web，不给 Cron、GPU、前端或实体盒发放支付秘密，不用示例 `.env` 覆盖运行配置。文件布局及后续轮换以最新配置回执为准。
 
 通知地址分别为：
 

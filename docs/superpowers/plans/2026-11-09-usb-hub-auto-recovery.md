@@ -1,6 +1,6 @@
 # 共享USB Hub受限自动恢复 Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 纯软件找回仍连接却无法枚举的camera或ESP，每次故障最多一次恢复，保持当前页面、登录与权威局面。
 
@@ -29,48 +29,48 @@
 
 **Files:** Create `katrain/web/core/linux_usb_hub.py`, `katrain/web/core/usb_hub_recovery.py`, `katrain/vision/hardware_recovery_gate.py`; Test `tests/test_linux_usb_hub.py`, `tests/test_usb_hub_recovery.py`。
 
-- [ ] **Step 1:** 用假sysfs/usbfs、假时钟和假owner写失败用例，确认缺实现导致失败再实现。
-- [ ] **Step 2:** 固定1-1、Hub1a40:0101、恰为4端口；camera port4=0ac8:0346、ESP port3=303a:1001。Hub路径严格解析；验证class/descriptor、全部4端口connection/power/enable/reset/过流。未配置端口connected即拒绝，即使无child；已有camera/serial alias必须匹配预期USB child。动态取busnum/devnum，open后fstat与新鲜sysfs复核防地址重用。GET_STATUS=class/other 0xa3、length4、timeout1000ms，按ctypes native ABI计算ioctl；不写POWER/authorized，不卸驱动。
-- [ ] **Step 3:** 自动候选只限已验证终态：connected+powered+disabled、无reset/过流、缺child且状态稳定10秒。enabled缺child只观察；child已存在的取流/握手失败交原owner。双端正常廉价检查；Type-C LINK DOWN、任一/两者真physical=0不reset。
-- [ ] **Step 4:** 持久schema明确latched、last_attempt、inflight、attempt_id，跨进程flock保护、受控owner/mode，拒绝symlink/异常类型，原子落盘。任何破坏性静默前锁存；静默失败/取消亦消费episode，避免每5秒关相机/清灯。时间异常、坏JSON、无权限/写入失败禁用。部署/回滚不覆盖运行时state。
-- [ ] **Step 5:** 固定child入口/参数，无shell或公开reset API。8秒期限后kill并有界收割；仍未退出则保留flock/inflight、静默/gate，tick只poll旧操作。真正退出才恢复owner。stop关闭新提交、取消未开始操作、有界等待，不持CameraHub生命周期锁join、不假报完成。child紧邻ioctl复核全部端口/身份，child已出现则取消，避免重置已恢复设备。
-- [ ] **Step 6:** 最小全局冷却60秒，episode跨重启锁存。操作结束后20秒settle内忽略自产变化，读取失败/Hub暂失不算physical=0。仅settle后同一核实Hub有效外部0→1，或双端USB+真实服务健康30秒，才持久解除latched；冷却始终有效。成功必须camera新帧、LED transport/LINK，不能以ioctl成功代替。
-- [ ] **Step 7:** 测试正常/真拔线/Type-C正常0次、两目标disabled缺child各1次、enabled缺child0次；枚举竞争、全部端口/alias/身份/过流拒绝；并发与跨进程互斥、静默/ACK失败、超时仍inflight/已退出失败、stop、坏state/时间、跨重启episode/冷却、首次open闸门与自产事件。Run: `PYTHONPATH=. /Users/fan/Repositories/katrain-kiosk-debug/.venv/bin/python -m pytest tests/test_linux_usb_hub.py tests/test_usb_hub_recovery.py -q`。自审后报告，由控制器commit。
+- [x] **Step 1:** 用假sysfs/usbfs、假时钟和假owner写失败用例，确认缺实现导致失败再实现。
+- [x] **Step 2:** 固定1-1、Hub1a40:0101、恰为4端口；camera port4=0ac8:0346、ESP port3=303a:1001。Hub路径严格解析；验证class/descriptor、全部4端口connection/power/enable/reset/过流。未配置端口connected即拒绝，即使无child；已有camera/serial alias必须匹配预期USB child。动态取busnum/devnum，open后fstat与新鲜sysfs复核防地址重用。GET_STATUS=class/other 0xa3、length4、timeout1000ms，按ctypes native ABI计算ioctl；不写POWER/authorized，不卸驱动。
+- [x] **Step 3:** 自动候选只限已验证终态：connected+powered+disabled、无reset/过流、缺child且状态稳定10秒。enabled缺child只观察；child已存在的取流/握手失败交原owner。双端正常廉价检查；Type-C LINK DOWN、任一/两者真physical=0不reset。
+- [x] **Step 4:** 持久schema明确latched、last_attempt、inflight、attempt_id，跨进程flock保护、受控owner/mode，拒绝symlink/异常类型，原子落盘。任何破坏性静默前锁存；静默失败/取消亦消费episode，避免每5秒关相机/清灯。时间异常、坏JSON、无权限/写入失败禁用。部署/回滚不覆盖运行时state。
+- [x] **Step 5:** 固定child入口/参数，无shell或公开reset API。8秒期限后kill并有界收割；仍未退出则保留flock/inflight、静默/gate，tick只poll旧操作。真正退出才恢复owner。stop关闭新提交、取消未开始操作、有界等待，不持CameraHub生命周期锁join、不假报完成。child紧邻ioctl复核全部端口/身份，child已出现则取消，避免重置已恢复设备。
+- [x] **Step 6:** 最小全局冷却60秒，episode跨重启锁存。操作结束后20秒settle内忽略自产变化，读取失败/Hub暂失不算physical=0。仅settle后同一核实Hub有效外部0→1，或双端USB+真实服务健康30秒，才持久解除latched；冷却始终有效。成功必须camera新帧、LED transport/LINK，不能以ioctl成功代替。
+- [x] **Step 7:** 测试正常/真拔线/Type-C正常0次、两目标disabled缺child各1次、enabled缺child0次；枚举竞争、全部端口/alias/身份/过流拒绝；并发与跨进程互斥、静默/ACK失败、超时仍inflight/已退出失败、stop、坏state/时间、跨重启episode/冷却、首次open闸门与自产事件。Run: `PYTHONPATH=. /Users/fan/Repositories/katrain-kiosk-debug/.venv/bin/python -m pytest tests/test_linux_usb_hub.py tests/test_usb_hub_recovery.py -q`。自审后报告，由控制器commit。
 
 ### Task B: camera/LED owner静默
 
 **Files:** Modify `katrain/web/core/camera_hub.py`, `katrain/web/core/led_service.py`; Test `tests/test_camera_hub.py`, `tests/test_led_service.py`。
 
-- [ ] **Step 1:** 先写失败用例：静默无缓存帧/新批次、阻塞reader/serial不能假ACK、timeout无晚到未归属暂停、stop/end幂等、startup检查在首次open前。
-- [ ] **Step 2:** CameraHub循环释放锁后tick；暂停期read/grab/is_connected均不可用，旧reader确退出才ACK，保留lease，不建第二reader。end只解除自身USB暂停并唤醒正常恢复，不改geometry/session。旧operation仍inflight时持续拒绝open；stop先协调器后owner，不能锁内join。
-- [ ] **Step 3:** LED请求即拒绝新业务，由worker确认静默并关闭串口、失效旧generation/strict批次/灯光意图，唤醒等待者，不跨线程close。end按原CLEAR/SHOW/BRIGHT握手，不重放旧指示。timeout/stop保护暂停归属。
-- [ ] **Step 4:** Run: `PYTHONPATH=. /Users/fan/Repositories/katrain-kiosk-debug/.venv/bin/python -m pytest tests/test_camera_hub.py tests/test_led_service.py tests/test_vision/test_camera_recovery.py tests/test_vision/test_device_events.py -q`。基线151通过，报告新增结果，由控制器commit。
+- [x] **Step 1:** 先写失败用例：静默无缓存帧/新批次、阻塞reader/serial不能假ACK、timeout无晚到未归属暂停、stop/end幂等、startup检查在首次open前。
+- [x] **Step 2:** CameraHub循环释放锁后tick；暂停期read/grab/is_connected均不可用，旧reader确退出才ACK，保留lease，不建第二reader。end只解除自身USB暂停并唤醒正常恢复，不改geometry/session。旧operation仍inflight时持续拒绝open；stop先协调器后owner，不能锁内join。
+- [x] **Step 3:** LED请求即拒绝新业务，由worker确认静默并关闭串口、失效旧generation/strict批次/灯光意图，唤醒等待者，不跨线程close。end按原CLEAR/SHOW/BRIGHT握手，不重放旧指示。timeout/stop保护暂停归属。
+- [x] **Step 4:** Run: `PYTHONPATH=. /Users/fan/Repositories/katrain-kiosk-debug/.venv/bin/python -m pytest tests/test_camera_hub.py tests/test_led_service.py tests/test_vision/test_camera_recovery.py tests/test_vision/test_device_events.py -q`。基线151通过，报告新增结果，由控制器commit。
 
 ### Task C: board装配、标定/物理提交/WS原子边界
 
 **Files:** Modify `katrain/web/core/config.py`, `katrain/web/server.py`, `katrain/vision/service.py`, `katrain/vision/worker_inprocess.py`, `katrain/web/core/geometry_calibration_service.py`, `katrain/web/core/local_confirmation.py`；必要WS边界 `katrain/web/api/v1/endpoints/vision.py`。Test新增 `tests/web_ui/test_usb_hub_recovery_wiring.py`, `tests/test_vision/test_usb_recovery_barrier.py`，及现有geometry/local-confirmation聚焦用例。
 
-- [ ] **Step 1:** 默认 `KATRAIN_USB_HUB_RECOVERY=False`，仅显式启用+Linux+board+完整camera/LED owner+精确拓扑有效才装配。state路径 `/var/lib/smartbox/usb-hub-recovery/state.json`。cloud误开启也不运行。camera/LED首次open前安装startup check；初始化结束创建协调器交给现有线程。部分启动/关闭清理，不新增HTTP控制面。
-- [ ] **Step 2:** geometry start完整worker事务、preflight、relocate/confirm等采集发布持gate use令牌，thread.start失败/finally释放。恢复与新采集原子互斥，busy复用CalibrationBusy，不以phase快照代替。
-- [ ] **Step 3:** `_vision_move_poller`在取move前取得use令牌，覆盖`_handle_confirmed_move`全部await/实际提交；`LocalConfirmationController._run`每次取候选到真实play/forward结束持令牌，不给整个长期任务持令牌。已接受动作未完成则延后reset；恢复中拒绝新physical提交，不扩大封锁触屏业务。
-- [ ] **Step 4:** Vision USB请求独立于hint/UI pause。请求开始即禁止get_confirmed_move/get_local_window_observation/poll_events/open_local_window；worker当前推理结束后循环ACK，暂停所有帧处理。ACK后清worker/service旧队列、失效旧local-window token、重置暂存识别累积，保留expected与绑定。不支持ACK则不reset。
-- [ ] **Step 5:** asyncio线程清WS旧队列，内部项带gate generation，sender发送前校验，防已取出旧项晚发；公开WS payload不变。新帧就绪再解除USB门禁，失败保持真实不可用，不复活旧token。
-- [ ] **Step 6:** 聚焦验证cloud/default无reset、startup-before-open、stop；推理延迟ACK、既有UI pause、旧move/window/WS丢弃；标定与reset竞争、已取出move正在await时reset延后；新帧/新窗口恢复。已有board-lifespan夹具17项import失败若遇到单列，不篡改全局stub。报告，由控制器commit。
+- [x] **Step 1:** 默认 `KATRAIN_USB_HUB_RECOVERY=False`，仅显式启用+Linux+board+完整camera/LED owner+精确拓扑有效才装配。state路径 `/var/lib/smartbox/usb-hub-recovery/state.json`。cloud误开启也不运行。camera/LED首次open前安装startup check；初始化结束创建协调器交给现有线程。部分启动/关闭清理，不新增HTTP控制面。
+- [x] **Step 2:** geometry start完整worker事务、preflight、relocate/confirm等采集发布持gate use令牌，thread.start失败/finally释放。恢复与新采集原子互斥，busy复用CalibrationBusy，不以phase快照代替。
+- [x] **Step 3:** `_vision_move_poller`在取move前取得use令牌，覆盖`_handle_confirmed_move`全部await/实际提交；`LocalConfirmationController._run`每次取候选到真实play/forward结束持令牌，不给整个长期任务持令牌。已接受动作未完成则延后reset；恢复中拒绝新physical提交，不扩大封锁触屏业务。
+- [x] **Step 4:** Vision USB请求独立于hint/UI pause。请求开始即禁止get_confirmed_move/get_local_window_observation/poll_events/open_local_window；worker当前推理结束后循环ACK，暂停所有帧处理。ACK后清worker/service旧队列、失效旧local-window token、重置暂存识别累积，保留expected与绑定。不支持ACK则不reset。
+- [x] **Step 5:** asyncio线程清WS旧队列，内部项带gate generation，sender发送前校验，防已取出旧项晚发；公开WS payload不变。新帧就绪再解除USB门禁，失败保持真实不可用，不复活旧token。
+- [x] **Step 6:** 聚焦验证cloud/default无reset、startup-before-open、stop；推理延迟ACK、既有UI pause、旧move/window/WS丢弃；标定与reset竞争、已取出move正在await时reset延后；新帧/新窗口恢复。已有board-lifespan夹具17项import失败若遇到单列，不篡改全局stub。报告，由控制器commit。
 
 ### Task D: 最小页面保留
 
 **Files:** `katrain/web/ui/src/kiosk/components/vision/PhysicalBoardGuard.tsx`, `katrain/web/ui/src/kiosk/pages/GamePage.tsx`及对应聚焦测试。无新布局、弹窗、文案或依赖。
 
-- [ ] **Step 1:** 先写失败用例：已放行页面、geometry有效但camera/recognition瞬失，children不卸载；首次进入不就绪或真geometry失效仍原守卫。放行记忆按route/session scope重置，不跨新游戏绕过初始校验。
-- [ ] **Step 2:** readiness真实。GamePage区别真正geometry失效与camera-only瞬断，后者停物理输入、保留页面，不自动强开完整标定；恢复用新local窗口/当前有效参考重建就绪，不复活旧token。失败/真几何失效保留原恢复入口。
-- [ ] **Step 3:** 跑两组件与直接依赖用例；full/strict各构建一次。同目标viewport检查一个代表性活动页：页面/登录保持、无刷新跳页、物理输入不就绪时关闭。不做视觉重构/全状态重拍。报告，由控制器commit。
+- [x] **Step 1:** 先写失败用例：已放行页面、geometry有效但camera/recognition瞬失，children不卸载；首次进入不就绪或真geometry失效仍原守卫。放行记忆按route/session scope重置，不跨新游戏绕过初始校验。
+- [x] **Step 2:** readiness真实。GamePage区别真正geometry失效与camera-only瞬断，后者停物理输入、保留页面，不自动强开完整标定；恢复用新local窗口/当前有效参考重建就绪，不复活旧token。失败/真几何失效保留原恢复入口。
+- [x] **Step 3:** 跑两组件与直接依赖用例；full/strict各构建一次。同目标viewport检查一个代表性活动页：页面/登录保持、无刷新跳页、物理输入不就绪时关闭。不做视觉重构/全状态重拍。报告，由控制器commit。
 
 ## Chunk 2: 审核、发布与交付
 
 ### Task E: 独立审核与集成
 
-- [ ] **Step 1:** spec+plan交独立Astra Max最多两轮，未通过不开产品实现。第1轮指出持久episode、inflight、业务门禁、全部端口/枚举竞争、UI卸载、共享契约，本版已定稿；第2轮验证闭合。用户已批准目标与实施，不重复授权。
-- [ ] **Step 2:** 用 @superpowers:subagent-driven-development 并行A/B/C/D、严格文件归属；先独立规格核对，再用新的独立Astra Max审核完整代码/测试/发布操作器，修到通过。只读发布准备可并行，远程部署串行。
+- [x] **Step 1:** spec+plan交独立Astra Max最多两轮，未通过不开产品实现。第1轮指出持久episode、inflight、业务门禁、全部端口/枚举竞争、UI卸载、共享契约，本版已定稿；第2轮验证闭合。用户已批准目标与实施，不重复授权。
+- [x] **Step 2:** 用 @superpowers:subagent-driven-development 并行A/B/C/D、严格文件归属；先独立规格核对，再用新的独立Astra Max审核完整代码/测试/发布操作器，修到通过。只读发布准备可并行，远程部署串行。
 - [ ] **Step 3:** 集成聚焦Python/UI及full/strict构建，用 @superpowers:verification-before-completion 验证后顺序commit；将 `impl/usb-hub-recovery-20261109` 成果merge进实际 `fix/kiosk-ui-debug`，不能只部署临时分支。保留原诊断文档和其他dirty。
 
 ### Task F: 常规四步发布及实机验收

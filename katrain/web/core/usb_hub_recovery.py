@@ -66,6 +66,9 @@ class UsbHubRecovery:
         self.state_path = Path(state_path)
         self.clock, self.wall_clock = clock, wall_clock
         self._mutex = threading.Lock()
+        # Only final launch admission and handle registration share this lock.
+        # Slow USB snapshots never hold the stop/launch ownership boundary.
+        self._launch_lock = threading.Lock()
         self._stopped = threading.Event()
         self._operation = None
         self._operation_lock = None
@@ -338,6 +341,13 @@ class UsbHubRecovery:
         finally:
             os.close(lock)
 
+    def next_tick_delay(self, default=5.0):
+        """Let the existing owner loop wake at a live operation's kill deadline."""
+        operation, started, killed = self._operation, self._operation_started, self._killed
+        if operation is None or started is None or killed:
+            return default
+        return min(default, max(0.0, started + self.OPERATION_SECONDS - self.clock()))
+
     def tick(self):
         if not self._mutex.acquire(blocking=False):
             return
@@ -416,11 +426,21 @@ class UsbHubRecovery:
                     if self._stopped.is_set() or not owner.begin_usb_recovery(timeout=2.0):
                         return
                     self._quiet.append(owner)
-                if self._stopped.is_set() or self._candidates(self.adapter.snapshot()) != candidate:
+                if self._candidates(self.adapter.snapshot()) != candidate:
                     return
-                self._operation = self.adapter.start_reset(self._operation_lock, candidate)
-                self._operation_started = self.clock()
-                self._killed = False
+                with self._launch_lock:
+                    # Once admitted here, this launch owns the operation through
+                    # handle registration. stop() must cross the same boundary;
+                    # a timeout reports the already owned launch as incomplete.
+                    if self._stopped.is_set():
+                        return
+                    self._operation = self.adapter.start_reset(self._operation_lock, candidate)
+                    self._operation_started = self.clock()
+                    self._killed = False
+                if self._stopped.is_set():
+                    # A bounded stop may have returned while Popen was pending.
+                    # Reap its late handle without needing another owner tick.
+                    self._poll_operation(self.clock(), wait_budget=0.0)
             except (OSError, ValueError, TypeError):
                 self._disabled = True
                 log.warning("USB recovery attempt cancelled", exc_info=True)
@@ -438,7 +458,12 @@ class UsbHubRecovery:
     def stop(self, timeout=2.0):
         self._stopped.set()
         deadline = time.monotonic() + max(0.0, timeout)
-        if not self._mutex.acquire(timeout=max(0.0, timeout)):
+        # Cancel immediately, then establish that no launch remains between its
+        # admission check and handle registration. Never wait here for USB I/O.
+        if not self._launch_lock.acquire(timeout=max(0.0, deadline - time.monotonic())):
+            return False
+        self._launch_lock.release()
+        if not self._mutex.acquire(timeout=max(0.0, deadline - time.monotonic())):
             return False
         try:
             self._poll_operation(self.clock(), max(0.0, min(0.05, deadline - time.monotonic())))

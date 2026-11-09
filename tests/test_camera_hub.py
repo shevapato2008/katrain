@@ -888,3 +888,91 @@ def test_healthy_cached_frames_do_not_repeat_startup_operation_lock_check():
         assert len(checked) == 1
     finally:
         hub.stop()
+
+
+def test_owner_loop_kills_usb_reset_at_eight_seconds_without_waiting_full_poll(tmp_path):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+    from katrain.web.core.linux_usb_hub import HubSnapshot, PortSnapshot
+    from katrain.web.core.usb_hub_recovery import UsbHubRecovery
+
+    clock = SimpleNamespace(now=1000.0)
+    stop = threading.Event()
+    waits, launched, killed = [], [], []
+
+    class AdvancingWake:
+        def wait(self, delay):
+            waits.append(delay)
+            clock.now += delay
+            return False
+
+        def set(self):
+            pass
+
+        def clear(self):
+            pass
+
+    class Operation:
+        returncode = None
+
+        def poll(self):
+            return self.returncode
+
+        def kill(self):
+            killed.append(clock.now)
+            self.returncode = -9
+            stop.set()
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+    ports = {
+        i: PortSnapshot(
+            i,
+            i in (3, 4),
+            True,
+            i == 3,
+            False,
+            False,
+            ("303a", "1001") if i == 3 else None,
+            "1-1.3" if i == 3 else None,
+        )
+        for i in range(1, 5)
+    }
+
+    def start_reset(_lock, _candidates):
+        launched.append(clock.now)
+        return Operation()
+
+    adapter = SimpleNamespace(
+        snapshot=lambda: HubSnapshot(True, "1-1", ("1a40", "0101"), ports), start_reset=start_reset
+    )
+    quiet = SimpleNamespace(begin_usb_recovery=lambda timeout=2: True, end_usb_recovery=lambda: None)
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    recovery = UsbHubRecovery(
+        adapter,
+        hub,
+        quiet,
+        quiet,
+        HardwareRecoveryGate(),
+        tmp_path / "state" / "state.json",
+        clock=lambda: clock.now,
+        wall_clock=lambda: clock.now,
+    )
+    hub.set_device_recovery(recovery)
+    hub._started = True
+    camera.is_connected = True
+    hub._recovery_wake = AdvancingWake()
+    worker = threading.Thread(target=hub._recover_loop, args=(stop,), name="camera-recovery")
+    hub._recovery_thread = worker
+    try:
+        worker.start()
+        worker.join(1)
+        assert not worker.is_alive()
+        assert len(launched) == len(killed) == 1
+        assert killed[0] - launched[0] == pytest.approx(8.0)
+        assert waits == [5.0, 5.0, 5.0, 5.0, 3.0]
+    finally:
+        stop.set()
+        worker.join(1)
+        hub.stop()

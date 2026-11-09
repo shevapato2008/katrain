@@ -532,6 +532,38 @@ describe('GamePage', () => {
       expect(mockRetryBind).not.toHaveBeenCalled();
     } finally { bind.mockRestore(); confirm.mockRestore(); }
   });
+  it.each(['bind', 'confirm'] as const)('invalidates a pending %s on a second device interruption before reconfirmation finishes', async (pending) => {
+    mockIsVisionEnabled = true;
+    mockGameState = makeGameState({ game_type: 'pvp_local', local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human' }, W: { ...basePlayer, player_type: 'player:human' } } });
+    const stale = { ...mockGameState, current_node_id: 6, current_node_index: 6 };
+    let resolveBind!: () => void;
+    let resolveConfirm!: (response: { accepted: boolean; session_id: string; state: GameState }) => void;
+    const bind = vi.spyOn(API, 'visionBind').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(API, 'confirmLocalMove').mockResolvedValue({ accepted: true, session_id: 'test-session', state: stale });
+    if (pending === 'bind') bind.mockReturnValueOnce(new Promise(r => { resolveBind = r; }));
+    else confirm.mockReturnValueOnce(new Promise(r => { resolveConfirm = r; }));
+    try {
+      const view = renderPage('/kiosk/play/pvp/local/game/test-session');
+      mockCameraConnected = false; mockRecognitionReady = false; mockPoseLocked = false;
+      view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+      mockCameraConnected = true; mockRecognitionReady = true; mockPoseLocked = true;
+      view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+      fireEvent.click(screen.getByRole('button', { name: /确认落子/ }));
+      await waitFor(() => expect(pending === 'bind' ? bind : confirm).toHaveBeenCalledTimes(1));
+      // The first interruption is still awaiting this explicit reconfirmation.
+      mockCameraConnected = false; mockRecognitionReady = false; mockPoseLocked = false;
+      view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+      mockCameraConnected = true; mockRecognitionReady = true; mockPoseLocked = true;
+      view.rerender(pageTree('/kiosk/play/pvp/local/game/test-session'));
+      if (pending === 'bind') await act(async () => resolveBind());
+      else await act(async () => resolveConfirm({ accepted: true, session_id: 'test-session', state: stale }));
+      if (pending === 'bind') expect(confirm).not.toHaveBeenCalled();
+      expect(mockSetGameState).not.toHaveBeenCalledWith(stale);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /确认落子/ })).toBeEnabled();
+    } finally { bind.mockRestore(); confirm.mockRestore(); }
+  });
   it('refreshing a three-move local game with degraded geometry preserves identity and blocks confirmation', async () => {
     mockIsVisionEnabled = true;
     mockPoseLocked = false;

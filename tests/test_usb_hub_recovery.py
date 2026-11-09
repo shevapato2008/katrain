@@ -498,3 +498,96 @@ def test_other_target_enumerating_is_observed_without_shared_reset(tmp_path):
     a.value = snapshot(camera=0x101, led=0x103, led_child=False)
     attempt(r, t)
     assert not a.operations and not c.begins
+
+
+def test_stop_during_final_snapshot_cancels_launch_after_snapshot_returns(tmp_path):
+    r, a, c, l, v, g, t, p = setup_recovery(tmp_path)
+    r.tick()
+    t.advance(10)
+    entered = threading.Event()
+    release = threading.Event()
+    calls = 0
+    original_snapshot = a.snapshot
+
+    def blocked_final_snapshot():
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            entered.set()
+            assert release.wait(2)
+        return original_snapshot()
+
+    a.snapshot = blocked_final_snapshot
+    worker = threading.Thread(target=r.tick)
+    worker.start()
+    try:
+        assert entered.wait(2)
+        assert not r.stop(timeout=0)
+        assert not a.operations
+    finally:
+        release.set()
+        worker.join(2)
+    assert not worker.is_alive()
+    assert not a.operations
+    assert c.ends == l.ends == v.ends == 1
+    assert not g.active
+    assert json.loads(p.read_text())["latched"]
+    assert not json.loads(p.read_text())["inflight"]
+
+
+def test_stop_during_owned_launch_is_bounded_and_late_handle_is_immediately_killed(tmp_path):
+    import time
+
+    r, a, c, l, v, g, t, p = setup_recovery(tmp_path)
+    r.tick()
+    t.advance(10)
+    entered = threading.Event()
+    release = threading.Event()
+    original_start = a.start_reset
+
+    def blocked_launch(lock_fd, expected_candidates):
+        entered.set()
+        assert release.wait(2)
+        return original_start(lock_fd, expected_candidates)
+
+    a.start_reset = blocked_launch
+    worker = threading.Thread(target=r.tick)
+    worker.start()
+    try:
+        assert entered.wait(2)
+        before = time.monotonic()
+        assert not r.stop(timeout=0)
+        assert time.monotonic() - before < 0.2
+    finally:
+        release.set()
+        worker.join(2)
+    assert not worker.is_alive()
+    assert len(a.operations) == 1
+    assert a.operations[0].killed
+    assert g.active and not c.ends and not l.ends
+    a.operations[0].returncode = -9
+    assert r.stop(timeout=0)
+    assert not g.active and c.ends == l.ends == v.ends == 1
+
+
+def test_inflight_tick_delay_honors_eight_second_deadline_then_returns_to_low_frequency(tmp_path):
+    r, a, c, l, v, g, t, p = setup_recovery(tmp_path)
+    assert r.next_tick_delay() == 5.0
+    attempt(r, t)
+    assert r.next_tick_delay() == 5.0
+    t.advance(5)
+    assert r.next_tick_delay() == 3.0
+    assert r.next_tick_delay(default=1.0) == 1.0
+    t.advance(2.5)
+    assert r.next_tick_delay() == 0.5
+    assert not a.operations[0].killed
+    t.advance(0.5)
+    assert r.next_tick_delay() == 0.0
+    r.tick()
+    assert a.operations[0].killed
+    assert g.active
+    assert r.next_tick_delay() == 5.0
+    assert r.next_tick_delay(default=2.0) == 2.0
+    a.operations[0].returncode = -9
+    r.tick()
+    assert r.next_tick_delay() == 5.0

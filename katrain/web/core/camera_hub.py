@@ -204,7 +204,12 @@ class CameraHub:
 
     def _recover_loop(self, stop: threading.Event) -> None:
         while not stop.is_set():
-            self._recovery_wake.wait(self.RECOVERY_INTERVAL_S)
+            recovery = self._device_recovery
+            next_tick_delay = getattr(recovery, "next_tick_delay", None)
+            delay = self.RECOVERY_INTERVAL_S
+            if next_tick_delay is not None:
+                delay = next_tick_delay(default=delay)
+            self._recovery_wake.wait(delay)
             self._recovery_wake.clear()
             with self._lifecycle_lock:
                 if not self._started or stop.is_set():

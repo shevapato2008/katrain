@@ -448,7 +448,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     && visionStatus.recognitionReady && geometryReady;
   const revision = geometry?.loaded !== false ? geometry?.status?.geometry_revision : undefined;
   const [localRecovery, setLocalRecovery] = useState({ scope: recoveryScope, required: false, calibration: false, revision,
-    admitted: false, interrupted: false, confirmationEpoch: 0 });
+    admitted: false, interrupted: false, cameraUnavailable: false, confirmationEpoch: 0 });
   const recoveryCurrent = useRef({ scope: recoveryScope, revision });
   recoveryCurrent.current = { scope: recoveryScope, revision };
   // A reload needs the current geometry, not a remembered 'ever ready' flag. Once lost,
@@ -465,17 +465,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     && session.gameState?.local_confirmation?.reason !== 'unavailable';
   if (localRecovery.scope !== recoveryScope) {
     setLocalRecovery({ scope: recoveryScope, required: needsRecovery, calibration: false, revision,
-      admitted: canAdmitLocal, interrupted: false, confirmationEpoch: 0 });
+      admitted: canAdmitLocal, interrupted: false, cameraUnavailable: false, confirmationEpoch: 0 });
   } else if (localPhysicalGame && (needsRecovery || (localRecovery.revision !== undefined && revision !== undefined && revision !== localRecovery.revision))
     && (!localRecovery.required || revision !== localRecovery.revision)) {
     // Geometry/reference loss invalidates pending binds and confirmation replies
     // just like a device interruption; repeated polls retain this generation.
-    setLocalRecovery({ ...localRecovery, required: true, revision, admitted: false, interrupted: false,
+    setLocalRecovery({ ...localRecovery, required: true, revision, admitted: false, interrupted: false, cameraUnavailable: false,
       confirmationEpoch: localRecovery.confirmationEpoch + 1 });
-  } else if (cameraInterrupted && !localRecovery.interrupted) {
-    // USB pause invalidates the old confirmation window, while geometry/reference
-    // remain valid. A new explicit confirmation binds before opening a fresh window.
-    setLocalRecovery({ ...localRecovery, interrupted: true, confirmationEpoch: localRecovery.confirmationEpoch + 1 });
+  } else if (cameraInterrupted !== localRecovery.cameraUnavailable) {
+    // Each new outage invalidates pending work, even while the previous outage
+    // still awaits explicit reconfirmation. Returning ready only clears the edge.
+    setLocalRecovery({ ...localRecovery, cameraUnavailable: cameraInterrupted,
+      interrupted: localRecovery.interrupted || cameraInterrupted,
+      confirmationEpoch: localRecovery.confirmationEpoch + (cameraInterrupted ? 1 : 0) });
   } else if (localPhysicalGame && canAdmitLocal && !localRecovery.required && !localRecovery.admitted) {
     setLocalRecovery({ ...localRecovery, admitted: true, revision });
   } else if (localRecovery.revision === undefined && revision !== undefined) {
@@ -507,7 +509,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       || boundVision.boundSessionId !== sessionId) return false;
     session.setGameState(response.state);
     setLocalRecovery(previous => ({ scope, required: false, calibration: false, revision: bindRevision,
-      admitted: true, interrupted: false, confirmationEpoch: previous.confirmationEpoch }));
+      admitted: true, interrupted: false, cameraUnavailable: false, confirmationEpoch: previous.confirmationEpoch }));
     return true;
   };
   const physicalPreparation = cameraInterrupted ? 'preparing'

@@ -1,5 +1,7 @@
 # 微信 Native 收款资料准备
 
+> **2026-11-10后续已开放：** 本文记录当时的配置/代码/准备状态；用户随后已确认TEST与PROD真实收款开放，最终软件、RK扣量保护及实际验收边界以[开放回执](wechat-native-activation-release-2026-11-10.md)为准，不再将历史paused/disabled理解为当前配置。
+
 > **2026-11-09更新：** 本商户资料已准备完毕并获用户授权部署至TEST及PROD，文件readiness、健康及无扣款验收通过；仍paused/disabled，真实支付未验收。当前实际路径及结果见[配置回执](wechat-native-config-release-2026-11-09.md)。下文保留准备/换证指引，不要因重读本页而重新生成已设置的API v3密钥。
 
 代码发布与开启收款分开执行。当前仍为 `MEMBERSHIP_MODE=paused / PAYMENTS_MODE=disabled`；本指南不包含开启收款或真实扣款操作。已知 AppID 为 `wxb83dd544397ac964`，商户号为 `1003105536`，商户简称为“智星盒智能设备”。Native 不需要 AppSecret，也不需要开发小程序界面。

@@ -1,5 +1,7 @@
 # 微信 Native 会员与充值实施计划
 
+> **2026-11-10开放状态：** 后续用户明确确认开闸，TEST→PROD现已enabled/live，保留11语；RK guard配置已启动。软件和实际未完成的手机扫码/到账/消费边界见[开放回执](../../operations/wechat-native-activation-release-2026-11-10.md)。本初版要求的默认关闭不撤销后续明确授权。
+
 > **2026-11-09配置完成：** 用户在代码三端发布后准备好本机证书、API v3密钥和微信公钥，平台截图显示公钥启用，并明确授权TEST和PROD配置；现两站配置及独立实际验收已通过。仍保持会员paused/支付disabled，没有调用真实商户HTTP API、扣款或开放收款。具体增量、实际新Web和余项见[后续回执](../../operations/wechat-native-config-release-2026-11-09.md)，下文初始“禁止部署/配置待授权”为当时历史，不撤销后续用户授权。
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development. Steps use checkbox syntax for tracking.

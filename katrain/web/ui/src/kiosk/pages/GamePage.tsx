@@ -440,25 +440,44 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   );
   const localPhysicalGame = physicalPlay && session.gameState?.game_type === 'pvp_local';
   const recoveryScope = `${sessionId}|${session.gameState?.game_id}`;
-  const geometryReady = !geometry?.status || (geometry.loaded !== false && geometry.status.phase === 'ready'
-    && geometry.status.session_calibrated && geometry.status.capabilities.geometry_ready
-    && geometry.status.capabilities.recognition_ready && geometry.status.capabilities.model_ready !== false);
+  const geometryValid = !geometry?.status || (geometry.loaded !== false && geometry.status.phase === 'ready'
+    && geometry.status.session_calibrated && geometry.status.capabilities.geometry_ready);
+  const geometryReady = geometryValid && (!geometry?.status || (
+    geometry.status.capabilities.recognition_ready === true && geometry.status.capabilities.model_ready !== false));
+  const cameraRecognitionReady = visionLoaded !== false && visionStatus.cameraConnected
+    && visionStatus.recognitionReady && geometryReady;
   const revision = geometry?.loaded !== false ? geometry?.status?.geometry_revision : undefined;
-  const [localRecovery, setLocalRecovery] = useState({ scope: recoveryScope, required: false, calibration: false, revision });
+  const [localRecovery, setLocalRecovery] = useState({ scope: recoveryScope, required: false, calibration: false, revision,
+    admitted: false, interrupted: false, confirmationEpoch: 0 });
   const recoveryCurrent = useRef({ scope: recoveryScope, revision });
   recoveryCurrent.current = { scope: recoveryScope, revision };
   // A reload needs the current geometry, not a remembered 'ever ready' flag. Once lost,
   // recovery stays blocked until the original session actually binds a new reference.
-  const needsRecovery = localPhysicalGame && (geometry?.loaded !== false && !geometryReady
+  const cameraInterrupted = localRecovery.scope === recoveryScope && localRecovery.admitted && geometryValid
+    && visionLoaded !== false && !cameraRecognitionReady;
+  const interrupted = (localRecovery.scope === recoveryScope && localRecovery.interrupted) || cameraInterrupted;
+  const needsRecovery = localPhysicalGame && (geometry?.loaded !== false && !geometryValid
     || visionLoaded !== false && (poseEverLocked || (session.gameState?.current_node_index ?? 0) > 0)
-      && (!visionStatus.cameraConnected || !visionStatus.poseLocked)
-    || visionSync.bindState === 'error'
-    || (session.gameState?.current_node_index ?? 0) > 0 && session.gameState?.local_confirmation?.reason === 'unavailable');
+      && !visionStatus.poseLocked && !cameraInterrupted
+    || !interrupted && (visionSync.bindState === 'error'
+      || (session.gameState?.current_node_index ?? 0) > 0 && session.gameState?.local_confirmation?.reason === 'unavailable'));
+  const canAdmitLocal = cameraRecognitionReady && visionStatus.poseLocked && visionSync.bindState === 'ready'
+    && session.gameState?.local_confirmation?.reason !== 'unavailable';
   if (localRecovery.scope !== recoveryScope) {
-    setLocalRecovery({ scope: recoveryScope, required: needsRecovery, calibration: false, revision });
+    setLocalRecovery({ scope: recoveryScope, required: needsRecovery, calibration: false, revision,
+      admitted: canAdmitLocal, interrupted: false, confirmationEpoch: 0 });
   } else if (localPhysicalGame && (needsRecovery || (localRecovery.revision !== undefined && revision !== undefined && revision !== localRecovery.revision))
     && (!localRecovery.required || revision !== localRecovery.revision)) {
-    setLocalRecovery({ ...localRecovery, required: true, revision });
+    // Geometry/reference loss invalidates pending binds and confirmation replies
+    // just like a device interruption; repeated polls retain this generation.
+    setLocalRecovery({ ...localRecovery, required: true, revision, admitted: false, interrupted: false,
+      confirmationEpoch: localRecovery.confirmationEpoch + 1 });
+  } else if (cameraInterrupted && !localRecovery.interrupted) {
+    // USB pause invalidates the old confirmation window, while geometry/reference
+    // remain valid. A new explicit confirmation binds before opening a fresh window.
+    setLocalRecovery({ ...localRecovery, interrupted: true, confirmationEpoch: localRecovery.confirmationEpoch + 1 });
+  } else if (localPhysicalGame && canAdmitLocal && !localRecovery.required && !localRecovery.admitted) {
+    setLocalRecovery({ ...localRecovery, admitted: true, revision });
   } else if (localRecovery.revision === undefined && revision !== undefined) {
     setLocalRecovery({ ...localRecovery, revision });
   }
@@ -487,13 +506,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       || !boundVision?.cameraConnected || !boundVision.poseLocked || !boundVision.recognitionReady
       || boundVision.boundSessionId !== sessionId) return false;
     session.setGameState(response.state);
-    setLocalRecovery({ scope, required: false, calibration: false, revision: bindRevision });
+    setLocalRecovery(previous => ({ scope, required: false, calibration: false, revision: bindRevision,
+      admitted: true, interrupted: false, confirmationEpoch: previous.confirmationEpoch }));
     return true;
   };
-  const physicalPreparation = visionSync.bindState === 'error' || (localPhysicalGame && (localRecovery.required || needsRecovery)) ? 'error'
-    : visionSync.bindState === 'ready' && visionLoaded !== false && visionStatus.cameraConnected && visionStatus.poseLocked && (!localPhysicalGame || geometryReady) ? 'ready' : 'preparing';
+  const physicalPreparation = cameraInterrupted ? 'preparing'
+    : visionSync.bindState === 'error' || (localPhysicalGame && (localRecovery.required || needsRecovery)) ? 'error'
+    : visionSync.bindState === 'ready' && cameraRecognitionReady && visionStatus.poseLocked ? 'ready' : 'preparing';
   const confirmationGame = session.gameState;
-  const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}`;
+  const confirmationEpoch = localRecovery.scope === recoveryScope ? localRecovery.confirmationEpoch : 0;
+  const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}|${confirmationEpoch}`;
   const latestConfirmationScope = useRef(confirmationScope);
   useEffect(() => { latestConfirmationScope.current = confirmationScope; }, [confirmationScope]);
   // Screen play must count thinking/selection time, including on a camera-enabled box.
@@ -529,16 +551,23 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         const key = `${sessionId}|${confirmationGame.game_id}`;
         if (readyLocalScreen.current?.key === key) await readyLocalScreen.current.promise;
         else await API.readyLocalGame(sessionId, confirmationGame.game_id, 'screen', token ?? undefined);
-      } else if (request.action === 'move') {
-        // A failed initial reference preparation can be retried by this explicit
-        // confirmation. A ready same-game bind preserves its reference and clock.
-        await API.visionBind(sessionId);
       }
-      const response = await API.confirmLocalMove({ ...request, session_id: sessionId,
-        expected_game_id: confirmationGame.game_id, expected_node_id: confirmationGame.current_node_id,
-        color: confirmationGame.player_to_move === 'W' ? 'W' : 'B' }, token ?? undefined);
-      if (latestConfirmationScope.current === confirmationScope) session.setGameState(response.state);
-      return response;
+      try {
+        if (physicalPlay && request.action === 'move') {
+          // A ready same-game bind preserves its reference and clock, and clears
+          // the interrupted window's unavailable result before a new confirmation.
+          await API.visionBind(sessionId);
+        }
+        if (latestConfirmationScope.current !== confirmationScope) throw new Error('Confirmation scope changed');
+        const response = await API.confirmLocalMove({ ...request, session_id: sessionId,
+          expected_game_id: confirmationGame.game_id, expected_node_id: confirmationGame.current_node_id,
+          color: confirmationGame.player_to_move === 'W' ? 'W' : 'B' }, token ?? undefined);
+        if (latestConfirmationScope.current === confirmationScope) session.setGameState(response.state);
+        return response;
+      } finally {
+        if (physicalPlay) setLocalRecovery(previous => previous.scope === recoveryScope && previous.confirmationEpoch === confirmationEpoch
+          ? { ...previous, interrupted: false } : previous);
+      }
     },
   });
 
@@ -1022,7 +1051,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // generic 10s "board detection abnormal" dialog: recalOpen both gates RecalibrationModal
   // itself (further suppressed `&& !escalationOpen`) AND feeds into VisionSyncOverlay's
   // suppressBoardLost, so at most one board-loss surface is ever visible at a time.
-  const recalOpen = physicalPlay && !isGameOver && (localPhysicalGame ? localRecovery.required || needsRecovery : poseEverLocked && !visionStatus.poseLocked);
+  const recalOpen = physicalPlay && !isGameOver && (localPhysicalGame ? localRecovery.required || needsRecovery
+    : poseEverLocked && !visionStatus.poseLocked && (!geometryValid || cameraRecognitionReady));
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).

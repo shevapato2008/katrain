@@ -686,3 +686,205 @@ def test_idle_timer_reconciles_identity_even_while_cached_camera_is_ready(monkey
         assert not hub.is_connected()
     finally:
         hub.stop()
+
+
+def test_usb_recovery_hides_frames_retains_lease_and_resumes_normal_reader(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    camera = RecoveringCamera()
+    camera.available = True
+    device = uuid.uuid4().hex
+    hub = CameraHub(CameraHubConfig(device_id=device), camera=camera)
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    hub.start()
+    try:
+        assert hub.begin_usb_recovery(timeout=0.5)
+        assert not hub.is_connected()
+        assert hub.read_frame() is None
+        assert hub.read_frame_identified() == (None, 0, 0.0)
+        assert hub.grab_fresh(timeout=0.01) == (None, 0, 0.0)
+        calls = camera.open_calls
+        time.sleep(0.03)
+        assert camera.open_calls == calls
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        camera.recovered.clear()
+        hub.end_usb_recovery()
+        hub.end_usb_recovery()
+        assert camera.recovered.wait(0.5)
+        assert hub.is_connected()
+    finally:
+        peer.stop()
+        hub.stop()
+        hub.stop()
+
+
+def test_usb_recovery_cannot_ack_a_blocked_reader_or_leave_a_late_pause(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    entered, finish = threading.Event(), threading.Event()
+    camera = RecoveringCamera()
+    camera.available = True
+    original_close = camera.close
+
+    def close():
+        entered.set()
+        assert finish.wait(1)
+        original_close()
+
+    camera.close = close
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    try:
+        started = time.monotonic()
+        assert not hub.begin_usb_recovery(timeout=0.03)
+        assert time.monotonic() - started < 0.2
+        assert entered.is_set()
+        camera.recovered.clear()
+        finish.set()
+        assert camera.recovered.wait(0.5), "timed out pause was applied after its caller left"
+        assert hub.is_connected()
+    finally:
+        finish.set()
+        hub.stop()
+
+
+def test_usb_recovery_requires_old_reader_to_really_exit(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    finish = threading.Event()
+    camera = FakeCamera()
+    camera._reader_thread = threading.Thread(target=finish.wait, daemon=True)
+    camera._reader_thread.start()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    try:
+        assert not hub.begin_usb_recovery(timeout=0.03)
+    finally:
+        finish.set()
+        camera._reader_thread.join(1)
+        hub.stop()
+
+
+def test_startup_check_precedes_initial_open_and_reconnect(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    allowed = threading.Event()
+    camera = RecoveringCamera()
+    camera.available = True
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.set_usb_startup_check(allowed.is_set)
+    try:
+        hub.start(allow_unavailable=True)
+        time.sleep(0.03)
+        assert camera.open_calls == 0
+        assert hub.read_frame() is None
+        assert hub.grab_fresh(timeout=0.01) == (None, 0, 0.0)
+        allowed.set()
+        assert camera.recovered.wait(0.5)
+        allowed.clear()
+        camera.is_connected = False
+        calls = camera.open_calls
+        hub.read_frame()
+        time.sleep(0.03)
+        assert camera.open_calls == calls
+    finally:
+        hub.stop()
+
+
+def test_device_recovery_ticks_healthy_camera_outside_lifecycle_lock_and_stops_first(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    ticked = threading.Event()
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+
+    class Recovery:
+        def tick(self):
+            assert hub._lifecycle_lock.acquire(blocking=False)
+            hub._lifecycle_lock.release()
+            ticked.set()
+
+        def stop(self, timeout=2.0):
+            assert camera.close_calls == 0
+            assert hub._lifecycle_lock.acquire(blocking=False)
+            hub._lifecycle_lock.release()
+            return True
+
+    hub.set_device_recovery(Recovery())
+    hub.start()
+    assert ticked.wait(0.5)
+    hub.stop()
+
+
+def test_recovery_tick_can_pause_its_own_camera_and_keeps_ticking_while_paused(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    finished = threading.Event()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=FakeCamera())
+
+    class Recovery:
+        calls = 0
+
+        def tick(self):
+            self.calls += 1
+            if self.calls == 1:
+                assert hub.begin_usb_recovery(timeout=0.1)
+            else:
+                hub.end_usb_recovery()
+                finished.set()
+
+        def stop(self, timeout=2.0):
+            return True
+
+    hub.set_device_recovery(Recovery())
+    try:
+        hub.start()
+        assert finished.wait(0.5)
+    finally:
+        hub.stop()
+
+
+def test_same_thread_pause_spends_timeout_waiting_for_lifecycle_without_late_close(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 10)
+    owned, release, done = threading.Event(), threading.Event(), threading.Event()
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+
+    def hold_lifecycle():
+        with hub._lifecycle_lock:
+            owned.set()
+            release.wait(1)
+
+    holder = threading.Thread(target=hold_lifecycle)
+    results = []
+
+    def pause_as_owner():
+        hub._recovery_thread = threading.current_thread()
+        results.append(hub.begin_usb_recovery(timeout=0.03))
+        done.set()
+
+    pauser = threading.Thread(target=pause_as_owner)
+    worker = hub._recovery_thread
+    try:
+        holder.start()
+        assert owned.wait(0.5)
+        pauser.start()
+        assert done.wait(0.2), "same-thread pause ignored its lifecycle wait budget"
+        assert results == [False]
+        assert camera.close_calls == 0
+    finally:
+        release.set()
+        holder.join(1)
+        pauser.join(1)
+        hub._recovery_thread = worker
+        hub.stop()
+
+
+def test_healthy_cached_frames_do_not_repeat_startup_operation_lock_check():
+    checked = []
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=FakeCamera())
+    hub.set_usb_startup_check(lambda: checked.append(True) or True)
+    try:
+        hub.start()
+        assert len(checked) == 1
+        hub.read_frame()
+        hub.grab_fresh(timeout=0.1)
+        assert len(checked) == 1
+    finally:
+        hub.stop()

@@ -52,6 +52,9 @@ def child(root, port, vid, pid):
     path.mkdir(exist_ok=True)
     (path / "idVendor").write_text(vid)
     (path / "idProduct").write_text(pid)
+    (path / "busnum").write_text("1")
+    (path / "devnum").write_text(str(10 + port))
+    (path / "serial").write_text(f"unit-{port}")
     return path
 
 
@@ -187,6 +190,8 @@ def test_fixed_child_rejects_new_candidate_replacing_stable_camera_candidate(tmp
     statuses[4] = 0x103
     (root / "1-1.3" / "idVendor").unlink()
     (root / "1-1.3" / "idProduct").unlink()
+    for name in ("busnum", "devnum", "serial"):
+        (root / "1-1.3" / name).unlink()
     (root / "1-1.3").rmdir()
     statuses[3] = 0x101
     monkeypatch.setattr(module, "LinuxUsbHub", lambda: adapter)
@@ -215,3 +220,16 @@ def test_fixed_child_rejects_masks_outside_verified_targets(mask):
     import katrain.web.core.linux_usb_hub as module
 
     assert module._locked_child(-1, mask) == 2
+
+
+def test_snapshot_exposes_dynamic_hub_and_esp_address_and_serial(tmp_path, monkeypatch):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    esp = root / "1-1.3"
+    (esp / "busnum").write_text("1")
+    (esp / "devnum").write_text("13")
+    (esp / "serial").write_text("dynamic-esp-unit-a\n")
+    value = adapter.snapshot()
+    assert value.valid
+    assert value.address == (1, 7)
+    assert value.ports[3].child_address == (1, 13)
+    assert value.ports[3].child_serial == "dynamic-esp-unit-a"

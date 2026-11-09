@@ -591,3 +591,420 @@ def test_inflight_tick_delay_honors_eight_second_deadline_then_returns_to_low_fr
     a.operations[0].returncode = -9
     r.tick()
     assert r.next_tick_delay() == 5.0
+
+
+# Type-C evidence is independent of the camera's service health. These fixtures
+# keep the public board_status contract while supplying verified dynamic USB IDs.
+def link_snapshot(
+    *, camera_fault=False, camera_connected=True, esp_address=(1, 13), serial="unit-a", hub_address=(1, 7)
+):
+    base = snapshot(camera=0x101 if camera_fault else 0x103, camera_child=not camera_fault)
+    if not camera_connected:
+        base = snapshot(camera=0x100, camera_child=False)
+    esp = base.ports[3]
+    ports = dict(base.ports)
+    ports[3] = replace(esp, child_address=esp_address, child_serial=serial)
+    return replace(base, ports=ports, address=hub_address)
+
+
+def setup_link_recovery(tmp_path, initial="UP"):
+    r, a, c, l, v, g, t, p = setup_recovery(tmp_path)
+    l.connected = True
+    l.link = initial
+    l.board_status = lambda: {"connected": l.link == "UP" if l.link in ("UP", "DOWN") else None, "board_link": l.link}
+    a.value = link_snapshot()
+    return r, a, c, l, v, g, t, p
+
+
+def complete_link_reset(r, a, c, l, t, *, serial="unit-a", address=(1, 23), link="DOWN"):
+    a.operations[-1].returncode = 0
+    a.value = snapshot(valid=False)
+    l.connected = False
+    t.advance(1)
+    r.tick()
+    a.value = link_snapshot(esp_address=address, serial=serial)
+    l.connected = True
+    l.link = link
+    c.connected = True
+    t.advance(1)
+    c.frame_ts = t.now
+    r.tick()
+
+
+def start_link_reset_while_down(r, a, l, t, initial="UP"):
+    r.tick()
+    if initial == "UP":
+        l.link = "DOWN"
+        t.advance(1)
+        r.tick()
+    a.value = link_snapshot(camera_fault=True)
+    r.tick()
+    t.advance(10)
+    r.tick()
+    assert len(a.operations) == 1
+
+
+@pytest.mark.parametrize("initial", ["UP", "DOWN"])
+def test_type_c_down_ticket_survives_owned_reset_then_later_up_authorizes_once(tmp_path, initial):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path, initial)
+    start_link_reset_while_down(r, a, l, t, initial)
+    complete_link_reset(r, a, c, l, t)
+    assert not g.active
+    # A fresh, same-unit DOWN can remain unplugged for an arbitrary duration.
+    t.advance(100)
+    r.tick()
+    assert json.loads(p.read_text())["latched"]
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    r.tick()
+    assert not json.loads(p.read_text())["latched"]
+    t.advance(10)
+    r.tick()
+    assert len(a.operations) == 2
+    complete_link_reset(r, a, c, l, t, address=(1, 33), link="UP")
+    c.connected = False
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 33))
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 2
+    assert json.loads(p.read_text())["latched"]
+
+
+def test_type_c_initial_post_reset_down_up_without_qualification_does_not_rearm(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    a.value = link_snapshot(camera_fault=True)
+    attempt(r, t)
+    complete_link_reset(r, a, c, l, t, link="DOWN")
+    t.advance(40)
+    r.tick()
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1 and json.loads(p.read_text())["latched"]
+
+
+def test_type_c_new_down_before_healthy_30_seconds_rearms_and_pair_before_attempt_is_merged(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    a.value = link_snapshot(camera_fault=True)
+    attempt(r, t)
+    complete_link_reset(r, a, c, l, t, link="UP")
+    t.advance(20)
+    c.frame_ts = t.now
+    r.tick()
+    l.link = "DOWN"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    r.tick()
+    assert not json.loads(p.read_text())["latched"]
+    l.link = "UP"
+    r.tick()
+    # DOWN and UP before this attempt provide one armed budget, never two.
+    t.advance(40)
+    r.tick()
+    assert len(a.operations) == 2
+    complete_link_reset(r, a, c, l, t, address=(1, 33), link="DOWN")
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 33))
+    c.connected = False
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 2 and json.loads(p.read_text())["latched"]
+
+
+def test_type_c_unqualified_up_down_up_inside_settle_never_authorizes_boot_edges(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    a.value = link_snapshot(camera_fault=True)
+    attempt(r, t)
+    complete_link_reset(r, a, c, l, t, link="UP")
+    l.link = "DOWN"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    t.advance(1)
+    r.tick()
+    l.link = "UP"
+    t.advance(1)
+    r.tick()
+    assert json.loads(p.read_text())["latched"]
+    t.advance(17)
+    r.tick()
+    assert json.loads(p.read_text())["latched"]
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1
+
+
+@pytest.mark.parametrize("broken", ["serial", "address", "unknown", "transport", "expired"])
+def test_type_c_owned_ticket_is_discarded_on_identity_unknown_or_rebuild_expiry(tmp_path, broken):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    if broken == "expired":
+        a.operations[-1].returncode = 0
+        a.value = snapshot(valid=False)
+        l.connected = False
+        t.advance(1)
+        r.tick()
+        t.advance(21)
+        r.tick()
+        a.value = link_snapshot(esp_address=(1, 23))
+        l.connected = True
+        l.link = "DOWN"
+        r.tick()
+    else:
+        complete_link_reset(r, a, c, l, t, serial="unit-b" if broken == "serial" else "unit-a")
+        if broken == "address":
+            a.value = link_snapshot(esp_address=(1, 24))
+        if broken == "unknown":
+            l.link = None
+        if broken == "transport":
+            l.connected = False
+        r.tick()
+    t.advance(60)
+    l.connected = True
+    l.link = "UP"
+    # Identity-changing samples are followed by UP only, without a new UP->DOWN.
+    addr = (1, 24) if broken == "address" else (1, 23)
+    a.value = link_snapshot(camera_fault=True, esp_address=addr, serial="unit-b" if broken == "serial" else "unit-a")
+    c.connected = False
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1 and json.loads(p.read_text())["latched"]
+
+
+@pytest.mark.parametrize("initial", ["UP", "DOWN"])
+def test_type_c_link_edges_alone_or_real_camera_disconnect_never_reset(tmp_path, initial):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path, initial)
+    r.tick()
+    t.advance(10)
+    r.tick()
+    for link in ("DOWN", "UP", "DOWN", "UP"):
+        l.link = link
+        t.advance(10)
+        r.tick()
+    assert not a.operations
+    a.value = link_snapshot(camera_connected=False)
+    for link in ("DOWN", "UP"):
+        l.link = link
+        t.advance(60)
+        r.tick()
+    assert not a.operations
+
+
+@pytest.mark.parametrize("failure", ["quiet", "no_child_started"])
+def test_type_c_failed_or_unstarted_attempt_discards_inheritable_down_ticket(tmp_path, failure):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    r.tick()
+    l.link = "DOWN"
+    a.value = link_snapshot(camera_fault=True)
+    r.tick()
+    if failure == "quiet":
+        c.accept = False
+    if failure == "no_child_started":
+        original = l.begin_usb_recovery
+
+        def recovered_before_launch(timeout=2):
+            a.value = link_snapshot()
+            return original(timeout)
+
+        l.begin_usb_recovery = recovered_before_launch
+    t.advance(10)
+    r.tick()
+    attempts = len(a.operations)
+    assert attempts == 0
+    t.advance(60)
+    c.accept = True
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True)
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == attempts and json.loads(p.read_text())["latched"]
+
+
+def test_type_c_owned_ticket_cannot_pass_through_present_esp_without_serial(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    a.operations[0].returncode = 0
+    a.value = snapshot(valid=False)
+    l.connected = False
+    t.advance(1)
+    r.tick()
+    a.value = link_snapshot(serial=None, esp_address=(1, 23))
+    l.connected = True
+    t.advance(1)
+    r.tick()
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    t.advance(1)
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1 and json.loads(p.read_text())["latched"]
+
+
+def test_type_c_owned_ticket_locks_first_serial_address_before_link_handshake(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    a.operations[0].returncode = 0
+    a.value = snapshot(valid=False)
+    l.connected = False
+    t.advance(1)
+    r.tick()
+    a.value = link_snapshot(esp_address=(1, 23))
+    t.advance(1)
+    r.tick()
+    a.value = link_snapshot(esp_address=(1, 24))
+    l.connected = True
+    t.advance(1)
+    r.tick()
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 24))
+    t.advance(60)
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1 and json.loads(p.read_text())["latched"]
+
+
+def test_type_c_deferred_grant_is_discarded_on_foreign_attempt_cas(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    complete_link_reset(r, a, c, l, t)
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    r.tick()
+    foreign = json.loads(p.read_text())
+    foreign["attempt_id"] = "f" * 32
+    foreign["last_attempt"] = t.now
+    p.write_text(json.dumps(foreign))
+    t.advance(60)
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1
+    assert json.loads(p.read_text())["latched"]
+    assert json.loads(p.read_text())["attempt_id"] == "f" * 32
+
+
+def test_type_c_stop_restart_does_not_recreate_initial_down_ticket_for_latched_episode(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    complete_link_reset(r, a, c, l, t)
+    assert r.stop()
+    r = UsbHubRecovery(a, c, l, v, HardwareRecoveryGate(), p, clock=t, wall_clock=t)
+    t.advance(20)
+    r.tick()
+    t.advance(10)
+    r.tick()
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1 and json.loads(p.read_text())["latched"]
+
+
+def test_type_c_carried_down_ticket_up_inside_settle_defers_one_grant(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    complete_link_reset(r, a, c, l, t)
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    t.advance(1)
+    r.tick()
+    assert json.loads(p.read_text())["latched"]
+    t.advance(20)
+    r.tick()
+    assert not json.loads(p.read_text())["latched"]
+    assert len(a.operations) == 1
+
+
+@pytest.mark.parametrize("new_up", [False, True])
+def test_type_c_started_nonzero_child_exit_keeps_down_ticket_but_only_fresh_up_can_rearm(tmp_path, new_up):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    a.operations[0].returncode = 3
+    a.value = snapshot(valid=False)
+    l.connected = False
+    t.advance(1)
+    r.tick()
+    a.value = link_snapshot(esp_address=(1, 23))
+    l.connected = True
+    l.link = "DOWN"
+    t.advance(1)
+    r.tick()
+    t.advance(60)
+    r.tick()
+    assert json.loads(p.read_text())["latched"]
+    l.link = "UP" if new_up else "DOWN"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    r.tick()
+    assert json.loads(p.read_text())["latched"] == (not new_up)
+    t.advance(10 if new_up else 600)
+    r.tick()
+    assert len(a.operations) == (2 if new_up else 1)
+
+
+def test_type_c_consumed_carried_up_cannot_create_another_initial_down_ticket(tmp_path):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    complete_link_reset(r, a, c, l, t)
+    l.link = "UP"
+    t.advance(1)
+    r.tick()
+    l.link = "DOWN"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    c.connected = False
+    t.advance(1)
+    r.tick()
+    # Both observations occurred in self-settle. DOWN must not become another
+    # initial-DOWN qualification merely because the old pending UP rearms.
+    for _ in range(5):
+        t.advance(10)
+        r.tick()
+    assert len(a.operations) == 1
+    t.advance(10)
+    r.tick()
+    assert len(a.operations) == 2
+    complete_link_reset(r, a, c, l, t, address=(1, 33), link="DOWN")
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 33))
+    c.connected = False
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 2 and json.loads(p.read_text())["latched"]
+
+
+@pytest.mark.parametrize(
+    "status", [{"connected": False, "board_link": "UP"}, {"connected": False, "board_link": "CABLE_ONLY"}]
+)
+def test_type_c_owned_ticket_rejects_malformed_link_during_rebuild(tmp_path, status):
+    r, a, c, l, v, g, t, p = setup_link_recovery(tmp_path)
+    start_link_reset_while_down(r, a, l, t)
+    a.operations[0].returncode = 0
+    a.value = snapshot(valid=False)
+    l.connected = False
+    t.advance(1)
+    r.tick()
+    a.value = link_snapshot(esp_address=(1, 23))
+    l.connected = True
+    normal_status = l.board_status
+    l.board_status = lambda: status
+    t.advance(1)
+    r.tick()
+    l.board_status = normal_status
+    l.link = "UP"
+    a.value = link_snapshot(camera_fault=True, esp_address=(1, 23))
+    t.advance(1)
+    r.tick()
+    t.advance(600)
+    r.tick()
+    assert len(a.operations) == 1 and json.loads(p.read_text())["latched"]

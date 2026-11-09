@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +55,15 @@ def _lock_operation(path):
         raise
 
 
+@dataclass
+class _DownTicket:
+    unit: tuple
+    source: tuple | None = None
+    attempt_id: str | None = None
+    deadline: float | None = None
+    ready: bool = True
+
+
 class UsbHubRecovery:
     STABLE_SECONDS = 10.0
     COOLDOWN_SECONDS = 60.0
@@ -84,6 +94,12 @@ class UsbHubRecovery:
         self._healthy_since = None
         self._physical = {}
         self._external_removed = set()
+        self._link_source = None
+        self._link_state = None
+        self._link_down_since = None
+        self._link_ticket = None
+        self._link_pending = None
+        self._link_initial_allowed = True
         self._disabled = False
         self._state = {"schema": 1, "latched": False, "last_attempt": None, "inflight": False, "attempt_id": None}
         try:
@@ -113,6 +129,7 @@ class UsbHubRecovery:
         except (OSError, ValueError, TypeError, KeyError):
             self._disabled = True
             log.warning("USB automatic recovery disabled: invalid persistent state", exc_info=True)
+        self._link_initial_allowed = not self._disabled and not self._state["latched"] and not self._state["inflight"]
 
     @staticmethod
     def _validate_state(state):
@@ -255,6 +272,159 @@ class UsbHubRecovery:
         except Exception:
             return False
 
+    def _clear_link(self, *, keep_ticket=False):
+        self._link_source = self._link_state = self._link_down_since = None
+        self._link_pending = None
+        if not keep_ticket:
+            self._link_ticket = None
+
+    @staticmethod
+    def _link_usb_source(snapshot):
+        if not snapshot.valid or snapshot.hub_path != "1-1" or snapshot.identity != ("1a40", "0101"):
+            return None
+        port = snapshot.ports.get(3)
+        hub_address = getattr(snapshot, "address", None)
+        esp_address = getattr(port, "child_address", None)
+        serial = getattr(port, "child_serial", None)
+        if (
+            port is None
+            or port.child_identity != ("303a", "1001")
+            or not port.connected
+            or not port.powered
+            or not port.enabled
+            or port.reset
+            or port.over_current
+            or not isinstance(serial, str)
+            or not serial.strip()
+        ):
+            return None
+        for address in (hub_address, esp_address):
+            if (
+                not isinstance(address, tuple)
+                or len(address) != 2
+                or any(type(n) is not int or not 1 <= n <= 999 for n in address)
+            ):
+                return None
+        unit = (snapshot.hub_path, snapshot.identity, port.child_identity, serial)
+        return unit, hub_address, esp_address
+
+    def _queue_link_grant(self):
+        # An already armed budget absorbs both edges before its next attempt.
+        self._link_pending = self._state["attempt_id"] if self._state["latched"] else None
+
+    def _observe_link(self, snapshot, now):
+        source = self._link_usb_source(snapshot)
+        ticket = self._link_ticket
+        owned = ticket is not None and ticket.attempt_id is not None
+        if owned:
+            if (
+                ticket.attempt_id != self._state["attempt_id"]
+                or ticket.deadline is not None
+                and now > ticket.deadline
+                and not ticket.ready
+            ):
+                self._clear_link()
+                ticket = None
+                owned = False
+            elif source is None:
+                # Only this owned reset's not-yet-rebuilt identity/transport may
+                # be absent temporarily; ordinary unknown samples never qualify.
+                port = snapshot.ports.get(3)
+                absent = not snapshot.valid or port is None or port.child_identity is None
+                if absent and not ticket.ready and ticket.deadline is not None and now <= ticket.deadline:
+                    self._clear_link(keep_ticket=True)
+                    return
+                self._clear_link()
+                return
+            elif source[0] != ticket.unit or ticket.source is not None and source != ticket.source:
+                self._clear_link()
+                ticket = None
+                owned = False
+            elif ticket.source is None:
+                # The first same-serial sighting fixes both new USB addresses,
+                # even if the transport has not completed its handshake yet.
+                ticket.source = source
+        if source is None:
+            self._clear_link()
+            return
+        waiting_link = False
+        try:
+            status = self.led.board_status()
+            link, connected = status.get("board_link"), status.get("connected")
+            transport = self.led.is_connected() is True
+            waiting_link = not transport or link is None and connected is None
+            fresh = transport and link in ("UP", "DOWN") and type(connected) is bool and connected == (link == "UP")
+        except Exception:
+            fresh = False
+        if not fresh:
+            if waiting_link and owned and not ticket.ready and ticket.deadline is not None and now <= ticket.deadline:
+                self._clear_link(keep_ticket=True)
+            else:
+                self._clear_link()
+            return
+        if link == "UP":
+            self._link_initial_allowed = False
+        settling = self._settle_until is not None and now < self._settle_until
+        if settling and not owned:
+            # Without the prequalified carried ticket, boot UP/DOWN samples are
+            # never ordinary history. A consumed ticket's pending grant retains
+            # only continuous fresh source evidence until its CAS at settle end.
+            if self._link_pending is None or source != self._link_source:
+                self._clear_link()
+            self._link_state = self._link_down_since = None
+            return
+        if owned:
+            ticket.ready = True
+            ticket.deadline = None
+        if source != self._link_source:
+            self._clear_link(keep_ticket=owned)
+            self._link_source = source
+        previous = self._link_state
+        if link == "UP":
+            if self._link_ticket is not None:
+                self._link_ticket = None
+                self._queue_link_grant()
+            self._link_down_since = None
+        else:
+            initial_eligible = (
+                self._link_initial_allowed
+                and not self._state["latched"]
+                and not self._state["inflight"]
+                and not settling
+            )
+            if not initial_eligible:
+                self._link_down_since = None
+            elif previous != "DOWN" or self._link_down_since is None:
+                self._link_down_since = now
+            if previous == "UP":
+                self._link_ticket = _DownTicket(source[0], source)
+                self._queue_link_grant()
+            elif (
+                self._link_ticket is None
+                and previous == "DOWN"
+                and self._link_down_since is not None
+                and now - self._link_down_since >= self.STABLE_SECONDS
+                and initial_eligible
+            ):
+                # An initial stable DOWN is UP-only evidence. It never rearms
+                # an already failed episode or grants merely for remaining DOWN.
+                self._link_ticket = _DownTicket(source[0], source)
+        self._link_state = None if settling and self._link_ticket is None else link
+
+    def _bind_link_ticket(self, attempt_id):
+        self._link_initial_allowed = False
+        ticket = self._link_ticket
+        inherit = (
+            ticket is not None
+            and ticket.attempt_id is None
+            and ticket.ready
+            and self._link_state == "DOWN"
+            and ticket.source == self._link_source
+        )
+        self._clear_link()
+        if inherit:
+            self._link_ticket = _DownTicket(ticket.unit, attempt_id=attempt_id, ready=False)
+
     def _poll_operation(self, now, wait_budget=0.05):
         if self._operation is None:
             return
@@ -275,6 +445,12 @@ class UsbHubRecovery:
             # An unverified operation is still considered running.
             return
         self._operation = None
+        ticket = self._link_ticket
+        if not self._stopped.is_set() and ticket is not None and ticket.attempt_id == self._state["attempt_id"]:
+            self._clear_link(keep_ticket=True)
+            ticket.deadline = now + self.SETTLE_SECONDS
+        else:
+            self._clear_link()
         self._finished_at = now
         self._settle_until = now + self.SETTLE_SECONDS
         self._physical.clear()
@@ -312,6 +488,8 @@ class UsbHubRecovery:
                 os.close(fd)
             if disk != self._state:
                 self._state = disk
+                self._link_initial_allowed = False
+                self._clear_link()
                 self._healthy_since = None
                 self._physical.clear()
                 self._external_removed.clear()
@@ -332,8 +510,15 @@ class UsbHubRecovery:
                 self._healthy_since = None
             elif self._healthy_since is None:
                 self._healthy_since = now
-            if external or self._healthy_since is not None and now - self._healthy_since >= self.HEALTHY_SECONDS:
+            link_grant = self._link_pending is not None and self._link_pending == self._state["attempt_id"]
+            if (
+                external
+                or link_grant
+                or self._healthy_since is not None
+                and now - self._healthy_since >= self.HEALTHY_SECONDS
+            ):
                 self._persist(latched=False, inflight=False)
+                self._link_pending = None
                 self._healthy_since = None
                 self._external_removed.clear()
         except (OSError, ValueError, TypeError):
@@ -366,6 +551,7 @@ class UsbHubRecovery:
             if self._operation is not None:
                 return
             if self._stopped.is_set():
+                self._clear_link()
                 self._resume_owners()
                 self._release_gate()
                 return
@@ -375,6 +561,7 @@ class UsbHubRecovery:
             if self._disabled:
                 return
             snapshot = self.adapter.snapshot()
+            self._observe_link(snapshot, now)
             self._maybe_rearm(snapshot, now)
             candidate = self._candidates(snapshot)
             if not candidate:
@@ -407,6 +594,9 @@ class UsbHubRecovery:
                         self._validate_state(disk)
                     finally:
                         os.close(fd)
+                    if disk["attempt_id"] != self._state["attempt_id"]:
+                        self._link_initial_allowed = False
+                        self._clear_link()
                     self._state = disk
                     if disk["last_attempt"] is not None and wall < disk["last_attempt"]:
                         self._disabled = True
@@ -422,6 +612,7 @@ class UsbHubRecovery:
                 ):
                     return
                 consumed = True
+                self._bind_link_ticket(self._state["attempt_id"])
                 for owner in (self.vision, self.camera, self.led):
                     if self._stopped.is_set() or not owner.begin_usb_recovery(timeout=2.0):
                         return
@@ -447,6 +638,7 @@ class UsbHubRecovery:
             finally:
                 if self._operation is None:
                     if consumed:
+                        self._clear_link()
                         self._persist(inflight=False)
                     self._release_lock()
                     self._resume_owners()
@@ -466,6 +658,7 @@ class UsbHubRecovery:
         if not self._mutex.acquire(timeout=max(0.0, deadline - time.monotonic())):
             return False
         try:
+            self._clear_link()
             self._poll_operation(self.clock(), max(0.0, min(0.05, deadline - time.monotonic())))
             if self._operation is not None:
                 return False

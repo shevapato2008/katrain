@@ -83,3 +83,18 @@
 - [ ] **Step 4:** 协调RK独占窗口，fresh无写入中对局/标定，保留renderer/URL/登录/模式/语言外观。Go范围停启；manifest before-hash/absent CAS、备份、原子替换/回滚。唯一配置增量 `/etc/systemd/system/smartbox-katrain.service.d/35-usb-hub-recovery.conf` 启用 `Environment=KATRAIN_USB_HUB_RECOVERY=true`。保留fd7/4235整包标记，另写delta哈希。旧operator六文件/runtime hash/仅标定页门禁已过时，不原样用。
 - [ ] **Step 5:** 验RK候选代码/启用、正常0复位、新JPEG、LED transport/LINK、页面/登录/语言。受控且可回滚地验证一次自动异常恢复，不反复制造USB故障；不能完成的现场物理拔插明确待验，不以人工试验代替自动交付。完成恢复原页，释放本任务锁。
 - [ ] **Step 6:** session文字报告各仓commit、两云镜像、RK差量版本、测试/审核、真实恢复结果和待用户物理验证项。
+
+## 连续Type-C拔插验收补正（2026-11-10）
+
+发布前按用户实际顺序补验发现：首轮恢复成功但健康不足30秒，随后Board A LINK DOWN→UP并再次使camera失去child，USB raw始终被采为true时，原episode到600秒仍锁存。这符合旧窄定义，却不满足用户“新的外部Type-C插拔后可再次恢复”的目标。修正属于既有需求的缺失验收，不增加硬件/固件或高频线程。
+
+- [x] A先补确定失败的回归。正常运行和候选稳定期都观察公开`board_status()`：只有完整核实拓扑、同Hub/ESP地址连续、非空动态ESP serial、transport正常、connected布尔与LINK UP/DOWN一致且新鲜时接受。未知/失联/普通地址变化清普通历史；不能用udev或默认False造边沿。snapshot内部增加child地址/serial，不改state schema、owner或HTTP接口。
+- [x] 可信UP→DOWN生成一张未闭合DOWN票据。为覆盖实际部署时已拔着的初态，仅在构造时持久预算已armed（latched=false、inflight=false）、尚未见可信UP或启动过attempt的初态，同源新鲜DOWN在owned operation/quiet/settle之外持续稳定10秒，才可建立仅供以后UP消费的DOWN资格；稳定DOWN本身不解除锁存。失败latched期间及进程重启不得凭初态DOWN创建新资格，防止“失败→20秒settle→自产DOWN10秒→自产UP”自重试。首次post-reset DOWN→UP若未建立这些资格不得授权，防MCU boot自身波动。
+- [x] 每个真实外部边沿最多解除一次旧锁存：已有可信UP后的DOWN可授权（用户保持拔着时另一侧也要恢复）；后续UP可另授权，但若两个边沿都发生在下一attempt前，预算已经armed，合并为一次，不积攒未来尝试。LINK永不直接reset，仍须terminal disabled缺child稳定10秒、全拓扑/过流检查及60秒冷却；无新证据失败到600秒不再试。
+- [x] quiet前只将当前仍为DOWN的合格票绑定新attempt_id，允许跨这一轮owned reset；其他普通历史清空。未启动child、quiet失败、stop、foreign attempt、进程重启都弃票；已启动且真正退出的child不因非零结果单独弃票，无后续可信UP仍停止重试。operation/quiet期间不采样。真正退出后只在20秒窗口容忍本次预期重枚举gap；首次重见相同动态serial即锁定新地址，之后任何地址/身份变化弃票；窗口内未重建可信transport/LINK亦弃票。
+- [x] 同unit fresh DOWN保留未闭合票，之后同源持续DOWN时用户可任意稍后插入；fresh UP消费票一次。settle内仅预先合格的carried票可重建、消费UP并暂存，不采普通UP基线或新建DOWN票；即使自产UP→DOWN→UP也不能造预算。仅在settle到期、operation锁及磁盘attempt_id CAS一致后解除latched；消费后不能再次继承。无票的自身首DOWN→UP不能复活预算，settle后取得可信UP基线再发生新边沿才正常处理。
+- [x] 测试覆盖原始UP→拔出→DOWN→拔着完成首轮恢复→再插UP+新camera fault；初态DOWN稳定10秒后同样流程；不足30秒健康的连续新DOWN、正常UP/DOWN、settle内边沿暂存、换unit/地址/unknown、未重建期限、第二次失败600秒无第三次、摄像头真正拔除及LINK单独变化0次。独立Astra质量审核修正后再正常非force推四步；CAF UI源码不变，复用44ec产物并绑定新SHA，不npm。
+
+### 当前实体发布验收事实（2026-11-10）
+
+原Go active/PID54476但唯一renderer仍`http://127.0.0.1:8080/launcher`登录页；Go vision unbound、geometry required、无前台Go页面。只读Hub状态port3 ESP已连接/启用，port4 camera connected=false（0x100）；LED transport=true、LINK DOWN。不得声称相机线一定被拔或伪造新画面/已登录fan。发布器仅可为这个严格空闲launcher+后台Go状态增补保全分支，仍拒绝任意guest Go页面和未知会话；不自动登录或导航后冒充认证验收。真实设备缺失时须以新鲜Hub/alias/API一致证据标注未验，而非谎报ready；同样保留实体会员新Env文件及末尾guard drop-in、marker、已激活DB，不退legacy、不恢复备份库。操作器新分支须独立审核与离线回归后才能apply。

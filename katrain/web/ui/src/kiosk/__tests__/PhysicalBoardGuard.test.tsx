@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useEffect } from 'react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import PhysicalBoardGuard from '../components/vision/PhysicalBoardGuard';
-import { GeometryProvider } from '../context/GeometryContext';
+import { GeometryProvider, useGeometry } from '../context/GeometryContext';
 import { GeometryAPI } from '../../api/geometryApi';
 
 vi.mock('../../api/geometryApi', () => ({
@@ -41,7 +42,79 @@ const renderGuardRequireRecognition = () => wrap(
   <PhysicalBoardGuard requireRecognition sub="实体做题要先让摄像头看清盘面"><div>实体棋盘内容</div></PhysicalBoardGuard>,
 );
 
+const RefreshAndNavigate = () => {
+  const { refresh } = useGeometry();
+  const navigate = useNavigate();
+  return <>
+    <button onClick={() => void refresh()}>刷新设备状态</button>
+    <button onClick={() => navigate('/baipu/session/new-session')}>下一局</button>
+  </>;
+};
+
+const readyRecognition = {
+  phase: 'ready', session_calibrated: true, last_valid: true,
+  capabilities: { camera_ready: true, led_ready: true, geometry_ready: true, recognition_ready: true },
+} as const;
+
 describe('PhysicalBoardGuard', () => {
+  beforeEach(() => {
+    vi.mocked(GeometryAPI.layout).mockResolvedValue({ revision: 0, phase: 'ready', stale: false,
+      frame: { width: 1920, height: 1080 }, out_size: 950, corners: [], points: [],
+    });
+  });
+
+  it('keeps admitted children mounted while only camera and recognition are unavailable', async () => {
+    const unmounted = vi.fn();
+    const Content = () => {
+      useEffect(() => () => { unmounted(); }, []);
+      return <div>实体棋盘内容</div>;
+    };
+    vi.mocked(GeometryAPI.status).mockResolvedValue(readyRecognition);
+    wrap(<><RefreshAndNavigate /><PhysicalBoardGuard requireRecognition sub="实体棋盘"><Content /></PhysicalBoardGuard></>);
+    const content = await screen.findByText('实体棋盘内容');
+
+    vi.mocked(GeometryAPI.status).mockResolvedValue({ ...readyRecognition,
+      capabilities: { ...readyRecognition.capabilities, camera_ready: false, recognition_ready: false },
+    });
+    await act(async () => { fireEvent.click(screen.getByText('刷新设备状态')); });
+    expect(screen.getByText('实体棋盘内容')).toBe(content);
+    expect(unmounted).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('calib-screen')).not.toBeInTheDocument();
+  });
+
+  it('still guards first entry without recognition and resets admission for a new route session', async () => {
+    vi.mocked(GeometryAPI.status).mockResolvedValue({ ...readyRecognition,
+      capabilities: { ...readyRecognition.capabilities, recognition_ready: false },
+    });
+    wrap(<><RefreshAndNavigate /><PhysicalBoardGuard requireRecognition sub="实体棋盘"><div>实体棋盘内容</div></PhysicalBoardGuard></>);
+    expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
+    expect(screen.queryByText('实体棋盘内容')).not.toBeInTheDocument();
+
+    vi.mocked(GeometryAPI.status).mockResolvedValue(readyRecognition);
+    await act(async () => { fireEvent.click(screen.getByText('刷新设备状态')); });
+    expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
+    vi.mocked(GeometryAPI.status).mockResolvedValue({ ...readyRecognition,
+      capabilities: { ...readyRecognition.capabilities, camera_ready: false, recognition_ready: false },
+    });
+    await act(async () => { fireEvent.click(screen.getByText('刷新设备状态')); });
+    await waitFor(() => expect(screen.queryByTestId('calib-screen')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByText('下一局'));
+    expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
+    expect(screen.queryByText('实体棋盘内容')).not.toBeInTheDocument();
+  });
+
+  it('revokes admission when geometry becomes invalid', async () => {
+    vi.mocked(GeometryAPI.status).mockResolvedValue(readyRecognition);
+    wrap(<><RefreshAndNavigate /><PhysicalBoardGuard requireRecognition sub="实体棋盘"><div>实体棋盘内容</div></PhysicalBoardGuard></>);
+    expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
+    vi.mocked(GeometryAPI.status).mockResolvedValue({ ...readyRecognition, phase: 'degraded',
+      capabilities: { ...readyRecognition.capabilities, geometry_ready: false },
+    });
+    await act(async () => { fireEvent.click(screen.getByText('刷新设备状态')); });
+    expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
+    expect(screen.queryByText('实体棋盘内容')).not.toBeInTheDocument();
+  });
+
   it('blocks entry until the user confirms an empty board and starts calibration', async () => {
     vi.mocked(GeometryAPI.status).mockResolvedValue({
       phase: 'required', session_calibrated: false, last_valid: false,

@@ -109,6 +109,6 @@ The latest explicit user instruction deploys this fix to **RK3562**; earlier clo
 - [x] Low-load field check; current idle state did not reproduce the periodic failure.
 - [x] Plan review round 1: revise final build provenance, all-exit warped invalidation and scope of reconnect guarantee.
 - [x] Plan review round 2: independent Astra Max Approved, no blocking findings (2/2 rounds complete).
-- [ ] Backend and frontend implementation.
-- [ ] Spec review, independent final code review Approved.
+- [x] Backend and frontend implementation: `7ecde3323` and `7f89914cb`; TDD red/green recorded by independent implementers.
+- [x] Spec review Approved; fresh independent Astra Max product code review Approved for `fe42557c5..7f89914cb`. Controller verified 140 backend tests, 75 frontend tests, TypeScript and diff checks. Deployment helper review remains required before device mutation.
 - [ ] Four publishing/deployment steps and real RK preview verification.

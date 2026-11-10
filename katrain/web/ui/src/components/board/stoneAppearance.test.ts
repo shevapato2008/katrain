@@ -11,6 +11,7 @@ import {
   getActiveStoneStyle,
   getBoardStylePalette,
   getBoardTextureDataUrl,
+  getBoardTextureUrl,
   getStoneAppearance,
   normalizeBoardStyleId,
   normalizeChineseFontId,
@@ -138,6 +139,12 @@ describe('publishable stone appearance and board style store', () => {
     const textures = BOARD_STYLE_IDS.map(id => getBoardTextureDataUrl(id));
     expect(textures.every(url => url.startsWith('data:image/'))).toBe(true);
     expect(new Set(textures).size).toBe(4);
+
+    expect(getBoardTextureUrl('kaya')).toBe('/assets/textures/kaya-veneer-2k.jpg');
+    expect(getBoardTextureUrl('shin-kaya')).toBe('/assets/textures/shinkaya-veneer-2k.jpg');
+    expect(getBoardTextureUrl('bamboo')).toBe('/assets/textures/bamboo-veneer-2k.jpg');
+    expect(getBoardTextureUrl('walnut')).toBe('/assets/textures/walnut-veneer-2k.jpg');
+    expect(getBoardTextureUrl('unknown')).toBe('/assets/textures/kaya-veneer-2k.jpg');
   });
 
   it('keeps all 32 shell orientations stable across replay order and resize', () => {

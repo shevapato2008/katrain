@@ -16,6 +16,8 @@ sgf_ogs
 log*
 !katrain/img/logo*
 !katrain/web/ui/public/assets/img/logo*
+!katrain/img/favicon*
+!katrain/web/ui/public/assets/img/favicon*
 tmp.pickle
 my
 logs

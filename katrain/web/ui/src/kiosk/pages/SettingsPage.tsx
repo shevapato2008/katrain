@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { Fragment, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { API, type EngineHealthResponse } from '../../api';
@@ -11,7 +11,17 @@ import { useKioskTypography } from '../typography/KioskTypographyContext';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { readAudioPref, subscribeAudioPref, writeAudioPref, type AudioKind } from '../../utils/audioPrefs';
+import {
+  STONE_SOUND_TONE_OPTIONS,
+  previewStoneSound,
+  readAudioPref,
+  readStoneSoundTonePref,
+  subscribeAudioPref,
+  writeAudioPref,
+  writeStoneSoundTonePref,
+  type AudioKind,
+  type StoneSoundTone,
+} from '../../utils/audioPrefs';
 import {
   BOARD_STYLE_OPTIONS,
   STONE_STYLE_OPTIONS,
@@ -184,6 +194,7 @@ const SettingsPage = () => {
   // 两份迟早走散,而走散的表现正好是「屏上写着关、喇叭还在响」。
   const sfxOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('sfx'), () => true);
   const voiceOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('voice'), () => true);
+  const [stoneTone, setStoneTone] = useState<StoneSoundTone>(() => readStoneSoundTonePref());
 
   const handleAutoAdvance = (next: boolean) => {
     setAutoAdvance(next);
@@ -358,31 +369,60 @@ const SettingsPage = () => {
           <KioskSecLabel zh={t('settings:nav_sound', '声音')} en="Sound" />
           <div className="kiosk-rows">
             {AUDIO_ROWS.map((row) => (
-              <div className="kiosk-row" key={row.kind}>
-                <span className="kiosk-row__t">
-                  <b>{t(row.titleKey, row.title)}</b>
-                  <em>{t(row.subKey, row.sub)}</em>
-                </span>
-                <span className="kiosk-row__end">
-                  {/* 同屏同控件(规范 §12):和「做对后自动进入下一题」一样是分段,不是开关。 */}
-                  <span className="kiosk-seg" role="group" aria-label={t(row.titleKey, row.title)}>
-                    <button
-                      type="button" className="kiosk-seg__btn"
-                      aria-pressed={row.kind === 'sfx' ? sfxOn : voiceOn}
-                      onClick={() => writeAudioPref(row.kind, true)}
-                    >
-                      {t('settings:on', '开')}
-                    </button>
-                    <button
-                      type="button" className="kiosk-seg__btn"
-                      aria-pressed={!(row.kind === 'sfx' ? sfxOn : voiceOn)}
-                      onClick={() => writeAudioPref(row.kind, false)}
-                    >
-                      {t('settings:off', '关')}
-                    </button>
+              <Fragment key={row.kind}>
+                <div className="kiosk-row">
+                  <span className="kiosk-row__t">
+                    <b>{t(row.titleKey, row.title)}</b>
+                    <em>{t(row.subKey, row.sub)}</em>
                   </span>
-                </span>
-              </div>
+                  <span className="kiosk-row__end">
+                    {/* 同屏同控件(规范 §12):和「做对后自动进入下一题」一样是分段,不是开关。 */}
+                    <span className="kiosk-seg" role="group" aria-label={t(row.titleKey, row.title)}>
+                      <button
+                        type="button" className="kiosk-seg__btn"
+                        aria-pressed={row.kind === 'sfx' ? sfxOn : voiceOn}
+                        onClick={() => writeAudioPref(row.kind, true)}
+                      >
+                        {t('settings:on', '开')}
+                      </button>
+                      <button
+                        type="button" className="kiosk-seg__btn"
+                        aria-pressed={!(row.kind === 'sfx' ? sfxOn : voiceOn)}
+                        onClick={() => writeAudioPref(row.kind, false)}
+                      >
+                        {t('settings:off', '关')}
+                      </button>
+                    </span>
+                  </span>
+                </div>
+                {row.kind === 'sfx' && (
+                  <div className="kiosk-row">
+                    <span className="kiosk-row__lead">{t('settings:stone_sound_tone', '落子音色')}</span>
+                    <span className="kiosk-row__end">
+                      <div className="kiosk-seg" role="group" aria-label={t('settings:stone_sound_tone', '落子音色')}>
+                        {STONE_SOUND_TONE_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            className="kiosk-seg__btn"
+                            aria-pressed={stoneTone === opt.id}
+                            onClick={() => {
+                              writeStoneSoundTonePref(opt.id);
+                              setStoneTone(opt.id);
+                              if (!sfxOn) {
+                                writeAudioPref('sfx', true);
+                              }
+                              previewStoneSound(opt.id);
+                            }}
+                          >
+                            {t(`settings:stone_tone_${opt.id}`, opt.shortLabel)}
+                          </button>
+                        ))}
+                      </div>
+                    </span>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
         </section>

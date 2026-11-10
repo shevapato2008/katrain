@@ -10,6 +10,12 @@ import {
   normalizeChineseFontId,
   useBoardAppearance,
 } from '../components/board/stoneAppearance';
+import {
+  type StoneSoundStyle,
+  readStoneSoundPref,
+  subscribeAudioPref,
+  writeStoneSoundPref,
+} from '../utils/audioPrefs';
 
 export type DeviceAppearance = {
   language: 'zh' | 'zh-TW' | 'en' | 'ja' | 'ko';
@@ -38,6 +44,8 @@ interface SettingsContextType {
   setStoneStyle: (style: StoneAppearanceId) => void;
   chineseFont: ChineseFontId;
   setChineseFont: (font: ChineseFontId) => void;
+  stoneSound: StoneSoundStyle;
+  setStoneSound: (style: StoneSoundStyle) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -115,20 +123,39 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [appearanceLoading, setAppearanceLoading] = useState(isStrictBoxKiosk);
   const [appearanceError, setAppearanceError] = useState(false);
   const [chineseFont, setChineseFontState] = useState<ChineseFontId>(readInitialChineseFont);
+  const [stoneSound, setStoneSoundState] = useState<StoneSoundStyle>(() => readStoneSoundPref());
   const { boardStyle, setBoardStyle, stoneStyle, setStoneStyle } = useBoardAppearance();
   const requestGeneration = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const [, setTick] = useState(0); // For forcing re-render on translation change
 
+  const setStoneSound = useCallback((style: StoneSoundStyle) => {
+    writeStoneSoundPref(style);
+    setStoneSoundState(readStoneSoundPref());
+  }, []);
+
+  useEffect(() => {
+    const syncStoneSound = () => setStoneSoundState(readStoneSoundPref());
+    const unsubAudio = subscribeAudioPref(syncStoneSound);
+    window.addEventListener('katrain:stone-sound-change', syncStoneSound);
+    window.addEventListener('storage', syncStoneSound);
+    return () => {
+      unsubAudio();
+      window.removeEventListener('katrain:stone-sound-change', syncStoneSound);
+      window.removeEventListener('storage', syncStoneSound);
+    };
+  }, []);
+
   const setChineseFont = useCallback((font: ChineseFontId) => {
     const normalized = normalizeChineseFontId(font);
     setChineseFontState(normalized);
+    let nextTypography: { font: ChineseFontId; size: string } = { font: normalized, size: 'large' };
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(CHINESE_FONT_STORAGE_KEY, normalized);
         const existingRaw = localStorage.getItem(KIOSK_TYPOGRAPHY_STORAGE_KEY);
         const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, unknown>) : {};
-        const nextTypography = {
+        nextTypography = {
           size: typeof existing?.size === 'string' ? existing.size : 'large',
           ...(existing && typeof existing === 'object' ? existing : {}),
           font: normalized,
@@ -137,6 +164,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch {
       // Ignore storage errors
+    }
+    try {
+      if (typeof fetch === 'function') {
+        void fetch('/api/v1/kiosk-preferences/typography', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextTypography),
+        }).catch(() => {});
+      }
+    } catch {
+      // Ignore network errors
     }
   }, []);
 
@@ -228,6 +266,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setStoneStyle,
         chineseFont,
         setChineseFont,
+        stoneSound,
+        setStoneSound,
       }}
     >
       {children}

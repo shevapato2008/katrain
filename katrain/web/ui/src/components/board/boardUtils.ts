@@ -6,6 +6,7 @@ import {
   getActiveStoneStyle,
   getBoardStylePalette,
   getBoardTextureDataUrl,
+  getBoardTextureUrl,
   getStoneAppearance,
   normalizeBoardStyleId,
   normalizeStoneStyleId,
@@ -66,6 +67,39 @@ function loadBoardImage(src: string): Promise<HTMLImageElement | null> {
   return pending;
 }
 
+function loadBoardVeneerImage(boardStyle: BoardStyleId): Promise<HTMLImageElement | null> {
+  const primaryUrl = getBoardTextureUrl(boardStyle);
+  const fallbackDataUrl = getBoardTextureDataUrl(boardStyle);
+  const existing = spriteImages.get(primaryUrl) ?? spriteImages.get(fallbackDataUrl);
+  if (existing) return Promise.resolve(existing);
+
+  let pending = imageLoads.get(primaryUrl);
+  if (!pending) {
+    pending = new Promise(resolve => {
+      const image = new Image();
+      let triedFallback = false;
+      image.onload = () => {
+        spriteImages.set(triedFallback ? fallbackDataUrl : primaryUrl, image);
+        resolve(image);
+      };
+      image.onerror = () => {
+        if (!triedFallback) {
+          triedFallback = true;
+          image.src = fallbackDataUrl;
+          return;
+        }
+        resolve(null);
+      };
+      image.src = primaryUrl;
+    });
+    imageLoads.set(primaryUrl, pending);
+    void pending.then(image => {
+      if (!image && imageLoads.get(primaryUrl) === pending) imageLoads.delete(primaryUrl);
+    });
+  }
+  return pending;
+}
+
 /** Preload the finite sprite set once; legacy images remain available on failure. */
 export async function loadBoardImages(
   boardStyleOrAssets?: BoardStyleId | string | Record<string, string>,
@@ -81,8 +115,8 @@ export async function loadBoardImages(
     const entries = await Promise.all(
       Object.entries(boardStyleOrAssets).map(async ([key, src]) => {
         if (key === "board" && src === BOARD_ASSETS.board) {
-          const proceduralBoard = await loadBoardImage(getBoardTextureDataUrl(resolvedBoardStyle));
-          if (proceduralBoard) return [key, proceduralBoard] as const;
+          const veneerBoard = await loadBoardVeneerImage(resolvedBoardStyle);
+          if (veneerBoard) return [key, veneerBoard] as const;
         }
         return [key, await loadBoardImage(src)] as const;
       }),
@@ -100,28 +134,35 @@ export async function loadBoardImages(
   const resolvedBoardStyle = normalizeBoardStyleId(boardStyleOrAssets ?? getActiveBoardStyle());
   const cacheKey = `${resolvedBoardStyle}:${resolvedStoneStyle}`;
   const cached = boardAssetsCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
-  const loadedSprites = await spritesLoadedPromise;
+  // Start board veneer and legacy marker loads in tick 0 alongside sprites so
+  // synchronous pending-image test harnesses see all Image instances immediately.
+  const boardVeneerPromise = loadBoardVeneerImage(resolvedBoardStyle);
+  const legacyImagesPromise = Promise.all([
+    loadBoardImage(BOARD_ASSETS.blackStone),
+    loadBoardImage(BOARD_ASSETS.whiteStone),
+    loadBoardImage(BOARD_ASSETS.lastMove),
+    loadBoardImage(BOARD_ASSETS.topMove),
+  ]);
+
+  const [loadedSprites, veneerImg, [blackStoneImg, whiteStoneImg, lastMoveImg, topMoveImg]] = await Promise.all([
+    spritesLoadedPromise,
+    boardVeneerPromise,
+    legacyImagesPromise,
+  ]);
   const allSpritesSucceeded = loadedSprites.every(img => img !== null);
   styleSpriteCache.set(resolvedStoneStyle, {
     B: loadedSprites[0] ?? null,
     W: loadedSprites.slice(1),
   });
 
-  if (cached && allSpritesSucceeded) {
-    return cached;
-  }
-
-  let boardImg = await loadBoardImage(getBoardTextureDataUrl(resolvedBoardStyle));
+  let boardImg = veneerImg;
   if (!boardImg) {
     boardImg = await loadBoardImage(BOARD_ASSETS.board);
   }
-  const [blackStoneImg, whiteStoneImg, lastMoveImg, topMoveImg] = await Promise.all([
-    loadBoardImage(BOARD_ASSETS.blackStone),
-    loadBoardImage(BOARD_ASSETS.whiteStone),
-    loadBoardImage(BOARD_ASSETS.lastMove),
-    loadBoardImage(BOARD_ASSETS.topMove),
-  ]);
 
   const blackSprite = loadedSprites[0] ?? blackStoneImg ?? null;
   const whiteSprite = loadedSprites[1] ?? whiteStoneImg ?? null;

@@ -18,6 +18,7 @@ import { peekAiLadderBefore, useAiLadderSettlement } from '../../features/aiLadd
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import AiLadderSettlementPanel from '../components/aiLadder/AiLadderSettlementPanel';
+import { readAudioPref, readStoneSoundPref, resolveStoneSoundUrl } from '../../utils/audioPrefs';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -173,6 +174,15 @@ const GamePage = () => {
 
     // Sound playing callback
     const handlePlaySound = useCallback((soundName: string) => {
+        if (soundName === 'stone' || soundName.startsWith('stone')) {
+            const url = resolveStoneSoundUrl(readStoneSoundPref());
+            if (!url) return;
+            const audio = new Audio(url);
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+            return;
+        }
+        if (!readAudioPref('sfx')) return;
         if (!audioCache.current[soundName]) {
             audioCache.current[soundName] = new Audio(`/assets/sounds/${soundName}.wav`);
         }

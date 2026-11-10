@@ -2,6 +2,7 @@ import { useId } from 'react';
 import {
   getBoardStylePalette,
   getBoardTextureDataUrl,
+  getBoardTextureUrl,
   stoneSpriteUrl,
   useBoardAppearance,
 } from '../../components/board/stoneAppearance';
@@ -153,6 +154,7 @@ export function GoBoardSvg({
         <pattern id={`gr-${uid}`} patternUnits="userSpaceOnUse" x="0" y="0" width={W} height={W}>
           <rect width={W} height={W} fill={`url(#gw-${uid})`} />
           <image href={getBoardTextureDataUrl(boardStyle)} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
+          <image href={getBoardTextureUrl(boardStyle)} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
         </pattern>
       </defs>
       <rect width={W} height={W} fill={`url(#gr-${uid})`} />

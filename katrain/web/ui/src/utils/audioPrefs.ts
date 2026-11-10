@@ -23,14 +23,43 @@
  */
 
 export type AudioKind = 'sfx' | 'voice';
+export type StoneSoundStyle = 'random' | 'stone1' | 'stone2' | 'stone3' | 'stone4' | 'stone5' | 'off';
+export type StoneSoundTone = Exclude<StoneSoundStyle, 'off'>;
+
+export interface StoneSoundOption<T extends StoneSoundStyle = StoneSoundStyle> {
+  readonly id: T;
+  readonly label: string;
+  readonly shortLabel: string;
+}
+
+export const STONE_SOUND_OPTIONS: ReadonlyArray<StoneSoundOption<StoneSoundStyle>> = [
+  { id: 'random', label: '随机自然 (5种混音)', shortLabel: '随机自然' },
+  { id: 'stone1', label: '清脆本榧 (音效一)', shortLabel: '清脆本榧' },
+  { id: 'stone2', label: '温润蛤石 (音效二)', shortLabel: '温润蛤石' },
+  { id: 'stone3', label: '沉稳云子 (音效三)', shortLabel: '沉稳云子' },
+  { id: 'stone4', label: '脆响竹盘 (音效四)', shortLabel: '脆响竹盘' },
+  { id: 'stone5', label: '醇厚木韵 (音效五)', shortLabel: '醇厚木韵' },
+  { id: 'off', label: '静音关闭', shortLabel: '静音' },
+];
+
+export const STONE_SOUND_TONE_OPTIONS: ReadonlyArray<StoneSoundOption<StoneSoundTone>> =
+  STONE_SOUND_OPTIONS.filter((opt): opt is StoneSoundOption<StoneSoundTone> => opt.id !== 'off');
 
 const KEYS: Record<AudioKind, string> = {
   sfx: 'kiosk_audio_sfx',
   voice: 'kiosk_audio_voice',
 };
 
+export const STONE_SOUND_TONE_KEY = 'kiosk_stone_sound_tone';
+
+const VALID_TONES = new Set<StoneSoundTone>(['random', 'stone1', 'stone2', 'stone3', 'stone4', 'stone5']);
+
 type Listener = () => void;
 const listeners = new Set<Listener>();
+
+function notifyListeners(): void {
+  listeners.forEach((fn) => fn());
+}
 
 /** 读一把开关。默认开;localStorage 抛异常(隐私模式)也当开。 */
 export function readAudioPref(kind: AudioKind): boolean {
@@ -51,7 +80,74 @@ export function writeAudioPref(kind: AudioKind, enabled: boolean): void {
   } catch {
     /* best-effort:存不下也要让本次会话生效,所以照样通知 */
   }
-  listeners.forEach((fn) => fn());
+  notifyListeners();
+}
+
+export function normalizeStoneSoundTone(value?: string | null): StoneSoundTone {
+  if (value && VALID_TONES.has(value as StoneSoundTone)) {
+    return value as StoneSoundTone;
+  }
+  return 'random';
+}
+
+export function readStoneSoundTonePref(): StoneSoundTone {
+  try {
+    return normalizeStoneSoundTone(localStorage.getItem(STONE_SOUND_TONE_KEY));
+  } catch {
+    return 'random';
+  }
+}
+
+export function writeStoneSoundTonePref(tone: StoneSoundTone): void {
+  const normalized = normalizeStoneSoundTone(tone);
+  try {
+    localStorage.setItem(STONE_SOUND_TONE_KEY, normalized);
+  } catch {
+    /* best-effort */
+  }
+  notifyListeners();
+}
+
+export function readStoneSoundPref(): StoneSoundStyle {
+  if (!readAudioPref('sfx')) return 'off';
+  return readStoneSoundTonePref();
+}
+
+export function writeStoneSoundPref(style: StoneSoundStyle): void {
+  if (style === 'off') {
+    writeAudioPref('sfx', false);
+  } else {
+    writeStoneSoundTonePref(style);
+    writeAudioPref('sfx', true);
+  }
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('katrain:stone-sound-change', { detail: style }));
+    }
+  } catch {
+    /* ignore event errors */
+  }
+}
+
+export function resolveStoneSoundUrl(style: StoneSoundStyle = readStoneSoundPref()): string | null {
+  if (style === 'off') return null;
+  if (style === 'random') {
+    const idx = Math.floor(Math.random() * 5) + 1;
+    return `/assets/sounds/stone${idx}.wav`;
+  }
+  return `/assets/sounds/${style}.wav`;
+}
+
+export function previewStoneSound(style: StoneSoundStyle): void {
+  const url = resolveStoneSoundUrl(style);
+  if (!url) return;
+  try {
+    const audio = new Audio(url);
+    audio.volume = 0.5;
+    void audio.play().catch(() => {});
+  } catch {
+    /* ignore preview playback errors */
+  }
 }
 
 /**

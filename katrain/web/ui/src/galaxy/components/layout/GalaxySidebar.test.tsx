@@ -10,6 +10,7 @@ import {
   setActiveBoardStyle,
   setActiveStoneStyle,
 } from '../../../components/board/stoneAppearance';
+import { readStoneSoundPref, writeStoneSoundPref } from '../../../utils/audioPrefs';
 import { useAuth } from '../../../context/AuthContext';
 import { SettingsProvider } from '../../../context/SettingsContext';
 import { useGameNavigation } from '../../context/GameNavigationContext';
@@ -52,6 +53,7 @@ describe('GalaxySidebar', () => {
     });
     setActiveBoardStyle('kaya');
     setActiveStoneStyle('clamshell-slate');
+    writeStoneSoundPref('random');
     vi.mocked(useAuth).mockReturnValue({ user: null, login: vi.fn(), logout: vi.fn() } as never);
     vi.mocked(useGameNavigation).mockReturnValue({ requestNavigation } as never);
     requestNavigation.mockReset();
@@ -152,8 +154,29 @@ describe('GalaxySidebar', () => {
     expect(screen.getByText('日式本榧')).toBeInTheDocument();
     expect(screen.getByText('棋子样式')).toBeInTheDocument();
     expect(screen.getByText('蛤碁石')).toBeInTheDocument();
+    expect(screen.getByTestId('galaxy-settings-item-stoneSound')).toBeInTheDocument();
+    expect(screen.getByText('落子音效')).toBeInTheDocument();
+    expect(screen.getByText('随机自然')).toBeInTheDocument();
     expect(screen.getByText('中文字体')).toBeInTheDocument();
     expect(screen.getByText('霞鹜楷体')).toBeInTheDocument();
+  });
+
+  it('transitions to Level 2 stone sound submenu with 7 options and updates readStoneSoundPref on click', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByTestId('galaxy-settings-item-stoneSound'));
+
+    expect(screen.getByText('返回设置')).toBeInTheDocument();
+    for (const label of ['随机自然', '清脆本榧', '温润蛤石', '沉稳云子', '脆响竹盘', '醇厚木韵', '静音']) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+
+    fireEvent.click(screen.getByText('温润蛤石'));
+    expect(readStoneSoundPref()).toBe('stone2');
+
+    fireEvent.click(screen.getByText('静音'));
+    expect(readStoneSoundPref()).toBe('off');
   });
 
   it('transitions to Level 2 stone style submenu with strictly 4 styles and updates stoneStyle on click', () => {

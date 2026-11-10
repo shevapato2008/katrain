@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
-import { readAudioPref } from '../../utils/audioPrefs';
+import { readAudioPref, readStoneSoundTonePref } from '../../utils/audioPrefs';
 import {
   getActiveBoardStyle,
   getActiveStoneStyle,
@@ -344,6 +344,33 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
 
     fireEvent.click(on);
     expect(readAudioPref('sfx')).toBe(true);
+  });
+
+  it('落子音色渲染6种音色按钮，点击即更新 readStoneSoundTonePref 并开启音效', () => {
+    localStorage.clear();
+    renderPage();
+    const toneGroup = screen.getByRole('group', { name: '落子音色' });
+    const buttons = [...toneGroup.querySelectorAll('button')];
+    expect(buttons.map((b) => b.textContent)).toEqual([
+      '随机自然',
+      '清脆本榧',
+      '温润蛤石',
+      '沉稳云子',
+      '脆响竹盘',
+      '醇厚木韵',
+    ]);
+    expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
+
+    // 先关闭落子音效，再点选一种音色应自动重新打开音效并写入音色偏好
+    const sfxGroup = screen.getByRole('group', { name: '落子音效' });
+    const [, sfxOff] = [...sfxGroup.querySelectorAll('button')];
+    fireEvent.click(sfxOff);
+    expect(readAudioPref('sfx')).toBe(false);
+
+    fireEvent.click(buttons[3]); // 沉稳云子 (stone3)
+    expect(readStoneSoundTonePref()).toBe('stone3');
+    expect(readAudioPref('sfx')).toBe(true);
+    expect(buttons[3]).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('语音那一行照实说它什么时候才会响', () => {

@@ -25,6 +25,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ContrastIcon from '@mui/icons-material/Contrast';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import { useLocation } from 'react-router-dom';
 import {
@@ -34,6 +35,12 @@ import {
   useBoardAppearance,
   type StoneStyleOption,
 } from '../../../components/board/stoneAppearance';
+import {
+  STONE_SOUND_OPTIONS,
+  previewStoneSound,
+  readStoneSoundPref,
+  writeStoneSoundPref,
+} from '../../../utils/audioPrefs';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -46,7 +53,7 @@ interface GalaxySidebarProps {
   sidebarState: GalaxySidebarState;
 }
 
-type SettingsSubMenu = null | 'language' | 'boardStyle' | 'stoneStyle' | 'chineseFont';
+type SettingsSubMenu = null | 'language' | 'boardStyle' | 'stoneStyle' | 'stoneSound' | 'chineseFont';
 
 const StonePairBadge = ({ option, size = 14 }: { option: StoneStyleOption; size?: number }) => (
   <Box sx={{ display: 'inline-flex', alignItems: 'center', position: 'relative', width: size * 1.65, height: size, flexShrink: 0 }}>
@@ -85,6 +92,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
   const { language, setLanguage, languages } = settings;
   const activeBoardStyle = settings.boardStyle ?? appearance.boardStyle;
   const activeStoneStyle = settings.stoneStyle ?? appearance.stoneStyle;
+  const activeStoneSound = settings.stoneSound ?? readStoneSoundPref();
   const activeChineseFont = settings.chineseFont ?? 'wenkai';
   const { t } = useTranslation();
   const items = useMemo(() => getGalaxyNavigation(t), [t]);
@@ -100,6 +108,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
   const currentLanguageName = languages.find((lang) => lang.code === language)?.name ?? '中文';
   const currentBoardOption = BOARD_STYLE_OPTIONS.find((opt) => opt.id === activeBoardStyle) ?? BOARD_STYLE_OPTIONS[0];
   const currentStoneOption = STONE_STYLE_OPTIONS.find((opt) => opt.id === activeStoneStyle) ?? STONE_STYLE_OPTIONS[0];
+  const currentSoundOption = STONE_SOUND_OPTIONS.find((opt) => opt.id === activeStoneSound) ?? STONE_SOUND_OPTIONS[0];
   const currentFontOption = CHINESE_FONT_OPTIONS.find((opt) => opt.id === activeChineseFont) ?? CHINESE_FONT_OPTIONS[0];
 
   const subMenuTitle =
@@ -109,9 +118,11 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
         ? t('settings.board_style', '棋盘样式')
         : settingsSubMenu === 'stoneStyle'
           ? t('settings.stone_style', '棋子样式')
-          : settingsSubMenu === 'chineseFont'
-            ? t('settings.chinese_font', '中文字体')
-            : '';
+          : settingsSubMenu === 'stoneSound'
+            ? t('settings.stone_sound', '落子音效')
+            : settingsSubMenu === 'chineseFont'
+              ? t('settings.chinese_font', '中文字体')
+              : '';
 
   const navigate = (path: string) => {
     if (overlay) closeOverlay();
@@ -222,6 +233,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
                 </Box>
               </MenuItem>
               <MenuItem
+                data-testid="galaxy-settings-item-stoneStyle"
                 onClick={() => setSettingsSubMenu('stoneStyle')}
                 sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, py: 1 }}
               >
@@ -236,6 +248,21 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
                 </Box>
               </MenuItem>
               <MenuItem
+                data-testid="galaxy-settings-item-stoneSound"
+                onClick={() => setSettingsSubMenu('stoneSound')}
+                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, py: 1 }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <VolumeUpIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                  <Typography variant="body2">{t('settings.stone_sound', '落子音效')}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>
+                  <Typography variant="caption" color="text.secondary">{currentSoundOption.shortLabel}</Typography>
+                  <ChevronRightIcon fontSize="small" />
+                </Box>
+              </MenuItem>
+              <MenuItem
+                data-testid="galaxy-settings-item-chineseFont"
                 onClick={() => setSettingsSubMenu('chineseFont')}
                 sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, py: 1 }}
               >
@@ -337,6 +364,28 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
                           <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>{opt.label}</Typography>
                           <Typography variant="caption" color="text.secondary">{opt.subtitle}</Typography>
                         </Box>
+                      </Box>
+                      {isSelected && <CheckIcon fontSize="small" color="primary" />}
+                    </MenuItem>
+                  );
+                })}
+              {settingsSubMenu === 'stoneSound' &&
+                STONE_SOUND_OPTIONS.map((opt) => {
+                  const isSelected = activeStoneSound === opt.id;
+                  return (
+                    <MenuItem
+                      key={opt.id}
+                      selected={isSelected}
+                      onClick={() => {
+                        writeStoneSoundPref(opt.id);
+                        settings.setStoneSound?.(opt.id);
+                        previewStoneSound(opt.id);
+                      }}
+                      sx={{ minWidth: 240, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, py: 1 }}
+                    >
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: isSelected ? 600 : 400 }}>{opt.shortLabel}</Typography>
+                        <Typography variant="caption" color="text.secondary">{opt.label}</Typography>
                       </Box>
                       {isSelected && <CheckIcon fontSize="small" color="primary" />}
                     </MenuItem>

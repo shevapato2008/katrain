@@ -84,6 +84,7 @@ export interface BoardStyleOption {
   readonly subtitle: string;
   readonly swatch: string;
   readonly borderColor: string;
+  readonly textureUrl: string;
 }
 
 export const BOARD_STYLE_OPTIONS: readonly BoardStyleOption[] = [
@@ -94,6 +95,7 @@ export const BOARD_STYLE_OPTIONS: readonly BoardStyleOption[] = [
     subtitle: '金黄直纹 · 温润醇厚',
     swatch: '#deb368',
     borderColor: '#8c6228',
+    textureUrl: '/assets/textures/kaya-veneer-2k.jpg',
   },
   {
     id: 'shin-kaya',
@@ -102,6 +104,7 @@ export const BOARD_STYLE_OPTIONS: readonly BoardStyleOption[] = [
     subtitle: '浅米细纹 · 清雅明亮',
     swatch: '#edd39c',
     borderColor: '#a88952',
+    textureUrl: '/assets/textures/shinkaya-veneer-2k.jpg',
   },
   {
     id: 'bamboo',
@@ -110,6 +113,7 @@ export const BOARD_STYLE_OPTIONS: readonly BoardStyleOption[] = [
     subtitle: '暖琥珀色 · 竹节纹理',
     swatch: '#c88c46',
     borderColor: '#7a4b19',
+    textureUrl: '/assets/textures/bamboo-veneer-2k.jpg',
   },
   {
     id: 'walnut',
@@ -118,6 +122,7 @@ export const BOARD_STYLE_OPTIONS: readonly BoardStyleOption[] = [
     subtitle: '深棕护眼 · 沉稳低眩',
     swatch: '#5c402c',
     borderColor: '#2e1d11',
+    textureUrl: '/assets/textures/walnut-veneer-2k.jpg',
   },
 ];
 
@@ -821,7 +826,10 @@ export interface BoardStylePalette {
   readonly starColor: string;
   readonly coordColor: string;
   readonly borderColor: string;
+  readonly textureUrl: string;
 }
+
+export type BoardStyleSpec = BoardStylePalette;
 
 export const BOARD_STYLE_PALETTES: Readonly<Record<BoardStyleId, BoardStylePalette>> = {
   kaya: {
@@ -833,6 +841,7 @@ export const BOARD_STYLE_PALETTES: Readonly<Record<BoardStyleId, BoardStylePalet
     starColor: '#1d1208',
     coordColor: '#3a2612',
     borderColor: '#8c6228',
+    textureUrl: '/assets/textures/kaya-veneer-2k.jpg',
   },
   'shin-kaya': {
     id: 'shin-kaya',
@@ -843,6 +852,7 @@ export const BOARD_STYLE_PALETTES: Readonly<Record<BoardStyleId, BoardStylePalet
     starColor: '#23170b',
     coordColor: '#4a351e',
     borderColor: '#a88952',
+    textureUrl: '/assets/textures/shinkaya-veneer-2k.jpg',
   },
   bamboo: {
     id: 'bamboo',
@@ -853,6 +863,7 @@ export const BOARD_STYLE_PALETTES: Readonly<Record<BoardStyleId, BoardStylePalet
     starColor: '#190e04',
     coordColor: '#331e0b',
     borderColor: '#7a4b19',
+    textureUrl: '/assets/textures/bamboo-veneer-2k.jpg',
   },
   walnut: {
     id: 'walnut',
@@ -863,6 +874,7 @@ export const BOARD_STYLE_PALETTES: Readonly<Record<BoardStyleId, BoardStylePalet
     starColor: '#100904',
     coordColor: '#d9c3ac',
     borderColor: '#2e1d11',
+    textureUrl: '/assets/textures/walnut-veneer-2k.jpg',
   },
 };
 
@@ -871,6 +883,13 @@ export function getBoardStylePalette(
 ): BoardStylePalette {
   const id = normalizeBoardStyleId(boardStyle ?? getActiveBoardStyle());
   return BOARD_STYLE_PALETTES[id];
+}
+
+export function getBoardTextureUrl(
+  boardStyle: BoardStyleId | string | null = getActiveBoardStyle(),
+): string {
+  const id = normalizeBoardStyleId(boardStyle ?? getActiveBoardStyle());
+  return BOARD_STYLE_PALETTES[id].textureUrl;
 }
 
 const boardTextureDataUrlCache = new Map<BoardStyleId, string>();
@@ -884,88 +903,12 @@ export function getBoardTextureDataUrl(
 
   const palette = BOARD_STYLE_PALETTES[id];
   const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" data-board-style="${id}">
-    <defs>
-      <linearGradient id="bg-${id}" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="${palette.woodFill}"/>
-        <stop offset="50%" stop-color="${palette.woodSecondary}"/>
-        <stop offset="100%" stop-color="${palette.woodFill}"/>
-      </linearGradient>
-    </defs>
-    <rect width="256" height="256" fill="url(#bg-${id})"/>
+    <rect width="256" height="256" fill="${palette.woodFill}"/>
   </svg>`;
 
   const url = renderProceduralDataUrl(256, (ctx, size) => {
-    const grad = ctx.createLinearGradient(0, 0, size, 0);
-    grad.addColorStop(0, palette.woodFill);
-    grad.addColorStop(0.5, palette.woodSecondary);
-    grad.addColorStop(1, palette.woodFill);
-    ctx.fillStyle = grad;
+    ctx.fillStyle = palette.woodFill;
     ctx.fillRect(0, 0, size, size);
-
-    if (id === 'kaya' || id === 'shin-kaya') {
-      // Fine vertical straight masame wood grain
-      const lineCount = id === 'shin-kaya' ? 96 : 72;
-      for (let i = 0; i < lineCount; i++) {
-        const x = (i / lineCount) * size;
-        const alpha = id === 'shin-kaya' ? 0.05 + (i % 3) * 0.02 : 0.07 + (i % 4) * 0.025;
-        ctx.strokeStyle = id === 'shin-kaya' ? `rgba(140, 102, 48, ${alpha})` : `rgba(115, 72, 22, ${alpha})`;
-        ctx.lineWidth = 1 + (i % 2) * 0.4;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x + ((i % 3) - 1) * 1.5, size);
-        ctx.stroke();
-      }
-    } else if (id === 'bamboo') {
-      // Vertical laminated carbonized bamboo strips + horizontal bamboo nodes
-      const stripWidth = 32;
-      for (let x = 0; x < size; x += stripWidth) {
-        ctx.strokeStyle = 'rgba(72, 40, 12, 0.22)';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, size);
-        ctx.stroke();
-
-        // Fine vertical bamboo fibers inside each strip
-        for (let fx = x + 3; fx < x + stripWidth; fx += 4) {
-          ctx.strokeStyle = 'rgba(92, 52, 18, 0.09)';
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          ctx.moveTo(fx, 0);
-          ctx.lineTo(fx, size);
-          ctx.stroke();
-        }
-
-        // Periodic horizontal bamboo node bands (竹节)
-        const stripIndex = Math.floor(x / stripWidth);
-        const nodeY = ((stripIndex * 73 + 44) % (size - 32)) + 16;
-        const nodeGrad = ctx.createLinearGradient(x, nodeY - 4, x, nodeY + 4);
-        nodeGrad.addColorStop(0, 'rgba(78, 44, 14, 0)');
-        nodeGrad.addColorStop(0.5, 'rgba(78, 44, 14, 0.28)');
-        nodeGrad.addColorStop(1, 'rgba(255, 222, 173, 0.14)');
-        ctx.fillStyle = nodeGrad;
-        ctx.fillRect(x + 1, nodeY - 4, stripWidth - 2, 8);
-      }
-    } else if (id === 'walnut') {
-      // Rich dark walnut wood grain
-      for (let i = 0; i < 64; i++) {
-        const x = (i / 64) * size;
-        const alpha = 0.1 + (i % 4) * 0.035;
-        ctx.strokeStyle = `rgba(24, 14, 7, ${alpha})`;
-        ctx.lineWidth = 1.3 + (i % 3) * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.bezierCurveTo(
-          x + Math.sin(i) * 6,
-          size * 0.33,
-          x - Math.cos(i) * 6,
-          size * 0.66,
-          x,
-          size,
-        );
-        ctx.stroke();
-      }
-    }
   }, fallbackSvg);
 
   boardTextureDataUrlCache.set(id, url);

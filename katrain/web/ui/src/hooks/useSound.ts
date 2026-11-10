@@ -7,7 +7,12 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
-import { readAudioPref } from '../utils/audioPrefs';
+import {
+  STONE_SOUND_TONE_KEY,
+  readAudioPref,
+  readStoneSoundPref,
+  resolveStoneSoundUrl,
+} from '../utils/audioPrefs';
 
 export type SoundName = 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved' | 'countdownbeep';
 
@@ -80,7 +85,24 @@ export function useSound(): UseSoundReturn {
     preloadSounds();
     const cached = audioCache[name];
     const singleton = SINGLETON_SOUNDS.has(name);
-    const audio = singleton ? cached : cached.cloneNode() as HTMLAudioElement;
+    let audio: HTMLAudioElement;
+    if (name === 'stone') {
+      let hasConfiguredTone = false;
+      try {
+        hasConfiguredTone = localStorage.getItem(STONE_SOUND_TONE_KEY) !== null;
+      } catch {
+        hasConfiguredTone = false;
+      }
+      const targetUrl = hasConfiguredTone
+        ? resolveStoneSoundUrl(readStoneSoundPref())
+        : resolveStoneSoundUrl('stone1');
+      if (!targetUrl) return false;
+      audio = targetUrl === SOUND_FILES.stone
+        ? (cached.cloneNode() as HTMLAudioElement)
+        : new Audio(targetUrl);
+    } else {
+      audio = singleton ? cached : (cached.cloneNode() as HTMLAudioElement);
+    }
     const attempt: Attempt = { owner };
     if (singleton) {
       attempts.set(name, attempt);

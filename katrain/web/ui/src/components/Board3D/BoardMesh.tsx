@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {
   type BoardStyleId,
   getBoardStylePalette,
+  getBoardTextureUrl,
   normalizeBoardStyleId,
   useBoardAppearance,
 } from '../board/stoneAppearance';
@@ -73,15 +74,16 @@ const BOARD_3D_STYLE_CONFIG: Record<
   },
 };
 
-/** Procedural wood-grain canvas texture supporting all 4 board styles. */
+/** Real 2K wood-veneer texture with stripe-free canvas fallback supporting all 4 board styles. */
 function createWoodTexture(
   width: number,
   height: number,
   baseColor: string,
   grainColor: [number, number, number],
-  bandColor: [number, number, number],
+  _bandColor: [number, number, number],
   grainCount: number,
   boardStyle: BoardStyleId = 'kaya',
+  onLoad?: () => void,
 ): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -93,36 +95,17 @@ function createWoodTexture(
     ctx.fillRect(0, 0, width, height);
 
     if (boardStyle === 'bamboo') {
-      // Carbonized bamboo strips with periodic horizontal bamboo node bands
+      // Subtle bamboo strip seams without dark node blocks
       const stripCount = 12;
       const stripH = height / stripCount;
       for (let s = 0; s < stripCount; s++) {
         const y0 = s * stripH;
-        ctx.strokeStyle = 'rgba(68, 36, 10, 0.24)';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(68, 36, 10, 0.14)';
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
         ctx.moveTo(0, y0);
         ctx.lineTo(width, y0);
         ctx.stroke();
-
-        const nodeX = ((s * 211 + 97) % (width - 96)) + 48;
-        const nodeGrad = ctx.createLinearGradient(nodeX - 10, 0, nodeX + 10, 0);
-        nodeGrad.addColorStop(0, 'rgba(68, 36, 10, 0)');
-        nodeGrad.addColorStop(0.5, 'rgba(68, 36, 10, 0.30)');
-        nodeGrad.addColorStop(1, 'rgba(255, 224, 178, 0.14)');
-        ctx.fillStyle = nodeGrad;
-        ctx.fillRect(nodeX - 10, y0 + 1, 20, stripH - 2);
-      }
-    } else {
-      for (let i = 0; i < 12; i++) {
-        const y = Math.random() * height;
-        const bandH = 20 + Math.random() * 60;
-        const grad = ctx.createLinearGradient(0, y, 0, y + bandH);
-        grad.addColorStop(0, `rgba(${bandColor[0]}, ${bandColor[1]}, ${bandColor[2]}, 0)`);
-        grad.addColorStop(0.5, `rgba(${bandColor[0]}, ${bandColor[1]}, ${bandColor[2]}, ${0.05 + Math.random() * 0.08})`);
-        grad.addColorStop(1, `rgba(${bandColor[0]}, ${bandColor[1]}, ${bandColor[2]}, 0)`);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, y, width, bandH);
       }
     }
 
@@ -169,8 +152,21 @@ function createWoodTexture(
   }
 
   const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
+
+  if (typeof Image !== 'undefined' && ctx) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+      tex.needsUpdate = true;
+      onLoad?.();
+    };
+    img.src = getBoardTextureUrl(boardStyle);
+  }
+
   return tex;
 }
 
@@ -203,8 +199,9 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
       };
     }
     const cfg = BOARD_3D_STYLE_CONFIG[resolvedBoardStyle];
-    const topTex = createWoodTexture(1024, 1024, cfg.topColor, cfg.grainColor, cfg.bandColor, cfg.grainCount, resolvedBoardStyle);
-    const sideTex = createWoodTexture(1024, 256, cfg.sideColor, cfg.grainColor, cfg.bandColor, Math.round(cfg.grainCount * 0.8), resolvedBoardStyle);
+    const handleTextureLoaded = () => invalidate?.();
+    const topTex = createWoodTexture(1024, 1024, cfg.topColor, cfg.grainColor, cfg.bandColor, cfg.grainCount, resolvedBoardStyle, handleTextureLoaded);
+    const sideTex = createWoodTexture(1024, 256, cfg.sideColor, cfg.grainColor, cfg.bandColor, Math.round(cfg.grainCount * 0.8), resolvedBoardStyle, handleTextureLoaded);
 
     const topMat = new THREE.MeshStandardMaterial({
       map: topTex, roughness: 0.4, metalness: 0.02, color: cfg.topColor,
@@ -281,7 +278,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
         position={[0, dims.boardHeight / 2, 0]}
         material={resources.materials}
         castShadow
-        receiveShadow
+        receiveShadow={false}
       >
         <boxGeometry args={[dims.boardWidth, dims.boardHeight, dims.boardWidth]} />
       </mesh>}

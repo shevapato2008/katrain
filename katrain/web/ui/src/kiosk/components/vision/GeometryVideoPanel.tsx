@@ -40,26 +40,32 @@ const GeometryVideoPanel = ({
   onImageLoadRef.current = onImageLoad;
 
   useEffect(() => {
+    setSnapshotReady(false);
+    setSnapshotError(false);
     if (!snapshot || !src) return;
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let transportDeadline: ReturnType<typeof setTimeout> | undefined;
+    let frameExpiry: ReturnType<typeof setTimeout> | undefined;
     let request: AbortController | undefined;
     let reportedSize = '';
-    setSnapshotReady(false);
-    setSnapshotError(false);
 
     const pull = async () => {
       const started = performance.now();
       const controller = new AbortController();
       request = controller;
-      const deadline = setTimeout(() => controller.abort(), 1500);
+      transportDeadline = setTimeout(() => controller.abort(), 1500);
       let bitmap: ImageBitmap | undefined;
       let failed = true;
       try {
         const response = await fetch(src, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(`snapshot ${response.status}`);
         if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
-        bitmap = await createImageBitmap(await response.blob());
+        const body = await response.blob();
+        clearTimeout(transportDeadline);
+        transportDeadline = undefined;
+        if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
+        bitmap = await createImageBitmap(body);
         if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
         const canvas = canvasRef.current;
         const context = canvas?.getContext('2d', { alpha: false });
@@ -69,22 +75,27 @@ const GeometryVideoPanel = ({
           canvas.height = bitmap.height;
         }
         context.drawImage(bitmap, 0, 0);
+        setSnapshotReady(true);
+        setSnapshotError(false);
+        clearTimeout(frameExpiry);
+        frameExpiry = setTimeout(() => {
+          if (live) {
+            setSnapshotReady(false);
+            setSnapshotError(true);
+          }
+        }, 3000);
         const size = `${bitmap.width}x${bitmap.height}`;
         if (reportedSize !== size) {
           reportedSize = size;
           onImageLoadRef.current?.({ width: bitmap.width, height: bitmap.height });
         }
-        setSnapshotReady(true);
-        setSnapshotError(false);
         failed = false;
       } catch {
-        if (live) {
-          setSnapshotReady(false);
-          setSnapshotError(true);
-        }
+        if (live) setSnapshotError(true);
       } finally {
         bitmap?.close();
-        clearTimeout(deadline);
+        clearTimeout(transportDeadline);
+        transportDeadline = undefined;
       }
       if (live) timer = setTimeout(pull, failed ? 1000 : Math.max(0, 200 - (performance.now() - started)));
     };
@@ -92,7 +103,9 @@ const GeometryVideoPanel = ({
     return () => {
       live = false;
       request?.abort();
-      if (timer) clearTimeout(timer);
+      clearTimeout(timer);
+      clearTimeout(transportDeadline);
+      clearTimeout(frameExpiry);
     };
   }, [snapshot, src]);
 
@@ -166,7 +179,7 @@ const GeometryVideoPanel = ({
             style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
           />
         )}
-        {src && (snapshot ? snapshotReady : !streamError) && overlay}
+        {src && (snapshot ? snapshotReady && !snapshotError : !streamError) && overlay}
       </Paper>
     </Box>
   );

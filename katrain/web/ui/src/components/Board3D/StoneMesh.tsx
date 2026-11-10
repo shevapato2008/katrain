@@ -120,14 +120,6 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
 
   return (
     <>
-      {showContactDisc && <mesh position={[position[0] + 0.035, BOARD_SURFACE_Y + 0.008, position[2] + 0.035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
-        <planeGeometry args={[1.08 * scale, 1.08 * scale]} />
-        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity * opacity} transparent depthWrite={false} />
-      </mesh>}
-      {showJadeCaustic && <mesh position={[position[0] + 0.06, BOARD_SURFACE_Y + 0.009, position[2] + 0.06]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
-        <planeGeometry args={[0.96 * scale, 0.96 * scale]} />
-        <meshBasicMaterial map={getCausticTexture()} opacity={0.85 * opacity} transparent depthWrite={false} />
-      </mesh>}
       <mesh
         ref={ref}
         position={spriteTexture ? [position[0], position[1] + STONE_HEIGHT * scale, position[2]] : position}
@@ -139,6 +131,14 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
         receiveShadow={!spriteTexture}
         raycast={noopRaycast}
       />
+      {showContactDisc && <mesh position={[position[0] + 0.035, BOARD_SURFACE_Y + 0.008, position[2] + 0.035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[1.08 * scale, 1.08 * scale]} />
+        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity * opacity} transparent depthWrite={false} />
+      </mesh>}
+      {showJadeCaustic && <mesh position={[position[0] + 0.06, BOARD_SURFACE_Y + 0.009, position[2] + 0.06]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[0.96 * scale, 0.96 * scale]} />
+        <meshBasicMaterial map={getCausticTexture()} opacity={0.85 * opacity} transparent depthWrite={false} />
+      </mesh>}
     </>
   );
 });

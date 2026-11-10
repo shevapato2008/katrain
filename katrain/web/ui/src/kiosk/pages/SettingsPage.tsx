@@ -26,6 +26,8 @@ import {
   BOARD_STYLE_OPTIONS,
   STONE_STYLE_OPTIONS,
   useBoardAppearance,
+  type BoardStyleId,
+  type StoneStyleId,
 } from '../../components/board/stoneAppearance';
 import { engineStatusLine } from '../utils/engineStatusLine';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
@@ -295,20 +297,24 @@ const SettingsPage = () => {
                 <em>{t('kiosk.settings.board_style_desc', '屏幕棋盘木纹与线条配色')}</em>
               </span>
               <span className="kiosk-row__end">
-                <span className="kiosk-seg" role="group" aria-label={t('kiosk.settings.board_style', '棋盘样式')}>
+                {/* 四款四字样式在 1024×600 半宽内摆不成分段控件(最多三段);统一用原生 select.ksearch__box */}
+                <select
+                  className="ksearch__box"
+                  data-testid="kiosk-board-style-select"
+                  aria-label={t('kiosk.settings.board_style', '棋盘样式')}
+                  value={boardStyle}
+                  onChange={(e) => setBoardStyle(e.target.value as BoardStyleId)}
+                >
                   {BOARD_STYLE_OPTIONS.map((opt) => (
-                    <button
+                    <option
                       key={opt.id}
-                      type="button"
+                      value={opt.id}
                       data-testid={`kiosk-board-style-${opt.id}`}
-                      className={`kiosk-seg__btn${boardStyle === opt.id ? ' active' : ''}`}
-                      aria-pressed={boardStyle === opt.id}
-                      onClick={() => setBoardStyle(opt.id)}
                     >
                       {t(`kiosk.settings.board_style_${opt.id}`, opt.label)}
-                    </button>
+                    </option>
                   ))}
-                </span>
+                </select>
               </span>
             </div>
             <div className="kiosk-row">
@@ -317,20 +323,23 @@ const SettingsPage = () => {
                 <em>{t('kiosk.settings.stone_style_desc', '屏幕棋子材质与光泽效果')}</em>
               </span>
               <span className="kiosk-row__end">
-                <span className="kiosk-seg" role="group" aria-label={t('kiosk.settings.stone_style', '棋子样式')}>
+                <select
+                  className="ksearch__box"
+                  data-testid="kiosk-stone-style-select"
+                  aria-label={t('kiosk.settings.stone_style', '棋子样式')}
+                  value={stoneStyle}
+                  onChange={(e) => setStoneStyle(e.target.value as StoneStyleId)}
+                >
                   {STONE_STYLE_OPTIONS.map((opt) => (
-                    <button
+                    <option
                       key={opt.id}
-                      type="button"
+                      value={opt.id}
                       data-testid={`kiosk-stone-style-${opt.id}`}
-                      className={`kiosk-seg__btn${stoneStyle === opt.id ? ' active' : ''}`}
-                      aria-pressed={stoneStyle === opt.id}
-                      onClick={() => setStoneStyle(opt.id)}
                     >
                       {t(`kiosk.settings.stone_style_${opt.id}`, opt.label)}
-                    </button>
+                    </option>
                   ))}
-                </span>
+                </select>
               </span>
             </div>
           </div>
@@ -397,28 +406,32 @@ const SettingsPage = () => {
                 </div>
                 {row.kind === 'sfx' && (
                   <div className="kiosk-row">
-                    <span className="kiosk-row__lead">{t('settings:stone_sound_tone', '落子音色')}</span>
+                    <span className="kiosk-row__t">
+                      <b>{t('settings:stone_sound_tone', '落子音色')}</b>
+                      <em>{t('settings:stone_sound_tone_sub', '选择后即时试听落子声')}</em>
+                    </span>
                     <span className="kiosk-row__end">
-                      <div className="kiosk-seg" role="group" aria-label={t('settings:stone_sound_tone', '落子音色')}>
+                      <select
+                        className="ksearch__box"
+                        data-testid="kiosk-stone-tone-select"
+                        aria-label={t('settings:stone_sound_tone', '落子音色')}
+                        value={stoneTone}
+                        onChange={(e) => {
+                          const next = e.target.value as StoneSoundTone;
+                          writeStoneSoundTonePref(next);
+                          setStoneTone(next);
+                          if (!sfxOn) {
+                            writeAudioPref('sfx', true);
+                          }
+                          previewStoneSound(next);
+                        }}
+                      >
                         {STONE_SOUND_TONE_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            className="kiosk-seg__btn"
-                            aria-pressed={stoneTone === opt.id}
-                            onClick={() => {
-                              writeStoneSoundTonePref(opt.id);
-                              setStoneTone(opt.id);
-                              if (!sfxOn) {
-                                writeAudioPref('sfx', true);
-                              }
-                              previewStoneSound(opt.id);
-                            }}
-                          >
+                          <option key={opt.id} value={opt.id}>
                             {t(`settings:stone_tone_${opt.id}`, opt.shortLabel)}
-                          </button>
+                          </option>
                         ))}
-                      </div>
+                      </select>
                     </span>
                   </div>
                 )}

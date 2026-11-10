@@ -1361,7 +1361,7 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   background: linear-gradient(180deg, #37684b, #204932);
   border-radius: 8px; box-shadow: inset 0 2px 1px #ffffff26, 0 2px 4px #0008;
 }
-.settings-page .kiosk-row__end select.ksearch__box { height: 44px; font-size: 20px; }
+.settings-page .kiosk-row__end select.ksearch__box { height: 44px; font-size: 20px; min-width: 168px; max-width: 240px; padding: 0 14px; }
 .settings-page .kiosk-tag { font-size: 18px; }
 .settings-page .kiosk-type-heading { margin: 8px 0 6px; font-size: 18px; }
 .settings-page .kiosk-type-fonts { gap: 8px; }

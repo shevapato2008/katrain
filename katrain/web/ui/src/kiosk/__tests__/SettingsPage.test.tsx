@@ -262,7 +262,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
   });
 
-  it('实体棋盘渲染棋盘样式与棋子样式分段控件，排除石材与星河，且切换即时同步 store 与 localStorage', () => {
+  it('实体棋盘渲染棋盘样式与棋子样式下拉菜单，排除石材与星河，且切换即时同步 store 与 localStorage', () => {
     setActiveBoardStyle('kaya');
     setActiveStoneStyle('clamshell-slate');
     renderPage();
@@ -283,21 +283,19 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(screen.queryByText('石材')).toBeNull();
     expect(screen.queryByText('星河')).toBeNull();
 
-    const jadeBtn = screen.getByTestId('kiosk-stone-style-jade-agate');
-    expect(jadeBtn).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(jadeBtn);
+    const stoneSelect = screen.getByTestId('kiosk-stone-style-select') as HTMLSelectElement;
+    expect(stoneSelect.value).toBe('clamshell-slate');
+    fireEvent.change(stoneSelect, { target: { value: 'jade-agate' } });
     expect(getActiveStoneStyle()).toBe('jade-agate');
     expect(localStorage.getItem('katrain_stone_style')).toBe('jade-agate');
-    expect(jadeBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(jadeBtn.classList.contains('active')).toBe(true);
+    expect(stoneSelect.value).toBe('jade-agate');
 
-    const bambooBtn = screen.getByTestId('kiosk-board-style-bamboo');
-    expect(bambooBtn).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(bambooBtn);
+    const boardSelect = screen.getByTestId('kiosk-board-style-select') as HTMLSelectElement;
+    expect(boardSelect.value).toBe('kaya');
+    fireEvent.change(boardSelect, { target: { value: 'bamboo' } });
     expect(getActiveBoardStyle()).toBe('bamboo');
     expect(localStorage.getItem('katrain_board_style')).toBe('bamboo');
-    expect(bambooBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(bambooBtn.classList.contains('active')).toBe(true);
+    expect(boardSelect.value).toBe('bamboo');
   });
 
   // 一屏之内所有选择组用**同一种控件**(规范 §12)—— 所以是分段不是 MUI 开关。
@@ -346,12 +344,12 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(readAudioPref('sfx')).toBe(true);
   });
 
-  it('落子音色渲染6种音色按钮，点击即更新 readStoneSoundTonePref 并开启音效', () => {
+  it('落子音色渲染6种音色下拉菜单，切换即更新 readStoneSoundTonePref 并开启音效', () => {
     localStorage.clear();
     renderPage();
-    const toneGroup = screen.getByRole('group', { name: '落子音色' });
-    const buttons = [...toneGroup.querySelectorAll('button')];
-    expect(buttons.map((b) => b.textContent)).toEqual([
+    const toneSelect = screen.getByTestId('kiosk-stone-tone-select') as HTMLSelectElement;
+    const options = [...toneSelect.querySelectorAll('option')];
+    expect(options.map((o) => o.textContent)).toEqual([
       '随机自然',
       '清脆本榧',
       '温润蛤石',
@@ -359,18 +357,18 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
       '脆响竹盘',
       '醇厚木韵',
     ]);
-    expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(toneSelect.value).toBe('random');
 
-    // 先关闭落子音效，再点选一种音色应自动重新打开音效并写入音色偏好
+    // 先关闭落子音效，再选择一种音色应自动重新打开音效并写入音色偏好
     const sfxGroup = screen.getByRole('group', { name: '落子音效' });
     const [, sfxOff] = [...sfxGroup.querySelectorAll('button')];
     fireEvent.click(sfxOff);
     expect(readAudioPref('sfx')).toBe(false);
 
-    fireEvent.click(buttons[3]); // 沉稳云子 (stone3)
+    fireEvent.change(toneSelect, { target: { value: 'stone3' } }); // 沉稳云子 (stone3)
     expect(readStoneSoundTonePref()).toBe('stone3');
     expect(readAudioPref('sfx')).toBe(true);
-    expect(buttons[3]).toHaveAttribute('aria-pressed', 'true');
+    expect(toneSelect.value).toBe('stone3');
   });
 
   it('语音那一行照实说它什么时候才会响', () => {

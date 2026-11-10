@@ -14,12 +14,13 @@
       "book_id": 11,
       "recognition": "已识别 · 314/314页 · 549图",
       "validation_import": "已入TEST·549图；复跑0新增；SGF549份已验证",
-      "human_review": "待人工审核·549图（含疑点1图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:49+08:00",
+      "human_review": "识别交付时：待人工审核·549图（含疑点1图）；本轮按用户确认已登记37图（仅无疑点版本）",
+      "voice": "PDF1–50：音频22/41页；整页Astra通过22/41页",
+      "video": "4K 22/41页；7英寸 22/41页；整页Astra通过22/41页；跳过疑点0/无图9页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·549图（含疑点1图）"
     },
     {
       "catalog_id": "intro-down",
@@ -31,12 +32,13 @@
       "book_id": 12,
       "recognition": "已识别 · 313/313页 · 779图",
       "validation_import": "已入TEST·779图；复跑0新增；SGF779份已验证",
-      "human_review": "待人工审核·779图（含疑点1图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·779图（含疑点1图）；本轮按用户确认已登记40图（仅无疑点版本）",
+      "voice": "PDF1–50：音频22/42页；整页Astra通过21/42页",
+      "video": "4K 22/42页；7英寸 22/42页；整页Astra通过21/42页；跳过疑点0/无图8页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·779图（含疑点1图）"
     },
     {
       "catalog_id": "intro-fast",
@@ -63,12 +65,13 @@
       "book_id": 15,
       "recognition": "已识别 · 190/190页 · 561图",
       "validation_import": "已入TEST·561图；复跑0新增；SGF561份已验证",
-      "human_review": "待人工审核·561图（模型疑点30图＋来源冲突2图；含推断35图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·561图（模型疑点30图＋来源冲突2图；含推断35图）；本轮按用户确认已登记37图（仅无疑点版本）",
+      "voice": "PDF1–50：音频8/23页；整页Astra通过8/23页",
+      "video": "4K 8/23页；7英寸 8/23页；整页Astra通过8/23页；跳过疑点19/无图8页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·561图（模型疑点30图＋来源冲突2图；含推断35图）"
     },
     {
       "catalog_id": "life-1",
@@ -79,12 +82,13 @@
       "book_id": 23,
       "recognition": "已识别 · 255/255页 · 492图",
       "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
-      "human_review": "待人工审核·492图（含推断13图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·492图（含推断13图）；本轮按用户确认已登记44图（仅无疑点版本）",
+      "voice": "PDF1–50：音频22/42页；整页Astra通过21/42页",
+      "video": "4K 21/42页；7英寸 21/42页；整页Astra通过21/42页；跳过疑点1/无图7页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·492图（含推断13图）"
     },
     {
       "catalog_id": "opening",
@@ -95,13 +99,14 @@
       "book_id": 33,
       "recognition": "已识别 · 197/197页 · 325图",
       "validation_import": "已入TEST·325图；复跑0新增；SGF325份已验证",
-      "human_review": "待人工审核·325实体棋图；另2条跨页文字记录",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·325实体棋图；另2条跨页文字记录；本轮按用户确认已登记34图（仅无疑点版本）",
+      "voice": "PDF1–50：音频18/24页；整页Astra通过18/24页",
+      "video": "4K 18/24页；7英寸 18/24页；整页Astra通过18/24页；跳过疑点7/无图19页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
       "source_exception_note": "PDF46两条非实体跨页文字引用已通过独立Astra工程复核；原ID15517/15518空记录保留；待整书覆盖对账",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·325实体棋图；另2条跨页文字记录"
     },
     {
       "catalog_id": "joseki",
@@ -112,12 +117,13 @@
       "book_id": 46,
       "recognition": "候选已交付 · 471图；注记未决2图",
       "validation_import": "全书候选已入TEST·471图；注记归属未关闭2图；复跑0新增；SGF471份",
-      "human_review": "待人工审核·471图（含疑点25图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·471图（含疑点25图）；本轮按用户确认已登记37图（仅无疑点版本）",
+      "voice": "PDF1–50：音频18/25页；整页Astra通过18/25页",
+      "video": "4K 18/25页；7英寸 18/25页；整页Astra通过18/25页；跳过疑点8/无图17页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·471图（含疑点25图）"
     },
     {
       "catalog_id": "sakata-1",
@@ -128,12 +134,13 @@
       "book_id": 34,
       "recognition": "已识别 · 276/276页 · 529图",
       "validation_import": "已入TEST·529图；复跑0新增；SGF529份已验证",
-      "human_review": "待人工审核·529图（含疑点14图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·529图（含疑点14图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/31页；整页Astra通过0/31页",
+      "video": "4K 0/31页；7英寸 0/31页；整页Astra通过0/31页；跳过疑点12/无图7页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·529图（含疑点14图）"
     },
     {
       "catalog_id": "sakata-2",
@@ -144,12 +151,13 @@
       "book_id": 35,
       "recognition": "已识别 · 293/293页 · 540图",
       "validation_import": "已入TEST·540图；复跑0新增；SGF540份已验证",
-      "human_review": "待人工审核·540图（含疑点3图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·540图（含疑点3图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/39页；整页Astra通过0/39页",
+      "video": "4K 0/39页；7英寸 0/39页；整页Astra通过0/39页；跳过疑点0/无图11页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·540图（含疑点3图）"
     },
     {
       "catalog_id": "invasion",
@@ -160,12 +168,13 @@
       "book_id": 51,
       "recognition": "已识别 · 223/223页 · 802图",
       "validation_import": "已入TEST·802图；复跑0新增；SGF802份已验证",
-      "human_review": "待人工审核·802图（含疑点34图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·802图（含疑点34图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/24页；整页Astra通过0/24页",
+      "video": "4K 0/24页；7英寸 0/24页；整页Astra通过0/24页；跳过疑点19/无图7页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·802图（含疑点34图）"
     },
     {
       "catalog_id": "moyo",
@@ -176,12 +185,13 @@
       "book_id": 54,
       "recognition": "已识别 · 298/298页 · 502图",
       "validation_import": "已入TEST·502图；复跑0新增；SGF502份已验证",
-      "human_review": "待人工审核·502图（含疑点12图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·502图（含疑点12图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/15页；整页Astra通过0/15页",
+      "video": "4K 0/15页；7英寸 0/15页；整页Astra通过0/15页；跳过疑点29/无图6页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·502图（含疑点12图）"
     },
     {
       "catalog_id": "sakata-5",
@@ -192,12 +202,13 @@
       "book_id": 38,
       "recognition": "已识别 · 266/266页 · 565图",
       "validation_import": "已入TEST·565图；复跑0新增；SGF565份已验证",
-      "human_review": "待人工审核·565图（含疑点10图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·565图（含疑点10图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/39页；整页Astra通过0/39页",
+      "video": "4K 0/39页；7英寸 0/39页；整页Astra通过0/39页；跳过疑点5/无图6页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·565图（含疑点10图）"
     },
     {
       "catalog_id": "ko",
@@ -208,12 +219,13 @@
       "book_id": 57,
       "recognition": "已识别 · 255/255页 · 614图",
       "validation_import": "已入TEST·614图；复跑0新增；SGF614份已验证",
-      "human_review": "待人工审核·614图（含疑点53图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·614图（含疑点53图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/19页；整页Astra通过0/19页",
+      "video": "4K 0/19页；7英寸 0/19页；整页Astra通过0/19页；跳过疑点20/无图11页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·614图（含疑点53图）"
     },
     {
       "catalog_id": "simple-judgement",
@@ -224,12 +236,13 @@
       "book_id": 60,
       "recognition": "已识别 · 225/225页 · 533图",
       "validation_import": "已入TEST·533图；复跑0新增；SGF533份已验证",
-      "human_review": "待人工审核·533图（含疑点11图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·533图（含疑点11图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/38页；整页Astra通过0/38页",
+      "video": "4K 0/38页；7英寸 0/38页；整页Astra通过0/38页；跳过疑点3/无图9页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·533图（含疑点11图）"
     },
     {
       "catalog_id": "endgame",
@@ -240,12 +253,13 @@
       "book_id": 62,
       "recognition": "已识别 · 214/214页 · 638图",
       "validation_import": "已入TEST·638图；复跑0新增；SGF638份已验证",
-      "human_review": "待人工审核·638图（含疑点171图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·638图（含疑点171图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/19页；整页Astra通过0/19页",
+      "video": "4K 0/19页；7英寸 0/19页；整页Astra通过0/19页；跳过疑点20/无图11页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·638图（含疑点171图）"
     },
     {
       "catalog_id": "go-games",
@@ -256,12 +270,13 @@
       "book_id": 63,
       "recognition": "已识别 · 512/512页 · 744图",
       "validation_import": "已入TEST·744图；复跑0新增；SGF744份已验证",
-      "human_review": "待人工审核·744图（含疑点7图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·744图（含疑点7图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/31页；整页Astra通过0/31页",
+      "video": "4K 0/31页；7英寸 0/31页；整页Astra通过0/31页；跳过疑点1/无图18页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·744图（含疑点7图）"
     },
     {
       "catalog_id": "life-2",
@@ -272,12 +287,13 @@
       "book_id": 24,
       "recognition": "已识别 · 255/255页 · 492图",
       "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
-      "human_review": "待人工审核·492图（含疑点1图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·492图（含疑点1图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/42页；整页Astra通过0/42页",
+      "video": "4K 0/42页；7英寸 0/42页；整页Astra通过0/42页；跳过疑点1/无图7页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·492图（含疑点1图）"
     },
     {
       "catalog_id": "lin-games",
@@ -288,12 +304,13 @@
       "book_id": 64,
       "recognition": "已识别 · 197/197页 · 580图",
       "validation_import": "已入TEST·580图；复跑0新增；SGF580份已验证",
-      "human_review": "待人工审核·580图（含疑点257图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·580图（含疑点257图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/8页；整页Astra通过0/8页",
+      "video": "4K 0/8页；7英寸 0/8页；整页Astra通过0/8页；跳过疑点40/无图2页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·580图（含疑点257图）"
     },
     {
       "catalog_id": "life-3",
@@ -304,12 +321,13 @@
       "book_id": 25,
       "recognition": "已识别 · 255/255页 · 492图",
       "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
-      "human_review": "待人工审核·492图（含疑点9图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·492图（含疑点9图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/39页；整页Astra通过0/39页",
+      "video": "4K 0/39页；7英寸 0/39页；整页Astra通过0/39页；跳过疑点4/无图7页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·492图（含疑点9图）"
     },
     {
       "catalog_id": "lin-games-1",
@@ -320,12 +338,13 @@
       "book_id": 65,
       "recognition": "已识别 · 107/107页 · 250图",
       "validation_import": "已入TEST·250图；复跑0新增；SGF250份已验证",
-      "human_review": "待人工审核·250图（含疑点2图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·250图（含疑点2图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/42页；整页Astra通过0/42页",
+      "video": "4K 0/42页；7英寸 0/42页；整页Astra通过0/42页；跳过疑点3/无图5页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·250图（含疑点2图）"
     },
     {
       "catalog_id": "life-4",
@@ -336,12 +355,13 @@
       "book_id": 26,
       "recognition": "已识别 · 256/256页 · 492图",
       "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
-      "human_review": "待人工审核·492图（含疑点1图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·492图（含疑点1图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/41页；整页Astra通过0/41页",
+      "video": "4K 0/41页；7英寸 0/41页；整页Astra通过0/41页；跳过疑点1/无图8页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·492图（含疑点1图）"
     },
     {
       "catalog_id": "lin-games-2",
@@ -352,12 +372,13 @@
       "book_id": 66,
       "recognition": "已识别 · 125/125页 · 294图",
       "validation_import": "已入TEST·294图；复跑0新增；SGF294份已验证",
-      "human_review": "待人工审核·294图（含疑点0图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·294图（含疑点0图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/45页；整页Astra通过0/45页",
+      "video": "4K 0/45页；7英寸 0/45页；整页Astra通过0/45页；跳过疑点0/无图5页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·294图（含疑点0图）"
     },
     {
       "catalog_id": "life-5",
@@ -368,12 +389,13 @@
       "book_id": 27,
       "recognition": "已识别 · 255/255页 · 492图",
       "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
-      "human_review": "待人工审核·492图（含疑点2图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·492图（含疑点2图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/41页；整页Astra通过0/41页",
+      "video": "4K 0/41页；7英寸 0/41页；整页Astra通过0/41页；跳过疑点2/无图7页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·492图（含疑点2图）"
     },
     {
       "catalog_id": "life-6",
@@ -384,12 +406,13 @@
       "book_id": 28,
       "recognition": "已识别 · 256/256页 · 492图",
       "validation_import": "已入TEST·492图；复跑0新增；SGF492份已验证",
-      "human_review": "待人工审核·492图（含疑点2图）",
-      "voice": "本轮未开始（历史待核对）",
-      "video": "本轮未开始（历史待核对）",
-      "updated_at": "2026-10-19T10:41:50+08:00",
+      "human_review": "识别交付时：待人工审核·492图（含疑点2图）；本轮按用户确认已登记0图（仅无疑点版本）",
+      "voice": "PDF1–50：音频0/39页；整页Astra通过0/39页",
+      "video": "4K 0/39页；7英寸 0/39页；整页Astra通过0/39页；跳过疑点3/无图8页",
+      "updated_at": "2026-10-21T05:58:43+08:00",
       "priority_tier": "核心教材",
-      "validation_import_manually_set": true
+      "validation_import_manually_set": true,
+      "human_review_before_media": "待人工审核·492图（含疑点2图）"
     },
     {
       "catalog_id": "tesuji-1",
@@ -1328,5 +1351,1472 @@
     "pdf_pages": 5827,
     "definition": "recognition + strict validation + TEST incremental import and admin/SGF verification; not human approval or media",
     "started_exception": "intro-fast"
+  },
+  "media_campaign": {
+    "batch_id": "core23-first50-20261021",
+    "eligible_pages": 749,
+    "uncertain_pages": 198,
+    "no_diagram_pages": 203,
+    "completed_pages": 108,
+    "outputs": [
+      "audio",
+      "galaxy-4k-v1",
+      "kiosk-7-v1"
+    ],
+    "user_confirmation": "我已核对无疑点棋图，授权代登记并关联测试后台",
+    "updated_at": "2026-10-21T05:58:43+08:00",
+    "eligible_figures": 1643
+  },
+  "media_regeneration": {
+    "schema_version": 1,
+    "batch_id": "core23-first50-20261021-regeneration-v2",
+    "scope_manifest_sha256": "dd0f622b2217572450047f358959d6641c19a944a4fe14d2a98e1c6410a9e3a7",
+    "acceptance_version": "v2-all-objects-after-speech-end",
+    "updated_at": "2026-10-21T11:37:03+08:00",
+    "status": "cancelled_by_user",
+    "books_count": 6,
+    "target_pages": 114,
+    "target_figures": 229,
+    "target_video_outputs": 458,
+    "partial_pages": 6,
+    "approved_pages": 25,
+    "approved_figures": 43,
+    "approved_video_outputs": 86,
+    "approved_partial_pages": 0,
+    "source_skipped_pages": 1,
+    "source_skipped_figures": 2,
+    "deliverable_target_pages": 113,
+    "deliverable_target_figures": 227,
+    "deliverable_target_video_outputs": 454,
+    "scope_complete": false,
+    "old_static_approved_pages_not_current_acceptance": 108,
+    "historical_static_reviews": {
+      "status": "superseded",
+      "approved_pages": 108,
+      "counts_toward_current": false
+    },
+    "counting_rule": "Only run_page.approved_page validated exact v2 page membership, both profiles and all bound files count. Prepared inputs, queued tasks and source skips are not approved media.",
+    "video_human_approval_written": false,
+    "books": [
+      {
+        "catalog_id": "intro-up",
+        "title": "曹薰铉和李昌镐围棋教室：入门篇·上卷",
+        "target_pages": 23,
+        "target_figures": 37,
+        "target_video_outputs": 74,
+        "partial_pages": 1,
+        "approved_pages": 8,
+        "approved_figures": 11,
+        "approved_video_outputs": 22,
+        "approved_partial_pages": 0,
+        "source_skipped_pages": 0,
+        "source_skipped_figures": 0,
+        "deliverable_target_pages": 23,
+        "deliverable_target_figures": 37,
+        "deliverable_target_video_outputs": 74,
+        "scope_complete": false,
+        "pages": [
+          {
+            "pdf_page": 10,
+            "figure_ids": [
+              4275
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p010",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 11,
+            "figure_ids": [
+              4276
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p011",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 12,
+            "figure_ids": [
+              4277
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p012",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 13,
+            "figure_ids": [
+              4278
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p013",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 14,
+            "figure_ids": [
+              4279
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p014",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 15,
+            "figure_ids": [
+              4280,
+              4281
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p015",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 16,
+            "figure_ids": [
+              4282,
+              4283
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p016",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 17,
+            "figure_ids": [
+              4284,
+              4285
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-up/p017",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 18,
+            "figure_ids": [
+              4286,
+              4287
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 19,
+            "figure_ids": [
+              4288,
+              4289
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 20,
+            "figure_ids": [
+              4290,
+              4291
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 21,
+            "figure_ids": [
+              4292,
+              4293
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 22,
+            "figure_ids": [
+              4294,
+              4295
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 23,
+            "figure_ids": [
+              4296,
+              4297
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 24,
+            "figure_ids": [
+              4298,
+              4299
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 25,
+            "figure_ids": [
+              4300,
+              4301
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 26,
+            "figure_ids": [
+              4302,
+              4303
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 27,
+            "figure_ids": [
+              4304,
+              4305
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 28,
+            "figure_ids": [
+              4306,
+              4307
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 29,
+            "figure_ids": [
+              4308
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 30,
+            "figure_ids": [
+              4309
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 31,
+            "figure_ids": [
+              4310
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 32,
+            "figure_ids": [
+              4311
+            ],
+            "partial_page": true,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          }
+        ]
+      },
+      {
+        "catalog_id": "intro-down",
+        "title": "曹薰铉和李昌镐围棋教室：入门篇·下卷",
+        "target_pages": 22,
+        "target_figures": 40,
+        "target_video_outputs": 80,
+        "partial_pages": 1,
+        "approved_pages": 3,
+        "approved_figures": 3,
+        "approved_video_outputs": 6,
+        "approved_partial_pages": 0,
+        "source_skipped_pages": 0,
+        "source_skipped_figures": 0,
+        "deliverable_target_pages": 22,
+        "deliverable_target_figures": 40,
+        "deliverable_target_video_outputs": 80,
+        "scope_complete": false,
+        "pages": [
+          {
+            "pdf_page": 9,
+            "figure_ids": [
+              4824
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-down/p009",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 10,
+            "figure_ids": [
+              4825
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-down/p010",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 11,
+            "figure_ids": [
+              4826
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/intro-down/p011",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 12,
+            "figure_ids": [
+              4827,
+              4828
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 13,
+            "figure_ids": [
+              4829,
+              4830
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 14,
+            "figure_ids": [
+              4831,
+              4832
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 15,
+            "figure_ids": [
+              4833,
+              4834
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 16,
+            "figure_ids": [
+              4835,
+              4836
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 17,
+            "figure_ids": [
+              4837,
+              4838
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 18,
+            "figure_ids": [
+              4839,
+              4840
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 19,
+            "figure_ids": [
+              4841,
+              4842
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 20,
+            "figure_ids": [
+              4843,
+              4844
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 21,
+            "figure_ids": [
+              4845,
+              4846
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 22,
+            "figure_ids": [
+              4847,
+              4848
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 23,
+            "figure_ids": [
+              4849,
+              4850
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 24,
+            "figure_ids": [
+              4851,
+              4852
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 25,
+            "figure_ids": [
+              4853,
+              4854
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 26,
+            "figure_ids": [
+              4855,
+              4856
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 27,
+            "figure_ids": [
+              4857,
+              4858
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 28,
+            "figure_ids": [
+              4859,
+              4860
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 29,
+            "figure_ids": [
+              4861,
+              4862
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 30,
+            "figure_ids": [
+              4863
+            ],
+            "partial_page": true,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          }
+        ]
+      },
+      {
+        "catalog_id": "shape",
+        "title": "围棋的筋和形",
+        "target_pages": 9,
+        "target_figures": 37,
+        "target_video_outputs": 74,
+        "partial_pages": 1,
+        "approved_pages": 3,
+        "approved_figures": 10,
+        "approved_video_outputs": 20,
+        "approved_partial_pages": 0,
+        "source_skipped_pages": 0,
+        "source_skipped_figures": 0,
+        "deliverable_target_pages": 9,
+        "deliverable_target_figures": 37,
+        "deliverable_target_video_outputs": 74,
+        "scope_complete": false,
+        "pages": [
+          {
+            "pdf_page": 8,
+            "figure_ids": [
+              6923,
+              6924
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/shape/p008",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 9,
+            "figure_ids": [
+              6925,
+              6926,
+              6927,
+              6928
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/shape/p009",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 10,
+            "figure_ids": [
+              6929,
+              6930,
+              6931,
+              6932
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/shape/p010",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 11,
+            "figure_ids": [
+              6933,
+              6934,
+              6935,
+              6936
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 12,
+            "figure_ids": [
+              6937,
+              6938,
+              6939,
+              6940
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 13,
+            "figure_ids": [
+              6941,
+              6942,
+              6943,
+              6944
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 14,
+            "figure_ids": [
+              6945,
+              6946,
+              6947,
+              6948
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 15,
+            "figure_ids": [
+              6949,
+              6950,
+              6951,
+              6952
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 16,
+            "figure_ids": [
+              6953,
+              6954,
+              6955,
+              6956,
+              6957,
+              6958,
+              6959
+            ],
+            "partial_page": true,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          }
+        ]
+      },
+      {
+        "catalog_id": "life-1",
+        "title": "李昌镐精讲围棋死活：第1卷",
+        "target_pages": 22,
+        "target_figures": 44,
+        "target_video_outputs": 88,
+        "partial_pages": 1,
+        "approved_pages": 4,
+        "approved_figures": 8,
+        "approved_video_outputs": 16,
+        "approved_partial_pages": 0,
+        "source_skipped_pages": 0,
+        "source_skipped_figures": 0,
+        "deliverable_target_pages": 22,
+        "deliverable_target_figures": 44,
+        "deliverable_target_video_outputs": 88,
+        "scope_complete": false,
+        "pages": [
+          {
+            "pdf_page": 8,
+            "figure_ids": [
+              11137
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/life-1/p008",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 9,
+            "figure_ids": [
+              11138,
+              11139,
+              11140
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/life-1/p009",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 10,
+            "figure_ids": [
+              11141
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/life-1/p010",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 11,
+            "figure_ids": [
+              11142,
+              11143,
+              11144
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/life-1/p011",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 12,
+            "figure_ids": [
+              11145
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 13,
+            "figure_ids": [
+              11146,
+              11147,
+              11148
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 14,
+            "figure_ids": [
+              11149
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 15,
+            "figure_ids": [
+              11150,
+              11151,
+              11152
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 16,
+            "figure_ids": [
+              11153
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 17,
+            "figure_ids": [
+              11154,
+              11155,
+              11156
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 18,
+            "figure_ids": [
+              11157
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 19,
+            "figure_ids": [
+              11158,
+              11159,
+              11160
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 20,
+            "figure_ids": [
+              11161
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 21,
+            "figure_ids": [
+              11162,
+              11163,
+              11164
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 22,
+            "figure_ids": [
+              11165
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 23,
+            "figure_ids": [
+              11166,
+              11167,
+              11168
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 24,
+            "figure_ids": [
+              11169
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 25,
+            "figure_ids": [
+              11170,
+              11171,
+              11172
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 26,
+            "figure_ids": [
+              11173
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 27,
+            "figure_ids": [
+              11174,
+              11175,
+              11176
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 28,
+            "figure_ids": [
+              11177
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 29,
+            "figure_ids": [
+              11178,
+              11179,
+              11180
+            ],
+            "partial_page": true,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          }
+        ]
+      },
+      {
+        "catalog_id": "opening",
+        "title": "布局基础",
+        "target_pages": 19,
+        "target_figures": 34,
+        "target_video_outputs": 68,
+        "partial_pages": 1,
+        "approved_pages": 4,
+        "approved_figures": 6,
+        "approved_video_outputs": 12,
+        "approved_partial_pages": 0,
+        "source_skipped_pages": 0,
+        "source_skipped_figures": 0,
+        "deliverable_target_pages": 19,
+        "deliverable_target_figures": 34,
+        "deliverable_target_video_outputs": 68,
+        "scope_complete": false,
+        "pages": [
+          {
+            "pdf_page": 15,
+            "figure_ids": [
+              15467
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/opening/p015",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 18,
+            "figure_ids": [
+              15470
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/opening/p018",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 19,
+            "figure_ids": [
+              15471,
+              15472
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/opening/p019",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 21,
+            "figure_ids": [
+              15473,
+              15474
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/opening/p021",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 22,
+            "figure_ids": [
+              15475
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 23,
+            "figure_ids": [
+              15476,
+              15477
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 25,
+            "figure_ids": [
+              15478,
+              15479
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 26,
+            "figure_ids": [
+              15480,
+              15481
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 27,
+            "figure_ids": [
+              15482
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 29,
+            "figure_ids": [
+              15483,
+              15484
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 30,
+            "figure_ids": [
+              15485
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 31,
+            "figure_ids": [
+              15486,
+              15487
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 32,
+            "figure_ids": [
+              15488
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 36,
+            "figure_ids": [
+              15493
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 37,
+            "figure_ids": [
+              15494,
+              15495,
+              15496
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 38,
+            "figure_ids": [
+              15497,
+              15498,
+              15499
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 39,
+            "figure_ids": [
+              15500,
+              15501,
+              15502
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 40,
+            "figure_ids": [
+              15503,
+              15504,
+              15505
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 41,
+            "figure_ids": [
+              15506
+            ],
+            "partial_page": true,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          }
+        ]
+      },
+      {
+        "catalog_id": "joseki",
+        "title": "吴清源围棋全集：第二卷·定式要领",
+        "target_pages": 19,
+        "target_figures": 37,
+        "target_video_outputs": 74,
+        "partial_pages": 1,
+        "approved_pages": 3,
+        "approved_figures": 5,
+        "approved_video_outputs": 10,
+        "approved_partial_pages": 0,
+        "source_skipped_pages": 1,
+        "source_skipped_figures": 2,
+        "deliverable_target_pages": 18,
+        "deliverable_target_figures": 35,
+        "deliverable_target_video_outputs": 70,
+        "scope_complete": false,
+        "pages": [
+          {
+            "pdf_page": 12,
+            "figure_ids": [
+              22067
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/joseki/p012",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 13,
+            "figure_ids": [
+              22068,
+              41887
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/joseki/p013",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 14,
+            "figure_ids": [
+              22069,
+              41888
+            ],
+            "partial_page": false,
+            "status": "approved",
+            "approval_directory": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/generated/joseki/p014",
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 15,
+            "figure_ids": [
+              22070,
+              41889
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 17,
+            "figure_ids": [
+              22071,
+              41890
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 18,
+            "figure_ids": [
+              22072,
+              41891
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 19,
+            "figure_ids": [
+              22073,
+              41892
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 20,
+            "figure_ids": [
+              22074,
+              22075,
+              41893
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 23,
+            "figure_ids": [
+              22077
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 24,
+            "figure_ids": [
+              22078,
+              41895
+            ],
+            "partial_page": false,
+            "status": "source_uncertain_skipped",
+            "approval_directory": null,
+            "source_exclusion": {
+              "catalog_id": "joseki",
+              "pdf_page": 24,
+              "figure_ids": [
+                22078,
+                41895
+              ],
+              "status": "source_uncertain_skipped",
+              "reason": "图22078原文“白二一”与原图黑21冲突未解决；按用户整页跳过疑点策略，同行图41895同页跳过。",
+              "independent_assessment": {
+                "model": "gpt-6-astra",
+                "reasoning_effort": "max",
+                "path": "data/tutorial_media_batches/core23-first50-20261021/regeneration-numbering-source-replays.json",
+                "sha256": "a8a0c45a78be0d857aedad53b6d9bc41629e1ba6d00165b3ce350cbb625e6161",
+                "source_cases": [
+                  {
+                    "figure_id": 22078,
+                    "pdf_page": 24,
+                    "all_manifest_figure_ids_on_page": [
+                      22078,
+                      41895
+                    ],
+                    "source_image": {
+                      "path": "/Users/fan/Repositories/go-topic-collections/curriculum/06_定式理解与选择/吴清源围棋全集_第二卷_定式要领_吴清源/output/pages/page_024.png",
+                      "sha256": "ec459c7e677585830ad68ee2fb2d52f5868590135b64f03b925159d5a246d37a"
+                    },
+                    "exact_conflict": "Printed prose says 黑十九与白二一的交换; printed stone 21 is black at [15,2]. It is not established which printed word/number should be corrected.",
+                    "source_supported_recording_sequence_certified_here": false,
+                    "missing_item": "An authoritative resolution of that text/diagram conflict; the lower 第20图 is a different variation and cannot supply a correction.",
+                    "reason_is_source_uncertainty_not_implementation_capability": true,
+                    "scope_modified": false
+                  }
+                ]
+              },
+              "authority_path": "/Users/fan/Repositories/katrain-admin-console/data/tutorial_media_batches/core23-first50-20261021/regeneration-v2/source-exclusions.json",
+              "authority_sha256": "5213fbd835f2c0078d9378d7479a6f8970031e1341f1d276bfbd3a2d6a104c53",
+              "scope_sha256": "dd0f622b2217572450047f358959d6641c19a944a4fe14d2a98e1c6410a9e3a7"
+            }
+          },
+          {
+            "pdf_page": 25,
+            "figure_ids": [
+              22079,
+              41896
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 26,
+            "figure_ids": [
+              22080,
+              41897
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 28,
+            "figure_ids": [
+              22081,
+              41898
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 30,
+            "figure_ids": [
+              22083,
+              41900
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 31,
+            "figure_ids": [
+              22084,
+              41901
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 32,
+            "figure_ids": [
+              22085,
+              41902
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 34,
+            "figure_ids": [
+              22087,
+              41904
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 37,
+            "figure_ids": [
+              22089,
+              41906
+            ],
+            "partial_page": false,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          },
+          {
+            "pdf_page": 42,
+            "figure_ids": [
+              22094,
+              41911
+            ],
+            "partial_page": true,
+            "status": "pending",
+            "approval_directory": null,
+            "source_exclusion": null
+          }
+        ]
+      }
+    ],
+    "pause_reason": "review_token_cost",
+    "paused_at": "2026-10-21T03:38:10.102252+00:00",
+    "review_policy": "manual-first-separate-opt-in-review",
+    "resume_requires_user": false,
+    "cancelled_at": "2026-10-21T03:45:29.737182+00:00",
+    "auto_resume": false,
+    "requires_new_user_task": true
   }
 }

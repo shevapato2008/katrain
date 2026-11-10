@@ -1,4 +1,5 @@
 import { drawStoneSprite, loadBoardImages, stoneImage } from '../board/boardUtils';
+import { getBoardStylePalette, useBoardAppearance } from '../board/stoneAppearance';
 /**
  * TsumegoBoard - Interactive board component for solving tsumego problems
  *
@@ -44,12 +45,6 @@ interface TsumegoBoardProps {
   onPlaceStone: (x: number, y: number) => void;
 }
 
-const ASSETS = {
-  board: "/assets/img/board.png",
-  blackStone: "/assets/img/B_stone.png",
-  whiteStone: "/assets/img/W_stone.png",
-};
-
 const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   boardSize,
   stones,
@@ -68,18 +63,21 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [canvasSize, setCanvasSize] = useState(800);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [assetsVersion, setAssetsVersion] = useState(0);
+  const { boardStyle, stoneStyle } = useBoardAppearance();
 
-  // Load images on mount
+  // Load images on mount and when appearance changes
   useEffect(() => {
     let cancelled = false;
-    loadBoardImages(ASSETS).then(images => {
+    loadBoardImages(boardStyle, stoneStyle).then(images => {
       if (!cancelled) {
         imagesRef.current = images;
         setImagesLoaded(true);
+        setAssetsVersion(v => v + 1);
       }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [boardStyle, stoneStyle]);
 
   // Track container size for responsive canvas
   useEffect(() => {
@@ -162,20 +160,19 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     if (!ctx) return;
 
     const layout = boardLayout(canvas);
+    const palette = getBoardStylePalette(boardStyle);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Background
+    ctx.fillStyle = palette.woodFill;
+    ctx.fillRect(layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
     if (imagesRef.current.board) {
       ctx.drawImage(imagesRef.current.board, layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
-    } else {
-      // Fallback background
-      ctx.fillStyle = '#DEB887';
-      ctx.fillRect(layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
     }
 
     // Draw grid
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.strokeStyle = palette.gridColor;
     ctx.lineWidth = 1.2;
     ctx.lineCap = "round";
 
@@ -198,7 +195,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
 
     // Draw star points
     const stars = boardSize === 19 ? [3, 9, 15] : boardSize === 13 ? [3, 6, 9] : boardSize === 9 ? [2, 4, 6] : [];
-    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    ctx.fillStyle = palette.starColor;
     const starRadius = layout.gridSize * 0.11;
     stars.forEach(x => stars.forEach(y => {
       const pos = gridToCanvas(layout, x, y);
@@ -210,7 +207,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     // Draw coordinates
     if (showCoordinates) {
       const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
-      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+      ctx.fillStyle = palette.coordColor;
       ctx.font = `600 ${Math.max(10, layout.gridSize * 0.4)}px 'IBM Plex Mono', monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -250,7 +247,16 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     const stoneSize = layout.gridSize * 0.505;
     stones.forEach(stone => {
       const pos = gridToCanvas(layout, stone.coords[0], stone.coords[1]);
-      const img = stoneImage(stone.player, stone.coords[0], stone.coords[1], boardSize, stone.player === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+      const img = stoneImage(stone.player, stone.coords[0], stone.coords[1], boardSize, stone.player === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone, stoneStyle);
+
+      if (stone.player === 'W' && stoneStyle === 'jade-agate') {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pos.x + stoneSize * 0.14, pos.y + stoneSize * 0.16, stoneSize * 0.86, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 243, 210, 0.28)';
+        ctx.fill();
+        ctx.restore();
+      }
 
       if (img) {
         drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, stone.coords[0], stone.coords[1]);
@@ -334,7 +340,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
         ctx.stroke();
       });
     }
-  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, showCoordinates, extraMarkers]);
+  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, assetsVersion, boardStyle, stoneStyle, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, showCoordinates, extraMarkers]);
 
   // Re-render on state changes
   useEffect(() => {

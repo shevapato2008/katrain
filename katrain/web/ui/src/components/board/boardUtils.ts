@@ -1,4 +1,17 @@
-import { getStoneAppearance, stoneSpriteUrl } from "./stoneAppearance";
+import {
+  type BoardStyleId,
+  type StoneAppearanceId,
+  type StoneStyleId,
+  getActiveBoardStyle,
+  getActiveStoneStyle,
+  getBoardStylePalette,
+  getBoardTextureDataUrl,
+  getStoneAppearance,
+  normalizeBoardStyleId,
+  normalizeStoneStyleId,
+  stoneSpriteUrl,
+  stoneVariant,
+} from "./stoneAppearance";
 
 /**
  * Shared board drawing utilities.
@@ -15,15 +28,31 @@ export const BOARD_ASSETS = {
   topMove: "/assets/img/topmove.png",
 };
 
+export type BoardAssets = Record<string, HTMLImageElement> & {
+  board?: HTMLImageElement;
+  black?: HTMLImageElement;
+  white?: HTMLImageElement;
+  blackStone?: HTMLImageElement;
+  whiteStone?: HTMLImageElement;
+  lastMove?: HTMLImageElement;
+  topMove?: HTMLImageElement;
+};
+
 // One promise per URL keeps remounts and concurrent boards from fetching per stone.
 const spriteImages = new Map<string, HTMLImageElement>();
+const styleSpriteCache = new Map<StoneStyleId, { B: HTMLImageElement | null; W: (HTMLImageElement | null)[] }>();
+const boardAssetsCache = new Map<string, BoardAssets>();
 const imageLoads = new Map<string, Promise<HTMLImageElement | null>>();
+
 function loadBoardImage(src: string): Promise<HTMLImageElement | null> {
   let pending = imageLoads.get(src);
   if (!pending) {
     pending = new Promise(resolve => {
       const image = new Image();
-      image.onload = () => { spriteImages.set(src, image); resolve(image); };
+      image.onload = () => {
+        spriteImages.set(src, image);
+        resolve(image);
+      };
       image.onerror = () => resolve(null);
       image.src = src;
     });
@@ -38,25 +67,120 @@ function loadBoardImage(src: string): Promise<HTMLImageElement | null> {
 }
 
 /** Preload the finite sprite set once; legacy images remain available on failure. */
-export async function loadBoardImages(assets: Record<string, string> = BOARD_ASSETS): Promise<Record<string, HTMLImageElement>> {
-  const appearance = getStoneAppearance();
+export async function loadBoardImages(
+  boardStyleOrAssets?: BoardStyleId | string | Record<string, string>,
+  stoneStyle: StoneAppearanceId | string = getActiveStoneStyle(),
+): Promise<BoardAssets> {
+  const resolvedStoneStyle = normalizeStoneStyleId(stoneStyle);
+  const appearance = getStoneAppearance(resolvedStoneStyle);
   const sprites = [appearance.sprites.B, ...appearance.sprites.W];
-  const spritesLoaded = Promise.all(sprites.map(loadBoardImage));
-  const entries = await Promise.all(Object.entries(assets).map(async ([key, src]) => [key, await loadBoardImage(src)] as const));
-  await spritesLoaded;
-  return Object.fromEntries(entries.filter((entry): entry is readonly [string, HTMLImageElement] => entry[1] !== null));
+  const spritesLoadedPromise = Promise.all(sprites.map(loadBoardImage));
+
+  if (typeof boardStyleOrAssets === "object" && boardStyleOrAssets !== null) {
+    const resolvedBoardStyle = getActiveBoardStyle();
+    const entries = await Promise.all(
+      Object.entries(boardStyleOrAssets).map(async ([key, src]) => {
+        if (key === "board" && src === BOARD_ASSETS.board) {
+          const proceduralBoard = await loadBoardImage(getBoardTextureDataUrl(resolvedBoardStyle));
+          if (proceduralBoard) return [key, proceduralBoard] as const;
+        }
+        return [key, await loadBoardImage(src)] as const;
+      }),
+    );
+    const loadedSprites = await spritesLoadedPromise;
+    styleSpriteCache.set(resolvedStoneStyle, {
+      B: loadedSprites[0] ?? null,
+      W: loadedSprites.slice(1),
+    });
+    return Object.fromEntries(
+      entries.filter((entry): entry is readonly [string, HTMLImageElement] => entry[1] !== null),
+    );
+  }
+
+  const resolvedBoardStyle = normalizeBoardStyleId(boardStyleOrAssets ?? getActiveBoardStyle());
+  const cacheKey = `${resolvedBoardStyle}:${resolvedStoneStyle}`;
+  const cached = boardAssetsCache.get(cacheKey);
+
+  const loadedSprites = await spritesLoadedPromise;
+  const allSpritesSucceeded = loadedSprites.every(img => img !== null);
+  styleSpriteCache.set(resolvedStoneStyle, {
+    B: loadedSprites[0] ?? null,
+    W: loadedSprites.slice(1),
+  });
+
+  if (cached && allSpritesSucceeded) {
+    return cached;
+  }
+
+  let boardImg = await loadBoardImage(getBoardTextureDataUrl(resolvedBoardStyle));
+  if (!boardImg) {
+    boardImg = await loadBoardImage(BOARD_ASSETS.board);
+  }
+  const [blackStoneImg, whiteStoneImg, lastMoveImg, topMoveImg] = await Promise.all([
+    loadBoardImage(BOARD_ASSETS.blackStone),
+    loadBoardImage(BOARD_ASSETS.whiteStone),
+    loadBoardImage(BOARD_ASSETS.lastMove),
+    loadBoardImage(BOARD_ASSETS.topMove),
+  ]);
+
+  const blackSprite = loadedSprites[0] ?? blackStoneImg ?? null;
+  const whiteSprite = loadedSprites[1] ?? whiteStoneImg ?? null;
+
+  const result: BoardAssets = {};
+  if (boardImg) result.board = boardImg;
+  if (blackSprite) {
+    result.black = blackSprite;
+    result.blackStone = blackSprite;
+  }
+  if (whiteSprite) {
+    result.white = whiteSprite;
+    result.whiteStone = whiteSprite;
+  }
+  if (lastMoveImg) result.lastMove = lastMoveImg;
+  if (topMoveImg) result.topMove = topMoveImg;
+
+  if (allSpritesSucceeded && boardImg) {
+    boardAssetsCache.set(cacheKey, result);
+  }
+
+  return result;
 }
 
 /** Coordinate-based selection is stable across replay, hover, and board remounts. */
-export function stoneImage(color: 'B' | 'W', col: number, row: number, boardSize: number, fallback: HTMLImageElement | null | undefined): HTMLImageElement | null {
-  return spriteImages.get(stoneSpriteUrl(color, boardSize, col, boardSize - 1 - row)) ?? fallback ?? null;
+export function stoneImage(
+  color: "B" | "W",
+  col: number,
+  row: number,
+  boardSize: number,
+  fallback: HTMLImageElement | null | undefined,
+  stoneStyle: StoneAppearanceId | string = getActiveStoneStyle(),
+): HTMLImageElement | null {
+  const resolvedStyle = normalizeStoneStyleId(stoneStyle);
+  const url = stoneSpriteUrl(color, boardSize, col, boardSize - 1 - row, resolvedStyle);
+  const byUrl = spriteImages.get(url);
+  if (byUrl) return byUrl;
+
+  const byStyle = styleSpriteCache.get(resolvedStyle);
+  if (byStyle) {
+    if (color === "B" && byStyle.B) return byStyle.B;
+    if (color === "W" && byStyle.W.length > 0) {
+      const idx = stoneVariant(boardSize, col, boardSize - 1 - row, byStyle.W.length);
+      if (byStyle.W[idx]) return byStyle.W[idx];
+    }
+  }
+  return fallback ?? null;
 }
 
 /** Draw the lit sprite as exported; move labels and selection rings stay upright. */
 export function drawStoneSprite(
-  ctx: CanvasRenderingContext2D, image: HTMLImageElement,
-  centerX: number, centerY: number, radius: number,
-  _boardSize: number, _col: number, _rowFromBottom: number,
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  _boardSize: number,
+  _col: number,
+  _rowFromBottom: number,
 ): void {
   ctx.drawImage(image, centerX - radius, centerY - radius, radius * 2, radius * 2);
 }
@@ -89,7 +213,7 @@ export function calculateBoardLayout(
   canvasWidth: number,
   canvasHeight: number,
   boardSize: number,
-  options: { margin?: number; exact?: boolean } = {}
+  options: { margin?: number; exact?: boolean } = {},
 ): BoardLayout {
   const { margin = 1.5, exact = false } = options;
   const gridMargins = { x: [margin, margin] as [number, number], y: [margin, margin] as [number, number] };
@@ -112,7 +236,7 @@ export function gridToCanvas(
   layout: BoardLayout,
   x: number,
   y: number,
-  boardSize: number
+  boardSize: number,
 ): { x: number; y: number } {
   const invertedY = boardSize - 1 - y;
   const px = layout.offsetX + (layout.gridMargins.x[0] + x) * layout.gridSize;
@@ -127,7 +251,7 @@ export function canvasToGrid(
   layout: BoardLayout,
   canvasX: number,
   canvasY: number,
-  boardSize: number
+  boardSize: number,
 ): { x: number; y: number } | null {
   const relX = (canvasX - layout.offsetX) / layout.gridSize - layout.gridMargins.x[0];
   const relY = (canvasY - layout.offsetY) / layout.gridSize - layout.gridMargins.y[1];
@@ -142,19 +266,19 @@ export function canvasToGrid(
 }
 
 /**
- * Draw board background image.
+ * Draw board background image or wood palette fallback fill.
  */
 export function drawBoardBackground(
   ctx: CanvasRenderingContext2D,
   layout: BoardLayout,
-  boardImg: HTMLImageElement | null
+  boardImg: HTMLImageElement | null,
+  boardStyle: BoardStyleId | string = getActiveBoardStyle(),
 ): void {
+  const palette = getBoardStylePalette(boardStyle);
+  ctx.fillStyle = palette.woodFill;
+  ctx.fillRect?.(layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
   if (boardImg) {
     ctx.drawImage(boardImg, layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
-  } else {
-    // Fallback wood color
-    ctx.fillStyle = '#dcb35c';
-    ctx.fillRect(layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
   }
 }
 
@@ -164,9 +288,11 @@ export function drawBoardBackground(
 export function drawGrid(
   ctx: CanvasRenderingContext2D,
   layout: BoardLayout,
-  boardSize: number
+  boardSize: number,
+  boardStyle: BoardStyleId | string = getActiveBoardStyle(),
 ): void {
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
+  const palette = getBoardStylePalette(boardStyle);
+  ctx.strokeStyle = palette.gridColor;
   ctx.lineWidth = 1.2;
   ctx.lineCap = "round";
 
@@ -195,14 +321,16 @@ export function drawGrid(
 export function drawStars(
   ctx: CanvasRenderingContext2D,
   layout: BoardLayout,
-  boardSize: number
+  boardSize: number,
+  boardStyle: BoardStyleId | string = getActiveBoardStyle(),
 ): void {
   const stars =
     boardSize === 19 ? [3, 9, 15] :
     boardSize === 13 ? [3, 6, 9] :
     boardSize === 9 ? [2, 4, 6] : [];
 
-  ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+  const palette = getBoardStylePalette(boardStyle);
+  ctx.fillStyle = palette.starColor;
   const starRadius = layout.gridSize * 0.11;
 
   stars.forEach(x => {
@@ -221,10 +349,13 @@ export function drawStars(
 export function drawCoordinates(
   ctx: CanvasRenderingContext2D,
   layout: BoardLayout,
-  boardSize: number
+  boardSize: number,
+  coordColor?: string,
+  boardStyle: BoardStyleId | string = getActiveBoardStyle(),
 ): void {
   const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split(""); // Skip I
-  ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+  const palette = getBoardStylePalette(boardStyle);
+  ctx.fillStyle = coordColor || palette.coordColor;
   ctx.font = `600 ${Math.max(12, layout.gridSize * 0.45)}px 'IBM Plex Mono', monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -255,6 +386,21 @@ export function drawCoordinates(
 }
 
 /**
+ * Draw grid lines, star points, and coordinates using the board style palette.
+ */
+export function drawBoardGrid(
+  ctx: CanvasRenderingContext2D,
+  layout: BoardLayout,
+  boardSize: number,
+  coordColor?: string,
+  boardStyle: BoardStyleId | string = getActiveBoardStyle(),
+): void {
+  drawGrid(ctx, layout, boardSize, boardStyle);
+  drawStars(ctx, layout, boardSize, boardStyle);
+  drawCoordinates(ctx, layout, boardSize, coordColor, boardStyle);
+}
+
+/**
  * Draw a stone on the board.
  */
 export function drawStone(
@@ -263,13 +409,26 @@ export function drawStone(
   x: number,
   y: number,
   boardSize: number,
-  player: 'B' | 'W',
+  player: "B" | "W",
   blackImg: HTMLImageElement | null,
-  whiteImg: HTMLImageElement | null
+  whiteImg: HTMLImageElement | null,
+  stoneStyle: StoneAppearanceId | string = getActiveStoneStyle(),
 ): void {
+  const resolvedStyle = normalizeStoneStyleId(stoneStyle);
   const pos = gridToCanvas(layout, x, y, boardSize);
   const stoneSize = layout.gridSize * 0.505;
-  const img = stoneImage(player, x, y, boardSize, player === 'B' ? blackImg : whiteImg);
+  const img = stoneImage(player, x, y, boardSize, player === "B" ? blackImg : whiteImg, resolvedStyle);
+
+  // For translucent white jade-agate stones, draw a warm lower-right lens caustic glow
+  // on the board beneath the semi-transparent chalcedony sprite.
+  if (player === "W" && resolvedStyle === "jade-agate") {
+    ctx.save?.();
+    ctx.beginPath?.();
+    ctx.arc?.(pos.x + stoneSize * 0.14, pos.y + stoneSize * 0.16, stoneSize * 0.86, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 243, 210, 0.28)";
+    ctx.fill?.();
+    ctx.restore?.();
+  }
 
   if (img) {
     drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, x, y);
@@ -277,10 +436,10 @@ export function drawStone(
     // Fallback circle
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, stoneSize * 0.95, 0, Math.PI * 2);
-    ctx.fillStyle = player === 'B' ? '#000' : '#fff';
+    ctx.fillStyle = player === "B" ? "#000" : "#fff";
     ctx.fill();
-    if (player === 'W') {
-      ctx.strokeStyle = '#000';
+    if (player === "W") {
+      ctx.strokeStyle = "#000";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -296,18 +455,18 @@ export function drawLastMoveMarker(
   x: number,
   y: number,
   boardSize: number,
-  stoneColor: 'B' | 'W'
+  stoneColor: "B" | "W",
 ): void {
   const pos = gridToCanvas(layout, x, y, boardSize);
   const circleRadius = layout.gridSize * 0.35;
 
   // Outer glow
-  ctx.shadowColor = stoneColor === 'B' ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.4)";
+  ctx.shadowColor = stoneColor === "B" ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.4)";
   ctx.shadowBlur = 8;
 
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, circleRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = stoneColor === 'B' ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
+  ctx.strokeStyle = stoneColor === "B" ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
   ctx.lineWidth = Math.max(2.5, layout.gridSize * 0.09);
   ctx.stroke();
 

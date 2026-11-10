@@ -1,6 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  BOARD_STYLE_STORAGE_KEY,
+  CHINESE_FONT_STORAGE_KEY,
+  STONE_STYLE_STORAGE_KEY,
+  getActiveBoardStyle,
+  getActiveStoneStyle,
+  setActiveBoardStyle,
+  setActiveStoneStyle,
+} from '../../../components/board/stoneAppearance';
 import { useAuth } from '../../../context/AuthContext';
 import { SettingsProvider } from '../../../context/SettingsContext';
 import { useGameNavigation } from '../../context/GameNavigationContext';
@@ -31,10 +40,18 @@ describe('GalaxySidebar', () => {
   const requestNavigation = vi.fn();
 
   beforeEach(() => {
+    const store = new Map<string, string>();
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
-      value: { getItem: vi.fn(() => null), setItem: vi.fn(), removeItem: vi.fn(), clear: vi.fn() },
+      value: {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, val: string) => { store.set(key, String(val)); }),
+        removeItem: vi.fn((key: string) => { store.delete(key); }),
+        clear: vi.fn(() => { store.clear(); }),
+      },
     });
+    setActiveBoardStyle('kaya');
+    setActiveStoneStyle('clamshell-slate');
     vi.mocked(useAuth).mockReturnValue({ user: null, login: vi.fn(), logout: vi.fn() } as never);
     vi.mocked(useGameNavigation).mockReturnValue({ requestNavigation } as never);
     requestNavigation.mockReset();
@@ -121,5 +138,102 @@ describe('GalaxySidebar', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Sign In')).toBeInTheDocument();
     expect(screen.queryByText('棋道导航者')).not.toBeInTheDocument();
+  });
+
+  it('opens Level 1 settings menu showing categories and their active summary labels', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+
+    expect(screen.getByText('设置')).toBeInTheDocument();
+    expect(screen.getByText('语言')).toBeInTheDocument();
+    expect(screen.getByText('中文')).toBeInTheDocument();
+    expect(screen.getByText('棋盘样式')).toBeInTheDocument();
+    expect(screen.getByText('日式本榧')).toBeInTheDocument();
+    expect(screen.getByText('棋子样式')).toBeInTheDocument();
+    expect(screen.getByText('蛤碁石')).toBeInTheDocument();
+    expect(screen.getByText('中文字体')).toBeInTheDocument();
+    expect(screen.getByText('霞鹜楷体')).toBeInTheDocument();
+  });
+
+  it('transitions to Level 2 stone style submenu with strictly 4 styles and updates stoneStyle on click', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByText('棋子样式'));
+
+    expect(screen.getByText('返回设置')).toBeInTheDocument();
+    expect(screen.getByText('蛤碁石')).toBeInTheDocument();
+    expect(screen.getByText('云子')).toBeInTheDocument();
+    expect(screen.getByText('玉石玛瑙')).toBeInTheDocument();
+    expect(screen.getByText('简约')).toBeInTheDocument();
+    expect(screen.queryByText('石材')).not.toBeInTheDocument();
+    expect(screen.queryByText('星河')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('玉石玛瑙'));
+    expect(getActiveStoneStyle()).toBe('jade-agate');
+    expect(window.localStorage.getItem(STONE_STYLE_STORAGE_KEY)).toBe('jade-agate');
+  });
+
+  it('transitions to Level 2 board style submenu with 4 wood styles and updates boardStyle on click', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByText('棋盘样式'));
+
+    expect(screen.getByText('返回设置')).toBeInTheDocument();
+    expect(screen.getByText('日式本榧')).toBeInTheDocument();
+    expect(screen.getByText('新榧云杉')).toBeInTheDocument();
+    expect(screen.getByText('碳化楠竹')).toBeInTheDocument();
+    expect(screen.getByText('胡桃沉香')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('胡桃沉香'));
+    expect(getActiveBoardStyle()).toBe('walnut');
+    expect(window.localStorage.getItem(BOARD_STYLE_STORAGE_KEY)).toBe('walnut');
+  });
+
+  it('transitions to Level 2 Chinese font submenu with 4 fonts and updates chineseFont on click', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByText('中文字体'));
+
+    expect(screen.getByText('返回设置')).toBeInTheDocument();
+    expect(screen.getByText('霞鹜楷体')).toBeInTheDocument();
+    expect(screen.getByText('楷体')).toBeInTheDocument();
+    expect(screen.getByText('隶书')).toBeInTheDocument();
+    expect(screen.getByText('黑体')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('隶书'));
+    expect(window.localStorage.getItem(CHINESE_FONT_STORAGE_KEY)).toBe('lishu');
+
+    fireEvent.click(screen.getByText('返回设置'));
+    expect(screen.getByText('隶书')).toBeInTheDocument();
+  });
+
+  it('transitions to Level 2 language submenu, returns to Level 1 via 返回设置, and resets submenu on close', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    fireEvent.click(screen.getByText('语言'));
+
+    expect(screen.getByText('返回设置')).toBeInTheDocument();
+    expect(screen.getByText('English')).toBeInTheDocument();
+    expect(screen.getByText('中文')).toBeInTheDocument();
+    expect(screen.getByText('日本語')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('返回设置'));
+    expect(screen.queryByText('返回设置')).not.toBeInTheDocument();
+    expect(screen.getByText('棋盘样式')).toBeInTheDocument();
+    expect(screen.getByText('棋子样式')).toBeInTheDocument();
+
+    // Enter a submenu, close the menu, and verify reopening starts at Level 1
+    fireEvent.click(screen.getByText('棋子样式'));
+    expect(screen.getByText('返回设置')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+
+    fireEvent.click(screen.getByRole('button', { name: '设置' }));
+    expect(screen.queryByText('返回设置')).not.toBeInTheDocument();
+    expect(screen.getByText('棋盘样式')).toBeInTheDocument();
   });
 });

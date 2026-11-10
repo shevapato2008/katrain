@@ -1,7 +1,8 @@
 import { useMemo, useEffect, memo, forwardRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Mesh } from 'three';
-import { DEFAULT_STONE_APPEARANCE, getStoneAppearance } from '../board/stoneAppearance';
+import { DEFAULT_STONE_APPEARANCE, useBoardAppearance } from '../board/stoneAppearance';
 import { createStoneGeometry, createStoneMaterial } from '../tutorials/stoneModel';
 import { STONE_RADIUS, STONE_HEIGHT, BOARD_SURFACE_Y } from './constants';
 import { stoneMeshScale } from './stoneScale';
@@ -50,6 +51,19 @@ function getContactTexture() {
 }
 
 const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, variant = 0, angle = 0, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
+  const { stoneStyle } = useBoardAppearance();
+  let invalidate: (() => void) | undefined;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    invalidate = useThree()?.invalidate;
+  } catch {
+    // Rendered outside R3F Canvas in unit tests
+  }
+
+  useEffect(() => {
+    invalidate?.();
+  }, [stoneStyle, invalidate]);
+
   const material = useMemo(() => {
     if (spriteTexture) return new THREE.MeshBasicMaterial({
       map: spriteTexture, transparent: true, opacity, depthWrite: false, toneMapped: false, fog: false,
@@ -60,17 +74,23 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       clearcoat: .18, clearcoatRoughness: .35,
       transparent: opacity < 1, opacity,
     });
-    const appearance = getStoneAppearance();
-    if (appearance.id === DEFAULT_STONE_APPEARANCE.id) {
+    if (stoneStyle === DEFAULT_STONE_APPEARANCE.id) {
       // The 3D shell recipe has eight seeds, independent of the 2D sprite count.
-      const material = createStoneMaterial(color, variant % 8, false, 256);
-      material.transparent = opacity < 1;
-      material.opacity = opacity;
-      return material;
+      const mat = createStoneMaterial(color, variant % 8, false, 256);
+      mat.transparent = opacity < 1;
+      mat.opacity = opacity;
+      return mat;
     }
-    const recipe = appearance.material3d?.[color] ?? DEFAULT_STONE_APPEARANCE.material3d[color];
-    return new THREE.MeshPhysicalMaterial({ ...recipe, transparent: opacity < 1, opacity });
-  }, [color, opacity, variant, satinFinish, spriteTexture]);
+    const mat = createStoneMaterial(color, variant % 8, false, 256, stoneStyle);
+    if (stoneStyle === 'jade-agate' && color === 'W') {
+      mat.transparent = true;
+      mat.opacity = opacity * 0.9;
+    } else {
+      mat.transparent = opacity < 1;
+      mat.opacity = opacity;
+    }
+    return mat;
+  }, [color, opacity, variant, satinFinish, spriteTexture, stoneStyle]);
 
   // Dispose per-stone material, not the shared procedural maps.
   useEffect(() => {

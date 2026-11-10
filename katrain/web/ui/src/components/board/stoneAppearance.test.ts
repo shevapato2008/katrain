@@ -1,18 +1,143 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  BOARD_STYLE_IDS,
+  BOARD_STYLE_OPTIONS,
+  CHINESE_FONT_IDS,
+  CHINESE_FONT_OPTIONS,
   DEFAULT_STONE_APPEARANCE,
+  STONE_STYLE_IDS,
+  STONE_STYLE_OPTIONS,
+  getActiveBoardStyle,
+  getActiveStoneStyle,
+  getBoardStylePalette,
+  getBoardTextureDataUrl,
   getStoneAppearance,
+  normalizeBoardStyleId,
+  normalizeChineseFontId,
+  normalizeStoneStyleId,
+  setActiveBoardStyle,
+  setActiveStoneStyle,
   stoneRotationDegrees,
   stoneSpriteUrl,
   stoneVariant,
+  subscribeBoardAppearance,
 } from './stoneAppearance';
 
-describe('publishable stone appearance', () => {
+describe('publishable stone appearance and board style store', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('defines strictly the 4 stone styles, 4 board styles, and 4 Chinese fonts', () => {
+    expect(STONE_STYLE_IDS).toEqual(['clamshell-slate', 'yunzi', 'jade-agate', 'minimal']);
+    expect(STONE_STYLE_IDS).not.toContain('mineral-stone');
+    expect(STONE_STYLE_IDS).not.toContain('galaxy-star');
+    expect(STONE_STYLE_OPTIONS.map(o => o.id)).toEqual(['clamshell-slate', 'yunzi', 'jade-agate', 'minimal']);
+
+    expect(BOARD_STYLE_IDS).toEqual(['kaya', 'shin-kaya', 'bamboo', 'walnut']);
+    expect(BOARD_STYLE_OPTIONS.map(o => o.id)).toEqual(['kaya', 'shin-kaya', 'bamboo', 'walnut']);
+
+    expect(CHINESE_FONT_IDS).toEqual(['wenkai', 'kaiti', 'lishu', 'heiti']);
+    expect(CHINESE_FONT_OPTIONS.map(o => o.id)).toEqual(['wenkai', 'kaiti', 'lishu', 'heiti']);
+  });
+
+  it('normalizes legacy and unknown IDs safely', () => {
+    expect(normalizeStoneStyleId('shell-slate')).toBe('clamshell-slate');
+    expect(normalizeStoneStyleId('clamshell-slate')).toBe('clamshell-slate');
+    expect(normalizeStoneStyleId('yunzi')).toBe('yunzi');
+    expect(normalizeStoneStyleId('jade-agate')).toBe('jade-agate');
+    expect(normalizeStoneStyleId('minimal')).toBe('minimal');
+    expect(normalizeStoneStyleId('mineral-stone')).toBe('clamshell-slate');
+    expect(normalizeStoneStyleId('galaxy-star')).toBe('clamshell-slate');
+    expect(normalizeStoneStyleId(null)).toBe('clamshell-slate');
+    expect(normalizeStoneStyleId(undefined)).toBe('clamshell-slate');
+
+    expect(normalizeBoardStyleId('kaya')).toBe('kaya');
+    expect(normalizeBoardStyleId('shin-kaya')).toBe('shin-kaya');
+    expect(normalizeBoardStyleId('bamboo')).toBe('bamboo');
+    expect(normalizeBoardStyleId('walnut')).toBe('walnut');
+    expect(normalizeBoardStyleId('unknown')).toBe('kaya');
+    expect(normalizeBoardStyleId(null)).toBe('kaya');
+
+    expect(normalizeChineseFontId('kaiti')).toBe('kaiti');
+    expect(normalizeChineseFontId(null)).toBe('wenkai');
+  });
+
   it('falls back to the default for missing or unknown skin IDs', () => {
     expect(getStoneAppearance()).toBe(DEFAULT_STONE_APPEARANCE);
     expect(getStoneAppearance('missing')).toBe(DEFAULT_STONE_APPEARANCE);
     expect(getStoneAppearance('toString')).toBe(DEFAULT_STONE_APPEARANCE);
     expect(getStoneAppearance('shell-slate')).toBe(DEFAULT_STONE_APPEARANCE);
+    expect(getStoneAppearance('clamshell-slate')).toBe(DEFAULT_STONE_APPEARANCE);
+  });
+
+  it('persists active stone and board styles to localStorage, notifies subscribers, and resets cleanly on clear()', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeBoardAppearance(listener);
+
+    expect(getActiveStoneStyle()).toBe('clamshell-slate');
+    expect(getActiveBoardStyle()).toBe('kaya');
+
+    setActiveStoneStyle('jade-agate');
+    expect(getActiveStoneStyle()).toBe('jade-agate');
+    expect(localStorage.getItem('katrain_stone_style')).toBe('jade-agate');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    setActiveBoardStyle('walnut');
+    expect(getActiveBoardStyle()).toBe('walnut');
+    expect(localStorage.getItem('katrain_board_style')).toBe('walnut');
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    localStorage.clear();
+    expect(getActiveStoneStyle()).toBe('clamshell-slate');
+    expect(getActiveBoardStyle()).toBe('kaya');
+
+    unsubscribe();
+  });
+
+  it('updates stoneSpriteUrl default output immediately when active stone style changes', () => {
+    const clamshellUrl = stoneSpriteUrl('W', 19, 3, 3);
+    expect(clamshellUrl).toContain('shell-slate');
+
+    setActiveStoneStyle('yunzi');
+    const yunziUrl = stoneSpriteUrl('W', 19, 3, 3);
+    expect(yunziUrl).toMatch(/^data:image\//);
+    expect(yunziUrl).not.toBe(clamshellUrl);
+
+    setActiveStoneStyle('jade-agate');
+    const jadeUrl = stoneSpriteUrl('W', 19, 3, 3);
+    expect(jadeUrl).toMatch(/^data:image\//);
+    expect(jadeUrl).not.toBe(yunziUrl);
+
+    setActiveStoneStyle('minimal');
+    const minimalUrl = stoneSpriteUrl('W', 19, 3, 3);
+    expect(minimalUrl).toMatch(/^data:image\//);
+    expect(minimalUrl).not.toBe(jadeUrl);
+  });
+
+  it('provides procedural sprite sets for yunzi (8), jade-agate (16), and minimal (1)', () => {
+    const yunzi = getStoneAppearance('yunzi');
+    expect(yunzi.sprites.W).toHaveLength(8);
+    expect(yunzi.sprites.B).toMatch(/^data:image\//);
+
+    const jade = getStoneAppearance('jade-agate');
+    expect(jade.sprites.W).toHaveLength(16);
+    expect(jade.sprites.B).toMatch(/^data:image\//);
+
+    const minimal = getStoneAppearance('minimal');
+    expect(minimal.sprites.W).toHaveLength(1);
+    expect(minimal.sprites.B).toMatch(/^data:image\//);
+  });
+
+  it('returns distinct palettes and valid data URLs for all 4 board styles', () => {
+    const palettes = BOARD_STYLE_IDS.map(id => getBoardStylePalette(id));
+    expect(new Set(palettes.map(p => p.woodFill)).size).toBe(4);
+    expect(getBoardStylePalette('walnut').woodFill).toBe('#5c402c');
+    expect(getBoardStylePalette('walnut').coordColor).toBe('#d9c3ac');
+
+    const textures = BOARD_STYLE_IDS.map(id => getBoardTextureDataUrl(id));
+    expect(textures.every(url => url.startsWith('data:image/'))).toBe(true);
+    expect(new Set(textures).size).toBe(4);
   });
 
   it('keeps all 32 shell orientations stable across replay order and resize', () => {

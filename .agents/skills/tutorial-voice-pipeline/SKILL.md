@@ -7,6 +7,8 @@ description: Use when preparing Go tutorial narration, generating TTS audio with
 
 将原书文字、原图及已核对电子棋图整理为讲稿，再生成真实语音及同一次合成的词级时间戳，交给 tutorial-video-pipeline。**先音频，后视频；有可靠落子编号时，讲稿和音频必须支持依次展示这些棋子；符号／字母等教学对象也必须有语音触发锚点。**
 
+本 skill 负责讲稿与音频生成，不内置独立审核／抽检，不自动派发 Astra。当前由用户人工检查，后续机器审核需另行明确派发。
+
 ## 1. 输入与讲稿
 
 - 核对目标环境、来源页、当前图版本及静态棋图人工确认。用户明确授权代登记时保留确认来源；机器审核不代替人工确认。
@@ -27,7 +29,7 @@ description: Use when preparing Go tutorial narration, generating TTS audio with
 1. `PUT BASE/figures/{id}/narration`，请求仅含最终 `narration` 与匹配当前版本的 `expected_updated_at`；保留用户手改稿，不用批处理强制覆盖。
 2. 用保存返回的当前版本提交 `POST BASE/figures/{id}/media-tasks`，`kind: "audio"` 并带 `expected_updated_at`；语音默认由当前服务配置选择（现有默认 `zh-CN-XiaoxiaoNeural`）。
 3. `GET BASE/media-tasks/{task_id}` 等待真实 succeeded；202／queued 不算完成。失败不能用静音 MP3、原文兜底文件或仅有路径冒充成功。
-4. 保存并核对真实音频、时长、音频 SHA、讲稿 SHA、voice 及该次合成的 WordBoundary。时间戳文字与最终讲稿一致，音频非空、非静音、可解码，听音核对时如实记录结果。
+4. 保存任务返回的真实音频地址、时长、音频 SHA、讲稿 SHA、voice 及该次合成的 WordBoundary。音频或时间戳缺失时报告生成失败；本流程不另起全片解码、听音或模型审核。
 5. 把编号子、带符号／字母的棋子及独立标注的对象映射和真实语音片段结束时点交给视频流程；编号子需顺序正确，其余标注按明确引用触发。缺锚点、指代不清或顺序不符时先修稿／重新合成，不平均分配时间，不提前显示，也不静态降级交付。
 
 修改讲稿会使旧音频／视频依赖失效。两份视频应复用同一合格音频与时间戳，不分别合成不同长度的音轨。已有音频只有在讲稿／音频哈希、voice 和所需逐步锚点都一致时才能复用。
@@ -38,6 +40,8 @@ description: Use when preparing Go tutorial narration, generating TTS audio with
 
 `scripts/generate_voice.py` 的旧批量生成已停用；不要照旧 `--force` 或直接数据库写入流程绕过当前鉴权、版本和人工审核。音频成功也不表示落子时间线成功：服务若因 `replay` 待校准未产生编号 cue，需按视频 skill 补齐编号同步能力，不能说音频失败或降低视频验收标准。
 
-交付：来源／图版本、最终讲稿、真实音频与时间戳／哈希、逐步编号及符号／字母等对象映射、成功／失败及待校准状态。独立 Astra Max 是机器审核；不代填视频人工审核。批量范围、每页审核、并发与汇报频率按用户当前任务执行，不把单图音频成功算作整页音视频完成。
+交付：来源／图版本、最终讲稿、真实音频与时间戳／哈希、逐步编号及符号／字母等对象映射、生成成功／失败及待校准状态。来源或指代不确定时报告问题，不猜补，不擅自派模型审核。独立内容／音视频验证见 tutorial-media-review，仅在用户另行要求时使用。
+
+生成成功不代表人工或机器审核通过，不代填审核字段。批量范围、并发与汇报频率按用户当前任务执行，不把单图音频成功算作整页音视频完成。用户暂停或取消时停止调度，保留结果且不自动恢复。
 
 代码入口：`katrain/web/admin/routers/tutorials.py`、`tutorial_media.py`；`katrain/web/tutorials/media_tasks.py`、`media_timing.py`；视频交接使用 tutorial-video-pipeline。

@@ -1,7 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
 // Fresh module instances isolate the process-wide URL cache between cases.
-afterEach(() => { vi.unstubAllGlobals(); vi.resetModules(); });
+afterEach(() => {
+  localStorage.clear();
+  vi.unstubAllGlobals();
+  vi.resetModules();
+});
 
 it('preloads each sprite once across boards and selects stable coordinate variants', async () => {
   const requested: string[] = [];
@@ -68,4 +72,60 @@ it('draws the selected Canvas sprite at its board point without rotating the lit
   expect(ctx.drawImage).toHaveBeenCalledWith(image, 91, 111, 18, 18);
   expect(ctx.rotate).not.toHaveBeenCalled();
   expect(ctx.translate).not.toHaveBeenCalled();
+});
+
+it('loads board texture and stone sprites by boardStyle and stoneStyle and applies palette colors', async () => {
+  class FakeImage {
+    onload?: () => void;
+    srcValue = '';
+    set src(url: string) { this.srcValue = url; queueMicrotask(() => this.onload?.()); }
+  }
+  vi.stubGlobal('Image', FakeImage);
+  const {
+    calculateBoardLayout,
+    drawBoardBackground,
+    drawBoardGrid,
+    drawStone,
+    loadBoardImages,
+    stoneImage,
+  } = await import('./boardUtils');
+
+  const assets = await loadBoardImages('walnut', 'jade-agate');
+  expect(assets.board).toBeTruthy();
+  expect(assets.blackStone).toBeTruthy();
+  expect(assets.whiteStone).toBeTruthy();
+  expect(stoneImage('W', 2, 2, 19, null, 'jade-agate')).toBeTruthy();
+
+  const layout = calculateBoardLayout(600, 600, 19);
+  const ctx = {
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    lineCap: 'butt',
+    font: '',
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
+    fillRect: vi.fn(),
+    drawImage: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    fillText: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+  };
+
+  drawBoardBackground(ctx as unknown as CanvasRenderingContext2D, layout, null, 'walnut');
+  expect(ctx.fillStyle).toBe('#5c402c');
+  expect(ctx.fillRect).toHaveBeenCalled();
+
+  drawBoardGrid(ctx as unknown as CanvasRenderingContext2D, layout, 19, undefined, 'walnut');
+  expect(ctx.fillStyle).toBe('#d9c3ac');
+
+  drawStone(ctx as unknown as CanvasRenderingContext2D, layout, 3, 3, 19, 'W', assets.blackStone ?? null, assets.whiteStone ?? null, 'jade-agate');
+  expect(ctx.fillStyle).toBe('rgba(255, 243, 210, 0.28)');
+  expect(ctx.drawImage).toHaveBeenCalled();
 });

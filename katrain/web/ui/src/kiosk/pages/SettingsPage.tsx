@@ -12,6 +12,11 @@ import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { readAudioPref, subscribeAudioPref, writeAudioPref, type AudioKind } from '../../utils/audioPrefs';
+import {
+  BOARD_STYLE_OPTIONS,
+  STONE_STYLE_OPTIONS,
+  useBoardAppearance,
+} from '../../components/board/stoneAppearance';
 import { engineStatusLine } from '../utils/engineStatusLine';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
@@ -104,6 +109,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, setLanguage, languages } = useSettings();
+  const { boardStyle, stoneStyle, setBoardStyle, setStoneStyle } = useBoardAppearance();
   const { preference: typography, setPreference: setTypography, saving: typographySaving, error: typographyError, retry: retryTypography } = useKioskTypography();
   const { status, loaded } = useGeometry();
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
@@ -270,6 +276,50 @@ const SettingsPage = () => {
                 >
                   {t('settings:start_calib', '开始标定')}
                 </button>
+              </span>
+            </div>
+            <div className="kiosk-row">
+              <span className="kiosk-row__t">
+                <b>{t('kiosk.settings.board_style', '棋盘样式')}</b>
+                <em>{t('kiosk.settings.board_style_desc', '屏幕棋盘木纹与线条配色')}</em>
+              </span>
+              <span className="kiosk-row__end">
+                <span className="kiosk-seg" role="group" aria-label={t('kiosk.settings.board_style', '棋盘样式')}>
+                  {BOARD_STYLE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      data-testid={`kiosk-board-style-${opt.id}`}
+                      className={`kiosk-seg__btn${boardStyle === opt.id ? ' active' : ''}`}
+                      aria-pressed={boardStyle === opt.id}
+                      onClick={() => setBoardStyle(opt.id)}
+                    >
+                      {t(`kiosk.settings.board_style_${opt.id}`, opt.label)}
+                    </button>
+                  ))}
+                </span>
+              </span>
+            </div>
+            <div className="kiosk-row">
+              <span className="kiosk-row__t">
+                <b>{t('kiosk.settings.stone_style', '棋子样式')}</b>
+                <em>{t('kiosk.settings.stone_style_desc', '屏幕棋子材质与光泽效果')}</em>
+              </span>
+              <span className="kiosk-row__end">
+                <span className="kiosk-seg" role="group" aria-label={t('kiosk.settings.stone_style', '棋子样式')}>
+                  {STONE_STYLE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      data-testid={`kiosk-stone-style-${opt.id}`}
+                      className={`kiosk-seg__btn${stoneStyle === opt.id ? ' active' : ''}`}
+                      aria-pressed={stoneStyle === opt.id}
+                      onClick={() => setStoneStyle(opt.id)}
+                    >
+                      {t(`kiosk.settings.stone_style_${opt.id}`, opt.label)}
+                    </button>
+                  ))}
+                </span>
               </span>
             </div>
           </div>

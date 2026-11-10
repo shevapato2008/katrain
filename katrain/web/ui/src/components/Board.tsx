@@ -1,4 +1,5 @@
-import { drawStoneSprite, loadBoardImages, stoneImage } from './board/boardUtils';
+import { BOARD_ASSETS, drawStoneSprite, loadBoardImages, stoneImage } from './board/boardUtils';
+import { getBoardStylePalette, getBoardTextureDataUrl, useBoardAppearance } from './board/stoneAppearance';
 import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
@@ -50,15 +51,6 @@ export interface BoardProps {
   interactionDisabled?: boolean;
 }
 
-const ASSETS = {
-  board: "/assets/img/board.png",
-  blackStone: "/assets/img/B_stone.png",
-  whiteStone: "/assets/img/W_stone.png",
-  lastMove: "/assets/img/inner.png",
-  topMove: "/assets/img/topmove.png",
-};
-
-
 function drawFallbackStone(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, player: string) {
   ctx.beginPath();
   ctx.arc(x, y, radius * 0.95, 0, Math.PI * 2);
@@ -90,6 +82,8 @@ const Board: React.FC<BoardProps> = ({
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [canvasSize, setCanvasSize] = useState(800);
   const [imagesReady, setImagesReady] = useState(false);
+  const [assetsVersion, setAssetsVersion] = useState(0);
+  const { boardStyle, stoneStyle } = useBoardAppearance();
   const { t } = useTranslation();
 
   // Translate game result
@@ -105,14 +99,15 @@ const Board: React.FC<BoardProps> = ({
 
   useEffect(() => {
     let cancelled = false;
-    loadBoardImages(ASSETS).then(images => {
+    loadBoardImages({ ...BOARD_ASSETS, board: getBoardTextureDataUrl(boardStyle) }, stoneStyle).then(images => {
       if (!cancelled) {
         imagesRef.current = images;
         setImagesReady(true);
+        setAssetsVersion(v => v + 1);
       }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [boardStyle, stoneStyle]);
 
   // Track container size for responsive canvas
   useEffect(() => {
@@ -168,7 +163,7 @@ const Board: React.FC<BoardProps> = ({
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay, imagesReady, previewMove, interactionDisabled]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay, imagesReady, assetsVersion, boardStyle, stoneStyle, previewMove, interactionDisabled]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
     const m = externalRulers ? 0.5 : 1.5;
@@ -207,12 +202,18 @@ const Board: React.FC<BoardProps> = ({
 
     const boardSize = gameState.board_size[0];
     const layout = boardLayout(canvas, boardSize);
+    const palette = getBoardStylePalette(boardStyle);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Background
     if (imagesRef.current.board) {
+      ctx.fillStyle = palette.woodFill;
+      ctx.fillRect(layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
       ctx.drawImage(imagesRef.current.board, layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
+    } else if (layout.offsetX > 0 || layout.offsetY > 0) {
+      ctx.fillStyle = palette.woodFill;
+      ctx.fillRect(layout.offsetX, layout.offsetY, layout.boardWidth, layout.boardHeight);
     }
 
     // Grid, Stars, Coordinates
@@ -366,7 +367,15 @@ const Board: React.FC<BoardProps> = ({
     gameState.stones.forEach(([player, coords, scoreLoss, moveNumber], index) => {
       if (!coords) return;
       const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
-      const img = stoneImage(player === "B" ? "B" : "W", coords[0], coords[1], boardSize, player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+      const img = stoneImage(player === "B" ? "B" : "W", coords[0], coords[1], boardSize, player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone, stoneStyle);
+      if (player !== "B" && stoneStyle === "jade-agate" && img) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pos.x + stoneSize * 0.14, pos.y + stoneSize * 0.16, stoneSize * 0.86, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 243, 210, 0.28)";
+        ctx.fill();
+        ctx.restore();
+      }
       if (img) drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, coords[0], coords[1]);
       else drawFallbackStone(ctx, pos.x, pos.y, stoneSize, player);
 
@@ -468,7 +477,7 @@ const Board: React.FC<BoardProps> = ({
       gameState.ghost_stones.forEach(([player, coords]) => {
         if (!coords) return;
         const pos = gridToCanvas(layout, coords[0], coords[1], boardSize);
-        const img = stoneImage(player === "B" ? "B" : "W", coords[0], coords[1], boardSize, player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+        const img = stoneImage(player === "B" ? "B" : "W", coords[0], coords[1], boardSize, player === "B" ? imagesRef.current.blackStone : imagesRef.current.whiteStone, stoneStyle);
         if (img) drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, coords[0], coords[1]);
         else drawFallbackStone(ctx, pos.x, pos.y, stoneSize, player);
       });
@@ -510,7 +519,7 @@ const Board: React.FC<BoardProps> = ({
           const pos = gridToCanvas(layout, hx, hy, boardSize);
           ctx.save();
           ctx.globalAlpha = 0.5;
-          const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+          const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone, stoneStyle);
           if (img) {
             drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, hx, hy);
           } else {
@@ -528,7 +537,7 @@ const Board: React.FC<BoardProps> = ({
       const pos = gridToCanvas(layout, previewMove.x, previewMove.y, boardSize);
       ctx.save();
       ctx.globalAlpha = 0.75;
-      const img = stoneImage(previewMove.color, previewMove.x, previewMove.y, boardSize, previewMove.color === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone);
+      const img = stoneImage(previewMove.color, previewMove.x, previewMove.y, boardSize, previewMove.color === 'B' ? imagesRef.current.blackStone : imagesRef.current.whiteStone, stoneStyle);
       if (img) drawStoneSprite(ctx, img, pos.x, pos.y, stoneSize, boardSize, previewMove.x, previewMove.y);
       else drawFallbackStone(ctx, pos.x, pos.y, stoneSize, previewMove.color);
       ctx.globalAlpha = 1;
@@ -568,14 +577,15 @@ const Board: React.FC<BoardProps> = ({
     }
     // A state-only redraw can run before the image assets finish loading. Do not release
     // kiosk move audio until the stone image for this node can actually be visible.
-    if (Object.keys(ASSETS).every(key => imagesRef.current[key])) {
+    if (imagesRef.current.board && imagesRef.current.blackStone && imagesRef.current.whiteStone) {
       onPaintedNode?.(gameState.current_node_id);
     }
   };
 
   // Helper draw functions
   const drawGrid = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
+    const palette = getBoardStylePalette(boardStyle);
+    ctx.strokeStyle = palette.gridColor;
     ctx.lineWidth = 1.2;
     ctx.lineCap = "round";
 
@@ -599,7 +609,8 @@ const Board: React.FC<BoardProps> = ({
 
   const drawStars = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
     const stars = boardSize === 19 ? [3, 9, 15] : boardSize === 13 ? [3, 6, 9] : boardSize === 9 ? [2, 4, 6] : [];
-    ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+    const palette = getBoardStylePalette(boardStyle);
+    ctx.fillStyle = palette.starColor;
     const starRadius = layout.gridSize * 0.11;
     stars.forEach(x => stars.forEach(y => {
       const pos = gridToCanvas(layout, x, y, boardSize);
@@ -611,7 +622,8 @@ const Board: React.FC<BoardProps> = ({
 
   const drawCoordinates = (ctx: CanvasRenderingContext2D, layout: any, boardSize: number) => {
     const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    const palette = getBoardStylePalette(boardStyle);
+    ctx.fillStyle = palette.coordColor;
     ctx.font = `600 ${Math.max(12, layout.gridSize * 0.45)}px 'IBM Plex Mono', monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";

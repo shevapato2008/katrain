@@ -3,7 +3,7 @@ import { Box, ThemeProvider } from '@mui/material';
 import { Routes, Route } from 'react-router-dom';
 import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
 import { useSettings } from './context/SettingsContext';
-import { createGalaxyTheme } from './galaxy/theme';
+import { createGalaxyTheme, getChineseFontStack } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
 import './kiosk-shell/fonts.css';
 import './kiosk-shell/brand-font.css';
@@ -34,8 +34,9 @@ const ReportsPage = lazy(() => import('./galaxy/pages/report/ReportsPage'));
 const ReportDetailPage = lazy(() => import('./galaxy/pages/report/ReportDetailPage'));
 
 const GalaxyApp = () => {
-  const { language } = useSettings();
-  const galaxyTheme = useMemo(() => createGalaxyTheme(language), [language]);
+  const { language, chineseFont = 'wenkai' } = useSettings();
+  const galaxyTheme = useMemo(() => createGalaxyTheme(language, chineseFont), [language, chineseFont]);
+  const chineseFontStack = useMemo(() => getChineseFontStack(chineseFont), [chineseFont]);
 
   console.log("GalaxyApp rendering");
   return (
@@ -43,6 +44,8 @@ const GalaxyApp = () => {
       <Box
         className="galaxy-root"
         data-language={language}
+        data-chinese-font={chineseFont}
+        style={{ '--galaxy-chinese-font': chineseFontStack } as React.CSSProperties}
         sx={{
           width: '100vw',
           height: '100dvh',

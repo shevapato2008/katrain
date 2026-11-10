@@ -1,4 +1,5 @@
 import { drawStoneSprite, loadBoardImages, stoneImage } from '../board/boardUtils';
+import { type StoneStyleId, useBoardAppearance } from '../board/stoneAppearance';
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import {
@@ -151,6 +152,7 @@ function drawPvStone(
   moveNumber: number,
   blackImg: HTMLImageElement | null,
   whiteImg: HTMLImageElement | null,
+  stoneStyle: StoneStyleId,
 ) {
   // Use gridToCanvas to get center coordinates (handles Y inversion)
   const { x: cx, y: cy } = gridToCanvas(layout, x, y, boardSize);
@@ -159,7 +161,7 @@ function drawPvStone(
   ctx.save();
   ctx.globalAlpha = 0.6; // Semi-transparent
 
-  const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg);
+  const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg, stoneStyle);
   if (img) {
     // Draw stone image (matching drawStone in boardUtils.ts)
     drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, x, y);
@@ -222,6 +224,8 @@ export default function LiveBoard({
     ? undefined
     : { margin: 0.5, exact: true };
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [assetsVersion, setAssetsVersion] = useState(0);
+  const { boardStyle, stoneStyle } = useBoardAppearance();
   // Animation ref for pulsing effect timing
   const startTimeRef = useRef<number>(Date.now());
   // Hover position for ghost stone preview
@@ -230,14 +234,17 @@ export default function LiveBoard({
   // Load images
   useEffect(() => {
     let cancelled = false;
-    loadBoardImages(BOARD_ASSETS).then(images => {
+    const fallbackBoard = new Image();
+    fallbackBoard.src = BOARD_ASSETS.board;
+    loadBoardImages(boardStyle, stoneStyle).then(images => {
       if (!cancelled) {
         imagesRef.current = images;
         setImagesLoaded(true);
+        setAssetsVersion(v => v + 1);
       }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [boardStyle, stoneStyle]);
 
   // Track container size
   useEffect(() => {
@@ -278,17 +285,17 @@ export default function LiveBoard({
     ctx.clearRect(0, 0, canvasSize, canvasSize);
 
     // Draw board background
-    drawBoardBackground(ctx, layout, imagesRef.current['board'] || null);
+    drawBoardBackground(ctx, layout, imagesRef.current['board'] || null, boardStyle);
 
     // Draw grid lines
-    drawGrid(ctx, layout, boardSize);
+    drawGrid(ctx, layout, boardSize, boardStyle);
 
     // Draw star points
-    drawStars(ctx, layout, boardSize);
+    drawStars(ctx, layout, boardSize, boardStyle);
 
     // Draw coordinates
     if (showCoordinates) {
-      drawCoordinates(ctx, layout, boardSize);
+      drawCoordinates(ctx, layout, boardSize, undefined, boardStyle);
     }
 
     // Draw ownership/territory overlay
@@ -324,7 +331,7 @@ export default function LiveBoard({
       for (let x = 0; x < boardSize; x++) {
         const stone = board[y][x];
         if (stone) {
-          drawStone(ctx, layout, x, y, boardSize, stone as 'B' | 'W', blackImg, whiteImg);
+          drawStone(ctx, layout, x, y, boardSize, stone as 'B' | 'W', blackImg, whiteImg, stoneStyle);
 
           // Draw move number on stone if enabled
           if (showMoveNumbers && moveNumbers[y][x]) {
@@ -357,7 +364,7 @@ export default function LiveBoard({
         if (coords) {
           const [x, y] = coords;
           if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x] && !tryOccupied.has(`${x},${y}`)) {
-            drawPvStone(ctx, layout, x, y, boardSize, tryPlayer, i + 1, blackImg, whiteImg);
+            drawPvStone(ctx, layout, x, y, boardSize, tryPlayer, i + 1, blackImg, whiteImg, stoneStyle);
             tryOccupied.add(`${x},${y}`);
             markerMove = coords;
             markerPlayer = tryPlayer;
@@ -405,7 +412,7 @@ export default function LiveBoard({
         // ghost of the stone to be placed
         ctx.save();
         ctx.globalAlpha = 0.45;
-        const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg);
+        const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg, stoneStyle);
         if (img) {
           drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, x, y);
         } else {
@@ -459,7 +466,7 @@ export default function LiveBoard({
           const posKey = `${x},${y}`;
           // Only draw if position is empty (not occupied by real stones or previous PV stones)
           if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x] && !pvOccupied.has(posKey)) {
-            drawPvStone(ctx, layout, x, y, boardSize, pvPlayer, displayNumber, blackImg, whiteImg);
+            drawPvStone(ctx, layout, x, y, boardSize, pvPlayer, displayNumber, blackImg, whiteImg, stoneStyle);
             pvOccupied.add(posKey);
             displayNumber++;
           }
@@ -479,7 +486,7 @@ export default function LiveBoard({
         const stoneSize = layout.gridSize * 0.505;
         ctx.save();
         ctx.globalAlpha = 0.5;
-        const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? blackImg : whiteImg);
+        const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? blackImg : whiteImg, stoneStyle);
         if (img) {
           drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, hx, hy);
         } else {
@@ -510,7 +517,7 @@ export default function LiveBoard({
       const interval = setInterval(renderBoard, 100); // ~10fps for pulse
       return () => clearInterval(interval);
     }
-  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, aiMarkerLimit, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
+  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, assetsVersion, boardStyle, stoneStyle, showCoordinates, pvMoves, aiMarkers, aiMarkerLimit, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
   const coordsToMove = (x: number, y: number): string => {

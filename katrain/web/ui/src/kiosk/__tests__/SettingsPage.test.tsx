@@ -5,6 +5,12 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
 import { readAudioPref } from '../../utils/audioPrefs';
+import {
+  getActiveBoardStyle,
+  getActiveStoneStyle,
+  setActiveBoardStyle,
+  setActiveStoneStyle,
+} from '../../components/board/stoneAppearance';
 
 // B6: SettingsPage pulls in useSettings/useAuth/useGeometry (the last directly, the
 // auth one via AccountSection). Mock each context module directly — same idiom as
@@ -254,6 +260,44 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(screen.getByText('这次开机已标定')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '开始标定' }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
+  });
+
+  it('实体棋盘渲染棋盘样式与棋子样式分段控件，排除石材与星河，且切换即时同步 store 与 localStorage', () => {
+    setActiveBoardStyle('kaya');
+    setActiveStoneStyle('clamshell-slate');
+    renderPage();
+
+    const boardGroup = document.querySelector('[data-group="board"]');
+    expect(boardGroup).not.toBeNull();
+    expect(boardGroup).toHaveTextContent('棋盘样式');
+    expect(boardGroup).toHaveTextContent('屏幕棋盘木纹与线条配色');
+    expect(boardGroup).toHaveTextContent('棋子样式');
+    expect(boardGroup).toHaveTextContent('屏幕棋子材质与光泽效果');
+
+    for (const label of ['日式本榧', '新榧云杉', '碳化楠竹', '胡桃沉香']) {
+      expect(boardGroup).toHaveTextContent(label);
+    }
+    for (const label of ['蛤碁石', '云子', '玉石玛瑙', '简约']) {
+      expect(boardGroup).toHaveTextContent(label);
+    }
+    expect(screen.queryByText('石材')).toBeNull();
+    expect(screen.queryByText('星河')).toBeNull();
+
+    const jadeBtn = screen.getByTestId('kiosk-stone-style-jade-agate');
+    expect(jadeBtn).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(jadeBtn);
+    expect(getActiveStoneStyle()).toBe('jade-agate');
+    expect(localStorage.getItem('katrain_stone_style')).toBe('jade-agate');
+    expect(jadeBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(jadeBtn.classList.contains('active')).toBe(true);
+
+    const bambooBtn = screen.getByTestId('kiosk-board-style-bamboo');
+    expect(bambooBtn).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(bambooBtn);
+    expect(getActiveBoardStyle()).toBe('bamboo');
+    expect(localStorage.getItem('katrain_board_style')).toBe('bamboo');
+    expect(bambooBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(bambooBtn.classList.contains('active')).toBe(true);
   });
 
   // 一屏之内所有选择组用**同一种控件**(规范 §12)—— 所以是分段不是 MUI 开关。

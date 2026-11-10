@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { i18n } from '../i18n';
 import { isStrictBoxKiosk } from '../kiosk/shell/boxUrls';
+import {
+  type BoardStyleId,
+  type ChineseFontId,
+  type StoneAppearanceId,
+  type StoneStyleId,
+  CHINESE_FONT_STORAGE_KEY,
+  normalizeChineseFontId,
+  useBoardAppearance,
+} from '../components/board/stoneAppearance';
 
 export type DeviceAppearance = {
   language: 'zh' | 'zh-TW' | 'en' | 'ja' | 'ko';
@@ -23,6 +32,12 @@ interface SettingsContextType {
   refreshAppearance: () => void;
   setLanguage: (lang: string) => Promise<void>;
   languages: { code: string; name: string }[];
+  boardStyle: BoardStyleId;
+  setBoardStyle: (style: BoardStyleId) => void;
+  stoneStyle: StoneStyleId;
+  setStoneStyle: (style: StoneAppearanceId) => void;
+  chineseFont: ChineseFontId;
+  setChineseFont: (font: ChineseFontId) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -73,15 +88,57 @@ const detectBrowserLanguage = (): string => {
 };
 
 const LANGUAGE_STORAGE_KEY = 'katrain_language';
+const KIOSK_TYPOGRAPHY_STORAGE_KEY = 'kiosk.typography.v1';
+
+function readInitialChineseFont(): ChineseFontId {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(CHINESE_FONT_STORAGE_KEY);
+      if (saved) return normalizeChineseFontId(saved);
+      const kioskRaw = localStorage.getItem(KIOSK_TYPOGRAPHY_STORAGE_KEY);
+      if (kioskRaw) {
+        const parsed = JSON.parse(kioskRaw) as { font?: string };
+        if (parsed && typeof parsed.font === 'string') {
+          return normalizeChineseFontId(parsed.font);
+        }
+      }
+    }
+  } catch {
+    // Ignore storage or JSON errors
+  }
+  return 'wenkai';
+}
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState('cn');
   const [deviceAppearance, setDeviceAppearance] = useState<DeviceAppearance | null>(null);
   const [appearanceLoading, setAppearanceLoading] = useState(isStrictBoxKiosk);
   const [appearanceError, setAppearanceError] = useState(false);
+  const [chineseFont, setChineseFontState] = useState<ChineseFontId>(readInitialChineseFont);
+  const { boardStyle, setBoardStyle, stoneStyle, setStoneStyle } = useBoardAppearance();
   const requestGeneration = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const [, setTick] = useState(0); // For forcing re-render on translation change
+
+  const setChineseFont = useCallback((font: ChineseFontId) => {
+    const normalized = normalizeChineseFontId(font);
+    setChineseFontState(normalized);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(CHINESE_FONT_STORAGE_KEY, normalized);
+        const existingRaw = localStorage.getItem(KIOSK_TYPOGRAPHY_STORAGE_KEY);
+        const existing = existingRaw ? (JSON.parse(existingRaw) as Record<string, unknown>) : {};
+        const nextTypography = {
+          size: typeof existing?.size === 'string' ? existing.size : 'large',
+          ...(existing && typeof existing === 'object' ? existing : {}),
+          font: normalized,
+        };
+        localStorage.setItem(KIOSK_TYPOGRAPHY_STORAGE_KEY, JSON.stringify(nextTypography));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
 
   const updateLanguage = useCallback(async (lang: string) => {
     if (isStrictBoxKiosk) return;
@@ -115,6 +172,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (generation !== requestGeneration.current) return;
         setLanguageState(DEVICE_UI_LANGUAGE[value.language]);
         setDeviceAppearance(value);
+        setChineseFontState(DEVICE_UI_FONT[value.font]);
         setAppearanceError(false);
       } catch {
         if (generation === requestGeneration.current) setAppearanceError(true);
@@ -155,7 +213,23 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [deviceAppearance]);
 
   return (
-    <SettingsContext.Provider value={{ language, setLanguage: updateLanguage, languages, deviceAppearance, appearanceLoading, appearanceError, refreshAppearance }}>
+    <SettingsContext.Provider
+      value={{
+        language,
+        setLanguage: updateLanguage,
+        languages,
+        deviceAppearance,
+        appearanceLoading,
+        appearanceError,
+        refreshAppearance,
+        boardStyle,
+        setBoardStyle,
+        stoneStyle,
+        setStoneStyle,
+        chineseFont,
+        setChineseFont,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );

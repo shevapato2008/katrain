@@ -7,9 +7,9 @@ Design (PRD R2 / feasibility §4.1):
   lamps, capture lamps, undo restore, handicap guidance and leftover-stone cleanup.
 - Event-source abstraction (PRD R8.1 / Q5): the ONLY input is the game_update state dict.
   A remote opponent (phase 2) or a second human produces identical updates — zero changes.
-- Threading: on_game_state may be called from the AI thread (wrapped update_state_callback).
-  It only stores the dict and pushes the expected board (queue put, thread-safe). All
-  planner mutations happen on the event loop inside _tick_once.
+- Threading: callbacks capture their binding source and marshal to the event loop.
+  The current authority is read and queued under the existing game commit lock;
+  all physical-state mutations run on the event loop.
 """
 
 from __future__ import annotations
@@ -17,14 +17,46 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from contextlib import nullcontext
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from katrain.vision.service import VisionService
 from katrain.vision.sync import game_state_stones_to_board
 from katrain.web.core.physical_play import BLACK, EMPTY, WHITE, LedPlanner, PhysicalPlayConfig
 
 logger = logging.getLogger("katrain_web.physical_play")
+
+
+def capture_vision_source(vision, session_id, session):
+    return vision.capture_binding_source(session_id, session) if isinstance(vision, VisionService) else None
+
+
+def vision_source_is_current(vision, source) -> bool:
+    return not isinstance(vision, VisionService) if source is None else vision.source_is_current(source)
+
+
+def publish_current_expected(vision, session_id, session, source, *, force_rearm=False):
+    """Fallback uses the same authority critical section as the orchestrator publisher."""
+    with getattr(session.katrain, "ai_ladder_commit_lock", nullcontext()):
+        if not vision_source_is_current(vision, source):
+            return False
+        state = (
+            session.last_state if getattr(session, "game_type", None) == "pvp_lobby" else session.katrain.get_state()
+        )
+        if not state or "stones" not in state:
+            return False
+        if isinstance(vision, VisionService):
+            return vision.publish_expected_from_stones(
+                source,
+                state["stones"],
+                state.get("board_size", [19, 19])[0],
+                expected_node_id=state.get("current_node_id"),
+                force_rearm=force_rearm,
+            )
+        vision.set_expected_from_stones(state["stones"], expected_node_id=state.get("current_node_id"))
+        return True
 
 
 class PhysicalPlayOrchestrator:
@@ -64,6 +96,8 @@ class PhysicalPlayOrchestrator:
         self._planner = LedPlanner(config)
         self._session_id: Optional[str] = None
         self._session = None
+        self._binding_source = None
+        self._loop = None
         self._orig_callback = None
         self._latest_state: Optional[Dict] = None
         self._task: Optional[asyncio.Task] = None
@@ -90,11 +124,14 @@ class PhysicalPlayOrchestrator:
         """Attach to a session: wrap its (single-slot) state callback, seed state,
         start the tick loop. Called from the vision bind endpoint (Task 6).
         Idempotent for the same session (the frontend double-binds today, review M1)."""
-        if session_id == self._session_id and session is self._session:
+        source = capture_vision_source(self._vision, session_id, session)
+        if session_id == self._session_id and session is self._session and source == self._binding_source:
             return
         self.on_unbind()
         self._session_id = session_id
         self._session = session
+        self._binding_source = source
+        self._loop = asyncio.get_running_loop()
         self._planner.reset()
         self._orig_callback = session.katrain.update_state_callback
         orig = self._orig_callback
@@ -102,10 +139,10 @@ class PhysicalPlayOrchestrator:
         def wrapped(state, _orig=orig):
             if _orig:
                 _orig(state)
-            self.on_game_state(state)
+            self.on_game_state(state, source=source)
 
         session.katrain.update_state_callback = wrapped
-        self.on_game_state(session.katrain.get_state())
+        self.on_game_state(None, source=source)
         if self._task is None or self._task.done():
             self._task = asyncio.get_running_loop().create_task(self._run())
 
@@ -114,6 +151,7 @@ class PhysicalPlayOrchestrator:
         # Mark detached before cancelling a transient blink so its cleanup cannot
         # briefly restore old game guidance on a board that is being unbound.
         self._session_id = None
+        self._binding_source = None
         self.dismiss_attention()
         self._attention_seen.clear()
         self.dismiss_hint()
@@ -144,12 +182,71 @@ class PhysicalPlayOrchestrator:
 
     # -- inputs ----------------------------------------------------------------
 
-    def on_game_state(self, state: Dict) -> None:
-        """Authoritative game_update. Pushing the expected board here re-baselines
-        MoveDetector on EVERY digital change (AI move, undo, nav) — closing the gap
-        where placing the AI's stone was itself detected as a new move."""
-        if self._session_id is None:
+    @property
+    def binding_source(self):
+        return self._binding_source
+
+    def source_is_current(self, source) -> bool:
+        if source is not None and hasattr(self._manager, "get_session"):
+            try:
+                if self._manager.get_session(source.session_id) is not source.session:
+                    return False
+            except KeyError:
+                return False
+        return (
+            self._session_id is not None
+            and source == self._binding_source
+            and vision_source_is_current(self._vision, source)
+        )
+
+    def on_game_state(self, state: Dict | None, *, source=None, force_rearm=False) -> None:
+        """Apply captured sources on the loop, rereading current digital authority."""
+        if self._session_id is None or not self.source_is_current(source):
             return
+        if self._loop is not None:
+            try:
+                on_loop = asyncio.get_running_loop() is self._loop
+            except RuntimeError:
+                on_loop = False
+            if not on_loop:
+                self._loop.call_soon_threadsafe(
+                    lambda: self.on_game_state(state, source=source, force_rearm=force_rearm)
+                )
+                return
+        lock = (
+            getattr(self._session.katrain, "ai_ladder_commit_lock", nullcontext()) if self._session else nullcontext()
+        )
+        with lock:
+            if not self.source_is_current(source):
+                return
+            if self._session is not None:
+                state = (
+                    self._session.last_state
+                    if getattr(self._session, "game_type", None) == "pvp_lobby"
+                    else self._session.katrain.get_state()
+                )
+            if not state:
+                return
+            self._apply_game_state(state)
+            try:
+                if isinstance(self._vision, VisionService):
+                    self._vision.publish_expected_from_stones(
+                        source,
+                        state["stones"],
+                        state["board_size"][0],
+                        expected_node_id=state.get("current_node_id"),
+                        force_rearm=force_rearm,
+                    )
+                else:
+                    self._vision.set_expected_from_stones(
+                        state["stones"],
+                        state["board_size"][0],
+                        expected_node_id=state.get("current_node_id"),
+                    )
+            except Exception as exc:
+                logger.debug("expected-board push failed: %s", exc)
+
+    def _apply_game_state(self, state: Dict) -> None:
         self._latest_state = state
         local_confirm = (
             state.get("game_type") == "pvp_local" and not state.get("end_result") and not state.get("awaiting_count")
@@ -176,14 +273,6 @@ class PhysicalPlayOrchestrator:
             self._remove_pause_reason(self.PAUSE_REASON_LAG)
         else:
             self._remove_pause_reason(self.PAUSE_REASON_GAME_OVER)
-        try:
-            self._vision.set_expected_from_stones(
-                state["stones"],
-                state["board_size"][0],
-                expected_node_id=state.get("current_node_id"),
-            )
-        except Exception as e:  # never break the broadcast chain
-            logger.debug("expected-board push failed: %s", e)
 
     @property
     def board_caught_up(self) -> bool:

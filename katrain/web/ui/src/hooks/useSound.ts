@@ -5,9 +5,14 @@
  * Sound effects are served from /assets/sounds/
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
-import { readAudioPref } from '../utils/audioPrefs';
+import {
+  STONE_SOUND_TONE_KEY,
+  readAudioPref,
+  readStoneSoundPref,
+  resolveStoneSoundUrl,
+} from '../utils/audioPrefs';
 
 export type SoundName = 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved' | 'countdownbeep';
 
@@ -47,54 +52,101 @@ function preloadSounds() {
 const SINGLETON_SOUNDS: ReadonlySet<SoundName> = new Set<SoundName>(['countdownbeep']);
 
 export interface UseSoundReturn {
-  play: (name: SoundName) => void;
-  /** Stop a singleton sound and rewind it. No-op for overlapping (cloned) sounds. */
+  /** True only after the browser confirms playback. Existing fire-and-forget callers still work. */
+  play: (name: SoundName, options?: { offsetSeconds?: number }) => Promise<boolean>;
+  /** Only stops a singleton owned by this hook instance. */
   stop: (name: SoundName) => void;
+  /** Call synchronously from a user gesture; never blocks starting a game. */
+  unlock: () => Promise<boolean>;
 }
 
-/**
- * ⚠️ 这里曾经有 `setEnabled` / `isEnabled`,它们**零个调用点**,而且关不掉声音:
- * `enabledRef` 是 `useRef`(每个 hook 实例各一份)而 `audioCache` 是模块级的 ——
- * A 组件静音,B 组件照响。开关搬到 `utils/audioPrefs`(模块级 + localStorage),
- * 用户出口是屏 27 设置的「声音」组。详见那个文件顶上的说明。
- */
+type Attempt = { owner: symbol };
+const attempts = new Map<SoundName, Attempt>();
+
 export function useSound(): UseSoundReturn {
-  // Preload sounds on first hook mount
-  useEffect(() => {
-    preloadSounds();
-  }, []);
-
-  const play = useCallback((name: SoundName) => {
-    // **每次播放都现读**,不缓存进闭包:设置屏可以在任意一屏开着的时候被改。
-    if (!readAudioPref('sfx')) return;
-
-    const audio = audioCache[name];
-    if (!audio) return;
-    if (SINGLETON_SOUNDS.has(name)) {
-      // Reuse the cached element: a clone cannot be stopped, and cloneNode() re-parses
-      // the src on every call (measured on RK3562: play() → 'playing' 140–1065 ms).
-      audio.pause();
-      audio.currentTime = 0;
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-      return;
-    }
-    // Clone to allow overlapping sounds
-    const clone = audio.cloneNode() as HTMLAudioElement;
-    clone.volume = 0.5;
-    clone.play().catch(() => {
-      // Ignore autoplay restrictions - user interaction will unlock audio
-    });
-  }, []);
+  const owner = useRef(Symbol('sound-owner')).current;
 
   const stop = useCallback((name: SoundName) => {
+    if (attempts.get(name)?.owner !== owner) return;
+    attempts.delete(name);
     const audio = audioCache[name];
-    if (!audio || !SINGLETON_SOUNDS.has(name)) return;
     audio.pause();
     audio.currentTime = 0;
-  }, []);
+    audio.volume = 0.5;
+  }, [owner]);
 
-  return { play, stop };
+  useEffect(() => {
+    preloadSounds();
+    return () => { SINGLETON_SOUNDS.forEach(stop); };
+  }, [stop]);
+
+  const play = useCallback(async (name: SoundName, options?: { offsetSeconds?: number }): Promise<boolean> => {
+    if (!readAudioPref('sfx')) return false;
+    preloadSounds();
+    const cached = audioCache[name];
+    const singleton = SINGLETON_SOUNDS.has(name);
+    let audio: HTMLAudioElement;
+    if (name === 'stone') {
+      let hasConfiguredTone = false;
+      try {
+        hasConfiguredTone = localStorage.getItem(STONE_SOUND_TONE_KEY) !== null;
+      } catch {
+        hasConfiguredTone = false;
+      }
+      const targetUrl = hasConfiguredTone
+        ? resolveStoneSoundUrl(readStoneSoundPref())
+        : resolveStoneSoundUrl('stone1');
+      if (!targetUrl) return false;
+      audio = targetUrl === SOUND_FILES.stone
+        ? (cached.cloneNode() as HTMLAudioElement)
+        : new Audio(targetUrl);
+    } else {
+      audio = singleton ? cached : (cached.cloneNode() as HTMLAudioElement);
+    }
+    const attempt: Attempt = { owner };
+    if (singleton) {
+      attempts.set(name, attempt);
+      audio.pause();
+      audio.currentTime = Math.max(0, options?.offsetSeconds ?? 0);
+    }
+    audio.volume = 0.5;
+    try {
+      await audio.play();
+      if (singleton && attempts.get(name) !== attempt) return false;
+      if (!readAudioPref('sfx')) {
+        if (singleton) stop(name);
+        else audio.pause();
+        return false;
+      }
+      return true;
+    } catch {
+      if (singleton && attempts.get(name) === attempt) stop(name);
+      return false;
+    }
+  }, [owner, stop]);
+
+  const unlock = useCallback(async (): Promise<boolean> => {
+    if (!readAudioPref('sfx')) return false;
+    preloadSounds();
+    const name = 'countdownbeep';
+    // A gesture during real playback must not interrupt it (including another seat).
+    if (attempts.has(name)) return false;
+    const audio = audioCache[name];
+    const attempt: Attempt = { owner };
+    attempts.set(name, attempt);
+    audio.volume = 0;
+    try {
+      await audio.play();
+      if (attempts.get(name) !== attempt) return false;
+      stop(name);
+      return true;
+    } catch {
+      if (attempts.get(name) === attempt) stop(name);
+      return false;
+    }
+  }, [owner, stop]);
+
+  return { play, stop, unlock };
 }
 
 export default useSound;

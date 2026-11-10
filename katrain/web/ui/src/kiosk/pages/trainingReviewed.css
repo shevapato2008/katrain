@@ -1,0 +1,169 @@
+/* Training home: one tactile carousel card with its neighboring cards visible. */
+.u-train-carousel-home{position:relative;width:100%;height:434px;overflow:hidden;color:#edf5ec;font-family:var(--font-serif)}
+.u-train-carousel-home button{font-family:var(--font-serif);cursor:pointer}
+.u-train-carousel-heading{height:72px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 8px}
+.u-train-carousel-heading>div:first-child{display:flex;flex-direction:column;gap:1px}
+.u-train-carousel-heading strong{font-size:27px;line-height:34px;font-weight:600}
+.u-train-carousel-heading span{font-size:18px;line-height:24px;color:#b5cbb9}
+.u-train-carousel-groups{height:50px;display:flex;align-items:center;gap:2px;padding:3px;border:1px solid #46634d;border-radius:15px;background:#19291f;box-shadow:inset 0 2px 4px #07140bb3,0 1px 0 #486750}
+.u-train-carousel-groups button{height:44px;min-width:130px;padding:0 10px;border:0;border-radius:11px;background:transparent;color:#c7d9ca;font-size:19px;white-space:nowrap}
+.u-train-carousel-groups button[aria-selected="true"]{background:linear-gradient(#3d674b,#284936);color:#f0f7ee;box-shadow:inset 0 1px 0 #ffffff68,inset 0 -2px 0 #142f1b,0 3px 5px #0008}
+.u-train-carousel-groups button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #06120aaa}
+.u-train-carousel-deck{position:absolute;left:0;right:0;top:73px;height:331px;perspective:1000px;perspective-origin:50% 46%;touch-action:pan-y;user-select:none;cursor:grab}
+.u-train-carousel-deck.is-dragging{cursor:grabbing}
+.u-train-carousel-deck:after{content:"";position:absolute;left:32%;right:32%;bottom:8px;height:12px;border-radius:50%;background:#0009;box-shadow:0 0 13px 8px #0007;pointer-events:none}
+.u-train-carousel-card{position:absolute;left:50%;top:48%;width:500px;height:304px;padding:15px 20px 17px;border:1px solid #6a9475;border-radius:23px;background:linear-gradient(150deg,#294a36,#1d3228 42%,#17271f);box-shadow:inset 0 2px 0 #ffffff3d,inset 0 -3px 0 #0b1d12,0 6px 0 #0a1a10,0 15px 26px #000b;backface-visibility:hidden;transform-style:preserve-3d;will-change:transform,opacity;overflow:hidden}
+.u-train-carousel-card:before{content:"";position:absolute;inset:0 0 auto;height:51px;border-radius:22px 22px 0 0;background:linear-gradient(#ffffff1f,#ffffff00);pointer-events:none}
+.u-train-carousel-card.is-center{border-color:#85c999}
+.u-train-carousel-card:not(.is-center) .u-train-carousel-card-body,.u-train-carousel-card:not(.is-center) .u-train-carousel-enter,.u-train-carousel-card:not(.is-center) .u-train-carousel-card-head>span{opacity:0;pointer-events:none}
+.u-train-carousel-card:not(.is-center) .u-train-carousel-card-head{border-bottom:0}
+.u-train-carousel-card-head{height:53px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid #53735b;white-space:nowrap}
+.u-train-carousel-card-head strong{font-size:34px;line-height:39px;font-weight:600}
+.u-train-carousel-card-head>span{margin-top:10px;color:#d1e0d3;font-size:19px}
+.u-train-carousel-card-body{height:170px;display:flex;align-items:center;gap:22px}
+.u-train-carousel-pie{width:137px;height:137px;flex:none;display:grid;place-items:center;position:relative;border-radius:50%;background:var(--u-train-pie);box-shadow:0 4px 14px #0009,inset 0 2px 3px #ffffff4d}
+.u-train-carousel-pie:before{content:"";position:absolute;inset:29px;border-radius:50%;background:#172a20;box-shadow:inset 0 2px 5px #000b,0 1px 1px #ffffff4d}
+.u-train-carousel-pie>div{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.u-train-carousel-pie strong{font-size:24px;font-weight:600}.u-train-carousel-pie span{font-size:16px;color:#c4d7c8}
+.u-train-carousel-card.is-unknown .u-train-carousel-pie{background:#1a3023;border:7px dashed #526f59;box-shadow:0 4px 14px #0007}
+.u-train-carousel-card.is-unknown .u-train-carousel-pie:before{inset:18px;background:#1a3023;box-shadow:none}
+.u-train-carousel-card.is-unknown .u-train-carousel-pie strong{font-size:24px}
+.u-train-carousel-card.is-unknown .u-train-carousel-pie span{font-size:14px}
+.u-train-carousel-legend{flex:1;display:grid;gap:4px;align-content:center;touch-action:pan-y}
+.u-train-carousel-legend>div{display:grid;grid-template-columns:10px 1fr 68px 56px;align-items:center;gap:6px;font-size:17px;white-space:nowrap}
+.u-train-carousel-legend i{height:10px;width:10px;border-radius:3px;background:var(--u-train-swatch)}
+.u-train-carousel-legend b{font-size:16px;font-weight:500;text-align:right}.u-train-carousel-legend small{font-size:15px;color:#b8cebd;text-align:right}
+.u-train-carousel-unavailable{display:flex;flex-direction:column;gap:7px;font-size:21px;color:#d0dfd2}
+.u-train-carousel-unavailable strong{font-weight:500}.u-train-carousel-unavailable span{font-size:17px;color:#abc4b1}
+.u-train-carousel-enter{height:47px;width:100%;padding:0 15px;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid #7cd69b;border-radius:13px;background:linear-gradient(#6ccc91,#52ac74);box-shadow:inset 0 2px 0 #ffffff6b,inset 0 -3px 0 #2c7048,0 4px 8px #0009;color:#0e2918;font-size:22px;font-weight:600}
+.u-train-carousel-enter .u-train-icon{width:22px;height:22px}.u-train-carousel-enter .u-train-icon svg{width:22px;height:22px}
+.u-train-carousel-enter:active{transform:translateY(3px);box-shadow:inset 0 3px 5px #286b44}
+.u-train-carousel-nav{position:absolute;z-index:100;top:202px;height:48px;width:48px;display:grid;place-items:center;border:1px solid #75ad83;border-radius:50%;background:linear-gradient(#31553e,#1c3528);color:#ebf6eb;box-shadow:inset 0 2px 0 #ffffff44,0 3px 0 #0a1b10,0 8px 16px #000a;font-size:38px;line-height:1}
+.u-train-carousel-nav.is-prev{left:7px}.u-train-carousel-nav.is-next{right:7px}
+.u-train-carousel-nav:active{transform:translateY(3px);box-shadow:inset 0 3px 5px #05130a}
+.u-train-carousel-foot{position:absolute;left:0;right:0;bottom:1px;height:24px;display:flex;align-items:center;justify-content:center;gap:15px;color:#b6cfbb;font-size:17px}
+.u-train-carousel-foot>div{width:143px;display:flex;gap:5px}.u-train-carousel-foot i{height:5px;flex:1;border-radius:5px;background:#3d6248}.u-train-carousel-foot i.is-active{background:#76d39b}
+.u-train-carousel-foot>span:last-child{position:absolute;right:8px;font-size:16px;color:#99bba5}
+.u-train-carousel-home button:focus-visible{outline:3px solid #a4e6b5;outline-offset:2px}
+
+.u-train-carousel-card{transition:transform 240ms ease,opacity 240ms ease}.u-train-carousel-heading strong,.u-train-carousel-card-head strong{font-size:28px}.u-train-carousel-home :is(span,small,b),.u-train-carousel-groups button{font-size:18px}.u-train-carousel-enter{font-size:22px}.u-train-carousel-card-head strong{font-size:28px}.u-train-carousel-legend{max-height:160px;overflow:auto}.u-train-carousel-legend>div{grid-template-columns:10px 1fr 65px 64px;font-size:18px}.u-train-carousel-card-body{gap:14px}.u-train-carousel-nav:disabled{opacity:.35}.training-reviewed .tsumego-category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.training-reviewed .tsumego-category-grid .kiosk-card{height:80px;min-height:80px}.training-tabs{display:flex;gap:3px;padding:4px;border:1px solid #46634d;border-radius:13px;background:#19291f;margin:8px 0}.training-tabs button{min-height:44px;min-width:130px;border:0;border-radius:10px;background:transparent;color:#c7d9ca;font-size:22px}.training-tabs button[aria-selected=true]{background:linear-gradient(#3d674b,#284936);box-shadow:inset 0 1px #ffffff68,0 3px 5px #0008;color:#fff}.training-reviewed .kiosk-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.training-reviewed .qgrid button small{font-size:18px;color:var(--dim);display:block}.training-reviewed .tsumego-browser__grid{overflow:auto;align-content:start;grid-auto-rows:72px}.training-reviewed .tsumego-browser__rail{grid-template-rows:auto auto auto minmax(0,1fr) auto auto auto}.training-reviewed .tsumego-browser__alternatives{display:none}@media(prefers-reduced-motion:reduce){.u-train-carousel-card{transition:none}}
+
+.training-reviewed .tsumego-browser__rail{display:flex;flex-direction:column;gap:7px;height:516px;min-height:0}.training-reviewed .tsumego-browser__rail>.kiosk-pagebar{flex:none;min-height:44px}.training-reviewed .tsumego-browser__stats{flex:none;min-height:58px}.training-reviewed .training-tabs{flex:none;margin:0}.training-reviewed .tsumego-browser__section{flex:none;min-height:22px}.training-reviewed .tsumego-browser__grid{flex:1;height:auto;min-height:0;grid-auto-rows:72px}.training-reviewed .tsumego-browser__grid button{height:72px;gap:0}.training-reviewed .tsumego-browser__selection{flex:none;min-height:30px}.training-reviewed .tsumego-browser__enter{flex:none;min-height:48px}.training-reviewed .tsumego-browser__grid button :is(b,em){font-size:18px}.training-reviewed .tsumego-browser__selection-hint{display:none}.training-reviewed .tsumego-browser__rail .kiosk-pagebar__sub{font-size:18px}.training-reviewed .tsumego-browser__rail .kiosk-pagebar__title{font-size:22px}
+
+.training-problem-reviewed .gtoggles--switch>button{height:44px;min-width:130px;font-size:22px}.training-problem-reviewed .kiosk-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.training-problem-reviewed .kiosk-actions button{height:48px;font-size:22px}
+.training-reviewed .tsumego-browser__stat span,.training-reviewed .tsumego-browser__stat small,.training-reviewed .tsumego-browser__section,.training-reviewed .tsumego-browser__section em,.training-reviewed .tsumego-browser__selection,.training-reviewed .tsumego-browser__selection b,.training-reviewed .tsumego-browser__enter small{font-size:18px}.training-reviewed .tsumego-browser__stat strong{font-size:28px}.training-reviewed .tsumego-browser__enter b{font-size:22px}.training-reviewed .training-tabs{height:52px;box-sizing:border-box}.training-reviewed .training-tabs button{height:44px;min-height:44px}.training-reviewed .tsumego-browser__grid button b{font-size:22px}.training-reviewed .tsumego-browser__selection{gap:8px}.training-reviewed .tsumego-browser__selection span{font-size:18px}.training-reviewed .kiosk-card :is(h3,h4){font-size:22px}.training-reviewed .kiosk-card :is(p,em,small){font-size:18px}
+/* The page action group owns both grid directions; shared actions default to columns. */
+.training-problem-reviewed .kiosk-actions{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-columns:auto;gap:8px;flex:none;margin-top:auto}.training-problem-reviewed .kiosk-actions button{min-width:0;padding:0 6px;display:flex;flex-direction:row;gap:5px;height:48px;font-size:22px}.training-problem-reviewed .kiosk-actions svg{height:22px;width:22px}.training-problem-reviewed .kiosk-rail{gap:7px}.training-problem-reviewed .panel{padding:7px 12px}.training-problem-reviewed .panel h3,.training-problem-reviewed .rst h3{font-size:22px;margin:0 0 4px}.training-problem-reviewed .qtext,.training-problem-reviewed .kiosk-tag,.training-problem-reviewed .ghint,.training-problem-reviewed .rst small,.training-problem-reviewed .mvrows,.training-problem-reviewed .panel p{font-size:18px;line-height:1.25}.training-problem-reviewed .panel .dots{margin-top:6px}.training-problem-reviewed .mvrows .n,.training-problem-reviewed .mvrows .mv{font-size:18px}.training-problem-reviewed .kiosk-pagebar__sub{font-size:18px}.training-problem-reviewed .gtoggles{height:44px}.training-problem-reviewed .gtoggles .ghint{font-size:18px}.training-problem-reviewed .panel .qtext{margin:4px 0}.training-problem-reviewed .panel:has([data-testid=puzzle-statement])>div{margin-top:4px!important}.training-problem-reviewed .railsec{min-height:64px;flex:1;overflow:auto}
+.u-train-carousel-home .u-train-carousel-nav{padding:0;min-width:48px;max-width:48px;width:48px;height:48px;min-height:48px;max-height:48px;line-height:44px;font-size:38px;display:flex;align-items:center;justify-content:center;aspect-ratio:1}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-body{opacity:1}.u-train-carousel-card:not(.is-center) .u-train-carousel-legend,.u-train-carousel-card:not(.is-center) .u-train-carousel-unavailable{display:none}.u-train-carousel-card:not(.is-center) .u-train-carousel-pie{margin:auto}.training-reviewed .kiosk-stat__k,.training-reviewed .kiosk-card__sub,.training-reviewed .kiosk-sec-label{font-size:18px}.training-reviewed .kiosk-stat__v{font-size:28px}.training-reviewed .kiosk-card__title{font-size:22px}
+.training-reviewed .kiosk-pagebar__title,.training-problem-reviewed .kiosk-pagebar__title{font-size:22px}.training-reviewed .kiosk-pagebar__sub,.training-reviewed .kiosk-pagebar__back,.training-problem-reviewed .kiosk-pagebar__back{font-size:18px}.training-reviewed .kiosk-seclabel{min-height:30px}.training-reviewed .kiosk-seclabel :is(h2,em,b){font-size:18px}.training-reviewed .kiosk-card__text b{font-size:22px}.training-reviewed .kiosk-card__text em{font-size:18px}.training-problem-reviewed .rst{flex-wrap:wrap;height:auto;min-height:44px;gap:3px}.training-problem-reviewed .rst>span,.training-problem-reviewed .rst>b{font-size:18px}.training-problem-reviewed .kiosk-pagebar{min-height:44px}.training-problem-reviewed .kiosk-pagebar__title{white-space:nowrap}
+.training-reviewed .tsumego-browser__board-message{font-size:18px}.training-reviewed .tsumego-browser__enter:disabled{opacity:.38;cursor:default;box-shadow:none}
+.training-reviewed .tsumego-browser__grid button{box-sizing:border-box;padding:5px 2px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;line-height:20px;overflow:hidden}.training-reviewed .tsumego-browser__grid button b{font-size:22px;line-height:22px;margin:0}.training-reviewed .tsumego-browser__grid button em,.training-reviewed .tsumego-browser__grid button small{font-size:18px;line-height:20px;margin:0}.training-reviewed .kiosk-card__t>b{font-size:22px}.training-reviewed .kiosk-card__t>em{font-size:18px}.training-reviewed .kiosk-card__tile.is-ring{width:56px;height:56px}.training-reviewed .kiosk-card__tile.is-ring svg{width:56px;height:56px}.training-reviewed .kiosk-card__tile.is-ring span{font-size:18px}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-head{justify-content:center}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-head>span{display:none}.u-train-carousel-card:not(.is-center) .u-train-carousel-pie{margin:0 auto}.u-train-carousel-card:not(.is-center) .u-train-carousel-card-body{justify-content:center}
+.training-reviewed .kiosk-card__tile.is-ring>b{font-size:18px}
+
+/* Keep the two training tab bars' 44px buttons centered inside their fixed heights. */
+.u-train-carousel-groups{padding:2px}
+.training-tabs{align-items:center;padding:3px}
+.u-train-carousel-groups button,.training-tabs button{display:flex;align-items:center;justify-content:center;line-height:1.2}
+
+
+/* Training category cards and secondary keys share the carousel's restrained bevel and press travel. */
+.training-reviewed .tsumego-category-grid .kiosk-card:not(:disabled),
+.training-reviewed .training-wrong-book-entry .kiosk-card:not(:disabled),
+.training-reviewed .kiosk-pagebar__back:not(:disabled),
+.training-problem-reviewed .kiosk-pagebar__back:not(:disabled),
+.training-problem-reviewed .kiosk-actions button:not(:disabled) {
+  border-color: #486653;
+  border-radius: 17px;
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff24, transparent 75%),
+    linear-gradient(180deg, transparent 55%, #00000020);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 1px #0b1d1280,
+    0 3px 0 #0a1a10, 0 5px 8px #0006;
+  translate: 0 0;
+  transition: translate 130ms ease, box-shadow 130ms ease, background-image 130ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.training-reviewed .tsumego-category-grid .kiosk-card:not(:disabled) .kiosk-card__tile,
+.training-reviewed .training-wrong-book-entry .kiosk-card:not(:disabled) .kiosk-card__tile {
+  border-color: #52755d;
+  border-radius: 12px;
+  background: linear-gradient(#31553e, #1c3528);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 0 #0b1d12, 0 2px 4px #0005;
+  color: #81cf9b;
+}
+.training-reviewed .tsumego-category-grid .kiosk-card.is-current:not(:disabled) {
+  border-color: var(--accent);
+}
+.training-reviewed .tsumego-category-grid .kiosk-card:active:not(:disabled),
+.training-reviewed .training-wrong-book-entry .kiosk-card:active:not(:disabled),
+.training-reviewed .kiosk-pagebar__back:active:not(:disabled),
+.training-problem-reviewed .kiosk-pagebar__back:active:not(:disabled),
+.training-problem-reviewed .kiosk-actions button:active:not(:disabled) {
+  translate: 0 3px;
+  background-image: linear-gradient(180deg, #00000025, transparent 65%);
+  box-shadow: inset 0 3px 6px #06120aaa, inset 0 1px 0 #ffffff14, 0 1px 2px #0005;
+}
+@media (prefers-reduced-motion: reduce) {
+  .training-reviewed .tsumego-category-grid .kiosk-card,
+  .training-reviewed .training-wrong-book-entry .kiosk-card,
+  .training-reviewed .kiosk-pagebar__back,
+  .training-problem-reviewed .kiosk-pagebar__back,
+  .training-problem-reviewed .kiosk-actions button { transition: none; }
+}
+
+/* The two problem modes occupy the same three-column rhythm as the action keys. */
+.training-problem-reviewed .gtoggles--switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  height: 48px;
+}
+.training-problem-reviewed .gtoggles--switch > button {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 6px;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #486653;
+  border-radius: 17px;
+  background-color: var(--raise);
+  color: var(--text);
+  font-size: 22px;
+}
+.training-problem-reviewed .gtoggles--switch > button::before,
+.training-problem-reviewed .gtoggles--switch > button::after { display: none; }
+.training-problem-reviewed .gtoggles--switch > button .kiosk-icon,
+.training-problem-reviewed .gtoggles--switch > button svg {
+  width: 22px;
+  height: 22px;
+}
+.training-problem-reviewed .gtoggles--switch > button[aria-checked="true"] {
+  border-color: #75ca90;
+  background-color: #254c35;
+  color: #b3efc0;
+}
+.training-problem-reviewed .gtoggles--switch > button:disabled {
+  opacity: .42;
+  box-shadow: none;
+}
+.training-problem-reviewed .gtoggles--switch .ghint {
+  margin: 0;
+  justify-content: flex-start;
+  line-height: 1.15;
+}
+.training-problem-reviewed .gtoggles--switch > button:not(:disabled) {
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff24, transparent 75%),
+    linear-gradient(180deg, transparent 55%, #00000020);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 1px #0b1d1280,
+    0 3px 0 #0a1a10, 0 5px 8px #0006;
+  transition: translate 130ms ease, box-shadow 130ms ease;
+  touch-action: manipulation;
+}
+.training-problem-reviewed .gtoggles--switch > button:active:not(:disabled) {
+  translate: 0 3px;
+  box-shadow: inset 0 3px 6px #06120aaa, 0 1px 2px #0005;
+}
+@media (prefers-reduced-motion: reduce) {
+  .training-problem-reviewed .gtoggles--switch > button { transition: none; }
+}

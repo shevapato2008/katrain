@@ -41,7 +41,7 @@ export default function TutorialLandingPage() {
         {categories.map(cat => (
           <Box key={cat.slug} sx={{ flex: '0 0 260px', maxWidth: 260 }}>
             <Card>
-              <CardActionArea onClick={() => navigate(`/galaxy/tutorials/${cat.slug}`)}>
+              <CardActionArea onClick={() => navigate(`/tutorials/${cat.slug}`)}>
                 <CardContent>
                   <Typography variant="h6">{cat.title}</Typography>
                   <Typography variant="body2" color="text.secondary">{cat.summary}</Typography>

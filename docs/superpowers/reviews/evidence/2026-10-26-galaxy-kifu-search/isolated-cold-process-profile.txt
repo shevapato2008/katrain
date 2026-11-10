@@ -1,0 +1,155 @@
+{"stage": "strict_matching_names", "wall_ms": 602.249, "queries": 5}
+{"stage": "strict_selected_event_search_ids", "wall_ms": 4.37, "queries": 1}
+{"stage": "live_event_selections", "wall_ms": 0.044, "queries": 0}
+{"stage": "display_maps", "wall_ms": 182.636, "queries": 4}
+{"stage": "strict_display_maps", "wall_ms": 1456.165, "queries": 13}
+{"stage": "report_availability", "wall_ms": 13.21, "queries": 1}
+{"stage": "lookup_album_rank_snapshots", "wall_ms": 3.864, "queries": 1}
+         304242 function calls (285997 primitive calls) in 2.606 seconds
+
+   Ordered by: cumulative time
+   List reduced from 1648 to 100 due to restriction <100>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    2.609    2.609 /usr/local/lib/python3.11/asyncio/runners.py:160(run)
+        3    0.000    0.000    2.608    0.869 /usr/local/lib/python3.11/asyncio/base_events.py:618(run_until_complete)
+        1    0.000    0.000    2.608    2.608 /usr/local/lib/python3.11/asyncio/runners.py:86(run)
+        3    0.000    0.000    2.608    0.869 /usr/local/lib/python3.11/asyncio/base_events.py:594(run_forever)
+        6    0.000    0.000    2.608    0.435 /usr/local/lib/python3.11/asyncio/base_events.py:1859(_run_once)
+        6    0.000    0.000    2.608    0.435 /usr/local/lib/python3.11/asyncio/events.py:82(_run)
+        6    0.000    0.000    2.608    0.435 {method 'run' of '_contextvars.Context' objects}
+        1    0.000    0.000    2.608    2.608 /app/katrain/web/api/v1/endpoints/kifu.py:262(list_kifu_albums)
+        7    0.000    0.000    2.263    0.323 <stdin>:21(wrap)
+        9    0.002    0.000    2.033    0.226 /app/katrain/web/kifu/identity.py:105(_qualified_name_rows)
+       27    0.000    0.000    1.736    0.064 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:2859(_iter)
+       27    0.000    0.000    1.734    0.064 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2313(execute)
+       27    0.001    0.000    1.734    0.064 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2141(_execute_internal)
+       30    0.000    0.000    1.733    0.058 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1377(execute)
+       30    0.000    0.000    1.733    0.058 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:517(_execute_on_connection)
+       30    0.001    0.000    1.733    0.058 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1593(_execute_clauseelement)
+       27    0.000    0.000    1.732    0.064 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py:296(orm_execute_statement)
+       30    0.000    0.000    1.636    0.055 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1793(_execute_context)
+       30    0.001    0.000    1.630    0.054 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1852(_exec_single_context)
+       30    0.000    0.000    1.622    0.054 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:951(do_execute)
+       30    1.622    0.054    1.622    0.054 {method 'execute' of 'psycopg2.extensions.cursor' objects}
+        1    0.001    0.001    1.456    1.456 /app/katrain/web/kifu/identity.py:1075(strict_display_maps)
+        2    0.006    0.003    1.277    0.639 /app/katrain/web/kifu/identity.py:479(_approved_raw_event_names)
+      164    0.000    0.000    1.228    0.007 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:2849(__iter__)
+        1    0.000    0.000    0.602    0.602 /app/katrain/web/kifu/identity.py:864(strict_matching_names)
+       11    0.000    0.000    0.503    0.046 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:2689(all)
+ 1206/849    0.008    0.000    0.257    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/coercions.py:314(expect)
+2884/1176    0.007    0.000    0.248    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:1231(__get__)
+       44    0.000    0.000    0.242    0.006 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:283(_set_entities)
+       35    0.000    0.000    0.242    0.007 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2943(query)
+       35    0.000    0.000    0.242    0.007 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:237(__init__)
+       44    0.000    0.000    0.242    0.005 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:289(<listcomp>)
+   131/54    0.000    0.000    0.239    0.004 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py:2403(_check_configure)
+       19    0.000    0.000    0.239    0.013 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py:2723(_post_inspect)
+     78/1    0.000    0.000    0.239    0.239 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py:4200(_configure_registries)
+        1    0.001    0.001    0.239    0.239 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py:4234(_do_configure_registries)
+     2613    0.005    0.000    0.238    0.000 /usr/local/lib/python3.11/json/__init__.py:183(dumps)
+       71    0.003    0.000    0.237    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/mapper.py:2413(_post_configure_properties)
+     2613    0.005    0.000    0.231    0.000 /usr/local/lib/python3.11/json/encoder.py:183(encode)
+     2613    0.224    0.000    0.224    0.000 /usr/local/lib/python3.11/json/encoder.py:205(iterencode)
+        1    0.000    0.000    0.183    0.183 /app/katrain/web/kifu/identity.py:1428(display_maps)
+     2584    0.005    0.000    0.173    0.000 /app/katrain/web/kifu/name_candidates.py:228(canonical_sha256)
+        1    0.002    0.002    0.168    0.168 /app/katrain/web/kifu/first_pass_cn.py:111(event_hints)
+        1    0.000    0.000    0.162    0.162 /app/katrain/web/kifu/first_pass_cn.py:31(_hints)
+      178    0.000    0.000    0.153    0.001 /usr/local/lib/python3.11/json/__init__.py:299(loads)
+      178    0.001    0.000    0.152    0.001 /usr/local/lib/python3.11/json/decoder.py:332(decode)
+      178    0.151    0.001    0.151    0.001 /usr/local/lib/python3.11/json/decoder.py:343(raw_decode)
+       22    0.000    0.000    0.146    0.007 /app/katrain/web/kifu/name_evidence.py:124(registry_sha256)
+        1    0.000    0.000    0.139    0.139 /usr/local/lib/python3.11/json/__init__.py:274(load)
+      836    0.002    0.000    0.128    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/interfaces.py:1114(post_instrument_class)
+      836    0.008    0.000    0.122    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/strategies.py:70(_register_attribute)
+      797    0.003    0.000    0.106    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/strategies.py:240(init_class_attribute)
+  836/830    0.001    0.000    0.101    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/interfaces.py:587(init)
+       30    0.000    0.000    0.095    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:679(_compile_w_cache)
+      836    0.007    0.000    0.095    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py:2595(register_attribute_impl)
+       11    0.002    0.000    0.094    0.009 /app/katrain/web/kifu/identity.py:273(<setcomp>)
+13088/6564    0.015    0.000    0.081    0.000 {built-in method builtins.hasattr}
+    39/33    0.001    0.000    0.080    0.002 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/relationships.py:1653(do_init)
+        1    0.000    0.000    0.077    0.077 /app/katrain/web/kifu/identity.py:218(<dictcomp>)
+     1956    0.002    0.000    0.077    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/event/base.py:464(__get__)
+        9    0.000    0.000    0.075    0.008 /app/katrain/web/kifu/identity.py:219(<dictcomp>)
+       11    0.000    0.000    0.075    0.007 /app/katrain/web/kifu/name_transliteration.py:329(persisted_batch_bindings)
+       26    0.000    0.000    0.074    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:317(_compiler)
+       26    0.000    0.000    0.074    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:1373(__init__)
+       26    0.000    0.000    0.074    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:859(__init__)
+    29/26    0.000    0.000    0.073    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:947(process)
+  1585/26    0.003    0.000    0.073    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py:126(_compiler_dispatch)
+       25    0.001    0.000    0.073    0.003 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:4785(visit_select)
+3937/3140    0.013    0.000    0.073    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:1283(__getattr__)
+       11    0.000    0.000    0.072    0.007 /app/katrain/web/kifu/name_orthographic.py:483(persisted_batch_bindings)
+      888    0.005    0.000    0.070    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py:468(__getattr__)
+        1    0.000    0.000    0.070    0.070 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:2817(scalar)
+        1    0.000    0.000    0.070    0.070 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/query.py:2794(one)
+       54    0.000    0.000    0.062    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py:208(chunks)
+10682/8293    0.008    0.000    0.060    0.000 {built-in method builtins.getattr}
+       27    0.000    0.000    0.058    0.002 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/result.py:576(_raw_all_rows)
+       29    0.000    0.000    0.058    0.002 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/cursor.py:2260(_fetchall_impl)
+       29    0.000    0.000    0.058    0.002 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/cursor.py:1195(fetchall)
+       29    0.003    0.000    0.058    0.002 {method 'fetchall' of 'psycopg2.extensions.cursor' objects}
+       97    0.000    0.000    0.055    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/engine/result.py:550(iterrows)
+      233    0.000    0.000    0.055    0.000 /opt/venv/lib/python3.11/site-packages/psycopg2/_json.py:159(typecast_json)
+     2626    0.055    0.000    0.055    0.000 {built-in method _hashlib.openssl_sha256}
+       39    0.001    0.000    0.051    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/relationships.py:1895(_setup_join_conditions)
+      797    0.003    0.000    0.049    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/properties.py:469(_fallback_getattr)
+       39    0.001    0.000    0.049    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/relationships.py:2285(__init__)
+        1    0.008    0.008    0.041    0.041 {method 'read' of '_io.TextIOWrapper' objects}
+        2    0.000    0.000    0.035    0.018 /app/katrain/web/kifu/identity.py:366(_approved_raw_player_names)
+      836    0.001    0.000    0.032    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/interfaces.py:1110(do_init)
+      876    0.004    0.000    0.031    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/interfaces.py:1053(_get_strategy)
+      946    0.005    0.000    0.030    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:1298(oneshot)
+      487    0.001    0.000    0.029    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:1528(operate)
+    26/25    0.000    0.000    0.027    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/base.py:748(create_for_statement)
+       24    0.000    0.000    0.027    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py:440(create_for_statement)
+       24    0.001    0.000    0.027    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/context.py:1088(_create_orm_context)
+      487    0.002    0.000    0.026    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/type_api.py:202(operate)
+       25    0.001    0.000    0.025    0.001 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:4896(<listcomp>)
+      797    0.002    0.000    0.025    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/properties.py:435(_memoized_method___clause_element__)
+      407    0.003    0.000    0.025    0.000 /opt/venv/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py:4511(_label_select_column)
+   100/10    0.001    0.000    0.023    0.002 {method 'read' of '_io.BufferedReader' objects}
+        1    0.000    0.000    0.023    0.023 /usr/local/lib/python3.11/gzip.py:296(read)
+
+
+{"endpoint_ms": 2629.282, "q": "\u738b\u661f\u660a", "total": 504, "items": 20, "sql_count": 33, "cursor_ms": 1624.033}
+{"stage": "setup", "ms": 0.216, "rows": -1, "sql": "SET TRANSACTION READ ONLY"}
+{"stage": "setup", "ms": 0.138, "rows": -1, "sql": "SET LOCAL statement_timeout='3000ms'"}
+{"stage": "setup", "ms": 0.134, "rows": -1, "sql": "SET LOCAL lock_timeout='500ms'"}
+{"stage": "strict_matching_names", "ms": 20.761, "rows": 3, "sql": "SELECT kifu_player_names.id AS kifu_player_names_id, kifu_player_names.player_id AS kifu_player_names_player_id, kifu_player_names.lang AS kifu_player_names_lang, kifu_player_names.display_name AS kifu_player_names_displ"}
+{"stage": "strict_matching_names", "ms": 157.928, "rows": 3, "sql": "SELECT kifu_name_changes.id AS kifu_name_changes_id, kifu_name_changes.batch_id AS kifu_name_changes_batch_id, kifu_name_changes.sequence AS kifu_name_changes_sequence, kifu_name_changes.target_table AS kifu_name_changes"}
+{"stage": "strict_matching_names", "ms": 3.235, "rows": 0, "sql": "SELECT kifu_event_names.id AS kifu_event_names_id, kifu_event_names.event_id AS kifu_event_names_event_id, kifu_event_names.lang AS kifu_event_names_lang, kifu_event_names.display_name AS kifu_event_names_display_name, k"}
+{"stage": "strict_matching_names", "ms": 12.351, "rows": 0, "sql": "SELECT kifu_raw_player_names.id AS kifu_raw_player_names_id, kifu_raw_player_names.raw_player_id AS kifu_raw_player_names_raw_player_id, kifu_raw_player_names.lang AS kifu_raw_player_names_lang, kifu_raw_player_names.dis"}
+{"stage": "strict_matching_names", "ms": 347.66, "rows": 0, "sql": "SELECT kifu_raw_event_names.id AS kifu_raw_event_names_id, kifu_raw_event_names.raw_event_id AS kifu_raw_event_names_raw_event_id, kifu_raw_event_names.lang AS kifu_raw_event_names_lang, kifu_raw_event_names.display_name"}
+{"stage": "strict_selected_event_search_ids", "ms": 1.676, "rows": 0, "sql": "SELECT DISTINCT kifu_album_event_selections.selected_raw AS kifu_album_event_selections_selected_raw FROM kifu_album_event_selections WHERE (kifu_album_event_selections.selected_raw LIKE '%%' || %(selected_raw_1)s || '%%"}
+{"stage": "list_count_query_and_summary", "ms": 1.211, "rows": 0, "sql": "SELECT DISTINCT kifu_player_aliases.player_id AS kifu_player_aliases_player_id FROM kifu_player_aliases WHERE kifu_player_aliases.normalized_alias = %(normalized_alias_1)s"}
+{"stage": "list_count_query_and_summary", "ms": 1.107, "rows": 0, "sql": "SELECT DISTINCT kifu_event_aliases.event_id AS kifu_event_aliases_event_id FROM kifu_event_aliases WHERE kifu_event_aliases.normalized_alias = %(normalized_alias_1)s"}
+{"stage": "list_count_query_and_summary", "ms": 4.272, "rows": 0, "sql": "SELECT kifu_player_names.id AS kifu_player_names_id, kifu_player_names.player_id AS kifu_player_names_player_id, kifu_player_names.lang AS kifu_player_names_lang, kifu_player_names.display_name AS kifu_player_names_displ"}
+{"stage": "list_count_query_and_summary", "ms": 66.348, "rows": 1, "sql": "SELECT count(kifu_albums.id) AS count_1 FROM kifu_albums WHERE kifu_albums.duplicate_of_id IS NULL AND kifu_albums.list_hidden_reason IS NULL AND (kifu_albums.black_player_id = %(black_player_id_1)s OR kifu_albums.white_"}
+{"stage": "list_count_query_and_summary", "ms": 3.682, "rows": 20, "sql": "SELECT kifu_albums.id AS kifu_albums_id, kifu_albums.black_player_id AS kifu_albums_black_player_id, kifu_albums.white_player_id AS kifu_albums_white_player_id, kifu_albums.event_id AS kifu_albums_event_id, kifu_albums.e"}
+{"stage": "display_maps", "ms": 0.656, "rows": 0, "sql": "SELECT kifu_player_names.id AS kifu_player_names_id, kifu_player_names.player_id AS kifu_player_names_player_id, kifu_player_names.lang AS kifu_player_names_lang, kifu_player_names.display_name AS kifu_player_names_displ"}
+{"stage": "display_maps", "ms": 0.974, "rows": 19, "sql": "SELECT kifu_players.id AS kifu_players_id, kifu_players.canonical_name AS kifu_players_canonical_name FROM kifu_players WHERE kifu_players.id IN (%(id_1_1)s, %(id_1_2)s, %(id_1_3)s, %(id_1_4)s, %(id_1_5)s, %(id_1_6)s, %("}
+{"stage": "display_maps", "ms": 2.211, "rows": 20, "sql": "SELECT kifu_album_sources.album_id AS kifu_album_sources_album_id, kifu_sources.source_key AS kifu_sources_source_key FROM kifu_album_sources JOIN kifu_sources ON kifu_album_sources.source_id = kifu_sources.id WHERE kifu"}
+{"stage": "display_maps", "ms": 0.602, "rows": 0, "sql": "SELECT kifu_album_event_selections.album_id AS kifu_album_event_selections_album_id FROM kifu_album_event_selections WHERE kifu_album_event_selections.album_id IN (%(album_id_1_1)s, %(album_id_1_2)s, %(album_id_1_3)s, %("}
+{"stage": "strict_display_maps", "ms": 5.296, "rows": 19, "sql": "SELECT kifu_player_names.id AS kifu_player_names_id, kifu_player_names.player_id AS kifu_player_names_player_id, kifu_player_names.lang AS kifu_player_names_lang, kifu_player_names.display_name AS kifu_player_names_displ"}
+{"stage": "strict_display_maps", "ms": 489.932, "rows": 19, "sql": "SELECT kifu_name_changes.id AS kifu_name_changes_id, kifu_name_changes.batch_id AS kifu_name_changes_batch_id, kifu_name_changes.sequence AS kifu_name_changes_sequence, kifu_name_changes.target_table AS kifu_name_changes"}
+{"stage": "strict_display_maps", "ms": 2.674, "rows": 0, "sql": "SELECT kifu_event_names.id AS kifu_event_names_id, kifu_event_names.event_id AS kifu_event_names_event_id, kifu_event_names.lang AS kifu_event_names_lang, kifu_event_names.display_name AS kifu_event_names_display_name, k"}
+{"stage": "strict_display_maps", "ms": 2.77, "rows": 0, "sql": "SELECT kifu_raw_player_names.id AS kifu_raw_player_names_id, kifu_raw_player_names.raw_player_id AS kifu_raw_player_names_raw_player_id, kifu_raw_player_names.lang AS kifu_raw_player_names_lang, kifu_raw_player_names.dis"}
+{"stage": "strict_display_maps", "ms": 5.104, "rows": 14, "sql": "SELECT kifu_raw_event_names.id AS kifu_raw_event_names_id, kifu_raw_event_names.raw_event_id AS kifu_raw_event_names_raw_event_id, kifu_raw_event_names.lang AS kifu_raw_event_names_lang, kifu_raw_event_names.display_name"}
+{"stage": "strict_display_maps", "ms": 454.207, "rows": 14, "sql": "SELECT kifu_name_changes.id AS kifu_name_changes_id, kifu_name_changes.batch_id AS kifu_name_changes_batch_id, kifu_name_changes.sequence AS kifu_name_changes_sequence, kifu_name_changes.target_table AS kifu_name_changes"}
+{"stage": "strict_display_maps", "ms": 27.134, "rows": 11, "sql": "SELECT kifu_name_batches.id AS kifu_name_batches_id, kifu_name_batches.bundle_sha256 AS kifu_name_batches_bundle_sha256, kifu_name_batches.inventory_sha256 AS kifu_name_batches_inventory_sha256, kifu_name_batches.source_"}
+{"stage": "strict_display_maps", "ms": 3.512, "rows": 29, "sql": "SELECT kifu_name_changes.id AS kifu_name_changes_id, kifu_name_changes.batch_id AS kifu_name_changes_batch_id, kifu_name_changes.sequence AS kifu_name_changes_sequence, kifu_name_changes.target_table AS kifu_name_changes"}
+{"stage": "strict_display_maps", "ms": 0.751, "rows": 14, "sql": "SELECT kifu_raw_event_values.id AS kifu_raw_event_values_id, kifu_raw_event_values.raw_value AS kifu_raw_event_values_raw_value, kifu_raw_event_values.category AS kifu_raw_event_values_category, kifu_raw_event_values.par"}
+{"stage": "strict_display_maps", "ms": 1.183, "rows": 156, "sql": "SELECT id, event, event_id, event_edition_id, duplicate_of_id, list_hidden_reason, source_path FROM kifu_albums WHERE event IN (%(values_1)s, %(values_2)s, %(values_3)s, %(values_4)s, %(values_5)s, %(values_6)s, %(values"}
+{"stage": "strict_display_maps", "ms": 0.379, "rows": 0, "sql": "SELECT kifu_album_event_selections.album_id, kifu_album_event_selections.event_id, kifu_album_event_selections.batch_id, kifu_album_event_selections.selected_raw, kifu_album_event_selections.sgf_sha256, kifu_album_event_"}
+{"stage": "strict_display_maps", "ms": 0.291, "rows": 0, "sql": "SELECT kifu_album_event_selections.album_id AS kifu_album_event_selections_album_id FROM kifu_album_event_selections WHERE kifu_album_event_selections.album_id IN (%(album_id_1_1)s, %(album_id_1_2)s, %(album_id_1_3)s, %("}
+{"stage": "strict_display_maps", "ms": 0.707, "rows": 20, "sql": "SELECT kifu_album_sources.album_id AS kifu_album_sources_album_id, kifu_sources.source_key AS kifu_sources_source_key FROM kifu_album_sources JOIN kifu_sources ON kifu_album_sources.source_id = kifu_sources.id WHERE kifu"}
+{"stage": "report_availability", "ms": 3.734, "rows": 0, "sql": "SELECT kifu_analysis_jobs.album_id AS kifu_analysis_jobs_album_id, kifu_analysis_jobs.sgf_sha256 AS kifu_analysis_jobs_sgf_sha256, kifu_analysis_jobs.total_moves AS kifu_analysis_jobs_total_moves, count(kifu_analysis_mov"}
+{"stage": "lookup_album_rank_snapshots", "ms": 1.197, "rows": 0, "sql": "SELECT kifu_album_rank_snapshots.id, kifu_album_rank_snapshots.album_id, kifu_album_rank_snapshots.side, kifu_album_rank_snapshots.rank_fact_id, kifu_album_rank_snapshots.snapshot, kifu_album_rank_snapshots.snapshot_sha2"}
+{"sql_by_stage": {"setup": [3, 0.488, 0], "strict_matching_names": [5, 541.9350000000001, 6], "strict_selected_event_search_ids": [1, 1.676, 0], "list_count_query_and_summary": [5, 76.62, 21], "display_maps": [4, 4.443, 39], "strict_display_maps": [13, 993.9399999999999, 296], "report_availability": [1, 3.734, 0], "lookup_album_rank_snapshots": [1, 1.197, 0]}}
+{"explain": 0, "source_stage": "strict_matching_names", "sql_ms": 157.928, "plan": [{"Plan": {"Node Type": "Index Scan", "Parallel Aware": false, "Async Capable": false, "Scan Direction": "Forward", "Index Name": "uq_kifu_name_change_row", "Relation Name": "kifu_name_changes", "Alias": "kifu_name_changes", "Startup Cost": 0.42, "Total Cost": 40940.66, "Plan Rows": 3, "Plan Width": 880, "Index Cond": "(((target_table)::text = 'kifu_name_research_evidence'::text) AND (target_row_id = ANY ('{1208,1209,1207}'::integer[])))"}}]}
+{"explain": 1, "source_stage": "strict_matching_names", "sql_ms": 347.66, "plan": [{"Plan": {"Node Type": "Nested Loop", "Parallel Aware": false, "Async Capable": false, "Join Type": "Inner", "Startup Cost": 1000.74, "Total Cost": 11907.36, "Plan Rows": 1, "Plan Width": 3590, "Inner Unique": true, "Join Filter": "((kifu_raw_event_names.raw_event_id = kifu_raw_event_values.id) AND (((kifu_raw_event_values.review_status)::text = 'approved'::text) OR ((kifu_raw_event_names.generation_rule_version)::text = 'user_authorized_first_pass_v1'::text)))", "Plans": [{"Node Type": "Gather", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 1000.45, "Total Cost": 11906.83, "Plan Rows": 1, "Plan Width": 1367, "Workers Planned": 2, "Single Copy": false, "Plans": [{"Node Type": "Nested Loop", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Join Type": "Inner", "Startup Cost": 0.45, "Total Cost": 10906.73, "Plan Rows": 1, "Plan Width": 1367, "Inner Unique": true, "Plans": [{"Node Type": "Seq Scan", "Parent Relationship": "Outer", "Parallel Aware": true, "Async Capable": false, "Relation Name": "kifu_raw_event_names", "Alias": "kifu_raw_event_names", "Startup Cost": 0.03, "Total Cost": 7846.18, "Plan Rows": 447, "Plan Width": 127, "Filter": "(((status)::text = 'verified'::text) AND ((decision_kind)::text = ANY ('{hidden,transliterated,conventional,generic,generated,archive_description,error,corrected,placeholder,translated,composed}'::text[])) AND ((display_name = '王星昊'::text) OR (lower(display_name) = '王星昊'::text)))"}, {"Node Type": "Index Scan", "Parent Relationship": "Inner", "Parallel Aware": false, "Async Capable": false, "Scan Direction": "Forward", "Index Name": "kifu_name_research_evidence_pkey", "Relation Name": "kifu_name_research_evidence", "Alias": "kifu_name_research_evidence", "Startup Cost": 0.42, "Total Cost": 6.84, "Plan Rows": 1, "Plan Width": 1240, "Index Cond": "(id = kifu_raw_event_names.evidence_id)", "Filter": "((producer_model IS NOT NULL) AND (reviewer_model IS NOT NULL) AND (reviewer_id IS NOT NULL) AND (reviewed_at IS NOT NULL) AND ((reviewer_id)::text <> (producer_id)::text) AND ((review_status)::text = 'approved'::text) AND (kifu_raw_event_names.raw_event_id = raw_event_id) AND ((kifu_raw_event_names.lang)::text = (lang)::text) AND (kifu_raw_event_names.revision = revision) AND ((kifu_raw_event_names.decision_kind)::text = (decision_kind)::text) AND ((kifu_raw_event_names.generation_rule_version)::text = (generation_rule_version)::text) AND (kifu_raw_event_names.display_name = candidate_name))"}]}]}, {"Node Type": "Index Scan", "Parent Relationship": "Inner", "Parallel Aware": false, "Async Capable": false, "Scan Direction": "Forward", "Index Name": "kifu_raw_event_values_pkey", "Relation Name": "kifu_raw_event_values", "Alias": "kifu_raw_event_values", "Startup Cost": 0.29, "Total Cost": 0.51, "Plan Rows": 1, "Plan Width": 2223, "Index Cond": "(id = kifu_name_research_evidence.raw_event_id)"}]}}]}
+{"explain": 2, "source_stage": "list_count_query_and_summary", "sql_ms": 66.348, "plan": [{"Plan": {"Node Type": "Aggregate", "Strategy": "Plain", "Partial Mode": "Simple", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 422.4, "Total Cost": 422.41, "Plan Rows": 1, "Plan Width": 8, "Plans": [{"Node Type": "Bitmap Heap Scan", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Relation Name": "kifu_albums", "Alias": "kifu_albums", "Startup Cost": 9.68, "Total Cost": 422.14, "Plan Rows": 105, "Plan Width": 4, "Recheck Cond": "((black_player_id = 25) OR (white_player_id = 25))", "Filter": "((duplicate_of_id IS NULL) AND (list_hidden_reason IS NULL))", "Plans": [{"Node Type": "BitmapOr", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 9.68, "Total Cost": 9.68, "Plan Rows": 105, "Plan Width": 0, "Plans": [{"Node Type": "Bitmap Index Scan", "Parent Relationship": "Member", "Parallel Aware": false, "Async Capable": false, "Index Name": "ix_kifu_albums_black_player_id", "Startup Cost": 0.0, "Total Cost": 4.81, "Plan Rows": 52, "Plan Width": 0, "Index Cond": "(black_player_id = 25)"}, {"Node Type": "Bitmap Index Scan", "Parent Relationship": "Member", "Parallel Aware": false, "Async Capable": false, "Index Name": "ix_kifu_albums_white_player_id", "Startup Cost": 0.0, "Total Cost": 4.82, "Plan Rows": 53, "Plan Width": 0, "Index Cond": "(white_player_id = 25)"}]}]}]}}]}
+{"explain": 3, "source_stage": "list_count_query_and_summary", "sql_ms": 3.682, "plan": [{"Plan": {"Node Type": "Limit", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 424.93, "Total Cost": 424.98, "Plan Rows": 20, "Plan Width": 1526, "Plans": [{"Node Type": "Sort", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 424.93, "Total Cost": 425.2, "Plan Rows": 105, "Plan Width": 1526, "Sort Key": ["date_sort DESC NULLS LAST", "id DESC"], "Plans": [{"Node Type": "Bitmap Heap Scan", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Relation Name": "kifu_albums", "Alias": "kifu_albums", "Startup Cost": 9.68, "Total Cost": 422.14, "Plan Rows": 105, "Plan Width": 1526, "Recheck Cond": "((black_player_id = 25) OR (white_player_id = 25))", "Filter": "((duplicate_of_id IS NULL) AND (list_hidden_reason IS NULL))", "Plans": [{"Node Type": "BitmapOr", "Parent Relationship": "Outer", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 9.68, "Total Cost": 9.68, "Plan Rows": 105, "Plan Width": 0, "Plans": [{"Node Type": "Bitmap Index Scan", "Parent Relationship": "Member", "Parallel Aware": false, "Async Capable": false, "Index Name": "ix_kifu_albums_black_player_id", "Startup Cost": 0.0, "Total Cost": 4.81, "Plan Rows": 52, "Plan Width": 0, "Index Cond": "(black_player_id = 25)"}, {"Node Type": "Bitmap Index Scan", "Parent Relationship": "Member", "Parallel Aware": false, "Async Capable": false, "Index Name": "ix_kifu_albums_white_player_id", "Startup Cost": 0.0, "Total Cost": 4.82, "Plan Rows": 53, "Plan Width": 0, "Index Cond": "(white_player_id = 25)"}]}]}]}]}}]}
+{"explain": 4, "source_stage": "strict_display_maps", "sql_ms": 489.932, "plan": [{"Plan": {"Node Type": "Gather", "Parallel Aware": false, "Async Capable": false, "Startup Cost": 1000.05, "Total Cost": 79950.92, "Plan Rows": 20, "Plan Width": 880, "Workers Planned": 2, "Single Copy": false, "Plans": [{"Node Type": "Seq Scan", "Parent Relationship": "Outer", "Parallel Aware": true, "Async Capable": false, "Relation Name": "kifu_name_changes", "Alias": "kifu_name_changes", "Startup Cost": 0.05, "Total Cost": 78948.92, "Plan Rows": 8, "Plan Width": 880, "Filter": "(((target_table)::text = 'kifu_name_research_evidence'::text) AND (target_row_id = ANY ('{902,392,1032,917,927,942,817,1207,442,1112,862,222,617,367,1137,757,4477,377,1917}'::integer[])))"}]}}]}

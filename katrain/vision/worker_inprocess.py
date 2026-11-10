@@ -33,7 +33,12 @@ from katrain.vision.gating import (
     should_feed_sync_frame,
 )
 from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
-from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, check_frame_exposure, detect_led_centroid
+from katrain.vision.led_geometry_calibrator import (
+    ROI_CELLS,
+    ROI_RADIUS_MIN_PX,
+    check_frame_exposure,
+    detect_led_centroid,
+)
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
@@ -264,6 +269,11 @@ class InProcessAdapter:
         self._config = config
         self._thread: threading.Thread | None = None
         self._running = False
+        self._usb_requested = threading.Event()
+        self._usb_ack = threading.Event()
+        self._usb_lock = threading.Lock()
+        self._usb_waiting_fresh = False
+        self._usb_resumed_at = 0.0
 
         self._event_queue: queue.Queue = queue.Queue()
         self._status: WorkerStatus = WorkerStatus()
@@ -409,6 +419,8 @@ class InProcessAdapter:
         # ConfirmedMove so a consumer can tell whether a board reading is newer than the
         # confirmation it is being used to judge.
         self._observation_seq = 0
+        self._binding_epoch = 0
+        self._expected_revision = 0
         # Local play keeps the camera/exposure ready, but only these bounded activities
         # are allowed through the inference gate. `_paused` remains the free-play gate.
         self._local_confirmation_mode = False
@@ -424,6 +436,7 @@ class InProcessAdapter:
         if self._local_confirmation_mode:
             self._local_window = None
             self._local_bootstrap_state = "unavailable"
+        self._sync.invalidate_confirmed_move()
         self._geometry = geometry
         self._motion_mask_cache.invalidate()
         self._motion_filter.reset()
@@ -1006,6 +1019,7 @@ class InProcessAdapter:
 
     def stop(self) -> None:
         self._running = False
+        self._usb_requested.clear()
         if self._thread:
             self._thread.join(timeout=5)
         if self._owns_camera:
@@ -1013,6 +1027,61 @@ class InProcessAdapter:
 
     def send_command(self, cmd: WorkerCommand) -> None:
         self._cmd_queue.put(cmd)
+
+    def begin_usb_recovery(self, timeout=2.0) -> bool:
+        # Never treat enqueueing a command as quiescence: only _loop may ACK.
+        with self._usb_lock:
+            self._usb_ack.clear()
+            self._usb_requested.set()
+        if self._usb_ack.wait(max(0.0, timeout)):
+            return True
+        with self._usb_lock:
+            self._usb_requested.clear()
+            self._usb_ack.clear()
+        return False
+
+    def end_usb_recovery(self) -> None:
+        with self._usb_lock:
+            self._usb_resumed_at = time.monotonic()
+            self._usb_requested.clear()
+            self._usb_ack.clear()
+
+    def _usb_boundary(self) -> bool:
+        with self._usb_lock:
+            if not self._usb_requested.is_set():
+                return False
+            if not self._usb_ack.is_set():
+                # Commands accepted before the request must settle before the
+                # old window is retired; none can resurrect it after the ACK.
+                self._drain_commands()
+                self._local_window = None
+                self._reset_local_accumulators()
+                self._sync.invalidate_confirmed_move()
+                # Retire frame-derived streaks while preserving expected, the
+                # current setup target and authoritative capture obligations.
+                self._sync._claimed_points.clear()
+                self._sync._mismatch_board = None
+                self._sync._mismatch_count = 0
+                self._sync._missing_since.clear()
+                self._sync._degraded_timer_start = None
+                self._sync._degraded_recovery_start = None
+                self._last_raw = None
+                self._last_ref_gray = None
+                self._glow_ref = None
+                self._glow_pending.clear()
+                if self._expected_np is not None:
+                    self._move_detector.force_sync(self._expected_np)
+                while True:
+                    try:
+                        self._event_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                with self._preview_lock:
+                    self._preview_jpeg = None
+                self._usb_waiting_fresh = True
+                self._publish_status(None)
+                self._usb_ack.set()
+            return True
 
     def get_event(self, timeout: float = 0) -> Any | None:
         try:
@@ -1072,6 +1141,11 @@ class InProcessAdapter:
         was_idle = False  # 只在真的空闲过一轮之后才需要清累积;启动时它本来就是空的
         while self._running:
             loop_start = time.monotonic()
+            if self._usb_boundary():
+                # Also suppress monitor, local windows and preview processing.
+                self._publish_status(None)
+                time.sleep(0.01)
+                continue
             self._drain_commands()
             self._expire_local_activity(loop_start)
 
@@ -1090,13 +1164,18 @@ class InProcessAdapter:
             tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
             observer = self._observer
-            identified = (observer is not None or self._local_confirmation_mode) and hasattr(
+            identified = (observer is not None or self._local_confirmation_mode or self._usb_waiting_fresh) and hasattr(
                 self._camera, "read_frame_identified"
             )
             if identified:
                 frame, camera_seq, camera_ts = self._camera.read_frame_identified()
             else:
                 frame, camera_seq, camera_ts = self._camera.read_frame(), None, None
+            if self._usb_waiting_fresh:
+                if frame is not None and (camera_ts is None or camera_ts > self._usb_resumed_at):
+                    self._usb_waiting_fresh = False
+                else:
+                    frame = None
             emit = observer is not None and loop_start - self._observer_last >= self._observer_interval
             board_detected = False
             observed_board = None
@@ -1375,7 +1454,8 @@ class InProcessAdapter:
                     # monitor (physical tsumego) → our move_event dict, no ambiguous dialog (the tsumego
                     # frontend consumes move_confirmed).
                     if local_window is not None or (
-                        not self._local_confirmation_mode
+                        self._sync.has_confirmed_move is not True
+                        and not self._local_confirmation_mode
                         and should_detect_moves(
                             self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
                         )
@@ -1507,12 +1587,19 @@ class InProcessAdapter:
                                         self._move_detector.suspicion_of(row, col),
                                     )
                                     confirmed = ConfirmedMove(
-                                        col=col, row=row, color=color, observation_seq=self._observation_seq
+                                        col=col,
+                                        row=row,
+                                        color=color,
+                                        observation_seq=self._observation_seq,
+                                        binding_epoch=getattr(self, "_binding_epoch", 0),
+                                        expected_revision=getattr(self, "_expected_revision", 0),
                                     )
                                     if local_window is not None:
                                         if local_window.candidate is None:
                                             local_window.candidate = confirmed
                                     else:
+                                        if not self._monitor:
+                                            self._sync.claim_confirmed_move(confirmed, observed_board)
                                         self._event_queue.put(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
@@ -1592,7 +1679,13 @@ class InProcessAdapter:
                     # arm doesn't diff against a stale baseline.
                     self._move_detector.force_sync(observed_board)
                 for evt in events:
-                    self._event_queue.put({"type": evt.type.value, "data": evt.data})
+                    self._event_queue.put(
+                        {
+                            "type": evt.type.value,
+                            "data": evt.data,
+                            "binding_epoch": getattr(self, "_binding_epoch", 0),
+                        }
+                    )
 
             self._publish_status(observed_board)
             if frame is not None:
@@ -1612,7 +1705,11 @@ class InProcessAdapter:
     def needs_frames(self) -> bool:
         """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
         return bool(
-            self._bound or self._monitor or self._viewer_active or self._sync.state == SyncState.SETUP_IN_PROGRESS
+            self._usb_waiting_fresh
+            or self._bound
+            or self._monitor
+            or self._viewer_active
+            or self._sync.state == SyncState.SETUP_IN_PROGRESS
         )
 
     def _publish_status(self, observed_board) -> None:
@@ -1639,6 +1736,8 @@ class InProcessAdapter:
             and self._reference is not None
             and camera_connected
             and self._geometry is not None
+            and not self._usb_requested.is_set()
+            and not self._usb_waiting_fresh
         )
         if self._local_confirmation_mode:
             # Bootstrap validates the real reference against the current game. Local idle
@@ -1658,7 +1757,8 @@ class InProcessAdapter:
             camera_ready=bool(camera_connected),
             geometry_ready=self._geometry is not None or not self._require_geometry,
             model_ready=True,
-            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)),
+            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)
+                and not self._usb_requested.is_set() and not self._usb_waiting_fresh),
             observation_seq=self._observation_seq,
             local_confirmation_mode=self._local_confirmation_mode,
             local_confirmation_session_id=self._local_confirmation_session_id,
@@ -1677,13 +1777,20 @@ class InProcessAdapter:
 
             if cmd.action == CommandType.SHUTDOWN:
                 self._running = False
+            elif cmd.action == CommandType.RELEASE_CONFIRMED_MOVE:
+                self._sync.release_confirmed_move(tuple(cmd.data["token"]))
             elif cmd.action == CommandType.BIND:
+                self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
+                self._expected_revision = 0
+                self._sync.invalidate_confirmed_move()
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
                 self._invalidate_reference("bind")
                 self._drop_denials("bind")
             elif cmd.action == CommandType.UNBIND:
+                self._binding_epoch = 0
+                self._expected_revision = 0
                 self._local_confirmation_mode = False
                 self._local_confirmation_session_id = None
                 self._local_confirmation_game_id = None
@@ -1702,6 +1809,7 @@ class InProcessAdapter:
                 self._invalidate_reference("unbind")
                 self._drop_denials("unbind")
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
+                self._sync.invalidate_confirmed_move()
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_LOCAL_CONFIRMATION_MODE:
                 enabled = bool(cmd.data.get("enabled", False))
@@ -1724,6 +1832,7 @@ class InProcessAdapter:
                 ):
                     self._invalidate_reference("local game changed")
                     self._drop_denials("local game changed")
+                self._sync.invalidate_confirmed_move()
                 self._local_confirmation_mode = enabled
                 self._local_confirmation_session_id = session_id
                 self._local_confirmation_game_id = game_id
@@ -1788,6 +1897,15 @@ class InProcessAdapter:
                     self._maybe_capture_reference(window.raw_voted, window.raw_observed, window.gray)
                 self._local_window = None
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
+                epoch = int(cmd.data.get("binding_epoch", 0))
+                revision = int(cmd.data.get("expected_revision", 0))
+                if epoch and epoch != getattr(self, "_binding_epoch", 0):
+                    continue
+                if revision and revision < getattr(self, "_expected_revision", 0):
+                    continue
+                if revision and revision != getattr(self, "_expected_revision", 0):
+                    self._sync.invalidate_confirmed_move()
+                self._expected_revision = revision
                 board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
                 if self._reference is not None and not np.array_equal(board, self._reference.board):
@@ -1829,12 +1947,13 @@ class InProcessAdapter:
                 # rejected downstream) still force_syncs — that is the poller's re-arm.
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
-                self._sync.enter_setup_mode(target)
+                self._sync.enter_setup_mode(target, setup_id=cmd.data.get("setup_id"))
                 self._invalidate_reference("setup mode")
                 if self._monitor and not self._bound:
                     # A clean setup frame is the monitor's reference before the next guidance lamp lights.
                     self._expected_np = target
             elif cmd.action == CommandType.RESET_SYNC:
+                self._sync.invalidate_confirmed_move()
                 self._invalidate_reference("resync")
                 expected = cmd.data.get("expected") if cmd.data else None
                 if expected is not None:
@@ -1870,10 +1989,14 @@ class InProcessAdapter:
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
+                self._sync.invalidate_confirmed_move()
                 self.set_geometry(cmd.data.get("geometry"))
                 self._averager.reset()  # warp content changes with the new lock
             elif cmd.action == CommandType.SET_MONITOR:
-                self._monitor = cmd.data.get("active", False)
+                active = cmd.data.get("active", False)
+                if active != self._monitor:
+                    self._sync.invalidate_confirmed_move()
+                self._monitor = active
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False

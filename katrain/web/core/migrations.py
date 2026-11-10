@@ -7,8 +7,10 @@ protects authoritative tables from the SQLite schema-drift rebuild fallback.
 """
 
 import logging
+import re
+from time import monotonic
 
-from sqlalchemy import CheckConstraint, UniqueConstraint, inspect, text
+from sqlalchemy import CheckConstraint, UniqueConstraint, bindparam, inspect, text
 from sqlalchemy.engine import Connection
 
 from katrain.web.core import models_db
@@ -16,7 +18,7 @@ from katrain.web.core import models_db
 logger = logging.getLogger("katrain_web")
 
 # Tables holding financial/asset data — never drop these to "fix" schema drift.
-BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"}
+BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders", "membership_terms", "billing_operations"}
 
 # These tables hold authoritative player rank state and its immutable
 # idempotency ledger. Like billing data, schema drift must never rebuild them.
@@ -59,7 +61,16 @@ KIFU_CATALOG_TABLES = {
     "kifu_analysis_jobs",
     "kifu_analysis_moves",
 }
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures"}
+# Only the explicit 004 migration owns rank DDL, including partial schemas.
+KIFU_RANK_TABLES = {"kifu_player_rank_history", "kifu_album_rank_snapshots"}
+PROTECTED_TABLES = (
+    BILLING_TABLES
+    | AI_LADDER_TABLES
+    | QUOTA_TABLES
+    | KIFU_CATALOG_TABLES
+    | KIFU_RANK_TABLES
+    | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures", "users", "report_tasks", "baipu_history"}
+)
 
 KIFU_ALBUM_FKS = {
     "black_player_id": "kifu_players",
@@ -68,6 +79,100 @@ KIFU_ALBUM_FKS = {
     "duplicate_of_id": "kifu_albums",
 }
 KIFU_ALBUM_IDENTITY_INDEXES = {column: f"ix_kifu_albums_{column}" for column in KIFU_ALBUM_FKS}
+
+# Deliberately absent from startup/create_missing_indexes: these large indexes
+# are built only by the explicit scripts/kifu_search_indexes.py operation.
+KIFU_SEARCH_INDEX_SPECS = {
+    "ix_kifu_name_changes_target_row": ("kifu_name_changes", ("target_table", "target_row_id")),
+    "ix_kifu_raw_event_names_display": ("kifu_raw_event_names", ("display_name",)),
+    "ix_kifu_raw_event_names_lower_display": ("kifu_raw_event_names", ("lower(display_name)",)),
+}
+
+
+def _search_index_key(key):
+    key = "".join(key.replace('"', "").split())
+    return {
+        "lower((display_name)::text)": "lower(display_name)",
+        "lower(display_name::text)": "lower(display_name)",
+    }.get(key, key)
+
+
+def postgres_kifu_search_index_statements(*, existing_indexes) -> list[str]:
+    """Check the actual definition and both readiness flags before planning DDL."""
+    statements = []
+    for name, (table, keys) in KIFU_SEARCH_INDEX_SPECS.items():
+        if name in existing_indexes:
+            actual_table, actual_keys, valid, ready, full_btree = existing_indexes[name]
+            if (
+                actual_table != table
+                or tuple(map(_search_index_key, actual_keys)) != keys
+                or not valid
+                or not ready
+                or not full_btree
+            ):
+                raise RuntimeError(f"Invalid PostgreSQL index {name}; inspect and repair it explicitly")
+            continue
+        columns = ", ".join('lower("display_name")' if key == "lower(display_name)" else f'"{key}"' for key in keys)
+        statements.append(f'CREATE INDEX CONCURRENTLY "{name}" ON "{table}" ({columns})')
+    return statements
+
+
+def _postgres_kifu_search_index_status(engine):
+    sql = text(
+        """
+        SELECT idx.relname, tbl.relname, i.indisvalid, i.indisready,
+               ARRAY(SELECT pg_get_indexdef(i.indexrelid, key, true)
+                     FROM generate_series(1, i.indnkeyatts) AS key ORDER BY key),
+               (i.indpred IS NULL AND NOT i.indisunique AND NOT i.indisexclusion
+                AND i.indnkeyatts = i.indnatts AND am.amname = 'btree')
+        FROM pg_index i
+        JOIN pg_class idx ON idx.oid = i.indexrelid
+        JOIN pg_class tbl ON tbl.oid = i.indrelid
+        JOIN pg_am am ON am.oid = idx.relam
+        WHERE idx.relnamespace = current_schema()::regnamespace
+          AND idx.relname IN :names
+    """
+    ).bindparams(bindparam("names", expanding=True))
+    with engine.connect() as conn:
+        return {
+            name: (table, tuple(keys), bool(valid), bool(ready), bool(full_btree))
+            for name, table, valid, ready, keys, full_btree in conn.execute(
+                sql, {"names": tuple(KIFU_SEARCH_INDEX_SPECS)}
+            )
+        }
+
+
+def check_kifu_search_indexes(engine):
+    """Read-only status plus missing-index plan; never executes DDL."""
+    if engine.dialect.name != "postgresql":
+        raise RuntimeError("Kifu search index operation requires PostgreSQL")
+    status = _postgres_kifu_search_index_status(engine)
+    return status, postgres_kifu_search_index_statements(existing_indexes=status)
+
+
+def apply_kifu_search_indexes(engine, *, timeout_ms=900_000, lock_timeout_ms=10_000):
+    """Explicit bounded operation; each concurrent index has its own autocommit connection."""
+    if timeout_ms < 1 or lock_timeout_ms < 1:
+        raise ValueError("Index time budgets must be positive")
+    deadline = monotonic() + timeout_ms / 1000
+    _, statements = check_kifu_search_indexes(engine)
+    for statement in statements:
+        remaining_ms = int((deadline - monotonic()) * 1000)
+        if remaining_ms < 1:
+            raise TimeoutError("Kifu search index operation exceeded its time budget")
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(
+                text("SELECT set_config('statement_timeout', :timeout, false)"), {"timeout": f"{remaining_ms}ms"}
+            )
+            conn.execute(
+                text("SELECT set_config('lock_timeout', :timeout, false)"),
+                {"timeout": f"{min(lock_timeout_ms, remaining_ms)}ms"},
+            )
+            conn.execute(text(statement))
+    status, missing = check_kifu_search_indexes(engine)
+    if missing:
+        raise RuntimeError("Kifu search indexes remain missing after apply")
+    return status
 
 
 def postgres_kifu_album_fk_statements(*, existing_columns: set[str], existing_fks: dict[str, object]) -> list[str]:
@@ -1106,8 +1211,8 @@ def add_missing_columns(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
-            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
-                # The explicit catalog CLI owns authoritative name and selection tables.
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES | KIFU_RANK_TABLES:
+                # Explicit migrations own authoritative name, selection and rank tables.
                 continue
             existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
             for col in table.columns:
@@ -1160,8 +1265,8 @@ def create_missing_indexes(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
-            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
-                continue  # Explicit catalog CLI owns these indexes, including PostgreSQL CONCURRENTLY.
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES | KIFU_RANK_TABLES:
+                continue  # Explicit migrations own these indexes, including PostgreSQL CONCURRENTLY.
             existing_idx = {ix["name"] for ix in inspector.get_indexes(table.name)}
             for index in table.indexes:
                 if index.name in existing_idx:
@@ -1273,3 +1378,110 @@ def backfill_ai_ladder_decisions(engine) -> None:
         )
         if result.rowcount:
             logger.info("migrate: marked %s legacy AI ladder decisions counted", result.rowcount)
+
+
+# Explicit, additive migration for the membership billing version. Nullable
+# snapshots leave all historical order/task semantics intact.
+MEMBERSHIP_COLUMNS = {
+    "users": {
+        "membership_revision": "INTEGER NOT NULL DEFAULT 0",
+        "membership_migrated_at": "TIMESTAMP",
+    },
+    "quota_buckets": {
+        "reserved": "INTEGER NOT NULL DEFAULT 0",
+        "starts_at": "TIMESTAMP",
+        "ends_at": "TIMESTAMP",
+    },
+    "report_tasks": {
+        "analysis_sgf": "TEXT",
+        "billing_version": "VARCHAR(64)",
+        "operation_id": "INTEGER",
+        "generation": "INTEGER NOT NULL DEFAULT 0",
+        "model_sha256": "VARCHAR(64)",
+    },
+    "recharge_orders": {
+        "catalog_version": "VARCHAR(64)",
+        "sku_snapshot": "JSON",
+        "environment": "VARCHAR(24)",
+        "provider_tx_id": "VARCHAR(128)",
+        "idempotency_key": "VARCHAR(128)",
+        "expires_at": "TIMESTAMP",
+        "fulfilled_at": "TIMESTAMP",
+        "refunded_at": "TIMESTAMP",
+        "refund_ref": "VARCHAR(160)",
+        "payment_details": "JSON",
+        "payment_next_check_at": "TIMESTAMP",
+    },
+}
+MEMBERSHIP_CHECKS = {
+    "users": {"ck_user_membership_revision": "membership_revision IS NOT NULL AND membership_revision >= 0"},
+    "quota_buckets": {
+        "ck_quota_bucket_nonnegative": "reserved IS NOT NULL AND allowance >= 0 AND used >= 0 AND reserved >= 0",
+        "ck_quota_bucket_window": "starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at",
+    },
+    "report_tasks": {"ck_report_task_generation": "generation IS NOT NULL AND generation >= 0"},
+}
+
+
+def migrate_membership_schema(engine) -> None:
+    """Idempotently add membership fields/constraints; never rebuild assets.
+
+    Application base tables must already exist (as in init_db). PostgreSQL uses
+    real constraints; SQLite adds equivalent write guards on preexisting tables
+    because ALTER TABLE cannot attach a table CHECK without rewriting data.
+    """
+    if engine.dialect.name not in {"postgresql", "sqlite"}:
+        raise RuntimeError("Membership migration requires PostgreSQL or SQLite")
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        inspector = inspect(conn)
+        for table, additions in MEMBERSHIP_COLUMNS.items():
+            if table not in tables:
+                continue
+            columns = {column["name"] for column in inspector.get_columns(table)}
+            for name, definition in additions.items():
+                if name not in columns:
+                    # Store all instants as UTC; PostgreSQL keeps timezone-aware types.
+                    if engine.dialect.name == "postgresql":
+                        definition = definition.replace("TIMESTAMP", "TIMESTAMP WITH TIME ZONE")
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN "{name}" {definition}'))
+        if engine.dialect.name == "postgresql":
+            # Generic add_missing_columns predates NOT NULL preservation. Tighten
+            # these new counters in place after its safe zero-default backfill.
+            for table, column in (("users", "membership_revision"), ("quota_buckets", "reserved"), ("report_tasks", "generation")):
+                if table in tables:
+                    current = next(c for c in inspect(conn).get_columns(table) if c["name"] == column)
+                    if current.get("default") != "0":
+                        conn.execute(text(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" SET DEFAULT 0'))
+                    if current["nullable"]:
+                        conn.execute(text(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" SET NOT NULL'))
+        for table in (models_db.MembershipTerm.__table__, models_db.BillingOperation.__table__):
+            table.create(bind=conn, checkfirst=True)
+        for table, checks in MEMBERSHIP_CHECKS.items():
+            if table not in tables:
+                continue
+            existing_checks = {check["name"] for check in inspector.get_check_constraints(table)}
+            for name, expression in checks.items():
+                if name in existing_checks:
+                    continue
+                if engine.dialect.name == "postgresql":
+                    conn.execute(text(f'ALTER TABLE "{table}" ADD CONSTRAINT "{name}" CHECK ({expression})'))
+                else:
+                    # Refuse invalid legacy rows rather than silently repairing money.
+                    invalid = conn.execute(text(f'SELECT 1 FROM "{table}" WHERE NOT ({expression}) LIMIT 1')).first()
+                    if invalid:
+                        raise RuntimeError(f"Invalid legacy membership asset: {table}.{name}")
+                    new_expression = expression
+                    for column in sorted(models_db.Base.metadata.tables[table].columns, key=lambda col: -len(col.name)):
+                        new_expression = re.sub(rf'\b{re.escape(column.name)}\b', f'NEW."{column.name}"', new_expression)
+                    for event in ("INSERT", "UPDATE"):
+                        trigger = f"{name}_{event.lower()}"
+                        conn.execute(text(
+                            f'CREATE TRIGGER IF NOT EXISTS "{trigger}" BEFORE {event} ON "{table}" '
+                            f'WHEN NOT ({new_expression}) BEGIN SELECT RAISE(ABORT, \'{name}\'); END'
+                        ))
+        for table_name in {"recharge_orders", "report_tasks"} & tables:
+            for index in models_db.Base.metadata.tables[table_name].indexes:
+                if index.name.startswith("uq_recharge_order_") or index.name in {"ix_report_tasks_operation_id", "ix_recharge_orders_payment_next_check_at"}:
+                    index.create(bind=conn, checkfirst=True)

@@ -7,11 +7,11 @@ import type { BaipuStep } from '../../api/baipuApi';
  * 量四件事:请求只带前 k 步且带 token、走白时换视角、候选点转成白灯、三种收起。
  */
 
-const { quickAnalyze } = vi.hoisted(() => ({ quickAnalyze: vi.fn() }));
+const { quickAnalyze, auth } = vi.hoisted(() => ({ quickAnalyze: vi.fn(), auth: { token: 't1' } }));
 vi.mock('../../api', () => ({ API: { quickAnalyze } }));
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 't1' }) }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 
-import { buildHintRequest, useBaipuHint } from './useBaipuHint';
+import { buildHintRequest, hintMover, useBaipuHint } from './useBaipuHint';
 
 const mv = (color: 'B' | 'W', row: number, col: number, removed: Array<{ row: number; col: number }> = []): BaipuStep => ({
   kind: 'move', move_index: 0, property: color, row, col, color, removed, board_hash: '',
@@ -41,9 +41,67 @@ const RESP = {
 const STEPS = [setup('B', 15, 3), mv('B', 3, 15), mv('W', 15, 15), mv('B', 2, 2)];
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
 
-beforeEach(() => { vi.useRealTimers(); quickAnalyze.mockReset(); quickAnalyze.mockResolvedValue(RESP); });
+beforeEach(() => { vi.useRealTimers(); auth.token = 't1'; quickAnalyze.mockReset(); quickAnalyze.mockResolvedValue(RESP); });
 
 describe('buildHintRequest', () => {
+  it('snapshots late setup instead of hoisting it before the played moves', () => {
+    // Exact backend v2 steps for (;SZ[19];B[aa];W[ba];AW[ab];B[ac];B[bb];W[dd]).
+    // AW[A18] follows B[A19], so moving it into initial_stones would capture
+    // A19 early and produce a different board even when all moves are legal.
+    const steps: BaipuStep[] = [
+      { kind: 'move', move_index: 0, property: 'B', row: 0, col: 0, color: 'B', pre_removed: [], removed: [], requires_placement: true, board_hash: 'bde4ba64d5dd546d' },
+      { kind: 'move', move_index: 1, property: 'W', row: 0, col: 1, color: 'W', pre_removed: [], removed: [], requires_placement: true, board_hash: 'bdc6d7fc7a9979e4' },
+      { kind: 'setup', move_index: 2, property: 'AW', row: 1, col: 0, color: 'W', pre_removed: [], removed: [], requires_placement: true, board_hash: '0e5e89bd74dc8f61' },
+      { kind: 'move', move_index: 3, property: 'B', row: 2, col: 0, color: 'B', pre_removed: [], removed: [], requires_placement: true, board_hash: '50e75aa073be6186' },
+      { kind: 'move', move_index: 4, property: 'B', row: 1, col: 1, color: 'B', pre_removed: [], removed: [{ row: 1, col: 0 }], requires_placement: true, board_hash: 'cd85bcce25ce8387' },
+      { kind: 'move', move_index: 5, property: 'W', row: 3, col: 3, color: 'W', pre_removed: [], removed: [], requires_placement: true, board_hash: '471e55ce4ae271f0' },
+    ];
+    expect(buildHintRequest(steps, 5, 19, null)).toMatchObject({
+      initial_stones: [['B', 'A19'], ['B', 'A17'], ['B', 'B18'], ['W', 'B19']],
+      moves: [['B', 'pass']], max_visits: 200,
+    });
+  });
+
+  it.each([
+    { name: 'opposite replacement', previous: 'W', operation: { pre_removed: [{ row: 0, col: 0 }], requires_placement: true }, expected: [['B', 'A9']] },
+    { name: 'same-color repeat', previous: 'B', operation: { requires_placement: false }, expected: [['B', 'A9']] },
+    { name: 'legacy occupied move', previous: 'W', operation: {}, expected: [['B', 'A9']] },
+    { name: 'self-capture', previous: 'W', operation: { removed: [{ row: 0, col: 0 }] }, expected: [] },
+  ] as const)('uses an authoritative snapshot after an applied $name', ({ previous, operation, expected }) => {
+    const steps = [mv(previous, 0, 0), { ...mv('B', 0, 0), ...operation }, mv('B', 8, 8)] as BaipuStep[];
+    const request = buildHintRequest(steps, 2, 9, null);
+    expect(request.initial_stones).toEqual(expected);
+    expect(request.moves).toEqual([]);
+    expect(request.max_visits).toBe(200);
+  });
+
+  it('does not fall back for an unapplied future replacement', () => {
+    const steps = [mv('W', 0, 0), { ...mv('B', 0, 0), pre_removed: [{ row: 0, col: 0 }] }];
+    expect(buildHintRequest(steps, 1, 9, null)).toMatchObject({ initial_stones: [], moves: [['W', 'A9']] });
+  });
+
+  it('snapshots a self-capture at an empty destination while retaining other stones', () => {
+    const steps = [setup('W', 0, 1), mv('B', 0, 0, [{ row: 0, col: 0 }]), mv('B', 8, 8)];
+    expect(buildHintRequest(steps, 2, 9, null)).toMatchObject({ initial_stones: [['W', 'B9']], moves: [] });
+  });
+
+  it('keeps legal history for an ordinary opponent capture', () => {
+    const steps = [setup('W', 0, 1), mv('B', 0, 0, [{ row: 0, col: 1 }]), mv('W', 8, 8)];
+    expect(buildHintRequest(steps, 2, 9, null)).toMatchObject({ initial_stones: [['W', 'B9']], moves: [['B', 'A9']] });
+  });
+
+  it('uses the recorded pass property when its backend color is null', () => {
+    const steps = [mv('B', 0, 0), { ...pass('W'), color: null }];
+    expect(hintMover(steps, 1)).toBe('W');
+    expect(hintMover(steps, 2)).toBe('B');
+    expect(buildHintRequest(steps, 2, 9, null).moves).toEqual([['B', 'A9'], ['W', 'pass']]);
+  });
+
+  it('keeps the player from a color-null pass after snapshot fallback', () => {
+    const steps = [mv('B', 0, 0), clear(0, 0), { ...pass('W'), color: null }];
+    expect(buildHintRequest(steps, 3, 9, null)).toMatchObject({ initial_stones: [], moves: [] });
+  });
+
   it('只带前 k 步;setup 进 initial_stones;pass 记 pass;贴目与规则取谱', () => {
     const steps = [setup('B', 15, 3), mv('B', 3, 15), pass('W'), mv('B', 2, 2)];
     expect(buildHintRequest(steps, 3, 19, { player_black: '', player_white: '', result: '', handicap: 0, komi: 6.5, ruleset: 'japanese' }))
@@ -74,6 +132,54 @@ describe('buildHintRequest', () => {
 });
 
 describe('useBaipuHint', () => {
+  it.each(['user-a:source-b', 'user-b:source-a'])('closes same-cursor hints across session %s and does not reopen old scope', async sessionKey => {
+    const { result, rerender } = renderHook((key: string) => useBaipuHint({
+      steps: STEPS, k: 2, boardSize: 19, meta: null, sessionKey: key,
+    }), { initialProps: 'user-a:source-a' });
+    act(() => result.current.toggle());
+    await flush();
+    expect(result.current.leds).toHaveLength(3);
+    rerender(sessionKey);
+    expect(result.current).toMatchObject({ open: false, status: 'idle', rows: [], leds: [] });
+    rerender('user-a:source-a');
+    expect(result.current.open).toBe(false);
+  });
+
+  it('closes same-cursor hints when authoritative steps are replaced', async () => {
+    const { result, rerender } = renderHook((steps: BaipuStep[]) => useBaipuHint({ steps, k: 2, boardSize: 19, meta: null }), { initialProps: STEPS });
+    act(() => result.current.toggle());
+    await flush();
+    rerender([...STEPS]);
+    expect(result.current).toMatchObject({ open: false, status: 'idle', rows: [], leds: [] });
+  });
+
+  it('closes same-cursor hints when account credentials change', async () => {
+    const { result, rerender } = renderHook(() => useBaipuHint({ steps: STEPS, k: 2, boardSize: 19, meta: null }));
+    act(() => result.current.toggle());
+    await flush();
+    auth.token = 't2';
+    rerender();
+    expect(result.current).toMatchObject({ open: false, status: 'idle', rows: [], leds: [] });
+  });
+
+  it('rejects late old-session analysis at the same cursor', async () => {
+    let resolveOld: (value: unknown) => void = () => {};
+    quickAnalyze.mockReturnValueOnce(new Promise(resolve => { resolveOld = resolve; }));
+    const { result, rerender } = renderHook((sessionKey: string) => useBaipuHint({
+      steps: STEPS, k: 2, boardSize: 19, meta: null, sessionKey,
+    }), { initialProps: 'user-a:source-a' });
+    act(() => result.current.toggle());
+    rerender('user-b:source-b');
+    expect(result.current.open).toBe(false);
+    act(() => result.current.toggle());
+    await flush();
+    expect(quickAnalyze).toHaveBeenCalledTimes(2);
+    expect(result.current.rows[0].move).toBe('Q16');
+    await act(async () => { resolveOld({ moveInfos: [{ move: 'T1', winrate: 0.9 }] }); await Promise.resolve(); });
+    expect(result.current.rows[0].move).toBe('Q16');
+    expect(result.current.leds[0]).toEqual({ row: 3, col: 15, color: 'hint' });
+  });
+
   it('toggle 开:请求带 token、只含前 k 手;回来取前 3 手', async () => {
     const { result } = renderHook(() => useBaipuHint({ steps: STEPS, k: 2, boardSize: 19, meta: null }));
     act(() => result.current.toggle());

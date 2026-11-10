@@ -78,6 +78,7 @@ export default function BaipuSessionRoute() {
   if (CALIBRATION_RUNNING.includes(status.phase)) {
     return (
       <GeometryCalibrationScreen
+      t={t}
         backLabel={t('baipu:back_kifu', '棋谱')}
         onBack={back}
         title={t('baipu:calib_running_title', '棋盘标定还在进行')}

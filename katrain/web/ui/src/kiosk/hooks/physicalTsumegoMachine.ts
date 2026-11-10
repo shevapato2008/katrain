@@ -50,6 +50,7 @@ export interface MachineState {
 }
 
 export type MachineEvent =
+  | { type: 'RESET'; board: number[][] }
   | { type: 'ENABLE'; emptyBoard: number[][] }
   | { type: 'SETUP_PROGRESS'; missing: Array<[number, number]>; extra: Array<[number, number, number]> }
   | { type: 'SETUP_COMPLETE'; screenBoard: number[][] }
@@ -100,6 +101,12 @@ const toReady = (state: MachineState, board: number[][]): { state: MachineState;
 
 export function reduce(state: MachineState, evt: MachineEvent): { state: MachineState; commands: Command[] } {
   switch (evt.type) {
+    case 'RESET':
+      return {
+        state: { ...initialState, phase: 'restoring', targetBoard: evt.board },
+        commands: [{ kind: 'ledClear' }, { kind: 'armMoves', armed: false }, { kind: 'setupMode', board: evt.board }],
+      };
+
     case 'ENABLE':
       return {
         state: { ...initialState, phase: 'clearing', targetBoard: evt.emptyBoard },

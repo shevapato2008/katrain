@@ -211,3 +211,70 @@ async def test_same_owner_401_still_refreshes_and_writes_directly():
     _sign_in(box, "tok-jia", JIA)
     await box.dispatcher.user_games_create(user_id=JIA, data=_game("甲"))
     assert box.library == {"甲": ["甲"]} and _queue(box) == []
+
+
+@pytest.mark.parametrize("conflict_code", ["report_bound_game_immutable", "user_game_identity_conflict", None])
+async def test_online_explicit_game_refusals_do_not_save_or_enqueue_a_rejected_write(conflict_code):
+    body = (
+        {"detail": {"code": conflict_code, "message": "请另存棋谱"}}
+        if conflict_code
+        else {"detail": "Already exists"}
+    )
+
+    async def cloud(request):
+        return httpx.Response(409, json=body)
+
+    box = _box(cloud_handler=cloud)
+    _sign_in(box, "tok-jia", JIA)
+    try:
+        if conflict_code:
+            with pytest.raises(httpx.HTTPStatusError) as error:
+                await box.dispatcher.user_games_create(user_id=JIA, data=_game("甲"))
+            assert error.value.response.status_code == 409
+            assert error.value.response.json() == body
+            assert _local_blacks(box, JIA) == [] and _queue(box) == []
+        else:
+            # Legacy duplicate conflicts keep their established local fallback.
+            await box.dispatcher.user_games_create(user_id=JIA, data=_game("甲"))
+            assert _local_blacks(box, JIA) == ["甲"]
+            assert _queue(box) == [("create_user_game", str(JIA), "pending")]
+    finally:
+        await box.remote.close()
+
+
+@pytest.mark.parametrize("conflict_code", ["report_bound_game_immutable", "user_game_identity_conflict", None])
+async def test_sync_explicit_game_refusals_are_failed_instead_of_falsely_synced(conflict_code):
+    calls = []
+    body = (
+        {"detail": {"code": conflict_code, "message": "请另存棋谱"}}
+        if conflict_code
+        else {"detail": "Already exists"}
+    )
+
+    async def cloud(request):
+        calls.append(request)
+        return httpx.Response(409, json=body)
+
+    box = _box(cloud_handler=cloud)
+    _sign_in(box, "tok-jia", JIA)
+    try:
+        box.connectivity.is_online = False
+        await box.dispatcher.user_games_create(user_id=JIA, data=_game("甲"))
+        assert _local_blacks(box, JIA) == ["甲"]
+        assert _queue(box) == [("create_user_game", str(JIA), "pending")]
+        box.connectivity.is_online = True
+
+        assert await box.worker.run_sync() == (0 if conflict_code else 1)
+        with box.factory() as db:
+            item = db.query(models_db.SyncQueueEntry).one()
+            assert item.last_http_status == 409
+            assert item.status == ("failed" if conflict_code else "completed")
+            assert (item.synced_at is None) == bool(conflict_code)
+            if conflict_code:
+                assert conflict_code in item.last_error
+                assert box.worker.describe(item.idempotency_key, user_id=JIA)["state"] == "refused"
+        assert box.worker.revive_retryable_failures() == 0
+        assert await box.worker.run_sync() == 0
+        assert len(calls) == 1
+    finally:
+        await box.remote.close()

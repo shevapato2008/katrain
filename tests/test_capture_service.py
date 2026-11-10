@@ -34,7 +34,7 @@ class FakeCam:
         self.closed = True
         self.is_connected = False
 
-    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+    def grab_fresh(self, after_ts=None, settle_ms=150.0, timeout=2.0):
         return self._frame.copy(), 7, 123.0
 
     def read_frame(self):
@@ -110,7 +110,7 @@ class TestCaptureService:
 
     def test_capture_to_raises_without_frame(self, tmp_path):
         cam = FakeCam()
-        cam.grab_fresh = lambda after_ts=None, settle_ms=150.0: (None, 0, 0.0)
+        cam.grab_fresh = lambda after_ts=None, settle_ms=150.0, timeout=2.0: (None, 0, 0.0)
         svc = _svc(cam)
         svc.start()
         with pytest.raises(RuntimeError):

@@ -7,6 +7,7 @@ import LiveTvIcon from '@mui/icons-material/LiveTv';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import CardMembershipIcon from '@mui/icons-material/CardMembership';
 
 type Translate = (key: string, fallback: string) => string;
 
@@ -18,15 +19,16 @@ export interface GalaxyNavigationItem {
 }
 
 export const getGalaxyNavigation = (t: Translate): GalaxyNavigationItem[] => [
-  { key: 'home', label: t('Home', 'Home'), path: '/galaxy', icon: <HomeIcon /> },
-  { key: 'play', label: t('btn:Play', 'Play'), path: '/galaxy/play', icon: <SportsEsportsIcon /> },
-  { key: 'research', label: t('Research', 'Research'), path: '/galaxy/research', icon: <ScienceIcon /> },
-  { key: 'tsumego', label: t('Tsumego', 'Tsumego'), path: '/galaxy/tsumego', icon: <ExtensionIcon /> },
-  { key: 'review', label: t('analysis:report', 'Review'), path: '/galaxy/report', icon: <AssessmentIcon /> },
-  { key: 'live', label: t('Live', 'Live'), path: '/galaxy/live', icon: <LiveTvIcon /> },
-  { key: 'kifu', label: t('kifu:library', 'Kifu'), path: '/galaxy/kifu', icon: <LibraryBooksIcon /> },
-  { key: 'tutorials', label: t('Tutorials', 'Tutorials'), path: '/galaxy/tutorials', icon: <MenuBookIcon /> },
+  { key: 'home', label: t('Home', 'Home'), path: '/', icon: <HomeIcon /> },
+  { key: 'play', label: t('btn:Play', 'Play'), path: '/play', icon: <SportsEsportsIcon /> },
+  { key: 'research', label: t('Research', 'Research'), path: '/research', icon: <ScienceIcon /> },
+  { key: 'tsumego', label: t('Tsumego', 'Tsumego'), path: '/tsumego', icon: <ExtensionIcon /> },
+  { key: 'review', label: t('analysis:report', 'Review'), path: '/report', icon: <AssessmentIcon /> },
+  { key: 'live', label: t('Live', 'Live'), path: '/live', icon: <LiveTvIcon /> },
+  { key: 'kifu', label: t('kifu:library', 'Kifu'), path: '/kifu', icon: <LibraryBooksIcon /> },
+  { key: 'membership', label: t('membership:galaxy_title', '会员与用量'), path: '/membership', icon: <CardMembershipIcon /> },
+  { key: 'tutorials', label: t('Tutorials', 'Tutorials'), path: '/tutorials', icon: <MenuBookIcon /> },
 ];
 
 export const isGalaxyNavigationActive = (pathname: string, path: string) =>
-  path === '/galaxy' ? pathname === path : pathname.startsWith(path);
+  path === '/' ? pathname === '/' : pathname.startsWith(path);

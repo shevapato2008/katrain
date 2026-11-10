@@ -27,7 +27,15 @@ from katrain.web.api.v1.endpoints.ai_ladder import (
 )
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
+from katrain.web.core.db import engine as kifu_db_engine
 from katrain.web.core.game_end_rules import is_awaiting_count
+from katrain.vision.service import binding_game_identity
+from katrain.web.core.physical_play_orchestrator import (
+    capture_vision_source,
+    publish_current_expected,
+    vision_source_is_current,
+)
+from katrain.web.core.kifu_http_timing import KifuHTTPTimingMiddleware
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
@@ -68,6 +76,91 @@ ENDGAME_CONFLICT_DETAIL = {
     "not_your_turn": "Not your turn",
     "remote_ended": "Ranked game has ended on another device",
 }
+
+
+async def _receive_box_pvp_message(upstream, *, capture_source, check_user, transform):
+    """Fix this receive's source before awaiting, including the first receive after a bind."""
+    source = capture_source() if capture_source is not None else None
+    payload = json.loads(await upstream.recv())
+    check_user()
+    return transform(payload, source) if capture_source is not None else transform(payload)
+
+
+def _apply_pvp_box_state(app, local_session_id: str, state: dict, *, source, catch_up_current_binding=False) -> dict:
+    """Merge the room's authority before publishing its current physical binding."""
+    manager = app.state.session_manager
+    session = manager.get_session(local_session_id)
+    if source[1] is not session or source[2] != binding_game_identity(session):
+        return session.last_state
+    if source[3] != app.state.box_sso.active_generation:
+        return session.last_state
+    if app.state.pvp_box_bridge.rooms.for_local(source[3], local_session_id) is not source[4]:
+        return session.last_state
+    bridge = app.state.pvp_box_bridge
+    state = bridge.newer_state(session.last_state, state)
+    if state.get("end_result") and not state.get("awaiting_count"):
+        session.game_ended = True
+    session.last_state = state
+    physical_play = getattr(app.state, "physical_play", None)
+    vision = getattr(app.state, "vision", None)
+    publish_source = source[0]
+    if not vision_source_is_current(vision, publish_source):
+        # A persistent room stream is independent of one physical confirmation/bind.
+        # The single frame crossing bind may be its last frame until the user moves.
+        # Catch up only the SAME still-current room from its merged authority, never
+        # by assigning a new epoch to the received payload.
+        if not (
+            catch_up_current_binding
+            and getattr(vision, "bound_session_id", None) == local_session_id
+            and source[2] == binding_game_identity(session)
+        ):
+            return state
+        publish_source = capture_vision_source(vision, local_session_id, session)
+    if physical_play is not None:
+        physical_play.on_game_state(None, source=publish_source)
+    elif vision is not None:
+        publish_current_expected(vision, local_session_id, session, publish_source)
+    return state
+
+
+@contextmanager
+def _vision_game_replacement(app, session):
+    """A replaced local game ends its physical binding; the new game binds normally."""
+    from katrain.vision.service import VisionService
+
+    vision = getattr(app.state, "vision", None)
+    source = (
+        capture_vision_source(vision, session.session_id, session)
+        if isinstance(vision, VisionService) and vision.bound_session_id == session.session_id
+        else None
+    )
+    try:
+        yield
+    finally:
+        epoch = vision.invalidate_replaced_game(source) if source is not None else None
+        if epoch is not None:
+            orchestrator = getattr(app.state, "physical_play", None)
+
+            def cleanup():
+                # A REST worker may finish after the loop has already bound the next game.
+                if vision.binding_epoch != epoch or vision.bound_session_id is not None:
+                    return
+                if orchestrator is not None and orchestrator.binding_source == source:
+                    orchestrator.on_unbind()
+                app.state.ranked_vision_binding = None
+                tracker = getattr(app.state, "engine_recovery", None)
+                if tracker is not None:
+                    tracker.clear()
+
+            loop = getattr(orchestrator, "_loop", None) or getattr(app.state.session_manager, "_loop", None)
+            try:
+                on_loop = asyncio.get_running_loop() is loop
+            except RuntimeError:
+                on_loop = False
+            if loop is not None and not on_loop:
+                loop.call_soon_threadsafe(cleanup)
+            else:
+                cleanup()
 
 
 def _terminal_of(session):
@@ -202,9 +295,22 @@ async def lifespan(app: FastAPI):
         # ── Server mode startup (existing logic, unchanged) ──
         await _lifespan_server(app, log)
 
-    yield
+    try:
+        yield
+    finally:
+        await _shutdown_app(app)
+
+
+async def _shutdown_app(app):
 
     # ── Shutdown ──
+    kifu_search = getattr(app.state, "kifu_search_client", None)
+    if kifu_search is not None:
+        await kifu_search.aclose()
+    # Stop new reset submissions before any owner is torn down.
+    recovery = getattr(app.state, "usb_hub_recovery", None)
+    if recovery is not None:
+        await asyncio.to_thread(recovery.stop)
     geometry_calibration = getattr(app.state, "geometry_calibration", None)
     if geometry_calibration:
         geometry_calibration.stop()
@@ -257,7 +363,9 @@ async def lifespan(app: FastAPI):
     collector = getattr(app.state, "error_collector", None)
     if collector is not None:
         await asyncio.to_thread(collector.stop)
-    for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task", "health_report_task"):
+    for attr in (
+        "cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task", "wechat_reconciliation_task", "health_report_task"
+    ):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
@@ -291,13 +399,24 @@ async def _lifespan_server(app: FastAPI, log):
     session_factory = getattr(app.state, "session_factory", None) or SessionLocal
     app.state.session_factory = session_factory
 
+    from katrain.web.core.baipu_history import BaipuHistoryRepository
+    from katrain.web.core.baipu_history_sync import BaipuHistoryService
+
+    history_repo = getattr(app.state, "baipu_history_repo", None) or BaipuHistoryRepository(session_factory)
+    app.state.baipu_history_repo = history_repo
+
     repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
+
+    if getattr(app.state, "baipu_history_service", None) is None:
+        app.state.baipu_history_service = BaipuHistoryService(history_repo)
 
     game_repo = GameRepository(session_factory)
     user_game_repo = UserGameRepository(session_factory)
     user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
     ai_ladder_repo = AiLadderRankedRepository(session_factory)
+
+    _reconcile_membership_reservations(session_factory)
 
     # Reconcile any credit reservations stuck after a previous crash.
     try:
@@ -424,6 +543,7 @@ async def _lifespan_server(app: FastAPI, log):
     # Board mode never spends locally (billing is proxied to the cloud, see
     # billing.py's module docstring) so this loop only runs in server mode.
     app.state.report_settlement_task = asyncio.create_task(_report_settlement_loop(session_factory))
+    app.state.wechat_reconciliation_task = asyncio.create_task(_wechat_payment_reconciliation_loop(session_factory))
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -441,6 +561,11 @@ async def _lifespan_server(app: FastAPI, log):
 
     # ── Platform Manager (cross-platform online play) ─────────────────────
     _init_platform_manager(app, manager, log)
+
+    if settings.KIFU_SEARCH_BACKEND == "elasticsearch":
+        from katrain.web.kifu.search_es import AsyncElasticsearchClient, SearchSettings
+
+        app.state.kifu_search_client = AsyncElasticsearchClient(SearchSettings.from_env(role="read"))
 
     # Config-check verdicts and error collection for the admin console; server mode only. Started
     # last so that a failure earlier in startup cannot leave the handler attached to the root logger.
@@ -496,6 +621,29 @@ def _init_platform_manager(app, session_manager, log):
 
 
 async def _lifespan_board(app: FastAPI, log):
+    try:
+        await _initialize_board(app, log)
+    except BaseException:
+        await _stop_board_hardware(app)
+        raise
+
+
+async def _stop_board_hardware(app):
+    """Partial startup must not strand an owner or start a late reset."""
+    for name in ("vision_poller_task", "vision_pump_task", "led_failsafe_task"):
+        task = getattr(app.state, name, None)
+        if task is not None:
+            task.cancel()
+    for name in ("usb_hub_recovery", "geometry_calibration", "vision", "capture", "led", "camera_hub"):
+        owner = getattr(app.state, name, None)
+        if owner is not None:
+            try:
+                await asyncio.to_thread(owner.stop)
+            except Exception:
+                logging.getLogger("katrain_web").exception("Could not stop %s after partial board startup", name)
+
+
+async def _initialize_board(app: FastAPI, log):
     """Board mode initialization — design.md Section 4.9."""
     from functools import partial
 
@@ -522,6 +670,12 @@ async def _lifespan_board(app: FastAPI, log):
     # 两支必须一起改 —— 只修一支等于把同一个缺陷留在另一半。
     session_factory = getattr(app.state, "session_factory", None) or SessionLocal
     app.state.session_factory = session_factory
+
+    from katrain.web.core.baipu_history import BaipuHistoryRepository
+    from katrain.web.core.baipu_history_sync import BaipuHistoryService
+
+    history_repo = getattr(app.state, "baipu_history_repo", None) or BaipuHistoryRepository(session_factory)
+    app.state.baipu_history_repo = history_repo
 
     # Local SQLite — create only the core tables needed for offline
     repo = SQLAlchemyUserRepository(session_factory)
@@ -573,14 +727,25 @@ async def _lifespan_board(app: FastAPI, log):
         except Exception as e:
             log.debug(f"No saved credentials: {e}")
 
+    # Replay rows are their own durable outbox and share the existing worker lock.
+    history_service = getattr(app.state, "baipu_history_service", None)
+    if history_service is None:
+        history_service = BaipuHistoryService(history_repo, remote_client=remote_client)
+        app.state.baipu_history_service = history_service
+
     # Sync worker
-    sync_worker = SyncWorker(session_factory, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
+    sync_worker = SyncWorker(
+        session_factory, remote_client, ai_ladder_repo=app.state.ai_ladder_repo,
+        baipu_sync=history_service.sync_pending,
+    )
+    history_service.wake_sync = sync_worker.run_sync
     sync_worker.recover_stale_leases()
     app.state.sync_worker = sync_worker
 
     # Connectivity manager
     connectivity = ConnectivityManager(remote_client, sync_worker)
     app.state.connectivity_manager = connectivity
+    history_service.connectivity = connectivity
 
     # Repository dispatcher
     sync_fn = partial(enqueue_sync_item, session_factory, device_id=settings.DEVICE_ID)
@@ -700,6 +865,7 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.hardware_vision_store = None
     app.state.physical_play = None
     app.state.physical_play_config = None
+    usb_startup_check = _prepare_usb_hub_recovery(app)
 
     # One physical camera owner shared by capture, calibration, and recognition.
     from katrain.web.core.device_lease import DeviceBusy
@@ -752,8 +918,11 @@ async def _lifespan_board(app: FastAPI, log):
                 device_id=capture_config.camera_device,
                 width=capture_config.width,
                 height=capture_config.height,
-                lock_exposure=(persisted_lock_exposure and not runtime_hardware_ae
-                               if hardware_vision_dir else capture_config.lock_exposure),
+                lock_exposure=(
+                    persisted_lock_exposure and not runtime_hardware_ae
+                    if hardware_vision_dir
+                    else capture_config.lock_exposure
+                ),
                 exposure=(None if hardware_vision_dir else capture_config.exposure),
                 lock_awb=capture_config.lock_awb,
             )
@@ -767,8 +936,9 @@ async def _lifespan_board(app: FastAPI, log):
                 lock_awb=False,
             )
         camera_hub = CameraHub(hub_config)
+        app.state.camera_hub = camera_hub
         try:
-            camera_hub.start(allow_unavailable=True)
+            _start_hardware_owner(camera_hub, usb_startup_check, allow_unavailable=True)
         except DeviceBusy as exc:
             log.warning("Camera occupied; continuing without vision, capture, calibration, or physical play: %s", exc)
             camera_hub = None
@@ -803,7 +973,9 @@ async def _lifespan_board(app: FastAPI, log):
         )
         log.log(parallax_level, parallax_message)
 
-        vision = VisionService(vision_config, frame_source=camera_hub)
+        vision = VisionService(vision_config, frame_source=camera_hub,
+            recovery_gate=app.state.hardware_recovery_gate)
+        app.state.vision = vision
         vision.start()
         app.state.vision = vision
         app.state.vision_ws_clients = {}
@@ -820,8 +992,9 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.core.led_service import LedService
 
         led = LedService(led_config)
+        app.state.led = led
         try:
-            led.start()
+            _start_hardware_owner(led, usb_startup_check)
         except DeviceBusy as exc:
             log.warning("LED occupied; continuing without LED guidance: %s", exc)
             app.state.led = None
@@ -865,6 +1038,7 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.core.capture_service import CaptureService
 
         capture = CaptureService(capture_config, hub=camera_hub)
+        app.state.capture = capture
         capture.start()
         app.state.capture = capture
         # P12: default "auto" = no-LED outer-corner per-move geometry (passive, zero LED for
@@ -954,6 +1128,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_resume=resume_vision,
             drift_needed=lambda: _vision_needs_frames(app),
             restore_auto_exposure_on_success=runtime_hardware_ae,
+            recovery_gate=app.state.hardware_recovery_gate,
         )
     else:
         app.state.geometry_calibration = None
@@ -968,7 +1143,77 @@ async def _lifespan_board(app: FastAPI, log):
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
 
+    _attach_usb_hub_recovery(app, log)
     log.info("Board mode initialization complete")
+
+
+def _prepare_usb_hub_recovery(app):
+    import sys
+
+    app.state.usb_hub_recovery = None
+    app.state.hardware_recovery_gate = None
+    if not (
+        getattr(settings, "KATRAIN_USB_HUB_RECOVERY", False)
+        and settings.KATRAIN_MODE == "board"
+        and sys.platform == "linux"
+    ):
+        return None
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+    from katrain.web.core.usb_hub_recovery import UsbHubRecovery
+
+    app.state.hardware_recovery_gate = HardwareRecoveryGate()
+    state_path = "/var/lib/smartbox/usb-hub-recovery/state.json"
+    return lambda: UsbHubRecovery.startup_allowed(state_path)
+
+
+def _start_hardware_owner(owner, startup_check, **kwargs):
+    if startup_check is not None:
+        owner.set_usb_startup_check(startup_check)
+    owner.start(**kwargs)
+
+
+def _attach_usb_hub_recovery(app, log):
+    gate = getattr(app.state, "hardware_recovery_gate", None)
+    camera, led, vision = (getattr(app.state, name, None) for name in ("camera_hub", "led", "vision"))
+    if gate is None or camera is None or led is None or vision is None:
+        return
+    from katrain.web.core.linux_usb_hub import LinuxUsbHub
+    from katrain.web.core.usb_hub_recovery import UsbHubRecovery
+
+    if (camera.config.device_id, led.config.serial_port) != ("/dev/smartbox-cam", "/dev/smartbox-led"):
+        log.warning("USB hub recovery disabled: owners must use the verified smartbox aliases")
+        return
+    adapter = LinuxUsbHub()
+    if not adapter.snapshot().valid:
+        log.warning("USB hub recovery disabled: topology could not be verified")
+        return
+    loop = asyncio.get_running_loop()
+
+    def retire_queues(timeout):
+        import threading
+
+        done = threading.Event()
+        generation = gate.generation
+
+        def clear():
+            for queue in list(app.state.vision_ws_clients.values()) + [app.state.vision_move_queue]:
+                if queue is not None:
+                    retained = []
+                    while not queue.empty():
+                        item = queue.get_nowait()
+                        if isinstance(item, tuple) and len(item) == 2 and item[0] >= generation:
+                            retained.append(item)
+                    for item in retained:
+                        queue.put_nowait(item)
+            done.set()
+
+        loop.call_soon_threadsafe(clear)
+        return done.wait(timeout)
+
+    vision.set_usb_recovery_callback(retire_queues)
+    recovery = UsbHubRecovery(adapter, camera, led, vision, gate, "/var/lib/smartbox/usb-hub-recovery/state.json")
+    app.state.usb_hub_recovery = recovery
+    camera.set_device_recovery(recovery)
 
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
@@ -983,6 +1228,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app = FastAPI(lifespan=lifespan)
     app.state.ranked_analysis_activity = RankedAnalysisActivity()
+    app.state.membership_guard_active = settings.MEMBERSHIP_MODE != "legacy"
 
     @app.exception_handler(EndgameConflict)
     async def endgame_conflict_to_409(request: Request, exc: EndgameConflict):
@@ -1118,6 +1364,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if not session.game_ended:
                     session.last_state = session.katrain.get_state()
         state = session.last_state or session.katrain.get_state()
+        from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
+
+        if not legacy_analysis_allowed(runtime=session.katrain, app=app):
+            state = strip_private_analysis(state)
+            session.last_state = state
         state["sockets_count"] = len(session.sockets)
         if not strict_box_sso_enabled():
             state["spectator_count"] = session.spectator_presence.count(
@@ -1133,6 +1384,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     app.include_router(create_pvp_spectator_router(guard_session_viewer, session_state_for_read))
     add_catalog_cache_middleware(app)
+    app.add_middleware(KifuHTTPTimingMiddleware, pool=kifu_db_engine.pool)
     # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
     # the full server serves the complete build. Both emit index.html + /assets,
     # so we point the SPA routes + root mount at the matching directory.
@@ -1150,6 +1402,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         max_sessions=max_sessions,
         enable_engine=enable_engine,
     )
+    manager.membership_guard_active = app.state.membership_guard_active
     app.state.session_manager = manager
 
     @app.get("/api/pvp/identity")
@@ -1212,6 +1465,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             raise HTTPException(status_code=403, detail="Action unavailable in a certified bot game")
         if getattr(session, "game_type", None) == "pvp_lobby":
             raise HTTPException(status_code=403, detail="Central PvP room controls this game")
+
+    @app.post("/api/pvp/territory")
+    async def lobby_territory(body: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.pvp_territory import analyze_lobby_territory, forward_lobby_territory
+
+        session = _get_session_or_404(manager, body.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            guard_session_reader(session, current_user, "lobby territory")
+            return await forward_lobby_territory(app, session, current_user)
+        return await analyze_lobby_territory(app, session, current_user)
 
     @app.get("/health")
     async def health(request: Request):
@@ -1287,6 +1550,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
             from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 
+            vision_source = capture_box_source(session_id, session)
             try:
                 if session.game_ended and isinstance(session.last_state, dict):
                     room = bridge.rooms.for_local(app.state.box_sso.active_generation, session_id)
@@ -1295,14 +1559,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     bridge.check_user(room.generation, room.local_user_id)
                     return {"session_id": session_id, "state": session.last_state}
                 payload = await bridge.fetch_state(app.state.box_sso.active_generation, session_id)
-                payload["state"] = apply_pvp_box_state(session_id, payload["state"])
+                payload["state"] = apply_pvp_box_state(session_id, payload["state"], source=vision_source)
                 return payload
             except PvpBoxAuthError as exc:
                 raise HTTPException(status_code=401, detail=str(exc)) from exc
             except PvpBoxRemoteError as exc:
                 physical_play = getattr(app.state, "physical_play", None)
                 vision = getattr(app.state, "vision", None)
-                if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                if physical_play is not None and box_source_is_current(vision_source):
                     physical_play.enter_remote_disconnected()
                 raise HTTPException(status_code=503, detail=str(exc)) from exc
             except httpx.HTTPStatusError as exc:
@@ -1374,10 +1638,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 coords = None if request.pass_move else list(request.coords) if request.coords is not None else None
                 if coords is None and not request.pass_move:
                     raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
+                vision_source = capture_box_source(request.session_id, session)
                 payload = await bridge.forward_move(
                     app.state.box_sso.active_generation, request.session_id, coords=coords
                 )
-                payload["state"] = apply_pvp_box_state(request.session_id, payload["state"])
+                payload["state"] = apply_pvp_box_state(request.session_id, payload["state"], source=vision_source)
                 manager.broadcast_to_session(request.session_id, {"type": "game_update", "state": payload["state"]})
                 return payload
             except PvpBoxAuthError as exc:
@@ -1576,7 +1841,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         skip_analysis = request.skip_analysis or not session_owner_ids(session)
         if not skip_analysis:
             register_persistent_analysis(current_user, session, "load-sgf", "SGF analysis")
-        with session.lock:
+        with session.lock, _vision_game_replacement(app, session):
             session.katrain("load_sgf", request.sgf, skip_initial_analysis=skip_analysis)
             state = session.katrain.get_state()
             session.last_state = state
@@ -1601,7 +1866,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         app.state.ranked_analysis_activity.end_session(session.session_id)
         with persistent_analysis_activity(current_user, session, "new-game", "new game analysis"):
-            with session.lock:
+            with session.lock, _vision_game_replacement(app, session):
                 session.game_ended = False
                 # A new game is starting: clear the "already recorded" guard from any
                 # previous game on this (possibly reused) session so it becomes recordable again.
@@ -1647,7 +1912,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         register_persistent_analysis(current_user, session, "game-setup", "game setup analysis")
         mode = request.mode
         settings = request.settings
-        with session.lock:
+        with session.lock, _vision_game_replacement(app, session):
             session.game_ended = False
             # A (re)configured game is starting: clear the "already recorded" guard from
             # any previous game on this (possibly reused) session so it becomes recordable again.
@@ -1951,6 +2216,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/continuous")
     def toggle_continuous_analysis(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "toggle continuous analysis")
         guard_bot_mutation(session)
@@ -1972,6 +2240,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/current")
     def analyze_current(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         """On-demand analysis of the current position (kiosk 领地/图表). Free games only —
         the interface chokepoint (ANALYSIS_ACTIONS) makes this a no-op in rated/ranked. The
         analysis itself streams back asynchronously over the game WebSocket, so this returns
@@ -1989,6 +2260,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/extra")
     def analyze_extra(request: AnalyzeExtraRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "analyze extra")
         guard_bot_mutation(session)
@@ -2003,6 +2277,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/show-pv")
     def show_pv(request: PVRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis PV")
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "show pv")
@@ -2050,6 +2327,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "find mistake")
         guard_bot_mutation(session)
@@ -2078,6 +2358,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/tsumego")
     def tsumego_frame(request: TsumegoRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "tsumego frame")
         guard_bot_mutation(session)
@@ -2091,6 +2374,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/selfplay")
     def selfplay(request: SelfPlayRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "selfplay")
         guard_bot_mutation(session)
@@ -2106,6 +2392,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/region")
     def set_region(request: SelectBoxRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "set region")
         guard_bot_mutation(session)
@@ -3256,7 +3545,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         is_player = current_user.id in (session.player_b_id, session.player_w_id)
         if not is_player:
             # Spectator leaving - just return
-            return {"status": "left", "redirect": "/galaxy/play/human"}
+            return {"status": "left", "redirect": "/play/human"}
 
         # Player leaving = forfeit
         winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
@@ -3268,7 +3557,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.game_ended = True
                 session.last_state = session.katrain.get_state()
             await app.state.pvp_lobby_bots.finish(session, reason="forfeit", result=result)
-            return {"status": "forfeited", "redirect": "/galaxy/play/human"}
+            return {"status": "forfeited", "redirect": "/play/human"}
 
         try:
             if not _is_guest_participant(app, session):
@@ -3294,7 +3583,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Clean up the session
         manager.remove_session(request.session_id)
 
-        return {"status": "forfeited", "redirect": "/galaxy/play/human"}
+        return {"status": "forfeited", "redirect": "/play/human"}
 
     @app.post("/api/timer/pause")
     def pause_timer(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
@@ -3519,6 +3808,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/game")
     def analyze_game(request: GameAnalysisRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "analyze game")
         guard_bot_mutation(session)
@@ -3539,6 +3831,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/scan")
     def analysis_scan(request: AnalysisScanRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "analysis scan")
         guard_bot_mutation(session)
@@ -3552,6 +3847,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.get("/api/analysis/progress")
     def analysis_progress(session_id: str, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis progress")
         session = _get_session_or_404(manager, session_id)
         guard_session_reader(session, current_user, "analysis progress")
@@ -3563,6 +3861,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/analysis/report")
     def get_game_report(request: GameReportRequest, current_user: User = Depends(get_current_user)):
+        from katrain.web.core.paid_analysis import require_legacy_analysis
+
+        require_legacy_analysis(user=current_user, app=app)
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis report")
         session = _get_session_or_404(manager, request.session_id)
         guard_session_reader(session, current_user, "get game report")
@@ -3585,20 +3886,35 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def apply_pvp_box_state(local_session_id: str, state: dict) -> dict:
-        session = manager.get_session(local_session_id)
-        bridge = app.state.pvp_box_bridge
-        state = bridge.newer_state(session.last_state, state)
-        if state.get("end_result") and not state.get("awaiting_count"):
-            session.game_ended = True
-        if state is session.last_state:
-            return state
-        session.last_state = state
-        physical_play = getattr(app.state, "physical_play", None)
+    def capture_box_source(local_session_id, session):
         vision = getattr(app.state, "vision", None)
-        if physical_play is not None and getattr(vision, "bound_session_id", None) == local_session_id:
-            physical_play.on_game_state(state)
-        return state
+        generation = app.state.box_sso.active_generation
+        room = app.state.pvp_box_bridge.rooms.for_local(generation, local_session_id)
+        return (
+            capture_vision_source(vision, local_session_id, session),
+            session,
+            binding_game_identity(session),
+            generation,
+            room,
+        )
+
+    def box_source_is_current(source):
+        vision_source, session, identity, generation, room = source
+        return (
+            generation == app.state.box_sso.active_generation
+            and app.state.pvp_box_bridge.rooms.for_local(generation, session.session_id) is room
+            and binding_game_identity(session) == identity
+            and vision_source_is_current(getattr(app.state, "vision", None), vision_source)
+        )
+
+    def apply_pvp_box_state(local_session_id: str, state: dict, *, source, catch_up_current_binding=False) -> dict:
+        return _apply_pvp_box_state(
+            app,
+            local_session_id,
+            state,
+            source=source,
+            catch_up_current_binding=catch_up_current_binding,
+        )
 
     async def forward_box_pvp_action(session, current_user, method, path, body=None):
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
@@ -3607,6 +3923,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         bridge = getattr(app.state, "pvp_box_bridge", None)
         if bridge is None:
             raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        vision_source = capture_box_source(session.session_id, session)
         try:
             payload = await bridge.forward_action(
                 app.state.box_sso.active_generation, session.session_id, method, path, body
@@ -3618,11 +3935,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except httpx.HTTPStatusError as exc:
             raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         if isinstance(payload.get("state"), dict):
-            payload["state"] = apply_pvp_box_state(session.session_id, payload["state"])
+            payload["state"] = apply_pvp_box_state(session.session_id, payload["state"], source=vision_source)
             manager.broadcast_to_session(session.session_id, {"type": "game_update", "state": payload["state"]})
         return payload
 
-    async def proxy_pvp_websocket(websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None):
+    async def proxy_pvp_websocket(
+        websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None, capture_source=None
+    ):
         """Relay a box-origin socket to the central authority without exposing its token."""
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
         from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
@@ -3641,9 +3960,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 async def to_box():
                     while True:
-                        payload = json.loads(await upstream.recv())
-                        bridge.check_user(generation, local_user_id)
-                        await websocket.send_json(transform(payload))
+                        payload = await _receive_box_pvp_message(
+                            upstream,
+                            capture_source=capture_source,
+                            check_user=lambda: bridge.check_user(generation, local_user_id),
+                            transform=transform,
+                        )
+                        await websocket.send_json(payload)
 
                 tasks = {asyncio.create_task(to_central()), asyncio.create_task(to_box())}
                 try:
@@ -4101,7 +4424,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             while True:
                 while not queue.empty():
-                    await websocket.send_json(_json_safe(queue.get_nowait()))
+                    await _send_vision_generation_item(app, websocket, queue.get_nowait())
 
                 vision.refresh_status()
                 await websocket.send_json(
@@ -4203,18 +4526,37 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     app.state.box_sso.discard_socket(websocket)
                 return
 
-            def transform_room(payload):
+            room_source = capture_box_source(session_id, session)
+            vision_source = room_source
+
+            def capture_room_receive():
+                nonlocal vision_source
+                # The connection keeps its original session/game/room/auth identity.
+                # Only a NEW receive can capture a new binding; an in-flight await cannot.
+                vision_source = (
+                    capture_vision_source(getattr(app.state, "vision", None), session_id, session),
+                    *room_source[1:],
+                )
+                return vision_source
+
+            def transform_room(payload, source):
+                if (
+                    source[1] is not session
+                    or source[2] != binding_game_identity(session)
+                    or source[3] != app.state.box_sso.active_generation
+                    or bridge.rooms.for_local(source[3], session_id) is not source[4]
+                ):
+                    return payload
                 if payload.get("type") == "game_update" and isinstance(payload.get("state"), dict):
                     state = bridge.rewrite_state(generation, session_id, payload["state"])
-                    state = apply_pvp_box_state(session_id, state)
+                    state = apply_pvp_box_state(session_id, state, source=source, catch_up_current_binding=True)
                     return {**payload, "state": state}
                 if payload.get("type") == "game_end" and isinstance(payload.get("data"), dict):
                     result = payload["data"].get("result")
                     if isinstance(result, str) and result:
-                        state = session.last_state or session.katrain.get_state()
+                        state = session_state_for_read(session)
                         state = {**state, "end_result": result, "awaiting_count": False, "degraded": False}
-                        session.game_ended = True
-                        apply_pvp_box_state(session_id, state)
+                        apply_pvp_box_state(session_id, state, source=source, catch_up_current_binding=True)
                 return payload
 
             session.sockets.add(websocket)
@@ -4223,7 +4565,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 def on_disconnect():
                     physical_play = getattr(app.state, "physical_play", None)
                     vision = getattr(app.state, "vision", None)
-                    if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                    if physical_play is not None and box_source_is_current(vision_source):
                         physical_play.enter_remote_disconnected()
 
                 await proxy_pvp_websocket(
@@ -4234,6 +4576,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     f"/ws/{room.central_session_id}",
                     transform_room,
                     on_disconnect,
+                    capture_source=capture_room_receive,
                 )
             finally:
                 session.sockets.discard(websocket)
@@ -4354,11 +4697,46 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             elif session.sockets:
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
-    # SPA Routing for Galaxy UI
-    @app.get("/galaxy", response_class=FileResponse)
-    @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
-    async def serve_galaxy_app(full_path: str = None):
+    # Only known Galaxy pages receive the SPA shell; other paths remain real 404s.
+    async def serve_galaxy_app():
         return FileResponse(static_root / "index.html", headers={"Cache-Control": "no-cache"})
+
+    galaxy_paths = (
+        "/",
+        "/play",
+        "/play/ai",
+        "/play/game/{session_id}",
+        "/play/human",
+        "/play/human/room/{session_id}",
+        "/research",
+        "/membership",
+        "/report",
+        "/report/{task_id}",
+        "/kifu",
+        "/kifu/{album_id}/replay",
+        "/kifu/{album_id}/report",
+        "/live",
+        "/live/{match_id}",
+        "/tsumego",
+        "/tsumego/problem/{problem_id}",
+        "/tsumego/{level}",
+        "/tsumego/{level}/{category}",
+        "/tsumego/{level}/{category}/{unit}",
+        "/tutorials",
+        "/tutorials/book/{book_id}",
+        "/tutorials/section/{section_id}",
+        "/tutorials/{category}",
+    )
+    for path in galaxy_paths:
+        # The final static mount wins over automatic slash redirects, so register both.
+        for route_path in (path,) if path == "/" else (path, path + "/"):
+            app.add_api_route(
+                route_path,
+                serve_galaxy_app,
+                methods=["GET", "HEAD"],
+                response_class=FileResponse,
+                include_in_schema=False,
+            )
 
     # SPA Routing for Kiosk UI
     @app.get("/kiosk", response_class=FileResponse)
@@ -4403,6 +4781,39 @@ async def _cleanup_loop(manager: SessionManager):
 REPORT_SETTLEMENT_INTERVAL_SECONDS = 60
 
 
+def _reconcile_membership_reservations(session_factory):
+    """Cloud authority only; both services flush and this boundary commits once."""
+    from datetime import datetime, timezone
+    from katrain.web.core import billing_operations, payments
+
+    db = session_factory()
+    try:
+        instant = datetime.now(timezone.utc)
+        billing_operations.reconcile_expired_positions(db, now=instant)
+        payments.reconcile_pending_orders(db, now=instant, settings=settings, limit=100)
+        db.commit()
+    except Exception:
+        db.rollback()
+        logging.getLogger("katrain_web").warning("Membership reservation sweep failed", exc_info=True)
+    finally:
+        db.close()
+
+
+async def _wechat_payment_reconciliation_loop(session_factory):
+    """Server-only recovery, independent of report/reservation maintenance."""
+    from datetime import datetime, timezone
+    from katrain.web.core.wechat_payments import reconcile_due_orders
+
+    while True:
+        await asyncio.sleep(5)
+        try:
+            await asyncio.to_thread(
+                reconcile_due_orders, session_factory, now=datetime.now(timezone.utc), settings=settings, limit=20
+            )
+        except Exception:
+            logging.getLogger("katrain_web").warning("WeChat payment sweep failed", exc_info=True)
+
+
 async def _report_settlement_loop(session_factory):
     """定时对账：把终态但仍持预扣的复盘任务结清。
 
@@ -4416,6 +4827,7 @@ async def _report_settlement_loop(session_factory):
     """
     while True:
         await asyncio.sleep(REPORT_SETTLEMENT_INTERVAL_SECONDS)
+        await asyncio.to_thread(_reconcile_membership_reservations, session_factory)
         try:
             from katrain.web.core import report_settlement
 
@@ -4904,50 +5316,82 @@ async def _vision_event_pump(app: FastAPI):
         try:
             vision = getattr(app.state, "vision", None)
             if vision:
-                for evt in vision.poll_events():
-                    if (
-                        isinstance(evt, dict)
-                        and evt.get("type") in {"illegal_change", "ambiguous_stone", "capture_pending", "move_pending"}
-                        and vision.bound_session_id
-                    ):
-                        try:
-                            local_state = (
-                                app.state.session_manager.get_session(vision.bound_session_id).last_state or {}
+                gate = getattr(app.state, "hardware_recovery_gate", None)
+                use = gate.try_use() if gate is not None else nullcontext()
+                if use is not None:
+                    with use:
+                        for evt in vision.poll_events():
+                            if (
+                                isinstance(evt, dict)
+                                and evt.get("type") in {"illegal_change", "ambiguous_stone", "capture_pending", "move_pending"}
+                                and vision.bound_session_id
+                            ):
+                                try:
+                                    local_state = (
+                                        app.state.session_manager.get_session(vision.bound_session_id).last_state or {}
+                                    )
+                                except KeyError:
+                                    local_state = {}
+                                if local_state.get("game_type") == "pvp_local" and not local_state.get("awaiting_count"):
+                                    continue
+                            if isinstance(evt, dict) and evt.get("type") == "led_glow":
+                                _adjust_led_brightness(app, evt.get("data") or {}, log)
+                                continue
+                            if isinstance(evt, dict) and evt.get("type") == "illegal_change" and vision.bound_session_id:
+                                try:
+                                    state = app.state.session_manager.get_session(vision.bound_session_id).last_state
+                                except KeyError:
+                                    state = None
+                                if is_stale_illegal_change(evt, state):
+                                    log.info("Suppressed stale vision mismatch already present in game: %s", evt.get("data"))
+                                    continue
+                            if isinstance(evt, dict):
+                                _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
+                                route_vision_attention(
+                                    evt,
+                                    getattr(app.state, "physical_play", None),
+                                    bound=bool(vision.bound_session_id),
+                                )
+                            gate = getattr(app.state, "hardware_recovery_gate", None)
+                            if gate is not None and gate.active:
+                                continue
+                            route_vision_event(
+                                evt,
+                                [_VisionGenerationQueue(queue, gate) for queue in app.state.vision_ws_clients.values()],
+                                app.state.vision_move_queue,
+                                bound=bool(vision.bound_session_id),
                             )
-                        except KeyError:
-                            local_state = {}
-                        if local_state.get("game_type") == "pvp_local" and not local_state.get("awaiting_count"):
-                            continue
-                    if isinstance(evt, dict) and evt.get("type") == "led_glow":
-                        _adjust_led_brightness(app, evt.get("data") or {}, log)
-                        continue
-                    if isinstance(evt, dict) and evt.get("type") == "illegal_change" and vision.bound_session_id:
-                        try:
-                            state = app.state.session_manager.get_session(vision.bound_session_id).last_state
-                        except KeyError:
-                            state = None
-                        if is_stale_illegal_change(evt, state):
-                            log.info("Suppressed stale vision mismatch already present in game: %s", evt.get("data"))
-                            continue
-                    if isinstance(evt, dict):
-                        _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
-                        route_vision_attention(
-                            evt,
-                            getattr(app.state, "physical_play", None),
-                            bound=bool(vision.bound_session_id),
-                        )
-                    route_vision_event(
-                        evt,
-                        list(app.state.vision_ws_clients.values()),
-                        app.state.vision_move_queue,
-                        bound=bool(vision.bound_session_id),
-                    )
             await asyncio.sleep(0.1)
         except asyncio.CancelledError:
             raise
         except Exception:
             log.exception("vision event pump error")
             await asyncio.sleep(1.0)
+
+
+class _VisionGenerationQueue:
+    def __init__(self, queue, gate):
+        self.queue, self.gate = queue, gate
+
+    def put_nowait(self, payload):
+        self.queue.put_nowait((self.gate.generation, payload) if self.gate is not None else payload)
+
+
+async def _send_vision_generation_item(app, websocket, item):
+    gate = getattr(app.state, "hardware_recovery_gate", None)
+    if gate is None:
+        await websocket.send_json(_json_safe(item))
+        return
+    if not isinstance(item, tuple) or len(item) != 2:
+        return
+    generation, payload = item
+    use = gate.try_use() if gate is not None else nullcontext()
+    if use is None:
+        return
+    with use:
+        if gate is not None and generation != gate.generation:
+            return
+        await websocket.send_json(_json_safe(payload))
 
 
 def _session_owner(app: FastAPI, session):
@@ -5077,6 +5521,76 @@ def _apply_engine_recovery_outcome(
 
 
 async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_data, log) -> float:
+    """Own this confirmation only for the lifetime of its actual submission call."""
+    from katrain.vision.service import VisionService
+    from katrain.web.core.physical_play_orchestrator import (
+        capture_vision_source,
+        publish_current_expected,
+        vision_source_is_current,
+    )
+
+    try:
+        session = app.state.session_manager.get_session(session_id)
+    except KeyError:
+        session = None
+    source = capture_vision_source(vision, session_id, session) if session is not None else None
+    bridge = getattr(app.state, "pvp_box_bridge", None)
+    remote = None
+    if bridge is not None and session is not None and getattr(session, "game_type", None) == "pvp_lobby":
+        generation = app.state.box_sso.active_generation
+        remote = (generation, bridge.rooms.for_local(generation, session_id))
+
+    def current():
+        if remote is not None and (
+            app.state.box_sso.active_generation != remote[0]
+            or bridge.rooms.for_local(remote[0], session_id) is not remote[1]
+        ):
+            return False
+        if session is None:
+            return not isinstance(vision, VisionService) or (
+                vision.bound_session_id == session_id
+                and (not move_data.binding_epoch or move_data.binding_epoch == vision.binding_epoch)
+            )
+        try:
+            if app.state.session_manager.get_session(session_id) is not session:
+                return False
+        except KeyError:
+            return False
+        return vision_source_is_current(vision, source)
+
+    try:
+        if not current():
+            return 0.0
+        if (
+            isinstance(vision, VisionService)
+            and move_data.binding_epoch
+            and (
+                move_data.binding_epoch != vision.binding_epoch
+                or move_data.expected_revision != vision.expected_revision
+            )
+        ):
+            return 0.0
+        return await _submit_confirmed_move(
+            app, vision, session_id, move_data, log, source=source, source_current=current
+        )
+    finally:
+        # Flush only real changed authority, before the token-only release in the FIFO.
+        # No change means no rearm; an uncertain platform send keeps its own pending ctx.
+        try:
+            if session is not None and current() and isinstance(vision, VisionService):
+                orchestrator = getattr(app.state, "physical_play", None)
+                if orchestrator is not None and hasattr(orchestrator, "binding_source"):
+                    orchestrator.on_game_state(None, source=source)
+                else:
+                    publish_current_expected(vision, session_id, session, source)
+        finally:
+            if isinstance(vision, VisionService):
+                vision.release_confirmed_move(move_data)
+
+
+async def _submit_confirmed_move(
+    app: FastAPI, vision, session_id: str, move_data, log, *, source=None, source_current=None
+) -> float:
     """Handle one vision ConfirmedMove for the bound session. Extracted from
     _vision_move_poller (which is otherwise a bare infinite loop) so tests can
     drive this per-move logic directly with a mocked gateway/vision, per Task 7's
@@ -5089,6 +5603,11 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     """
     from katrain.vision.katrain_bridge import vision_move_to_katrain
     from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+    from katrain.web.core.physical_play_orchestrator import publish_current_expected, vision_source_is_current
+
+    def current():
+        return source_current() if source_current is not None else vision_source_is_current(vision, source)
 
     manager = app.state.session_manager
     tracker = getattr(app.state, "engine_recovery", None)
@@ -5109,11 +5628,13 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         return 0.0
 
     def _rearm_detection() -> None:
-        game_state = (
-            session.last_state if getattr(session, "game_type", None) == "pvp_lobby" else session.katrain.get_state()
-        )
-        if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(game_state["stones"], expected_node_id=game_state.get("current_node_id"))
+        if not current():
+            return
+        orchestrator = getattr(app.state, "physical_play", None)
+        if orchestrator is not None and hasattr(orchestrator, "binding_source"):
+            orchestrator.on_game_state(None, source=source, force_rearm=True)
+        else:
+            publish_current_expected(vision, session_id, session, source, force_rearm=True)
 
     # Re-arming after a TERMINAL refusal re-pushes the same frozen board, so the same
     # leftover stone re-confirms and is refused again every consistency window, forever.
@@ -5185,6 +5706,8 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         move_player = "B" if move_data.color == 1 else "W"
         try:
             with session.lock:
+                if not current():
+                    return 0.0
                 if getattr(vision, "bound_session_id", None) != session_id:
                     raise HTTPException(status_code=403, detail="vision is no longer bound to this session")
                 binding = getattr(app.state, "ranked_vision_binding", None)
@@ -5238,10 +5761,14 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         try:
             payload = await bridge.forward_move(generation, session_id, coords=list(coords))
         except httpx.HTTPStatusError as exc:
+            if not current():
+                return 0.0
             log.info("Central PvP physical move rejected: %s", exc)
             _rearm_detection()
             return 0.5
         except (PvpBoxAuthError, PvpBoxRemoteError) as exc:
+            if not current():
+                return 0.0
             log.warning("Central PvP physical move was not accepted: %s", exc)
             manager.broadcast_to_session(session_id, {"type": "pvp_central_disconnected"})
             orchestrator = getattr(app.state, "physical_play", None)
@@ -5249,13 +5776,15 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 orchestrator.enter_remote_disconnected()
             _rearm_detection()
             return 0.5
+        if not current():
+            return 0.0
         state = bridge.newer_state(session.last_state, payload["state"])
         if state is not session.last_state:
             session.last_state = state
             manager.broadcast_to_session(session_id, {"type": "game_update", "state": state})
             orchestrator = getattr(app.state, "physical_play", None)
             if orchestrator is not None:
-                orchestrator.on_game_state(state)
+                orchestrator.on_game_state(state, source=source)
         return 0.0
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
@@ -5277,6 +5806,8 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         live_turn = None
         try:
             with session.katrain.ai_ladder_commit_lock:
+                if not current():
+                    return 0.0
                 live_turn = session.katrain.next_player_to_move()
         except Exception:
             # a turn read must never be able to break move submission — fail-open is
@@ -5305,15 +5836,21 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)
         except PlatformMoveRejectedError as e:
+            if not current():
+                return 0.0
             log.warning("Platform gateway rejected vision move: %s", e)
             rearm = _apply_engine_recovery_outcome(app, manager, session_id, game_id, coords, e.reason, str(e))
             if e.reason == "game_ended":
                 await _record_platform_engine_game_off_request(session, app)
+                if not current():
+                    return 0.0
             if rearm:
                 _rearm_detection()
                 return 0.5
             return 0.0
         except Exception as gw_err:
+            if not current():
+                return 0.0
             log.warning("Platform gateway rejected vision move: %s", gw_err)
             # Non-PlatformMoveRejectedError exceptions (httpx errors, unexpected
             # adapter bugs, ...) are tunnel/infra failures too — fold them into the
@@ -5327,6 +5864,8 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 return 0.5
             return 0.0
         else:
+            if not current():
+                return 0.0
             if tracker is not None:
                 tracker.on_success()
     else:
@@ -5335,6 +5874,8 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         # 与跨平台 N13 在同一函数相邻改动,合并时逐段对。
         try:
             with session.lock:
+                if not current():
+                    return 0.0
                 session.katrain("play", move.coords, guard=True, expected_player=move_player)
         except EndgameConflict as exc:
             log.info("Vision move %s refused for session %s: %s", move_player, session_id, exc.reason)
@@ -5373,9 +5914,16 @@ async def _vision_move_poller(app: FastAPI):
         try:
             vision = getattr(app.state, "vision", None)
             if vision and vision.bound_session_id:
-                move_data = vision.get_confirmed_move()
-                if move_data and isinstance(move_data, ConfirmedMove):
-                    retry_delay = await _handle_confirmed_move(app, vision, vision.bound_session_id, move_data, log)
+                gate = getattr(app.state, "hardware_recovery_gate", None)
+                use = gate.try_use() if gate is not None else nullcontext()
+                if use is not None:
+                    with use:
+                        move_data = vision.get_confirmed_move()
+                        retry_delay = 0
+                        if move_data and isinstance(move_data, ConfirmedMove):
+                            retry_delay = await _handle_confirmed_move(
+                                app, vision, vision.bound_session_id, move_data, log
+                            )
                     if retry_delay:
                         await asyncio.sleep(retry_delay)
                         continue

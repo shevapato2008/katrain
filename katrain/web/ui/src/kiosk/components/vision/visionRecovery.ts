@@ -132,12 +132,20 @@ export function reduceRecoveryState(state: RecoveryState, action: RecoveryAction
     const positions = (event.data.positions as VisionPos[] | undefined) ?? [];
     const missing = (event.data.missing as VisionPos[] | undefined) ?? [];
 
-    if (action.platformPendingStone && isExactPendingMismatch(action.platformPendingStone, positions, missing)) {
+    // New comparators already excluded the exact in-flight point. Their mature
+    // anomaly must stay visible even while the platform's uncertain send is pending.
+    const actionable = event.data.actionable === true;
+    if (
+      !actionable
+      && action.platformPendingStone
+      && isExactPendingMismatch(action.platformPendingStone, positions, missing)
+    ) {
       return state;
     }
 
     if (
-      state.pending
+      !actionable
+      && state.pending
       && nowMs < state.pending.expiresAt
       && isExactPendingMismatch(state.pending, positions, missing)
     ) {

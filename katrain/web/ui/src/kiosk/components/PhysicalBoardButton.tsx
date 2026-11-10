@@ -2,6 +2,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { cacheSgf } from '../../api/baipuApi';
 import { useTranslation } from '../../hooks/useTranslation';
 import { backToState } from '../hooks/useBackTo';
+import { useAuth } from '../../context/AuthContext';
+import { kioskActivityStorage } from '../storage/kioskActivityStorage';
+import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
 
 interface Props {
   source: string;
@@ -15,7 +18,9 @@ export default function PhysicalBoardButton({ source, name, sgf, boardSize }: Pr
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const disabled = !sgf || boardSize !== 19;
+  const { identityKey, isGuest, isLoading } = useAuth();
+  const baipuIdentity = isGuest ? 'guest' : identityKey;
+  const disabled = !sgf || boardSize !== 19 || isLoading || !baipuIdentity;
   return (
     <button
       type="button" className="physical-board-button" disabled={disabled}
@@ -24,11 +29,11 @@ export default function PhysicalBoardButton({ source, name, sgf, boardSize }: Pr
         : t('kifu:need_sgf', '这一局还没读到谱') : undefined}
       onClick={() => {
         if (disabled || !sgf) return;
-        cacheSgf(source, name, sgf);
+        cacheSgf(source, name, sgf, kioskActivityStorage(identityKey, isGuest));
         navigate(`/kiosk/baipu/session/${encodeURIComponent(source)}`, {
-          state: { ...backToState(location), sgf, name, backLabel: t('report:back_report', '报告') },
+          state: { ...backToState(location), sgf, name, baipuIdentity, backLabel: t('report:back_report', '报告') },
         });
       }}
-    >{t('report:physical_board', '实体棋盘')}</button>
+    ><PhysicalBoardIcon />{t('report:physical_board_short', '实体盘')}</button>
   );
 }

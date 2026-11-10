@@ -41,9 +41,29 @@ const libraryModulePreload: Plugin = {
         surfaces[surface] = [...files];
       }
       return [{ tag: 'script', injectTo: 'head-prepend', children:
-        `var kifuModules=${JSON.stringify(surfaces)};var kifuSurface=location.pathname.match(/^\\/(galaxy|kiosk)\\/kifu\\/?$/);if(kifuSurface){(kifuModules[kifuSurface[1]]||[]).forEach(function(file){var link=document.createElement('link');link.rel='modulepreload';link.href='/'+file;document.head.appendChild(link);});}`,
+        `var kifuModules=${JSON.stringify(surfaces)};var kifuSurface=location.pathname.match(/^\\/(?:(kiosk)\\/)?kifu\\/?$/);if(kifuSurface){(kifuModules[kifuSurface[1]||'galaxy']||[]).forEach(function(file){var link=document.createElement('link');link.rel='modulepreload';link.href='/'+file;document.head.appendChild(link);});}`,
       }];
     },
+  },
+}
+
+// Root Galaxy routes no longer carry a distinguishing URL prefix. Record the
+// actual emitted source modules so verify:kiosk-2d can still enforce their DCE.
+const kioskGalaxyModuleBoundary: Plugin = {
+  name: 'kiosk-galaxy-module-boundary',
+  generateBundle(_options, bundle) {
+    const galaxyModules = new Set<string>();
+    for (const chunk of Object.values(bundle)) {
+      if (chunk.type !== 'chunk') continue;
+      for (const [id, module] of Object.entries(chunk.modules)) {
+        const source = id.replaceAll('\\', '/');
+        if (module.renderedLength > 0 && /\/src\/(?:GalaxyApp\.tsx(?:$|\?)|galaxy\/pages\/)/.test(source)) {
+          galaxyModules.add(source.slice(source.indexOf('/src/') + 1));
+        }
+      }
+    }
+    this.emitFile({ type: 'asset', fileName: 'kiosk-module-boundary.json',
+      source: JSON.stringify({ galaxyModules: [...galaxyModules].sort() }) });
   },
 }
 
@@ -52,8 +72,19 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   const kioskMode = env.VITE_KIOSK_2D_ONLY === 'true'
 
+  const appearanceBootstrap: Plugin = {
+    name: 'smartbox-appearance-bootstrap',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        return [{ tag: 'script', injectTo: 'head-prepend',
+          children: `window.__smartboxStrictKiosk=${JSON.stringify(kioskMode && env.VITE_BOX_SSO_STRICT === 'true')};` }];
+      },
+    },
+  }
+
   return {
-    plugins: [react(), libraryModulePreload, ...(kioskMode ? [kioskNoReferrerMeta] : [])],
+    plugins: [react(), appearanceBootstrap, libraryModulePreload, ...(kioskMode ? [kioskNoReferrerMeta, kioskGalaxyModuleBoundary] : [])],
     define: {
       __KIOSK_2D_ONLY__: JSON.stringify(kioskMode),
     },

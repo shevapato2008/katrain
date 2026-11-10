@@ -1,0 +1,33 @@
+{
+  "indexes": {
+    "ix_kifu_name_changes_target_row": [
+      "kifu_name_changes",
+      [
+        "target_table",
+        "target_row_id"
+      ],
+      true,
+      true,
+      true
+    ],
+    "ix_kifu_raw_event_names_display": [
+      "kifu_raw_event_names",
+      [
+        "display_name"
+      ],
+      true,
+      true,
+      true
+    ],
+    "ix_kifu_raw_event_names_lower_display": [
+      "kifu_raw_event_names",
+      [
+        "lower(display_name)"
+      ],
+      true,
+      true,
+      true
+    ]
+  },
+  "missing_index_plan": []
+}

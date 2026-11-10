@@ -268,6 +268,9 @@ class TestPlatformEngineColorRealSession:
         session = sm.get_session(session_id)
 
         assert session.katrain.get_state()["platform_engine_color"] == "W"
+        state = session.katrain.get_state()
+        assert state["platform_player_ranks"] == {"B": None, "W": "1级"}
+        assert state["rank_owner"] is None
 
     @pytest.mark.asyncio
     async def test_human_white_get_state_platform_engine_color_is_black(self):
@@ -284,6 +287,7 @@ class TestPlatformEngineColorRealSession:
         session = sm.create_multiplayer_session(player_b_id=1, player_w_id=2, b_name="A", w_name="B")
 
         assert session.katrain.get_state()["platform_engine_color"] is None
+        assert session.katrain.get_state()["platform_player_ranks"] == {}
 
     @pytest.mark.asyncio
     async def test_platform_engine_color_persists_across_edit_game(self):

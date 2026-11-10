@@ -11,9 +11,11 @@ const Protected = () => {
   useEffect(() => { auth.mount(); return auth.cleanup; }, []);
   return <div>PRIVATE CONTENT</div>;
 };
-const Tree = () => <MemoryRouter initialEntries={['/galaxy/play/human']}><Routes>
-  <Route path="/galaxy/play/human" element={<AuthGuard feature="hall"><Protected /></AuthGuard>} />
-  <Route path="/galaxy/play" element={<div>PUBLIC PLAY</div>} />
+const Tree = ({ feature = 'hall' }: { feature?: 'hall' | 'reports' }) => <MemoryRouter initialEntries={[feature === 'reports' ? '/report' : '/play/human']}><Routes>
+  <Route path="/play/human" element={<AuthGuard feature="hall"><Protected /></AuthGuard>} />
+  <Route path="/report" element={<AuthGuard feature="reports"><Protected /></AuthGuard>} />
+  <Route path="/play" element={<div>PUBLIC PLAY</div>} />
+  <Route path="/" element={<div>PUBLIC HOME</div>} />
 </Routes></MemoryRouter>;
 
 describe('Galaxy page access', () => {
@@ -44,6 +46,11 @@ describe('Galaxy page access', () => {
     expect(auth.retry).toHaveBeenCalledOnce();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
     expect(screen.getByText('PUBLIC PLAY')).toBeInTheDocument();
+  });
+  it('returns reports to the root homepage when the metadata back path is empty', () => {
+    render(<Tree feature="reports" />);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
+    expect(screen.getByText('PUBLIC HOME')).toBeInTheDocument();
   });
   it('unmounts on logout and remounts on account change', () => {
     auth.current = { ...auth.current, status: 'authenticated', isAuthenticated: true, user: { id: 1 }, identityKey: 'one' };

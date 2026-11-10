@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
@@ -12,68 +12,19 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { useResearchBoard, type BoardTool } from '../hooks/useResearchBoard';
 import { useSound } from '../../hooks/useSound';
 import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
-import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ruleNameOf } from '../utils/setupOptions';
 import { useAuth } from '../../context/AuthContext';
-import { API } from '../../api';
-import { durationLabel } from '../utils/durationLabel';
 import { whenLabel } from '../utils/whenLabel';
 import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../../api/userGamesApi';
 import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 
-/**
- * 屏 21 研究(L2 布局 A:盘 516 + 16 + 右栏 460)。
- *
- * ## 四个视图收成一屏四态
- *
- * 上一版是**四路 return**:①编辑 / ②分析中 / ③报告 / D失败,后三个整屏换掉,其中
- * ③ 用的是另一块盘(galaxy 的 `<Board gameState>`)和另一条 460→340 宽的右栏
- * (`ResearchAnalysisPanel`,879 行)。这一版四态共用同一条右栏,盘自始至终是同一块:
- *
- * | `scan` | 右栏 | AI 折叠块 | 第 5 颗动作键 |
- * |---|---|---|---|
- * | `none` | 稿子这一屏 | `quickAnalyze` 200 visits | 全局分析 |
- * | `running` | 分段与提示行不渲染(见下) | 进度 | 取消分析 |
- * | `done` | 同 `none` | 会话里扫完的 500 visits/手 | 重新分析 |
- * | `failed` | 同 `none` | `.empty` 三句 | 重试分析 |
- *
- * 三条理由,每条都能单独立住:
- *  ① **`ResearchAnalysisPanel` 装不进 460。** 它是玩家条 + 胜率条 + 推荐表 + 三个 Tab
- *    + 翻手条,原来靠 340 宽的独立面板和整屏换页才摆得下。
- *  ② **不能改成「跳去屏 20 复盘报告」。** `ReportsAPI.create` 只收 `user_game_id`
- *    (`src/api/reportApi.ts:88`),而这一屏的局面可以是**手搭的**、根本没有 game id;
- *    而且「全局分析」建的是会话内 scan(`API.analysisScan`),不是那条 cron 报告任务。
- *    改成跳屏是换后端,不是重画。**代价已登记**:比赛谱和手搭局面从此拿不到走势/重点手。
- *  ③ **`running` 那一态之所以敢把分段和提示行撤掉**,是因为扫描期间盘面本来就是冻的。
- *    想过「留着但全部灰掉」,`KioskOptSeg` 的契约挡住了:「**永远至少留一段能选** ——
- *    全灰掉的一组控件在屏上和一段读数没有区别」。全灰违约,不渲染才是这个外壳件的说法。
- *
- * ## 不再进沉浸
- *
- * 上一版 `setImmersive(isAnalyzing)`。`immersive` 在 `KioskLayout` 里**只干一件事**:
- * 把顶栏整块不渲染 —— 可 `.kiosk-content` 的 `top` 仍是 `var(--topbar-h)`
- * (`tokens.css:419`),于是屏顶留一条 **56 高的空黑带**,一个像素都没省下。
- * 规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、不隐藏」,
- * 参考图 `shots/21-research.png` 顶栏也是在的。⇒ 这一屏不再调它。
- * 屏 17 摆谱、屏 18 直播、屏 20 复盘详情已各自还过一次,本屏还完只剩屏 14 做题一个现场 ——
- * 2026-08-26 屏 14 也还了,`ImmersiveContext` 随即整个删掉,顶栏从此无条件渲染。
- *
- * Dock 与本屏无关:`/kiosk/research` 不在 `DOCK_TABS` 里 ⇒ `dockLevelOf` 恒为 2 ⇒
- * **四态一律没有 Dock**,`immersive` 从来就不影响它(`KioskLayout.tsx:56-59`)。
- */
+import { usePaidPosition } from '../../features/analysis/usePaidPosition';
+import { useReportTasks } from '../../features/report/useReportTasks';
+import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
+import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../../features/membership/presentation';
 
-/** 扫描态。上一版那四路 return 折成这一个字。 */
-type Scan = 'none' | 'running' | 'done' | 'failed';
-
-/**
- * 表里一行。`quickAnalyze`(200 visits)和会话扫完的 `gs.analysis.moves`(500 visits)
- * 两种来源归一到这一个形状,表就只有一份画法。
- *
- * ⚠️ **口径:`winrate` / `scoreLead` 从后端来时是黑方视角**,上屏前按走子方翻转
- * (`toRows` 里做)。这是本仓既有约定,直播和复盘两屏都这么算。
- */
 interface AiRow {
   move: string;
   /** 推荐度 = `psv` 占比;没有 `psv`(quickAnalyze 就没有)退回 `visits` 占比。 */
@@ -110,7 +61,7 @@ function toRows(raw: RawMove[], mover: 'B' | 'W'): AiRow[] {
 }
 
 /** 出处:四个入口各写各的,认不出来就整行不渲染(见 `PROVENANCE` 那段注)。 */
-interface Provenance { label: string; backPath: string; backLabel: string }
+interface Provenance { label: () => string; backPath: string; backLabel: () => string }
 
 /**
  * 返回去哪,由 URL 上的 `?from=` 决定,**目标路径查这张表、不收路径参数** ——
@@ -135,67 +86,55 @@ const ResearchPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t, lang } = useTranslation();
-  const { token, isAuthenticated } = useAuth();
-
+  const { token, isAuthenticated, identityKey, status } = useAuth();
   const board = useResearchBoard();
   const { play } = useSound();
-  // ⚠️ **token 必传。** 签名是 `token?: string`(选填)—— 漏传编译得过、单测也不红,
-  // 但服务端会 `close(1008, "Invalid token")`:棋盘停在 `/api/state` 那一帧,摆子看起来
-  // 像点了没反应,分析结果永远不刷新。**本机看不出来**,127.0.0.1 上有 cookie 兜底。
-  // 上游 `8ac2d6f6` 修的就是这一处;屏 21 重画时它落进了冲突里,合并时补回。
-  const session = useResearchSession({ token: token || undefined });
-
-  const [scan, setScan] = useState<Scan>('none');
-  const [progress, setProgress] = useState<{ analyzed: number; total: number } | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
-  const [confirmScan, setConfirmScan] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-
-  /**
-   * 领地。**只 gate 渲染,不 gate 请求** —— ownership 和候选着法在**同一个**
-   * `quickAnalyze` 响应里(下面那个 effect 一次取两样),所以开关它连一次请求都不多发。
-   */
-  const [showTerritory, setShowTerritory] = useState(false);
-
-  /** `quickAnalyze`(200 visits)那一路的表。这一份是**取回来的**,所以是 state。 */
-  const [quickRows, setQuickRows] = useState<AiRow[] | null>(null);
-  /**
-   * 领地那张图,**连同产出它的那个局面一起记**。
-   *
-   * ⚠️ 只记数不记来源的话,它会在两处说假话(2026-08-26 查出,两处都真存在):
-   *  ① 分析失败时下面那支只清了表(`setQuickRows(null)` + 报错),**没清这张图** ——
-   *    于是「算不出来」的同时,盘上照旧画着**上一个局面**的地。
-   *    那三行下面的注释写的正是「不留着上一手的数假装是这一手的」,而它自己漏了这一格。
-   *  ② 全局分析跑完之后这个 effect 直接 return(`scan === 'done'`),而会话那份数据里
-   *    **没有 ownership**(`gameState.analysis.moves` 只有着法)⇒ 翻手时每一个局面
-   *    都显示同一张、开扫那一刻的地图。
-   *
-   * ⇒ 渲染时只在 `key === positionKey` 时往下传。**对不上就是没有**,不猜、不沿用。
-   *
-   * **一个机制,不叠第二道。** 我先在失败支和「响应没带 ownership」支各加了一句
-   * `setOwnership(null)` —— 变异实测**两条都不红**:key 那一道已经把它们全盖住了
-   * (`mover` 由 `stoneColors`/`currentMove` 派生,而这两个量都在 `positionKey` 里
-   * ⇒ 构造不出「同一个 key 重算一次」)。**测不出差别的分支不留** ——
-   * 留着它下一个人会以为这儿有两道保险。
-   * 变异记录:把渲染处改回 `ownership?.grid ?? null`(不比 key)⇒「换了局面而新的
-   * 还没算出来时,旧的那张不跟过去」当场红。
-   */
-  const [ownership, setOwnership] = useState<{ key: string; grid: number[][] } | null>(null);
-  const [rowsError, setRowsError] = useState<string | null>(null);
-
-  const activeSessionIdRef = useRef<string | null>(null);
-  const scanStartRef = useRef<{ time: number; analyzed: number } | null>(null);
-  const pollFailRef = useRef(0);
-
-  /** 轮到谁走。**跟工具无关** —— `board.nextColor` 是「摆黑/摆白」那个工具说了算的,
-   *  而视角要的是这个局面本身轮到谁,所以在这儿按交替重算一次。 */
-  const mover: 'B' | 'W' = useMemo(() => {
-    const truncated = board.stoneColors.slice(0, board.currentMove);
-    const last = truncated.length > 0 ? truncated[truncated.length - 1] : 'W';
-    return last === 'B' ? 'W' : 'B';
-  }, [board.stoneColors, board.currentMove]);
-
+  const [saveError, setSaveError] = useState<MembershipErrorCode | null>(null);
+  const [reportBusy, setReportBusy] = useState(false);
+  const positionSgf = board.serializeToSGF({ position: true }).sgf;
+  const positionKey = positionSgf;
+  const paid = usePaidPosition({ token, status, identityKey, snapshotKey: positionKey, input: { sgf: positionSgf } });
+  const { createReport, pendingQuote: reportQuote, quoteBusy, confirmQuote, cancelQuote, error: reportError, billingError: reportBillingError } = useReportTasks(token, isAuthenticated, identityKey, status);
+  const mover: 'B' | 'W' = board.currentMove <= board.handicapCount ? board.initialPlayer ?? 'B'
+    : board.stoneColors[board.currentMove - 1] === 'B' ? 'W' : 'B';
+  const rows = paid.result ? toRows(paid.result.moves.map((move) => ({ ...move, winrate: move.winrate, scoreLead: move.score_lead })), mover) : null;
+  const rowsError = paid.error;
+  const showTerritory = paid.showOwnership && !!paid.result;
+  const ownership = paid.result?.ownership.length === board.boardSize * board.boardSize ? { key: positionKey,
+    grid: Array.from({ length: board.boardSize }, (_, y) => paid.result!.ownership.slice(y * board.boardSize, (y + 1) * board.boardSize)) } : null;
+  const moveNo = Math.max(0, board.currentMove - board.handicapCount);
+  const totalMoves = Math.max(0, board.moves.length - board.handicapCount);
+  const markers: AiMoveMarker[] | null = rows?.slice(0, 3).map((r, i) => ({ move: r.move, rank: i + 1, visits: r.visits, winrate: r.winrate, score_lead: r.scoreLead })) ?? null;
+  const headValue = rows && rows.length > 0 ? `${mover === 'B' ? t('research:black', '黑方') : t('research:white', '白方')} ${(rows[0].winrate * 100).toFixed(1)}%` : '—';
+  const liveIdentity = useRef(identityKey);
+  liveIdentity.current = identityKey;
+  const handleCreateReport = useCallback(async () => {
+    if (!isAuthenticated || status !== 'authenticated') { setSaveError('report_login_required'); return; }
+    if (reportBusy) return;
+    const requestedIdentity = identityKey;
+    setReportBusy(true); setSaveError(null);
+    try {
+      const { sgf } = board.serializeToSGF();
+      const game = await UserGamesAPI.create(token, { sgf_content: sgf, source: 'research', category: 'game',
+        player_black: board.playerBlack || undefined, player_white: board.playerWhite || undefined,
+        board_size: board.boardSize, rules: board.rules, komi: board.komi, move_count: totalMoves });
+      if (liveIdentity.current !== requestedIdentity) return;
+      const task = await createReport({ userGameId: game.id, totalMoves: game.move_count });
+      if (task && liveIdentity.current === requestedIdentity) navigate('/kiosk/report');
+    } catch (error) { if (liveIdentity.current === requestedIdentity) setSaveError(membershipErrorCode(error, 'report_failed')); }
+    finally { setReportBusy(false); }
+  }, [board, createReport, identityKey, isAuthenticated, navigate, reportBusy, status, token, totalMoves]);
+  const editGuard = useCallback((fn: () => void) => fn(), []);
+  const onIntersection = useCallback((x: number, y: number) => {
+    if (board.handleIntersectionClick(x, y)) play('stone');
+  }, [board, play]);
+  const goToMove = useCallback((move: number) => {
+    const clamped = Math.max(board.handicapCount, Math.min(board.moves.length, move));
+    if (clamped === board.currentMove) return;
+    board.handleMoveChange(clamped);
+    if (clamped > board.handicapCount && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
+  }, [board, play]);
   // ── 出处与返回 ─────────────────────────────────────────────────────────────
   const [provenance, setProvenance] = useState<Provenance | null>(null);
   const from = searchParams.get('from');
@@ -210,218 +149,6 @@ const ResearchPage = () => {
       ? `/kiosk/kifu/${kifuIdParam}`
       : backTo.path;
 
-  // ── 分析:跟着局面走,不跟折叠块走 ─────────────────────────────────────────
-  //
-  // 上一版是「建议 / 领地 两个开关都关着就不发请求」。这一版稿子把推荐点画成常亮的
-  // (`data-ghost="R11,C7,Q6"`,没有任何开关管它),而折叠块默认展开、里面就是这张表 ⇒
-  // 分析是这一屏的常态,不是一个可选项。
-  //
-  // **不做成「展开折叠块才算」**:`KioskFold` 的开合是它自己内部的 state,而那份文档
-  // 明写「它是纯粹的视图偏好,没有任何别的东西依赖它」—— 那是一条不变式声明,不是管线
-  // 偏好。而且折叠块硬性 2 要求「标题行右端那个当前值收起后照旧显示」,收起=停算的话那个
-  // 值必然陈旧。解耦之后头部的值天然永远是活的。
-  //
-  // **防抖是必需的不是优化**:常亮之后每落一子都会触发一次 200-visit 请求;上一版没有
-  // 防抖只是因为它默认关着。
-  const positionKey = useMemo(
-    () => `${board.boardSize}-${board.komi}-${board.rules}-${board.currentMove}-${board.moves.slice(0, board.currentMove).join(',')}`,
-    [board.boardSize, board.komi, board.rules, board.currentMove, board.moves],
-  );
-  const rowsKeyRef = useRef('');
-
-  useEffect(() => {
-    // 扫完之后表的数据源换成会话里那份 500/手 —— 更准,不要再拿 200 的盖掉它。
-    if (scan === 'running' || scan === 'done') return;
-    const key = positionKey;
-    rowsKeyRef.current = key;
-    const handle = setTimeout(() => {
-      const kataMoves = board.moves
-        .slice(0, board.currentMove)
-        .map((m, i) => [board.stoneColors[i], m]);
-      API.quickAnalyze({
-        moves: kataMoves,
-        board_size: board.boardSize,
-        komi: board.komi,
-        rules: board.rules,
-        max_visits: 200,
-      }, token ?? undefined).then((result) => {
-        if (rowsKeyRef.current !== key) return; // 陈旧
-        const turn = result?.turnInfos?.[0] ?? result;
-        setQuickRows(toRows((turn?.moveInfos ?? []) as RawMove[], mover));
-        setRowsError(null);
-        const raw = turn?.ownership;
-        if (raw && Array.isArray(raw)) {
-          const size = board.boardSize;
-          const grid: number[][] = [];
-          for (let y = 0; y < size; y++) grid.push(raw.slice(y * size, (y + 1) * size));
-          setOwnership({ key, grid });
-        }
-        // 响应没带 ownership 时**什么都不用做**:那份旧的带着它自己的 key,
-        // 而下面渲染时按 key 比 —— 对不上就是没有。见下面那条变异记录。
-      }).catch((err: unknown) => {
-        if (rowsKeyRef.current !== key) return;
-        // 状态诚实:算不出来就说算不出来,**不留着上一手的数假装是这一手的**。
-        // 领地那一格不用在这儿清 —— 它带着产出它的那个 key,渲染时按 key 比。
-        setQuickRows(null);
-        setRowsError(err instanceof Error ? err.message : String(err));
-      });
-    }, 400);
-    return () => clearTimeout(handle);
-  }, [positionKey, scan, token, mover]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /**
-   * 扫完之后表改从会话的当前节点读。
-   *
-   * 这一份**是算得出来的、不是要同步的** —— 写成 effect + `setRows` 会多一轮渲染,
-   * 而且「会话已经换了节点、表还是上一节点的」这个中间态会真的上屏一帧。
-   */
-  const rows = useMemo(() => {
-    if (scan !== 'done') return quickRows;
-    const gs = session.gameState;
-    if (!gs) return null;
-    return toRows((gs.analysis?.moves ?? []) as RawMove[], mover);
-  }, [scan, quickRows, session.gameState, mover]);
-
-  // ── 全局分析 ───────────────────────────────────────────────────────────────
-  /**
-   * `explicitSgf` 是给两条深链用的。**它不是可选的优化,是那个 bug 的唯一修法** ——
-   * `loadFromSGF` 之后立刻在同一段异步续体里 `board.serializeToSGF()`,读到的是**载入前
-   * 的空盘**(setState 还没 flush),`createSession(undefined)` 于是静默什么都不做。
-   * galaxy 的 `ResearchPage.tsx:187-199` 就栽在这儿。把刚取到的 `sgf_content` 直接串进来。
-   */
-  const startScan = useCallback(async (explicitSgf?: string) => {
-    setConfirmScan(false);
-    const { sgf } = board.serializeToSGF();
-    const toLoad = explicitSgf ?? (board.moves.length > 0 ? sgf : undefined);
-    const sid = await session.createSession(toLoad, {
-      skipAnalysis: true,
-      initialMove: explicitSgf ? undefined : board.currentMove,
-    });
-    if (!sid) {
-      setScanError(t('research:session_failed', '无法创建研究会话，请重试'));
-      setScan('failed');
-      return;
-    }
-    activeSessionIdRef.current = sid;
-    setProgress(null);
-    setEtaSeconds(null);
-    setScanError(null);
-    scanStartRef.current = null;
-    pollFailRef.current = 0;
-    setScan('running');
-    try {
-      await API.analysisScan(sid, 500);
-    } catch {
-      setScanError(t('research:scan_failed', '启动分析失败，请重试'));
-      setScan('failed');
-    }
-  }, [board, session, t]);
-
-  /** 回到 `none`:销毁会话,表退回 `quickAnalyze`。**不还原盘面** —— 扫描期间本地盘
-   *  一个字都没变过(上一版要还原,是因为那时候报告视图用的是另一块盘)。 */
-  const dropScan = useCallback(async () => {
-    activeSessionIdRef.current = null;
-    await session.destroySession();
-    setScan('none');
-    setProgress(null);
-    setEtaSeconds(null);
-    setScanError(null);
-    scanStartRef.current = null;
-    rowsKeyRef.current = ''; // 让 quickAnalyze 那个 effect 重新取一次
-  }, [session]);
-
-  const retryScan = useCallback(async () => {
-    const sid = activeSessionIdRef.current;
-    // 会话还活着 ⇒ 增量续跑(`_do_analysis_scan` 只排 `!analysis_exists` 的那些),不销毁重建。
-    if (!sid) { await startScan(); return; }
-    setScanError(null);
-    pollFailRef.current = 0;
-    setScan('running');
-    try {
-      await API.analysisScan(sid, 500);
-    } catch {
-      setScanError(t('research:scan_failed', '启动分析失败，请重试'));
-      setScan('failed');
-    }
-  }, [startScan, t]);
-
-  // 进度轮询 + 实测 ETA。连续 5 次取不到才判失败(单次抖动不算)。
-  useEffect(() => {
-    if (scan !== 'running') return;
-    const sid = activeSessionIdRef.current;
-    if (!sid) return;
-    const timer = setInterval(async () => {
-      try {
-        const p = await API.analysisProgress(sid);
-        pollFailRef.current = 0;
-        if (activeSessionIdRef.current !== sid) return;
-        setProgress({ analyzed: p.analyzed, total: p.total });
-        // ETA 是**实测**的:拿两次采样之间真的算了多少手去推,不写死每手多少秒。
-        const now = Date.now();
-        const start = scanStartRef.current;
-        if (!start) {
-          scanStartRef.current = { time: now, analyzed: p.analyzed };
-        } else if (p.analyzed > start.analyzed) {
-          const rate = (p.analyzed - start.analyzed) / ((now - start.time) / 1000);
-          setEtaSeconds(rate > 0 ? Math.round((p.total - p.analyzed) / rate) : null);
-        }
-        if (p.total > 0 && p.analyzed >= p.total) setScan('done');
-      } catch {
-        pollFailRef.current += 1;
-        if (pollFailRef.current >= 5) {
-          setScanError(t('research:progress_lost', '连续 5 次读不到分析进度，连接可能已经断了'));
-          setScan('failed');
-        }
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [scan, t]);
-
-  /**
-   * 泄漏守卫:会话在服务端是有状态的,页面被关掉/刷新时得让它知道。
-   * 依赖里带 `session.sessionId` 是**故意的** —— `[]` 依赖的清理函数捕获的是
-   * `sessionId === null`,跑起来是个空操作。
-   */
-  useEffect(() => {
-    const cleanup = () => {
-      const sid = session.sessionId;
-      if (sid) navigator.sendBeacon?.(`/api/v1/research/sessions/${sid}/close`);
-    };
-    window.addEventListener('beforeunload', cleanup);
-    return () => { window.removeEventListener('beforeunload', cleanup); cleanup(); };
-  }, [session.sessionId]);
-
-  // ── 改盘面的动作:扫完之后先退回 `none` ───────────────────────────────────
-  //
-  // 扫描的结论钉在**那一份**着法序列上。改了盘还留着旧结论,表里的数就在骗人。
-  const editGuard = useCallback((fn: () => void) => {
-    if (scan === 'done' || scan === 'failed') { void dropScan(); }
-    fn();
-  }, [scan, dropScan]);
-
-  const onIntersection = useCallback((x: number, y: number) => {
-    if (scan === 'running') return; // 扫描期间盘面是冻的
-    editGuard(() => { if (board.handleIntersectionClick(x, y)) play('stone'); });
-  }, [scan, editGuard, board, play]);
-
-  const goToMove = useCallback((move: number) => {
-    const clamped = Math.max(0, Math.min(board.moves.length, move));
-    if (clamped === board.currentMove) return;
-    board.handleMoveChange(clamped);
-    if (clamped > 0 && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
-    // 扫完之后会话也要跟着挪,否则 `gs.analysis` 说的还是上一个节点。
-    if (scan === 'done' && session.gameState) {
-      const node = session.gameState.history[clamped]?.node_id;
-      if (node !== undefined) void session.onNavigate(node);
-    }
-  }, [board, scan, session, play]);
-
-  // ── 入口:三条深链 ─────────────────────────────────────────────────────────
-  //
-  // 三条都用 ref 上闩、只跑一次。`?kifu_id` / `?user_game_id` 这两条**绝不能**在同一段
-  // 异步续体里从 `board` 反推 SGF —— `loadFromSGF` 的 setState 还没 flush,读到的是载入前
-  // 的空盘(galaxy `ResearchPage.tsx:187-199` 那个陈旧闭包 bug)。把刚取到的 `sgf_content`
-  // 直接串进 `createSession`。
   const kifuRef = useRef<string | null>(null);
   const kifuRequestRef = useRef(0);
   const lastKifuPlayersRef = useRef<{ id: string; black: string; white: string } | null>(null);
@@ -451,10 +178,10 @@ const ResearchPage = () => {
         ? `${album.display_event}${album.display_round_name ? ` · ${album.display_round_name}` : ''}`
         : `${black} vs ${white}`;
       setProvenance({
-        label: `${t('research:from_kifu', '棋谱库')}：${head}${album.date_played ? ` · ${album.date_played}` : ''}`,
-        backPath: `/kiosk/kifu/${id}`, backLabel: t('kifu:title', '棋谱'),
+        label: () => `${t('research:from_kifu', '棋谱库')}：${head}${album.date_played ? ` · ${album.date_played}` : ''}`,
+        backPath: `/kiosk/kifu/${id}`, backLabel: () => t('kifu:title', '棋谱'),
       });
-      if (firstLoad && searchParams.get('analyze') === '1' && album.sgf_content) await startScan(album.sgf_content);
+
     }).catch((err) => {
       if (request === kifuRequestRef.current) console.error('Failed to load kifu for deep link:', err);
     });
@@ -472,8 +199,8 @@ const ResearchPage = () => {
     // 谱是空的、`loadFromSGF` 解析失败、或者请求本身就没成 —— 三条路都不留一块没有解释的
     // 空盘,说的是同一句(取不到就说取不到,和 kifu_id 那条分支同一个说法)。
     const failProvenance = () => setProvenance({
-      label: t('research:user_game_failed', '这一局读不到'),
-      backPath, backLabel: backTo.label,
+      label: () => t('research:user_game_failed', '这一局读不到'),
+      backPath, backLabel: () => t(backTo.label, backTo.label),
     });
     UserGamesAPI.get(token, id).then(async (detail) => {
       if (!detail.sgf_content) { failProvenance(); return; }
@@ -483,17 +210,17 @@ const ResearchPage = () => {
         failProvenance();
         return;
       }
-      const head = detail.title
+      const head = () => detail.title
         || `${detail.player_black ?? t('research:black', '黑方')} vs ${detail.player_white ?? t('research:white', '白方')}`;
       const stamp = detail.game_date ?? detail.created_at;
       const when = stamp ? Date.parse(stamp) : NaN;
       setProvenance({
-        label: `${t('research:from_my_games', '我的对局')}：${head}${Number.isNaN(when) ? '' : ` · ${whenLabel(when, t)}`}`,
+        label: () => `${t('research:from_my_games', '我的对局')}：${head()}${Number.isNaN(when) ? '' : ` · ${whenLabel(when, t)}`}`,
         // `backPath` 不是 `backTo.path`:从屏 20 进来时带着 `task`,返回要回**这一份报告**而不是列表。
         // 盒上以前 provenance 永远是 null、返回键碰巧走的就是 `backPath`;这里修通后不许把它退回列表。
-        backPath, backLabel: backTo.label,
+        backPath, backLabel: () => t(backTo.label, backTo.label),
       });
-      if (searchParams.get('analyze') === '1') await startScan(detail.sgf_content);
+
     }).catch((err) => {
       console.error('Failed to load user game for deep link:', err);
       failProvenance();
@@ -517,34 +244,16 @@ const ResearchPage = () => {
     // 渲染期读它就是在渲染期写外部状态。挂载时同步跑一次是对的。
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setProvenance({
-      label: t('research:from_last_game', '刚下完的这一局'),
-      backPath: '/kiosk/play', backLabel: t('play:title', '对弈'),
+      label: () => t('research:from_last_game', '刚下完的这一局'),
+      backPath: '/kiosk/play', backLabel: () => t('play:title', '对弈'),
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 屏上的数 ───────────────────────────────────────────────────────────────
-  const moveNo = Math.max(0, board.currentMove - board.handicapCount);
-  const totalMoves = Math.max(0, board.moves.length - board.handicapCount);
-
-  /** 稿子的三个绿点。取**前 3** —— 盘上再多就盖住棋形了。 */
-  const markers: AiMoveMarker[] | null = useMemo(() => {
-    if (!rows) return null;
-    return rows.slice(0, 3).map((r, i) => ({
-      move: r.move, rank: i + 1, visits: r.visits, winrate: r.winrate, score_lead: r.scoreLead,
-    }));
-  }, [rows]);
-
-  /** 折叠头右端那个值。**算不出来写「—」,不写 50%** —— 「真的均势」和「没有这个数」
-   *  不能长成同一个样子(屏 18 已为同一件事判过一次)。 */
-  const headValue = rows && rows.length > 0
-    ? `${mover === 'B' ? t('research:black', '黑方') : t('research:white', '白方')} ${(rows[0].winrate * 100).toFixed(1)}%`
-    : '—';
-
   const TOOLS: { value: BoardTool; label: React.ReactNode }[] = [
-    { value: 'alternate', label: t('research:alternate', '交替') },
+    { value: 'alternate', label: <><Icon name="arrows-clockwise" />{t('research:alternate', '交替')}</> },
     { value: 'black', label: <><span className="disc b" />{t('research:place_black', '摆黑')}</> },
     { value: 'white', label: <><span className="disc w" />{t('research:place_white', '摆白')}</> },
-    { value: 'delete', label: t('research:delete', '删除') },
+    { value: 'delete', label: <><Icon name="trash" />{t('research:delete', '删除')}</> },
   ];
 
   /**
@@ -575,32 +284,13 @@ const ResearchPage = () => {
     board.handicap > 0 ? t('research:handicap', '让{handicap}子').replace('{handicap}', String(board.handicap)) : null,
   ].filter(Boolean).join(' · ');
 
-  const fifth: KioskAction = scan === 'running'
-    ? { key: 'cancel', icon: 'arrow-counter-clockwise', label: t('research:cancel_scan', '取消分析'), onClick: () => void dropScan() }
-    : scan === 'failed'
-      ? { key: 'retry', icon: 'arrows-clockwise', label: t('research:retry_analysis', '重试分析'), onClick: () => void retryScan() }
-      : scan === 'done'
-        ? { key: 'rescan', icon: 'magnifying-glass', label: t('research:rescan', '重新分析'), onClick: () => setConfirmScan(true) }
-        : { key: 'scan', icon: 'magnifying-glass', label: t('research:full_scan', '全局分析'), onClick: () => setConfirmScan(true) };
-
   const actions: KioskAction[] = [
-    {
-      key: 'open', icon: 'upload-simple', label: t('research:open', '打开'),
-      onClick: () => editGuard(board.openLocalSGF), disabled: scan === 'running',
-    },
-    // 保存**不跟着灰** —— 它只读,扫描期间存下当前这份谱没有任何危险。
-    { key: 'save', icon: 'books', label: t('research:save', '保存'), onClick: board.saveLocalSGF },
-    {
-      key: 'pass', icon: 'skip-forward', label: t('research:pass', '停一手'),
-      onClick: () => editGuard(board.handlePass), disabled: scan === 'running',
-    },
-    {
-      key: 'clear', icon: 'arrows-clockwise', label: t('research:clear', '清空'),
-      onClick: () => setConfirmClear(true), disabled: scan === 'running',
-    },
-    fifth,
+    { key: 'open', icon: 'upload-simple', label: t('research:open', '打开'), onClick: board.openLocalSGF },
+    { key: 'save', icon: 'floppy-disk', label: t('research:save', '保存'), onClick: board.saveLocalSGF },
+    { key: 'pass', icon: 'hand-pointing', label: t('research:pass', '停一手'), onClick: board.handlePass },
+    { key: 'clear', icon: 'eraser', label: t('research:clear', '清空'), onClick: () => setConfirmClear(true) },
+    { key: 'report', icon: 'magnifying-glass', label: t('membership:create_report', '创建复盘报告'), disabled: reportBusy, onClick: () => void handleCreateReport() },
   ];
-
   const boardSize = board.boardSize;
 
   return (
@@ -624,9 +314,9 @@ const ResearchPage = () => {
             onIntersectionClick={onIntersection}
             rejectOccupiedIntersections={board.boardTool !== 'delete'}
             nextColor={board.nextColor ?? undefined}
-            /* 推荐点**常亮**,没有开关管它 —— 稿子 `data-ghost="R11,C7,Q6"` 就是这么画的。 */
+            /* 推荐和领地共用当前已确认结果，只切换显示。 */
             aiMarkers={markers}
-            showAiMarkers
+            showAiMarkers={paid.showHints}
             showTerritory={showTerritory}
             /* 只有**这个局面自己**那张地图才画得出去。全局分析跑完之后会话里没有
                per-move 的 ownership ⇒ 这里恒为 null,而不是一路沿用开扫那一刻的那张。 */
@@ -643,25 +333,24 @@ const ResearchPage = () => {
       </div>
 
       <div className="kiosk-rail">
+        {board.editedSetup && <p className="kiosk-opthint">{t('research:new_setup_notice', '摆子编辑已建立新局面，原行棋历史已清除。')}</p>}
+        {(saveError || reportError) && <p role="alert">{reportError || (saveError ? membershipErrorText(saveError, t) : null)}</p>}
         <KioskPagebar
           testId="research-pagebar"
-          backLabel={provenance?.backLabel ?? backTo.label}
+          backLabel={provenance?.backLabel() ?? t(backTo.label, backTo.label)}
           onBack={() => navigate(provenance?.backPath ?? backPath)}
           title={t('research:move_title', '研究 · 第 {n} 手').replace('{n}', String(moveNo))}
-          sub={provenance?.label}
+          sub={provenance?.label()}
           /* §11 的那**一颗**页级图标键。领地是盘面视图叠加,和「翻转棋盘/全屏」同族。 */
           action={{
-            icon: 'grid-nine',
+            icon: 'map-trifold',
             label: t('research:territory', '领地'),
             pressed: showTerritory,
-            onClick: () => setShowTerritory((v) => !v),
+            onClick: () => { void paid.toggle('ownership'); },
           }}
         />
 
-        {/* 扫描期间盘面是冻的 ⇒ 编辑工具不渲染。**不是全部灰掉** ——
-            `KioskOptSeg` 的契约写死「永远至少留一段能选」,全灰是违约。 */}
-        {scan !== 'running' && (
-          <>
+        <>
             <KioskOptSeg
               testId="research-tools"
               ariaLabel={t('research:edit_tools', '编辑工具')}
@@ -670,47 +359,28 @@ const ResearchPage = () => {
               onChange={(v) => board.setBoardTool(v)}
             />
             <p className="kiosk-opthint" data-testid="research-hint">{hint}</p>
-          </>
-        )}
+        </>
 
         <KioskFold
           fold="ai"
           grow
           /* 表里 24 个候选而视口只露 8 行 —— 没有条子,后面那 16 行在触摸屏上就是不存在的。 */
           scrollbar
-          bodyClassName={scan === 'running' || scan === 'failed' || rowsError || !rows || rows.length === 0 ? undefined : 'aitab'}
+          bodyClassName={rowsError || !rows || rows.length === 0 ? undefined : 'aitab'}
           testId="research-ai"
           title={t('research:ai_after_move', 'AI 推荐 · 第 {n} 手之后').replace('{n}', String(moveNo))}
           value={headValue}
         >
-          {scan === 'failed' ? (
-            /* 用户明确要过一次全局扫描而它没跑成 —— 这件事得自己说,不能因为 200 visits
-               的快速分析恰好还能用就把它咽下去。盘一动 `editGuard` 就退回 `none`,表自然回来。 */
-            <div className="empty" data-testid="research-ai-error">
-              <h4>{t('research:scan_broke', '全局分析没跑完')}</h4>
-              <p>{scanError}</p>
-            </div>
-          ) : scan === 'running' ? (
-            <div className="aiscan" data-testid="research-scan">
-              <h4>{t('research:analyzing_game', '正在分析对局')}</h4>
-              <div className="aiscan__bar">
-                <i style={{ width: progress && progress.total > 0 ? `${Math.round((progress.analyzed / progress.total) * 100)}%` : '0%' }} />
-              </div>
-              {/* 三个数全是**实测**的。**没有「大概几分钟」** —— 开跑前没有校准过的每手速率,
-                  那个数只能编;`预计剩余` 是拿两次采样之间真的算了多少手推出来的。 */}
-              <dl className="aiscan__stats">
-                <div><dt>{t('research:analyzed_moves', '已分析手数')}</dt><dd>{progress ? `${progress.analyzed} / ${progress.total}` : '—'}</dd></div>
-                <div><dt>{t('research:eta_label', '预计剩余')}</dt><dd>{etaSeconds !== null && etaSeconds > 0 ? durationLabel(etaSeconds, t) : '—'}</dd></div>
-              </dl>
-            </div>
-          ) : rowsError ? (
+          {rowsError ? (
             <div className="empty" data-testid="research-ai-error">
               <h4>{t('research:analysis_failed', '这一手算不出来')}</h4>
               <p>{rowsError}</p>
+              <button type="button" className="kiosk-btn--pill" style={{ height: 44, fontSize: 20, marginTop: 8 }} disabled={paid.busy} onClick={() => { void paid.toggle('hints'); }}>{t('common:retry', '重试')}</button>
             </div>
           ) : rows === null ? (
             <div className="empty" data-testid="research-ai-pending">
-              <h4>{t('research:analyzing_move', '正在算这一手')}</h4>
+              <h4>{paid.busy ? t('research:analyzing_move', '正在分析当前局面') : t('research:analysis_on_request', '按需分析当前局面')}</h4>
+              <button type="button" className="kiosk-btn--pill" style={{ height: 44, fontSize: 20, marginTop: 8 }} disabled={paid.busy} onClick={() => { void paid.toggle('hints'); }}>{t('research:suggestions', '支招')}</button>
             </div>
           ) : rows.length === 0 ? (
             <div className="empty" data-testid="research-ai-none">
@@ -718,6 +388,7 @@ const ResearchPage = () => {
             </div>
           ) : (
             <>
+              <button type="button" className="kiosk-btn--pill" style={{ height: 44, fontSize: 20, gridColumn: '1 / -1', marginBottom: 8 }} aria-pressed={paid.showHints} onClick={() => { void paid.toggle('hints'); }}>{t('research:suggestions', '支招')}</button>
               <AiRecommendRows rows={rows} />
             </>
           )}
@@ -726,11 +397,11 @@ const ResearchPage = () => {
         <div className="kiosk-movenav" data-testid="research-movenav">
           <button
             type="button" aria-label={t('kifu:to_start', '回到开局')}
-            disabled={board.currentMove === 0} onClick={() => goToMove(0)}
+            disabled={board.currentMove <= board.handicapCount} onClick={() => goToMove(0)}
           ><Icon name="caret-double-left" /></button>
           <button
             type="button" aria-label={t('kifu:prev_move', '上一手')}
-            disabled={board.currentMove === 0} onClick={() => goToMove(board.currentMove - 1)}
+            disabled={board.currentMove <= board.handicapCount} onClick={() => goToMove(board.currentMove - 1)}
           ><Icon name="caret-left" /></button>
           <button
             type="button" aria-label={t('kifu:next_move', '下一手')}
@@ -745,31 +416,9 @@ const ResearchPage = () => {
         <KioskActions actions={actions} testId="research-actions" ariaLabel={t('research:actions', '研究操作')} />
       </div>
 
-      {/* 画布内弹层。MUI `Dialog` 会 portal 到缩放画布**外面**,那儿 `tokens.css` 的变量
-          没有定义 —— 本 track 已有四处先例都走 `.cdlg`。 */}
-      {confirmScan && (
-        <div className="cdlg" role="dialog" aria-modal="true" data-testid="research-scan-confirm">
-          <div className="cdlg__box">
-            <h3>{t('research:full_scan', '全局分析')}</h3>
-            {/* 只写**算得出来的**真话:手数是数出来的,500 是传给 `analysisScan` 的那个数。
-                **不写「大概几分钟」** —— 开跑前没有校准过的每手速率。 */}
-            <p>
-              {t('research:scan_cost', '一共 {n} 手 · 每手算 500 次')
-                .replace('{n}', String(totalMoves))}
-              <br />
-              {t('research:scan_freeze', '算完之前不能改盘面，可以随时取消')}
-            </p>
-            <div className="cdlg__acts">
-              <button type="button" className="ghost" onClick={() => setConfirmScan(false)}>
-                {t('research:cancel', '取消')}
-              </button>
-              <button type="button" className="main" onClick={() => void startScan()}>
-                {t('research:scan_go', '开始算')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConsumptionQuoteDialog kiosk quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onCancel={paid.cancel} onConfirm={() => void paid.confirm()} />
+      <ConsumptionQuoteDialog kiosk quote={reportQuote?.quote ?? null} busy={quoteBusy} error={reportBillingError ? reportError : null} onCancel={cancelQuote}
+        onConfirm={() => { void confirmQuote().then((task) => { if (task) navigate('/kiosk/report'); }).catch(() => undefined); }} />
 
       {/* 清空补确认:上一版是**一点就把整盘擦掉、没有任何确认**,而「停一手」这个两下就能
           撤销的动作反倒弹确认框。轻重是倒置的,这一版扳回来(停一手的确认同时去掉)。 */}

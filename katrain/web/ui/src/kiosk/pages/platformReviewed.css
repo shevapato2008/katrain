@@ -1,0 +1,133 @@
+/* Reviewed platform journey, 1024 × 600. All selectors stay on these pages. */
+.pvp-kiosk__bar h1 { font-size:22px; }
+.pvp-kiosk__bar > button svg { width:22px; height:22px; }
+.pvp-kiosk__label { height:33px; font-size:22px; }
+.pvp-kiosk__start-grid { grid-template-columns:repeat(2,220px); }
+.pvp-kiosk__start-grid > button { height:54px; border-radius:17px; gap:10px; }
+.pvp-kiosk__start-grid .tile { width:24px; height:24px; border:0; background:transparent; }
+.pvp-kiosk__start-grid strong { font-size:22px; font-weight:500; white-space:nowrap; }
+.pvp-kiosk__start-grid small,.pvp-kiosk__start-grid .arrow { display:none; }
+.pvp-kiosk__list { height:306px; max-height:306px; }
+.pvp-kiosk__list-head { height:50px; }
+.pvp-kiosk__tabs,.golaxy-home__tabs { width:448px; height:44px; gap:3px; padding:3px; border:1px solid #385245; border-radius:15px; background:#10231a; box-shadow:inset 0 2px 5px #0008; }
+.pvp-kiosk__tabs button,.golaxy-home__list-head .golaxy-home__tabs button { flex:1; min-width:0; height:36px; padding:0 8px; border-radius:11px; font-size:22px; }
+.pvp-kiosk__tabs button[aria-selected=true],.golaxy-home__tabs button[aria-selected=true],.ogshome__filter-tabs button[aria-pressed=true],.ogshome__segment button[aria-pressed=true],.golaxy-pregame__tabs button[aria-selected=true],.golaxy-pregame__input button[aria-pressed=true] { color:#edf7ed; background:#2a513a radial-gradient(ellipse at top,#ffffff24,transparent 75%); box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 2px 3px #0006; }
+.pvp-kiosk__game,.golaxy-home__room { height:112px; }
+.pvp-kiosk__room-top,.golaxy-home__room-top { height:28px; }
+.pvp-kiosk__room-body,.golaxy-home__room-body { height:65px; grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr); }
+.pvp-kiosk__seat-name b,.golaxy-home__seat b { font-size:22px; }
+.pvp-kiosk__room-top > b,.golaxy-home__room-top b { font-size:22px; }
+.pvp-kiosk__seat .pvp-kiosk__avatar,.golaxy-home__seat .golaxy-home__avatar { display:none; }
+.pvp-kiosk__room-number { font-size:22px; }
+.pvp-kiosk__peer { height:70px; }
+.pvp-kiosk__peer-name b { font-size:22px; }
+.pvp-kiosk__layer p,.pvp-kiosk__layer .fact { font-size:18px; }
+.pvp-kiosk__layer .actions button { font-size:22px; }
+/* Raised independent actions; disabled controls retain their honest state. */
+.pvp-kiosk__start-grid > button,.golaxy-home__cards .kiosk-card,.ogshome__cards .kiosk-card,[data-testid="platform-engine-setup-page"] .aiplate,[data-testid="platform-engine-setup-page"] button.su-cell { border-radius:17px; background-image:radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%); box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 3px 0 #102019,0 6px 10px #0007; }
+.pvp-kiosk button:active:not(:disabled),.golaxy-home button:active:not(:disabled),.ogshome button:active:not(:disabled),.golaxy-pregame button:active:not(:disabled),[data-testid="platform-engine-setup-page"] button:active:not(:disabled) { box-shadow:inset 0 3px 7px #0008; }
+.pvp-kiosk button:disabled,.golaxy-home button:disabled,.ogshome button:disabled,[data-testid="platform-engine-setup-page"] button:disabled { box-shadow:none; }
+.golaxy-home__title strong { font-size:22px; }
+.golaxy-home .kiosk-pagebar__back { font-size:22px; }
+.golaxy-home .kiosk-pagebar__back svg { width:22px; height:22px; }
+.golaxy-home__section .kiosk-seclabel { height:33px; }
+.golaxy-home__cards { grid-template-columns:repeat(3,220px); }
+.golaxy-home__cards .kiosk-card { height:54px; min-height:54px; border-radius:17px; }
+.golaxy-home__cards .kiosk-card__tile { height:24px; width:24px; border:0; background:transparent; }
+.golaxy-home__cards .kiosk-card__t b { font-size:22px; white-space:nowrap; }
+.golaxy-home__cards .kiosk-card__t em { display:none; }
+.golaxy-home__lobby { height:306px; }
+.golaxy-home__list-head { height:50px; }
+.golaxy-home__account-trigger { max-width:260px; }
+.ogshome__title strong { font-size:22px; }
+.ogshome__filter-tabs button { min-width:154px; font-size:22px; }
+.ogshome__segment button { font-size:22px; }
+.ogshome__search input { font-size:22px; text-align:left; }
+.ogshome__cards .kiosk-card { min-height:89px; }
+.ogshome__cards .kiosk-card__t b { font-size:22px; }
+.ogshome__cards .kiosk-card__t em { font-size:18px; }
+.ogshome__row-text b { font-size:22px; }
+.ogshome__row-text small { font-size:18px; }
+/* Login labels and entry text share a left edge in SMS/password/OGS forms. */
+[data-testid="platform-login-page"] .xpcol { width:100%; max-width:556px; gap:14px; }
+[data-testid="platform-login-page"] .iglab { width:65px; min-width:65px; text-align:left; font-size:18px; }
+[data-testid="platform-login-page"] .xpfield { font-size:22px; text-align:left; box-shadow:inset 0 2px 5px #0006,inset 0 -1px 0 #ffffff0d; }
+[data-testid="platform-login-page"] .xpfield:focus-within { border-color:var(--accent); }
+[data-testid="platform-login-page"] .xpfield input { font-size:22px; text-align:left; letter-spacing:normal; }
+[data-testid="platform-login-page"] .xpfield input::placeholder { text-align:left; }
+[data-testid="platform-login-page"] .xpfield:has(.xpfield__area) { padding-left:6px; gap:12px; }
+[data-testid="platform-login-page"] .xpfield__area { width:163px; padding:0 8px 0 12px; border:1px solid #456451; border-radius:11px; background-color:#2a4233; font-size:22px; text-align:left; }
+[data-testid="platform-login-page"] .xpfield i { display:none; }
+[data-testid="platform-login-page"] .xpgo { border:1px solid #91cca0; border-radius:17px; font-size:22px; }
+[data-testid="platform-login-page"] .xpwho b,[data-testid="platform-login-page"] .xpqr__side h4 { font-size:22px; }
+[data-testid="platform-login-page"] .xpwho span,[data-testid="platform-login-page"] .xpfacts b,[data-testid="platform-login-page"] .xpfacts p,[data-testid="platform-login-page"] .xpqr__side p,[data-testid="platform-login-page"] .xpstat,[data-testid="platform-login-page"] .loginerr { font-size:18px; }
+/* The engine selector remains the existing real 39-tier sheet trigger. */
+[data-testid="platform-engine-setup-page"] .su-cell { height:58px; }
+[data-testid="platform-engine-setup-page"] .su-cell__k { font-size:18px; }
+[data-testid="platform-engine-setup-page"] .su-cell__v { font-size:22px; }
+[data-testid="platform-engine-setup-page"] .aiplate { height:72px; padding-right:12px; }
+[data-testid="platform-engine-setup-page"] .aiplate h4 { font-size:22px; }
+[data-testid="platform-engine-setup-page"] .aiplate p { font-size:18px; }
+[data-testid="platform-engine-setup-page"] .aiplate .rung { font-size:18px; }
+[data-testid="platform-engine-setup-page"] .aiplate .rung .kiosk-icon,[data-testid="platform-engine-setup-page"] .aiplate .rung svg { width:24px; height:24px; color:#a5e5b9; }
+.golaxy-pregame__heading { font-size:28px; margin:3px 0 8px; }
+.golaxy-pregame__heading small { display:inline; margin-left:17px; font-size:18px; }
+.golaxy-pregame__board>small { line-height:22px; }
+.golaxy-pregame__section-head { line-height:24px; }
+.golaxy-pregame__input button,.golaxy-pregame__tabs button { font-size:22px; }
+[data-testid="platform-engine-setup-page"] .aiplate .rung { font-size:0; gap:0; width:24px; }
+[data-testid="platform-engine-setup-page"] .aiplate > div { overflow:hidden; }
+[data-testid="platform-engine-setup-page"] .aiplate h4,[data-testid="platform-engine-setup-page"] .aiplate p { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-testid="platform-engine-setup-page"] .kiosk-pagebar__back,[data-testid="platform-engine-setup-page"] .kiosk-pagebar__title { font-size:22px; }
+[data-testid="platform-engine-setup-page"] .kiosk-pagebar__sub,[data-testid="platform-engine-setup-page"] .kiosk-seclabel,[data-testid="platform-engine-setup-page"] .kiosk-seclabel > * { font-size:18px; }
+[data-testid="platform-engine-setup-page"] .su-derived { font-size:18px; }
+.golaxy-home .kiosk-seclabel h2,.ogshome .kiosk-seclabel h2,[data-testid="platform-login-page"] .kiosk-seclabel h2 { font-size:22px; }
+.golaxy-home .kiosk-seclabel > em,.ogshome .kiosk-seclabel > em,[data-testid="platform-login-page"] .kiosk-seclabel > em,[data-testid="platform-engine-setup-page"] .kiosk-seclabel > em { display:none; }
+[data-testid="platform-login-page"] .kiosk-pagebar__back,[data-testid="platform-login-page"] .kiosk-pagebar__title { font-size:22px; }
+[data-testid="platform-login-page"] .kiosk-pagebar__sub { font-size:18px; }
+[data-testid="platform-login-page"] .kiosk-optseg { border-radius:15px; background:#10231a; box-shadow:inset 0 2px 5px #0008; }
+[data-testid="platform-login-page"] .kiosk-optseg button { font-size:22px; }
+[data-testid="platform-login-page"] .kiosk-optseg button[aria-pressed=true] { background:#2a513a radial-gradient(ellipse at top,#ffffff24,transparent 75%); box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 2px 3px #0006; }
+[data-testid="platform-login-page"] .reviewed-login-aside { position:relative; width:300px; flex:none; padding:31px 22px; border-right:1px solid #354b40; background:#1e3027; }
+.reviewed-login-brand { display:flex; align-items:center; gap:13px; height:70px; }
+.reviewed-login-brand img { width:40px; height:40px; object-fit:contain; border-radius:9px; }
+.reviewed-login-brand strong { display:block; font-size:22px; font-weight:500; }
+.reviewed-login-brand span { display:block; font-size:18px; color:#b8cabe; }
+.reviewed-login-aside > p { margin:36px 0 18px; font-size:22px; }
+.reviewed-login-info summary { display:grid; place-items:center; width:44px; height:44px; list-style:none; border:1px solid #456c50; border-radius:50%; color:#9ee5b4; background:#203629; cursor:pointer; }
+.reviewed-login-info summary::-webkit-details-marker { display:none; }
+.reviewed-login-info .kiosk-icon,.reviewed-login-info svg { width:24px; height:24px; }
+.reviewed-login-disconnected { position:absolute; left:22px; bottom:27px; font-size:18px; color:#dfbd86; }
+[data-testid="platform-login-page"] .reviewed-login-info .xplogin__aside { position:absolute; z-index:5; left:12px; top:12px; width:calc(100% - 24px); max-height:calc(100% - 76px); overflow:auto; padding:16px; border:1px solid #52715c; border-radius:12px; background:#1e3027; box-shadow:0 8px 20px #0008; }
+[data-testid="platform-login-page"] .reviewed-login-info[open] summary { position:absolute; z-index:6; right:20px; bottom:20px; }
+[data-testid="platform-login-page"] .reviewed-login-info .xpwho { display:none; }
+[data-testid="platform-login-page"] .reviewed-login-info .xpfacts { gap:12px; }
+/* Login controls use the same soft key surface, with recessed text entry fields. */
+[data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary,.xpfield__area) {
+  background-image:radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%),linear-gradient(180deg,transparent 57%,#00000016);
+  box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 3px 0 #102019,0 6px 10px #0007;
+  translate:0 0;
+  transition:translate 130ms ease,box-shadow 130ms ease;
+  touch-action:manipulation;
+}
+[data-testid="platform-login-page"] .kiosk-pagebar__back { height:44px; border-radius:13px; }
+[data-testid="platform-login-page"] :is(.reviewed-login-info summary,.xpfield__area) { box-shadow:inset 0 1px 0 #ffffff38,inset 0 -1px 2px #0004,0 2px 0 #102019,0 4px 7px #0006; }
+[data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary,.xpfield__area):active:not(:disabled) { translate:0 2px; box-shadow:inset 0 3px 7px #0008,inset 0 1px 0 #ffffff14,0 1px 2px #0006; }
+[data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary):focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+[data-testid="platform-login-page"] .xpgo:disabled { background-image:none; box-shadow:none; translate:0 0; }
+@media (prefers-reduced-motion:reduce) {
+  [data-testid="platform-login-page"] :is(.xpgo,.kiosk-pagebar__back,.reviewed-login-info summary,.xpfield__area) { transition:none; }
+}
+.golaxy-home__invite-modes button { display:flex; align-items:center; justify-content:center; gap:8px; }
+.golaxy-home__invite-modes .kiosk-icon,.golaxy-home__invite-modes svg { width:24px; height:24px; }
+[data-testid="platform-engine-setup-page"] .kiosk-pagebar__sub { display:none; }
+[data-testid="platform-engine-setup-page"] .su-out { min-height:58px; }
+[data-testid="platform-engine-setup-page"] .su-out__k { font-size:18px; }
+[data-testid="platform-engine-setup-page"] .su-out__v { font-size:22px; }
+[data-testid="platform-engine-setup-page"] .su-out__n { font-size:18px; }
+[data-testid="platform-engine-setup-page"] .su-hint { font-size:18px; line-height:1.35; }
+[data-testid="platform-engine-setup-page"] .kiosk-primary-action { font-size:22px; }
+.pvp-kiosk__tabs,.golaxy-home__tabs { height:48px; gap:0; padding:0; }
+.pvp-kiosk__tabs button,.golaxy-home__list-head .golaxy-home__tabs button { height:46px; border-radius:0; }
+.pvp-kiosk__tabs button:first-child,.golaxy-home__list-head .golaxy-home__tabs button:first-child { border-radius:14px 0 0 14px; }
+.pvp-kiosk__tabs button:last-child,.golaxy-home__list-head .golaxy-home__tabs button:last-child { border-radius:0 14px 14px 0; }

@@ -296,14 +296,22 @@ def test_scope_or_new_title_cannot_launder_an_unqualified_existing_display_colli
     raw = "Spring Cup" if new_title else "Summer Cup"
     display = "春季杯" if new_title else "夏季杯"
     with engine.begin() as conn:
-        conn.execute(KifuRawEventValue.__table__.insert().values(
-            id=8, raw_value="Unreviewed Other Cup", category="readable_unlinked", review_status="pending"
-        ))
-        conn.execute(KifuRawEventName.__table__.insert().values(
-            raw_event_id=8, lang="jp", display_name=display, status="verified",
-            decision_kind="generated", generation_rule_version=VERSION,
-            evidence_id=conn.scalar(select(KifuRawEventName.evidence_id).where(KifuRawEventName.lang == "jp"))
-        ))
+        conn.execute(
+            KifuRawEventValue.__table__.insert().values(
+                id=8, raw_value="Unreviewed Other Cup", category="readable_unlinked", review_status="pending"
+            )
+        )
+        conn.execute(
+            KifuRawEventName.__table__.insert().values(
+                raw_event_id=8,
+                lang="jp",
+                display_name=display,
+                status="verified",
+                decision_kind="generated",
+                generation_rule_version=VERSION,
+                evidence_id=conn.scalar(select(KifuRawEventName.evidence_id).where(KifuRawEventName.lang == "jp")),
+            )
+        )
     value = manifest("127", event=raw)
     if new_title:
         value["decisions"] = [decision(value, "raw_event", raw)]
@@ -317,8 +325,14 @@ def test_scope_or_new_title_cannot_launder_an_unqualified_existing_display_colli
 def test_two_new_candidates_need_explicit_shared_display_before_any_proof_is_written(engine):
     records = [{"owner": {"kind": "raw_event", "id": owner_id}} for owner_id in (8, 9)]
     candidates = [
-        {"owner": {"kind": "raw_event", "id": owner_id}, "lang": "jp", "display_name": "同名大会",
-         "decision_kind": "generated", "generation_rule_version": VERSION, "research_sha256": canonical_sha256(record)}
+        {
+            "owner": {"kind": "raw_event", "id": owner_id},
+            "lang": "jp",
+            "display_name": "同名大会",
+            "decision_kind": "generated",
+            "generation_rule_version": VERSION,
+            "research_sha256": canonical_sha256(record),
+        }
         for owner_id, record in zip((8, 9), records)
     ]
     before = state(engine)
@@ -402,6 +416,92 @@ def test_idempotent_replay_returns_identical_receipt_without_any_write(engine):
     before = state(engine)
     assert publish(engine, value) == first
     assert state(engine) == before
+
+
+def test_native_receipt_replay_does_not_warm_entire_catalog(engine, monkeypatch):
+    value = manifest()
+    first = publish(engine, value)
+    before = state(engine)
+    monkeypatch.setattr(publisher(), "warm_sgf_cache", lambda *a, **k: pytest.fail("replay warmed all SGFs"))
+    assert publish(engine, value) == first
+    assert state(engine) == before
+
+
+@pytest.mark.parametrize("busy", [False, True])
+def test_publication_guard_is_session_wide_and_releases_after_error(busy):
+    api = publisher()
+    assert hasattr(api, "_publication_guard"), "publication must guard warm-up and transaction together"
+    calls = []
+
+    class Connection:
+        def scalar(self, sql, parameters):
+            calls.append(str(sql))
+            return not busy
+
+        def commit(self):
+            calls.append("commit")
+
+        def invalidate(self):
+            calls.append("invalidate")
+
+        def close(self):
+            calls.append("close")
+
+    class Database:
+        dialect = type("Dialect", (), {"name": "postgresql"})()
+
+        def connect(self):
+            return Connection()
+
+    if busy:
+        with pytest.raises(api.PublicationError, match="another incremental publisher"):
+            with api._publication_guard(Database()):
+                pytest.fail("busy publisher entered warm-up")
+        assert not any("pg_advisory_unlock" in call for call in calls)
+    else:
+        with pytest.raises(RuntimeError, match="writer failed"):
+            with api._publication_guard(Database()):
+                calls.append("warm-and-write")
+                raise RuntimeError("writer failed")
+        assert calls.index("warm-and-write") < next(i for i, call in enumerate(calls) if "pg_advisory_unlock" in call)
+    assert "pg_try_advisory_lock" in calls[0]
+    assert calls[-1] == "close"
+
+
+@pytest.mark.parametrize("failure", ["acquire", "release"])
+def test_publication_guard_invalidates_unknown_lock_state(failure):
+    api = publisher()
+    calls = []
+
+    class Connection:
+        def scalar(self, sql, parameters):
+            operation = "release" if "pg_advisory_unlock" in str(sql) else "acquire"
+            calls.append(operation)
+            if operation == failure:
+                raise OSError("connection lost after server may have acquired the lock")
+            return True
+
+        def commit(self):
+            pass
+
+        def invalidate(self):
+            calls.append("invalidate")
+
+        def close(self):
+            calls.append("close")
+
+    class Database:
+        dialect = type("Dialect", (), {"name": "postgresql"})()
+
+        def connect(self):
+            return Connection()
+
+    with pytest.raises(OSError):
+        with api._publication_guard(Database()):
+            calls.append("write")
+    assert calls[-2:] == ["invalidate", "close"]
+    if failure == "acquire":
+        assert "write" not in calls
 
 
 def test_replay_rejects_a_changed_published_sgf(engine):
@@ -597,6 +697,117 @@ def test_read_only_helpers_offer_qualified_target_provenance_without_fabricating
     assert lookup["player"]["Black Alias"]["id"] == 17
     assert lookup["player"]["Unknown"]["status"] == "unresolved"
     assert state(engine) == before
+
+
+def test_target_identity_check_uses_native_aliases_conflicts_and_qualification_read_only(engine):
+    api = publisher()
+    with engine.begin() as conn:
+        conn.execute(
+            KifuPlayerAlias.__table__.insert().values(
+                player_id=17, alias="Portable Black", normalized_alias="portable black"
+            )
+        )
+        for owner_id in (17, 18):
+            conn.execute(
+                KifuPlayerAlias.__table__.insert().values(
+                    player_id=owner_id, alias="Ambiguous", normalized_alias="ambiguous"
+                )
+            )
+    request = {
+        "operation": "check-identities",
+        "game_count": 2,
+        "instructions": [
+            {"kind": "player", "raw": "Black Alias", "canonical_name": "Portable Black", "name_decision": False},
+            {"kind": "player", "raw": "White", "canonical_name": "Portable Black", "name_decision": False},
+            {"kind": "player", "raw": "Black Alias", "canonical_name": "黑棋", "name_decision": False},
+            {"kind": "player", "raw": "Ambiguous", "canonical_name": "Portable Black", "name_decision": False},
+            {"kind": "player", "raw": "Black", "canonical_name": "Portable Black", "name_decision": True},
+            {"kind": "player", "raw": "Black", "canonical_name": "Black", "name_decision": True},
+        ],
+    }
+    before = state(engine)
+    assert api.check_identity_instructions(engine, request) == {
+        "status": "checked",
+        "request_sha256": canonical_sha256(request),
+        "results": ["qualified", "conflict", "unresolved", "ambiguous", "canonical_decision_key_mismatch", "qualified"],
+    }
+    assert state(engine) == before
+    with engine.begin() as conn:
+        conn.execute(
+            KifuPlayerName.__table__.delete().where(KifuPlayerName.player_id == 17, KifuPlayerName.lang == "ko")
+        )
+    request["instructions"] = [request["instructions"][index] for index in (0, 4, 5)]
+    before = state(engine)
+    assert api.check_identity_instructions(engine, request)["results"] == [
+        "missing_qualified_five_languages",
+        "canonical_decision_key_mismatch",
+        "missing_qualified_five_languages",
+    ]
+    assert state(engine) == before
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "bool_count",
+        "too_many_games",
+        "too_many_instructions",
+        "duplicate",
+        "unknown_field",
+        "id_field",
+        "bad_kind",
+        "nonstring_kind",
+        "nonstring",
+        "nonboolean_decision",
+        "long_text",
+    ],
+)
+def test_target_identity_check_rejects_unbounded_or_nonlogical_schema_before_database(fault):
+    api = publisher()
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [{"kind": "player", "raw": "Black", "canonical_name": "Black", "name_decision": False}],
+    }
+    if fault == "bool_count":
+        request["game_count"] = True
+    elif fault == "too_many_games":
+        request["game_count"] = 101
+    elif fault == "too_many_instructions":
+        request["game_count"] = 100
+        request["instructions"] = [
+            {"kind": "player", "raw": str(i), "canonical_name": "Black", "name_decision": False} for i in range(301)
+        ]
+    elif fault == "duplicate":
+        request["instructions"] *= 2
+    elif fault == "unknown_field":
+        request["sql"] = "SELECT secret"
+    elif fault == "id_field":
+        request["instructions"][0]["id"] = 17
+    elif fault == "bad_kind":
+        request["instructions"][0]["kind"] = "raw_player"
+    elif fault == "nonstring_kind":
+        request["instructions"][0]["kind"] = ["player"]
+    elif fault == "nonstring":
+        request["instructions"][0]["raw"] = 17
+    elif fault == "nonboolean_decision":
+        request["instructions"][0]["name_decision"] = 1
+    else:
+        request["instructions"][0]["canonical_name"] = "x" * 513
+    with pytest.raises(ValueError, match="identity check"):
+        api.check_identity_instructions(object(), request)
+
+
+def test_identity_check_accepts_exact_finite_schema_bounds():
+    request = {
+        "operation": "check-identities",
+        "game_count": 100,
+        "instructions": [
+            {"kind": "event", "raw": str(i) + "x" * 509, "canonical_name": "y" * 512, "name_decision": False}
+            for i in range(300)
+        ],
+    }
+    assert publisher().validate_identity_check_request(request) == request
 
 
 def test_scope_renewal_preserves_complete_existing_generation_meaning(engine):

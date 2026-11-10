@@ -16,7 +16,7 @@ import { freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fouru
  * | 还滚不滚得动 | 塞一块撑高的元素进去,`scrollTop` 写得进去、读得回来非 0 |
  * | 弹层没被裁掉 | 弹层的 border box 完整落在 `.kiosk-rail` 的盒子里 |
  * | 弹层盖不盖盘 | 弹层左边缘 ≥ 左盘右边缘 —— 盘画的是「按下开始后的局面」,盖住它=挡了唯一的反馈 |
- * | ± 居中 | 字形盒中心与按钮盒中心的偏移 |x| < 1.5px,且两颗键的偏移**彼此相差** < 1px |
+ * | 棋力下拉 | 控件与 29 档菜单完整落在右栏内，选择后显示真实档位 |
  *
  * 「内容最满」是造出来的,不是默认态:
  * 默认态右栏本来就空,**装得下的数据量下量到的数字一概不算**。
@@ -163,33 +163,26 @@ test('弹层留在右栏里,盖不到左边那块盘', async ({ page }) => {
   }
 });
 
-test('棋力那两颗 ± 键居中,而且彼此对齐', async ({ page }) => {
+test('棋力下拉及 29 档菜单留在 1024×600 的设置栏内', async ({ page }) => {
   await bootKiosk(page);
   await page.goto('/kiosk/play/ai/setup/free');
-  await page.waitForSelector('[data-testid="setup-strength"]');
-  const off = await page.evaluate(() => {
-    const keys = [...document.querySelectorAll('[data-testid="setup-strength"] button.su-step')] as HTMLElement[];
-    return keys.map((b) => {
-      const br = b.getBoundingClientRect();
-      const g = (b.querySelector('.su-step__g') as HTMLElement).getBoundingClientRect();
-      return {
-        label: b.getAttribute('aria-label'),
-        w: +br.width.toFixed(2),
-        dx: +((g.x + g.width / 2) - (br.x + br.width / 2)).toFixed(2),
-        dy: +((g.y + g.height / 2) - (br.y + br.height / 2)).toFixed(2),
-      };
-    });
-  });
-  console.log('[±] ' + JSON.stringify(off));
-  /* 改版前这两颗是 `−`(U+2212)配**全角** `＋`(U+FF0B):量出来 dx 分别是 +5.66 和 +10,
-     按钮被 `button{padding:.6em 1.2em}` 从 44 撑成 50。
-     **量的是字形盒不是 svg** —— 中间一版画过内联 SVG,后来换回配对的 `−`/`+`
-     两个字形(U+2212 的设计目标就是与 U+002B 等宽等重),因为内联 `<path>` 违反
-     「图标只能从 kiosk-shell/icons/ 出」那条契约闸。两层原因见 `SetupStepper.tsx`。 */
-  for (const k of off) {
-    expect(Math.abs(k.dx), `${k.label} 水平不居中(${k.dx}px)`).toBeLessThan(1.5);
-    expect(Math.abs(k.dy), `${k.label} 垂直不居中(${k.dy}px)`).toBeLessThan(1.5);
-  }
-  expect(Math.abs(off[0].dx - off[1].dx), '两颗键彼此对不齐').toBeLessThan(1);
-  expect(off[0].w, '按钮宽度被 padding 撑走了').toBeCloseTo(46, 0);
+  const strength = page.getByTestId('setup-strength');
+  await expect(strength).toHaveAttribute('aria-haspopup', 'listbox');
+  const control = await strength.boundingBox();
+  const rail = await page.locator('.kiosk-rail[data-su]').boundingBox();
+  expect(control).toBeTruthy();
+  expect(rail).toBeTruthy();
+  expect(control!.x).toBeGreaterThanOrEqual(rail!.x);
+  expect(control!.x + control!.width).toBeLessThanOrEqual(rail!.x + rail!.width + 0.5);
+  await strength.click();
+  const menu = page.getByTestId('setup-strength-pop');
+  await expect(menu.getByRole('option')).toHaveCount(29);
+  const bounds = await menu.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(rail!.x);
+  expect(bounds!.y).toBeGreaterThanOrEqual(rail!.y);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(rail!.x + rail!.width + 0.5);
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(rail!.y + rail!.height + 0.5);
+  await menu.locator('[data-k="28"]').click();
+  await expect(page.getByTestId('setup-strength-value')).toContainText('9 段');
+  await expect(page.getByTestId('free-start-action')).toBeInViewport();
 });

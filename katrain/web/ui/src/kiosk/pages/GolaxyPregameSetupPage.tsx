@@ -7,6 +7,7 @@ import KioskSetupBoard from '../components/board/KioskSetupBoard';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import '../../kiosk-shell/golaxy-home.css';
+import './platformReviewed.css';
 
 const HOME = '/kiosk/play/cross-platform/golaxy';
 const MATCH_TIMES = [

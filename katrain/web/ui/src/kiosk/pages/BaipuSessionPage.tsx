@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { knownRank, presentPlayerRank } from '../utils/playerRank';
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 
@@ -6,7 +7,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { translateResult } from '../../utils/resultTranslation';
 import { type BaipuCaptureErrorReason,
-  BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress, forgetSgf,
+  BaipuAPI, forgetSgf,
   canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
@@ -17,6 +18,7 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { KioskActions, type KioskAction } from '../shell/KioskActions';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
+import { PlayerCardSurface } from '../shell/PlayerCardSurface';
 import { useBackTo } from '../hooks/useBackTo';
 import { driftLine } from '../utils/baipuDrift';
 import { playShutter } from '../utils/baipuShutter';
@@ -28,6 +30,8 @@ import { useOptionalGeometry } from '../context/GeometryContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { usePhysicalBaipu, type NextStone } from '../hooks/usePhysicalBaipu';
 import { useBaipuHint } from '../hooks/useBaipuHint';
+import { useBaipuSessionHistory } from '../hooks/useBaipuSessionHistory';
+import './baipuReviewed.css';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 /** 目差带符号、一位小数;先舍入再判号,-0.04 不会印成「-0.0」。 */
@@ -55,7 +59,10 @@ const finalResultLabel = (result: string | undefined, rules: string | undefined,
   return translateResult(raw, t, rules);
 };
 
-type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
+type Phase = 'loading' | 'guiding' | 'done' | 'error';
+type ManualStage = 'entry' | 'pre' | 'place' | 'post' | 'settled';
+const needsPlacement = (step: BaipuStep | undefined) => !!step && (step.requires_placement ?? (step.kind !== 'pass' && step.kind !== 'clear'));
+const firstStage = (step: BaipuStep | undefined): ManualStage => step?.pre_removed?.length ? 'pre' : needsPlacement(step) ? 'place' : step?.removed.length ? 'post' : 'settled';
 
 /** 右栏此刻在说哪一件事。**互斥且有序** —— 见页面头注那张优先级表。 */
 type Mood = 'guiding' | 'removal' | 'failed' | 'done' | 'setup' | 'trying' | 'hint';
@@ -64,72 +71,11 @@ const PCARD_CLASS: Record<Mood, string> = {
   guiding: 'turn', hint: 'turn', removal: 'removal', setup: 'removal', failed: 'failed', done: 'done', trying: '',
 };
 
-/**
- * 屏 17 · 摆谱 · 进行中 `/kiosk/baipu/session/:source` —— L2 布局 A(左盘 516 + 16 + 右栏 460)。
- *
- * **这一屏的主角不在屏幕上,在实体盘上。** 灯点着下一手该落哪儿,人把子摆上去,摄像头认到就自动下一手。
- * 提子要人**自己**把死子拿下来。屏幕在这儿只是副驾 —— 所以右栏第一块不是棋谱也不是记账,
- * 是「**现在轮到你摆哪一颗**」。
- *
- * ## 三路:摄像头 / 手动兜底 / 采集机(2026-09-23,Fan:「不要每走一步都要按屏幕上的确认键……应该使用摄像头确认」)
- *
- *  · **摄像头**(`camera`,盒子常态):没有确认键。复用死活题那条**监视模式**(`usePhysicalBaipu`,
- *    识别层七条约束写在它和 `physicalBaipuMachine` 头注里)。整页两个识别态:**等下一手**(下一手的灯亮)、
- *    **把盘面摆对**(缺的红绿灯常亮、多的蓝灯闪 —— 放错 / 提子 / 撤回 / 试下结束 / 进场有残子都走这一条)。
- *    判据照抄屏 14 的物理盘开关:`visionStatus.enabled && recognitionReady && 几何本次开机确认过`。
- *  · **手动兜底**(`manual`):摄像头用不了时**临时**露出「确认落子」,pcard 写明为什么(稿 17d)。
- *    恢复后自动收起 —— 判据变真,这一路就不渲染了。
- *  · **采集机**(`collect`,`--baipu-collect` 起的):原样三格(确认 / 撤回 / 完成),每手拍一帧 ——
- *    「拍照」只为收集 YOLO 训练数据(2026-09-14,Fan 纠正),拍照那一刻手不能在盘上,所以确认键留着。
- *    `collect` 由 `BaipuSessionRoute` 问 `GET /api/v1/baipu/mode` 得来(问不到 = `false`)。
- * ⚠️ 判别位只有 `collect`。盒子为了几何标定总是带着 `--capture-camera` 起,
- *    「有采集服务」**不等于**「要拍照」。
- *
- * ## 试下 / AI 支招(非采集机)
- *
- * 试下是开关:按下后识别暂停、灯全灭,盘上随便摆;再按一次回到谱上,灯带你把盘面摆回去(稿 17b)。
- * AI 支招与对弈页同一颗键(`Hints`):分析**谱上**当前局面、候选点亮白灯,开着时识别暂停(稿 17c)。
- * 两者互斥:开试下先收起支招;试下中支招灰掉 —— 摄像头不看盘,AI 不知道盘上是什么局面。
- * 撤回在摄像头态**立刻**生效、不弹确认框:撤错了再摆回去就是,盘面对上了自动继续。
- * 摆完自动清进度(「完成」键删了 —— Fan:「没什么用」);回去走左上角返回。
- *
- * ## 稿子那一帧有两行是错的(2026-08-24 裁定,已回报稿子作者)
- *
- * 稿子摄像头块右列写着「绿灯 = 该放上 / 红灯 = 该拿走」。**反了,而且漏了一色**:
- * `constants/ledColors.ts` 定死 `black:#ff3b30(红)` / `white:#34c759(绿)` / `remove:#2f6fff(蓝)`,
- * 后端 `COLOR_RGB`、`ledColors.test.ts` 那条精确相等、物理对弈与死活两条 track 的 PRD 全都一致。
- * ⇒ 绿灯是**该放白子**,红灯是**该放黑子**,该拿走是**蓝灯**。
- * 照稿子写,一局 241 手里每颗黑棋都会让操作员去拿一颗刚该放下的子。
- * 这一屏的 track 自己早就写死了正确版本(`review-feedback-gstack.md` 建议 E,已采纳):
- * 屏上下一手先画对应颜色的棋子,用反色环标出待摆点；实体盘仍以红/绿灯引导。
- *
- * ## 沉浸模式撤了
- *
- * 上一版 `setImmersive(true)` 把顶栏和 Dock 都藏了。`ReportDetailPage:52-58` 已为同一件事
- * 判过一次,判据是量出来的:`immersive` 在 `KioskLayout` 里只让**顶栏不渲染**,而
- * `.kiosk-content` 的 `top` 仍是 `var(--topbar-h)` ⇒ 屏顶留一条 56 高的空黑带。
- * (2026-08-26:最后一个现场屏 14 也还完,`ImmersiveContext` 已删,这条开关不复存在。)
- * 返回归页控条「← 棋谱」,**但二次确认留着** —— 它不是实现遗留,是这一屏已采纳的裁定
- * (Blocker #2:「确认落子」一局按约 250 次,退出按一次,两颗不能同排;解法是移到角上 + 确认)。
- *
- * ## 右栏空间
- *
- * 常态展示两张棋手卡,当前方高亮;「当前待摆」和灯色图例让位给双方姓名。
- * 放错、提子、试下、灯坏和手动兜底时才显示状态卡;采集机仍保留拍照状态和帧数。
- * 动作区始终贴底,着法表吃剩余空间。
- * 状态优先级:`拍照遮罩` > `采集失败` > `待移除` > `已完成` > `试下` > `支招` > `把盘面摆对` > `待摆`。
- *
- * ## 没有「虚手」键
- *
- * 这一屏是在重放一份既有的 SGF,pass 是「无物理动作」(`sbc-baipu-led-guide/plan.md`),页面自己跳过。
- * 「虚手」这个词留在着法表里做**记谱**(屏 16 同款)—— 它是事实,不是动作。
- *
- * ## 盘不用 `LiveBoard`
- *
- * 两条:① 它的 `gridMargins` 写死 1.5 格而刻度带按 0.5 格算,字和线错开约一格
- * (`KioskSetupBoard` 头注那段推导);② 它在渲染路径里**自己算提子**,而 `baipuApi` 决策 ②
- * 定死「前端是 `steps[]` 的笨播放器,永远不自己重算提子」—— 用它就是屏上画前端算的提子、
- * 灯点后端算的提子,两套气规则同屏跑。盘面走共享的 `replayBaipuSteps`(屏 16 / 屏 19 同款)。
+/** Physical replay uses backend instructions without applying Go rules in the browser.
+ * Camera, operator confirmation and collection keep the cursor on the last fully
+ * completed operation through pre-removal, placement and post-removal. Trial and
+ * hints pause recognition; resume/undo restore the completed authoritative board.
+ * The shared 19x19 board/rail geometry and red/green/blue LED meanings are unchanged.
  */
 const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const { source = '' } = useParams();
@@ -142,6 +88,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const backLabel = (location.state as { backLabel?: string } | null)?.backLabel ?? t('baipu:back_kifu', '棋谱');
   const { user, isGuest, isLoading } = useAuth();
   const identityKey = user?.uuid ?? null;
+  const history = useBaipuSessionHistory({ source, navigation: location.state as { sgf?: string; name?: string; baipuIdentity?: string } | null });
   const store = useMemo(
     () => kioskActivityStorage(isLoading || isGuest ? null : identityKey, isGuest),
     [isLoading, isGuest, identityKey],
@@ -161,6 +108,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const [meta, setMeta] = useState<BaipuMeta | null>(null);
   const [k, setK] = useState(0);                       // 已经摆到实体盘上的手数
   const [exitOpen, setExitOpen] = useState(false);
+  const [railTab, setRailTab] = useState<'moves' | 'info'>('moves');
   const [undoOpen, setUndoOpen] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<number | null>(null);
   const [ledOk, setLedOk] = useState<boolean | null>(null);
@@ -173,63 +121,69 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const mountedRef = useRef(true);
   const nowRef = useRef<HTMLSpanElement | null>(null);
 
-  // Resolve SGF: fresh navigation state first, then the offline cache (identity-scoped —
-  // empty while isLoading/guest, so this can never surface a prior real user's cached SGF;
-  // `store` in the deps re-runs this once identity resolves, since the useMemo above only
-  // captures its FIRST value otherwise).
-  const cached = useMemo(() => getCachedSgf(source, store), [source, store]);
-  const sgf = useMemo(() => {
-    const navSgf = (location.state as { sgf?: string } | null)?.sgf;
-    if (navSgf) return navSgf;
-    return cached?.sgf ?? null;
-  }, [location.state, cached]);
+  const [manualOverride, setManualOverride] = useState(false);
+  const [manualAction, setManualAction] = useState<{ k: number; stage: ManualStage } | null>(null);
+  const [reconcileRevision, setReconcileRevision] = useState(0);
+  const loadGeneration = useRef(0);
+  const cursorRef = useRef(0);
+  const sgf = history.sgf;
+  const pageLedTail = useRef<Promise<void>>(Promise.resolve());
+  const writePageLeds = useCallback((work: () => Promise<{ connected: boolean }>) => {
+    const generation = loadGeneration.current;
+    pageLedTail.current = pageLedTail.current.then(async () => {
+      if (!mountedRef.current || generation !== loadGeneration.current) return;
+      try {
+        const result = await work();
+        if (mountedRef.current && generation === loadGeneration.current) setLedOk(result.connected);
+      } catch { if (mountedRef.current && generation === loadGeneration.current) setLedOk(false); }
+    });
+    return pageLedTail.current;
+  }, []);
 
   useEffect(() => {
-    if (!sgf) return;
+    const generation = ++loadGeneration.current;
     let cancelled = false;
+    setPhase('loading'); setLoadError(null); setWrongSize(null); setSteps([]); setMeta(null);
+    setK(0); cursorRef.current = 0; setResumePrompt(null); setManualOverride(false); setManualAction(null);
+    setCapturePending(false); setCaptureError(null); setFrameCount(0); setLatestSavedFile(null);
+    initialCapturedRef.current = false;
+    void writePageLeds(() => LedAPI.clear());
+    if (!sgf) return () => { cancelled = true; };
     BaipuAPI.load({ sgf })
-      .then((resp) => {
-        if (cancelled) return;
-        // 实体盘和灯阵都是 19 路。别的路数的行列发给灯会亮在左上角那一块 —— 每一颗都错位。
-        // **这里是所有入口(屏 16 / 导入 SGF / 接着摆)的唯一汇合点**,所以拦在这儿,不在入口各拦一遍。
-        // 顺手把它从「最近摆过」里拿掉:留着的话棋谱屏会给一颗点了还是摆不了的「接着摆」。
+      .then(async (resp) => {
+        if (cancelled || generation !== loadGeneration.current) return;
         if (resp.board_size !== 19) {
-          forgetSgf(source, store);
-          setWrongSize(resp.board_size);
-          setPhase('error');
-          return;
+          forgetSgf(source, store); setWrongSize(resp.board_size); setPhase('error'); return;
         }
-        setSteps(resp.steps);
-        setBoardSize(resp.board_size);
-        setMeta(resp.meta);
-        const prog = getProgress(source, store);
-        if (prog && prog.k > 0 && prog.k < resp.steps.length) {
-          setResumePrompt(prog.k); // ask continue vs restart
-        }
-        setPhase('guiding');
+        const progress = await history.open(resp.steps.length);
+        if (cancelled || generation !== loadGeneration.current) return;
+        setSteps(resp.steps); setBoardSize(resp.board_size); setMeta(resp.meta);
+        setManualAction({ k: 0, stage: 'entry' });
+        if (progress && progress.k > 0) setResumePrompt(Math.min(progress.k, resp.steps.length));
+        setPhase(resp.steps.length ? 'guiding' : 'done');
       })
-      .catch((err: Error) => {
-        if (cancelled) return;
-        setLoadError(err.message);
-        setPhase('error');
+      .catch((error: Error) => {
+        if (cancelled || generation !== loadGeneration.current) return;
+        setLoadError(error.message); setPhase('error');
       });
     return () => { cancelled = true; };
-  }, [sgf, source, store]);
+  }, [sgf, source, store, history.open, writePageLeds]);
 
   const currentStep: BaipuStep | undefined = steps[k];
-  const isPlaceable = !!currentStep && currentStep.kind !== 'pass' && currentStep.kind !== 'clear';
-
+  const isPlaceable = needsPlacement(currentStep);
+  const manualStage = manualAction?.k === k ? manualAction.stage : firstStage(currentStep);
+  const commitCursor = useCallback((next: number, save = true) => {
+    cursorRef.current = next; setK(next);
+    setManualAction(null); setCaptureError(null);
+    setPhase(next >= steps.length ? 'done' : 'guiding');
+    if (save) void history.save(next);
+  }, [history.save, steps.length]);
   const advance = useCallback(() => {
-    setK((prev) => {
-      const next = prev + 1;
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length }, store);
-      setPhase(next >= steps.length ? 'done' : 'guiding');
-      return next;
-    });
-  }, [source, steps.length, store]);
+    if (cursorRef.current >= steps.length) return;
+    commitCursor(cursorRef.current + 1);
+  }, [commitCursor, steps.length]);
   const onMatched = useCallback(() => {
-    playSound('stone');
-    advance();
+    playSound('stone'); advance();
   }, [playSound, advance]);
 
   // ── 三路判据 ── 照抄屏 14 物理盘开关(`TsumegoProblemPage` 那段):识别就绪 **不含**「本次开机确认过几何」,
@@ -242,12 +196,13 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const geometryConfirmed = !geoStatus || geoStatus.phase === 'disabled'
     || (geoStatus.phase === 'ready' && geoStatus.session_calibrated && geoStatus.capabilities.geometry_ready);
   const cameraReady = !!visionStatus?.enabled && visionStatus.recognitionReady && geometryConfirmed;
-  const camera = !collect && cameraReady;
-  const manual = !collect && statusKnown && !cameraReady;
+  const camera = !collect && cameraReady && !manualOverride;
+  const manual = !collect && statusKnown && (!cameraReady || manualOverride);
   // 手动兜底那句「为什么没用摄像头」。几何两种要多说一句去哪儿修。
   const geoPhase = geoStatus?.phase;
   const camWhy: { text: string; calib: boolean } | null = !manual ? null
-    : !visionStatus?.enabled ? { text: t('baipu:cam_none', '没接摄像头'), calib: false }
+    : manualOverride ? { text: t('baipu:operator_manual', '已切换为手动确认'), calib: false }
+      : !visionStatus?.enabled ? { text: t('baipu:cam_none', '没接摄像头'), calib: false }
       : !geometryConfirmed
         ? geoPhase === 'degraded' || geoPhase === 'failed'
           ? { text: t('baipu:cam_geo_drift', '棋盘标定已失效'), calib: true }
@@ -257,7 +212,9 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const [tryingRaw, setTrying] = useState(false);
   // 试下只在摄像头态、没摆完时成立 —— 摄像头中途掉了,不留一个手动态里看不见也关不掉的「试下中」。
   const trying = tryingRaw && camera && phase !== 'done';
-  const hint = useBaipuHint({ steps, k, boardSize, meta });
+  const sessionIdentity = `${identityKey ?? (isGuest ? 'guest' : 'unresolved')}:${source}:${sgf ?? ''}`;
+  const hint = useBaipuHint({ steps, k, boardSize, meta, sessionKey: sessionIdentity });
+  useEffect(() => { setTrying(false); }, [sessionIdentity]);
 
   const visionSync = useVisionSync(null);
   const nextStone: NextStone | null = useMemo(() => {
@@ -269,7 +226,10 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     enabled: camera && phase === 'guiding' && resumePrompt === null,
     visionConnected: visionSync.connected,
     syncEvents: visionSync.syncEvents,
+    identity: `${identityKey ?? (isGuest ? 'guest' : 'unresolved')}:${source}`,
+    revision: reconcileRevision,
     k,
+    step: currentStep,
     board: visionBoard,
     next: nextStone,
     paused: trying || hint.open,
@@ -277,21 +237,19 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     onMatched,
   });
 
-  // 摆完就清进度(「完成」键删了)。采集机不清 —— 它的「完成」键还在,由人按。
-  useEffect(() => {
-    if (phase === 'done' && !collect) clearProgress(source, store);
-  }, [phase, collect, source, store]);
-
   const doCapture = useCallback(
     async (moveIndex: number) => {
       if (!sgf) return;
+      const generation = loadGeneration.current;
       setCapturePending(true);
       setCaptureError(null);
+      await pageLedTail.current;
+      if (!mountedRef.current || generation !== loadGeneration.current) return;
       const out = await BaipuAPI.capture({
         game_id: source, move_index: moveIndex, sgf,
         overwrite_existing: overwriteExisting || undefined,
       });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || generation !== loadGeneration.current) return;
       setCapturePending(false);
       if (out.kind === 'error') { setCaptureError(out.message); setCaptureReason(out.reason); return; }
       if (out.kind === 'disabled') setCaptureDisabled(true);
@@ -309,109 +267,158 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
 
   // 开局那一帧(空盘 + 全灯):尽力而为,失败不拦路。**只有采集态拍。**
   useEffect(() => {
-    if (collect && phase === 'guiding' && k === 0 && resumePrompt === null && !initialCapturedRef.current && sgf && steps.length > 0) {
+    if (collect && manualStage !== 'entry' && phase === 'guiding' && k === 0 && resumePrompt === null && !initialCapturedRef.current && sgf && steps.length > 0) {
       initialCapturedRef.current = true;
-      BaipuAPI.capture({ game_id: source, move_index: -1, sgf, overwrite_existing: overwriteExisting || undefined })
+      setCapturePending(true);
+      const generation = loadGeneration.current;
+      pageLedTail.current.then(() => {
+        if (!mountedRef.current || generation !== loadGeneration.current) return null;
+        return BaipuAPI.capture({ game_id: source, move_index: -1, sgf, overwrite_existing: overwriteExisting || undefined });
+      })
         .then((out) => {
-          if (!mountedRef.current) return;
+          if (!out || !mountedRef.current || generation !== loadGeneration.current) return;
           if (out.kind === 'disabled') { setCaptureDisabled(true); return; }
           if (out.kind !== 'ok') return;
           const filename = savedFilename(out.result.path);
           if (filename) setLatestSavedFile(filename);
           setFrameCount((c) => c + 1);
         })
-        .catch(() => undefined);
+        .catch(() => undefined)
+        .finally(() => { if (mountedRef.current && generation === loadGeneration.current) setCapturePending(false); });
     }
-  }, [collect, phase, k, resumePrompt, sgf, source, steps.length, overwriteExisting]);
+  }, [collect, phase, k, manualStage, resumePrompt, sgf, source, steps.length, overwriteExisting]);
 
-  // 没有物理动作的步(pass / AE)自己往前走。
+  // Only operations with no placement or removals can advance without an operator.
+  // Camera mode also requires entry verification, so its reducer owns this path.
   useEffect(() => {
-    if (phase === 'guiding' && currentStep && (currentStep.kind === 'pass' || currentStep.kind === 'clear')) {
-      const timer = setTimeout(advance, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [phase, currentStep, advance]);
+    if (camera || resumePrompt !== null || phase !== 'guiding' || !currentStep || manualStage !== 'settled' || captureError !== null || capturePending) return;
+    const timer = window.setTimeout(() => { if (collect) void doCapture(k); else advance(); }, 500);
+    return () => window.clearTimeout(timer);
+  }, [camera, resumePrompt, phase, currentStep, manualStage, captureError, capturePending, collect, doCapture, k, advance]);
 
-  // 灯跟着屏走(手动兜底 / 采集机;摄像头态的灯归 `usePhysicalBaipu`)。
-  // **失败只让那颗键变红,永不拦住摆放** —— 没灯照坐标摆,一样产出可用的帧。
+  const removalStage = !camera && (manualStage === 'pre' || manualStage === 'post');
+  const removalPoints = useMemo(() => manualStage === 'pre' ? currentStep?.pre_removed ?? [] : currentStep?.removed ?? [], [manualStage, currentStep]);
+
+  // During collection the capture endpoint owns LEDs through frame exposure.
+  // Every earlier page LED request settles before capture is issued.
   useEffect(() => {
-    if (!statusKnown || camera) return;
-    if (hint.open) {
-      // 支招开着:只亮 AI 候选(白);收起后这个 effect 重跑,按原逻辑重点。
-      (hint.leds.length ? LedAPI.points(hint.leds) : LedAPI.clear())
-        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
-    } else if (phase === 'guiding' && currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
-      LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) })
-        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
-    } else if (phase === 'await_removal' && currentStep && currentStep.removed.length > 0) {
-      LedAPI.points(currentStep.removed.map((p) => ({ row: p.row, col: p.col, color: 'remove' as LedColor })))
-        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
-    } else if (phase === 'done') {
-      LedAPI.clear().then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
-    }
-  }, [statusKnown, camera, hint.open, hint.leds, phase, k, currentStep]);
+    if (!statusKnown || camera || capturePending) return;
+    void writePageLeds(() => {
+      if (hint.open) return hint.leds.length ? LedAPI.points(hint.leds) : LedAPI.clear();
+      if (phase === 'guiding' && manualStage === 'place' && currentStep?.row != null && currentStep.col != null && currentStep.color) {
+        return LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) });
+      }
+      if (phase === 'guiding' && removalStage) return LedAPI.points(removalPoints.map(p => ({ ...p, color: 'remove' as LedColor })));
+      return LedAPI.clear();
+    });
+  }, [statusKnown, camera, capturePending, hint.open, hint.leds, phase, currentStep, manualStage, removalStage, removalPoints, writePageLeds]);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; LedAPI.clear().catch(() => undefined); };
   }, []);
 
-  // 着法表滚到当前那一手 —— 241 手的谱靠手指翻是翻不到第 200 手的。
-  useEffect(() => { nowRef.current?.scrollIntoView({ block: 'nearest' }); }, [k]);
+  // Keep complete rows and the latest placed move visible when the rail changes height.
+  useLayoutEffect(() => {
+    const body = nowRef.current?.closest<HTMLElement>('.mvrows');
+    const fold = body?.closest<HTMLElement>('.kiosk-fold');
+    if (!body || !fold) return;
+    const alignRows = () => {
+      const head = fold.querySelector<HTMLElement>('.kiosk-fold__head');
+      const rowHeight = nowRef.current?.getBoundingClientRect().height ?? 0;
+      const available = fold.clientHeight - (head?.offsetHeight ?? 0);
+      if (!rowHeight || available < rowHeight) return;
+      const style = getComputedStyle(body);
+      const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      const visibleRows = Math.max(1, Math.floor((available - padding) / rowHeight));
+      body.style.maxHeight = `${visibleRows * rowHeight + padding}px`;
+      body.scrollTop = Math.max(0, (Math.floor((k - 1) / 2) - visibleRows + 1) * rowHeight);
+    };
+    alignRows();
+    const observer = new ResizeObserver(alignRows);
+    observer.observe(fold);
+    return () => observer.disconnect();
+  }, [k, phase, railTab]);
 
+  const manualLeds = () => {
+    if (removalStage) return LedAPI.points(removalPoints.map(p => ({ ...p, color: 'remove' as LedColor })));
+    if (manualStage === 'place' && nextStone) return LedAPI.point({ ...nextStone, color: nextStone.color === 1 ? 'black' : 'white' });
+    return LedAPI.clear();
+  };
   const relight = () => {
     if (camera) { physical.relight(); return; }
-    if (hint.open) {
-      if (hint.leds.length) LedAPI.points(hint.leds).then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
-      return;
-    }
-    if (currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
-      LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) })
-        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
-    }
+    if (capturePending) return;
+    void writePageLeds(() => hint.open ? (hint.leds.length ? LedAPI.points(hint.leds) : LedAPI.clear()) : manualLeds());
   };
-
-  const handleConfirm = () => {
-    if (!currentStep) return;
-    // 提子要人先把死子拿下来,拿完才存帧 —— 否则那一帧上是一个不该存在的局面。
-    if (currentStep.removed.length > 0 && phase === 'guiding') { setPhase('await_removal'); return; }
+  const finishManual = () => {
+    setManualAction({ k, stage: 'settled' });
     if (collect) void doCapture(k); else advance();
   };
-
+  const handleConfirm = () => {
+    if (!currentStep || capturePending) return;
+    if (manualStage === 'entry') {
+      if (collect && k === 0 && !initialCapturedRef.current) setCapturePending(true);
+      setManualAction({ k, stage: firstStage(currentStep) }); return;
+    }
+    if (manualStage === 'pre') {
+      setManualAction({ k, stage: isPlaceable ? 'place' : currentStep.removed.length ? 'post' : 'settled' }); return;
+    }
+    if (manualStage === 'place' && currentStep.removed.length) { setManualAction({ k, stage: 'post' }); return; }
+    finishManual();
+  };
   const handleUndo = () => {
-    setUndoOpen(false);
-    setCaptureError(null);
-    setK((prev) => {
-      const next = Math.max(0, prev - 1);
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length }, store);
-      return next;
-    });
-    setPhase('guiding');
+    setUndoOpen(false); setCaptureError(null);
+    const unfinished = camera ? physical.phase === 'setup' || physical.stage === 'post' || !!currentStep?.pre_removed?.length
+      : manualStage === 'pre' || manualStage === 'post' || manualStage === 'entry' || manualAction?.k === k;
+    const next = unfinished ? k : Math.max(0, k - 1);
+    commitCursor(next, next !== k);
+    setManualAction({ k: next, stage: 'entry' }); setReconcileRevision(v => v + 1);
+  };
+  const useManual = () => {
+    setManualOverride(true); setTrying(false); hint.close();
+    setManualAction({ k, stage: 'entry' }); setReconcileRevision(v => v + 1);
+  };
+  const resolveHistory = async (strategy: 'use_cloud' | 'keep_local') => {
+    const generation = loadGeneration.current;
+    const record = await history.resolve(strategy);
+    if (!record || !mountedRef.current || generation !== loadGeneration.current) return;
+    if (!Number.isInteger(record.k) || record.k < 0 || record.k > steps.length || record.total !== steps.length) return;
+    setTrying(false); hint.close(); commitCursor(record.k, false); setResumePrompt(null);
+    setManualAction({ k: record.k, stage: 'entry' }); setReconcileRevision(v => v + 1);
   };
 
   // ── 盘面:笨播放器,一条气都不算 ──
-  const board = useMemo(() => replayBaipuSteps(steps, k, boardSize), [steps, k, boardSize]);
+  const activeStage = camera ? physical.stage : manualStage;
+  const board = useMemo(() => {
+    if (phase !== 'guiding' || !currentStep || activeStage === 'entry') return replayBaipuSteps(steps, k, boardSize);
+    if (activeStage === 'pre' || activeStage === 'place') {
+      // Display only the authoritative pre-cleared intermediate position.
+      return replayBaipuSteps([...steps.slice(0, k), { ...currentStep, row: null, col: null, color: null, removed: [] }], k + 1, boardSize);
+    }
+    if (activeStage === 'post') return replayBaipuSteps([...steps.slice(0, k), { ...currentStep, removed: [] }], k + 1, boardSize);
+    return replayBaipuSteps(steps, k, boardSize);
+  }, [steps, k, boardSize, phase, currentStep, activeStage]);
   const ghost = useMemo(() => {
     // 试下 / 支招开着时不画:那时盘上的主角是人自己的推演 / AI 的候选,不是谱上的下一手。
     if (trying || hint.open) return [];
-    if (!['guiding', 'await_removal'].includes(phase) || !currentStep) return [];
+    if (phase !== 'guiding' || !currentStep || !isPlaceable || (camera ? physical.stage === 'pre' || physical.stage === 'post' : manualStage !== 'place')) return [];
     if (currentStep.row == null || currentStep.col == null) return [];
     return [canonToGtp(currentStep.row, currentStep.col, boardSize)];
-  }, [trying, hint.open, phase, currentStep, boardSize]);
+  }, [trying, hint.open, phase, currentStep, boardSize, isPlaceable, camera, physical.stage, manualStage]);
   // 摄像头态「把盘面摆对」时多出来的子(蓝灯闪的那几颗)。恰好是下一手的那一颗是对的,不圈。
   const setupExtra = useMemo(() => {
     if (!camera || physical.phase !== 'setup') return [];
-    return physical.extra.filter(([r, c, v]) => !(nextStone && nextStone.row === r && nextStone.col === c && nextStone.color === v));
-  }, [camera, physical.phase, physical.extra, nextStone]);
+    return physical.extra.filter(([r, c, v]) => !(physical.stage !== 'post' && nextStone && nextStone.row === r && nextStone.col === c && nextStone.color === v));
+  }, [camera, physical.phase, physical.stage, physical.extra, nextStone]);
   const removeMarks = useMemo(() => setupExtra.map(([r, c]) => canonToGtp(r, c, boardSize)), [setupExtra, boardSize]);
   const hintMarks = useMemo(
     () => (hint.open ? hint.rows.map((r) => r.move).filter((m) => m.toLowerCase() !== 'pass') : []),
     [hint.open, hint.rows],
   );
   const atari = useMemo(() => {
-    if (phase !== 'await_removal' || !currentStep) return [];
-    return currentStep.removed.map((p) => canonToGtp(p.row, p.col, boardSize));
-  }, [phase, currentStep, boardSize]);
+    if (!removalStage || !currentStep) return [];
+    return removalPoints.map((p) => canonToGtp(p.row, p.col, boardSize));
+  }, [removalStage, removalPoints, currentStep, boardSize]);
 
   const nextColor = currentStep?.color ?? null;
   const coord = currentStep?.row != null && currentStep.col != null
@@ -443,12 +450,11 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     frozen: t('baipu:drift_word_frozen', '未校正'),
   }[drifted.key];
 
-  const title = (location.state as { name?: string } | null)?.name
-    ?? cached?.name
+  const title = history.name
     ?? (meta ? `${meta.player_black || t('baipu:black', '黑方')} vs ${meta.player_white || t('baipu:white', '白方')}` : t('baipu:title', '摆谱'));
 
   // ── 读不到 / 还在读 ──
-  if (!sgf || phase === 'error') {
+  if ((!sgf && !history.loading) || phase === 'error') {
     return (
       <div className="kiosk-layout-b" data-testid="baipu-session-page">
         <KioskPagebar
@@ -466,14 +472,14 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           ) : (
             <>
               <h4>{sgf ? t('baipu:load_failed', '没读出这份谱') : t('baipu:no_sgf', '这台盒子上没有这份谱')}</h4>
-              {loadError && <p>{loadError}</p>}
+              {(loadError || history.error) && <p>{loadError || history.error}</p>}
             </>
           )}
         </div>
       </div>
     );
   }
-  if (phase === 'loading') {
+  if (phase === 'loading' || history.loading) {
     return (
       <div className="kiosk-layout-b" data-testid="baipu-session-page">
         <KioskPagebar
@@ -489,11 +495,11 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
 
   // 优先级写死,互斥 —— 见页头那一行。(拍照遮罩盖在最上面,不属于这一档。)
   const mood: Mood = captureError !== null ? 'failed'
-    : phase === 'await_removal' ? 'removal'
+    : removalStage ? 'removal'
       : phase === 'done' ? 'done'
         : trying ? 'trying'
           : hint.open ? 'hint'
-            : camera && physical.phase === 'setup' ? 'setup'
+            : (camera && physical.phase === 'setup') || (!camera && manualStage === 'entry') ? 'setup'
               : 'guiding';
 
   const moveNo = Math.min(k + (phase === 'done' ? 0 : 1), steps.length);
@@ -505,10 +511,12 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   // 摄像头态「把盘面摆对」说哪句 —— 收敛规则都一样,只按「为什么到这儿」换话。
   const setupCard = (): { h: string; p: string } => {
     switch (physical.reason) {
+      case 'pre_remove':
+        return { h: t('baipu:pre_remove_title', '先拿走落点上的旧子'), p: t('baipu:pre_remove_hint', '蓝灯处先拿走，再按谱上的颜色放回') };
       case 'capture':
         return {
           h: interpolate(t('baipu:removal_title', '请拿走被提的 {n} 子'), {
-            n: setupExtra.length || (steps[k - 1]?.removed.length ?? 0),
+            n: setupExtra.length || (currentStep?.removed.length ?? 0),
           }),
           p: t('baipu:capture_hint_camera', '亮蓝灯的那几颗 —— 拿干净了自动下一手'),
         };
@@ -530,7 +538,6 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           h: interpolate(t('baipu:restore_title', '把盘面摆回第 {n} 手'), { n: k }),
           p: t('baipu:restore_hint', '试下的子拿走、挪动的放回 —— 对上了自动接着摆'),
         };
-      case 'adopt':
       case 'verify':
         return { h: t('baipu:verify_title', '正在对一下盘面'), p: t('baipu:verify_hint', '多出来的子亮蓝灯 —— 拿走就继续') };
       default: // entry:进场先把实体盘摆成屏上这一手
@@ -564,16 +571,16 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       key: 'removed',
       // 相机图标只在真拍照时出现 —— 上线态画个相机,等于屏上说「这一下要拍照」。
       icon: collect ? 'camera' : 'hand-pointing',
-      label: interpolate(t('baipu:removed_done', '已移除 {n} 子'), { n: currentStep?.removed.length ?? 0 }),
+      label: manualStage === 'pre' ? t('baipu:pre_remove_done', '已拿走旧子') : interpolate(t('baipu:removed_done', '已移除 {n} 子'), { n: removalPoints.length }),
       disabled: capturePending,
-      onClick: () => { if (collect) void doCapture(k); else advance(); },
+      onClick: handleConfirm,
     }
     : {
       key: 'confirm',
       // 手动兜底用箭头:和「试下」的手不撞(稿 17d)。
       icon: collect ? 'camera' : 'arrow-right',
-      label: t('baipu:confirm', '确认落子'),
-      disabled: capturePending || phase === 'done' || !isPlaceable,
+      label: manualStage === 'entry' ? t('baipu:entry_confirm', '盘面已摆对') : t('baipu:confirm', '确认落子'),
+      disabled: capturePending || phase === 'done' || resumePrompt !== null || (!currentStep),
       reason: phase === 'done' ? t('baipu:confirm_done_reason', '这份谱已经摆完了') : undefined,
       onClick: handleConfirm,
     };
@@ -583,7 +590,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       icon: 'arrow-counter-clockwise',
       label: t('baipu:undo', '撤回上一手'),
       // 立刻撤、不弹框:撤完灯带着把盘面摆回去,对上了自动继续。
-      disabled: k === 0 || trying,
+      disabled: (k === 0 && physical.phase === 'await') || trying,
       reason: trying ? t('baipu:undo_try_reason', '试下中不能撤回')
         : k === 0 ? t('baipu:undo_reason', '还没摆下第一颗') : undefined,
       onClick: handleUndo,
@@ -632,24 +639,22 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
         label: t('baipu:finish', '完成'),
         // 采集机才有:常驻是为了格子不重排(「确认落子」一局按约 250 次,位置是肌肉记忆);
         // 摆完之前一律灰 —— 提前收工是**返回**该做的事,不是它。
-        disabled: phase !== 'done',
+        disabled: phase !== 'done' || history.saving,
         reason: phase !== 'done'
           ? interpolate(t('baipu:finish_reason', '还剩 {n} 手没摆'), { n: steps.length - k })
           : undefined,
-        onClick: () => { clearProgress(source, store); back(); },
+        onClick: () => { if (history.saveError || history.error) setExitOpen(true); else back(); },
       },
     ]
     : manual
       ? [confirmAction, undoAction, tryAction, hintAction]
-      : [
-        // setup 10 s 没对上(密盘上识别一帧里凑不齐整盘)⇒ 按摄像头现在看到的接着摆。
-        ...(physical.phase === 'setup' && physical.stuck
-          ? [{ key: 'adopt', icon: 'arrow-right', label: t('baipu:setup_continue', '摆好了，继续'), onClick: physical.adopt } as KioskAction]
-          : []),
-        undoAction,
-        tryAction,
-        hintAction,
-      ];
+      : physical.stuck
+        ? [
+          { key: 'recheck', icon: 'arrows-clockwise', label: t('baipu:recheck', '重新识别盘面'), onClick: physical.recheck },
+          { key: 'manual', icon: 'hand-pointing', label: t('baipu:switch_manual', '改用手动确认'), onClick: useManual },
+          undoAction,
+        ]
+        : [undoAction, tryAction, hintAction];
 
   const cols = colsFor(boardSize);
   const boardRows = rowsFor(boardSize);
@@ -691,7 +696,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       <div className="kiosk-rail">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={backLabel}
+          backLabel={interpolate(t("{value1}{backLabel}", "{value1}{backLabel}"), { value1: t('common:back', '返回'), backLabel: backLabel })}
           onBack={() => setExitOpen(true)}
           title={title}
           sub={interpolate(
@@ -710,7 +715,12 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           }}
         />
 
-        {/* 常态由棋手卡承载信息；只有异常、试下和采集态才占一行提示。 */}
+        {!showStatusCard && !hint.open && <div className="baipu-next" role="status">
+          <span className={nextColor === 'W' ? 'disc w' : 'disc b'} aria-hidden="true" />
+          <strong>{coord ? interpolate(t('baipu:place_at', '当前待摆 · {c}'), { c: coord }) : t('baipu:place_none', '这一步不用摆子')}</strong>
+          <span>{t('baipu:auto_recognize', '识别后自动继续')}</span>
+        </div>}
+        {/* 异常、试下和采集态保留完整的当前操作说明。 */}
         {showStatusCard && <div className={`pcard ${PCARD_CLASS[mood]}`.trim()} data-testid="baipu-pcard" data-mood={mood}>
           {nextColor && (mood === 'guiding' || mood === 'hint' || mood === 'setup' || mood === 'trying')
             && <span className={nextColor === 'B' ? 'disc b' : 'disc w'} />}
@@ -730,15 +740,15 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
               </>
             ) : mood === 'removal' ? (
               <>
-                <h4>{interpolate(t('baipu:removal_title', '请拿走被提的 {n} 子'), { n: currentStep?.removed.length ?? 0 })}</h4>
-                <p>{t('baipu:removal_hint', '亮蓝灯的那几颗 —— 提子要人自己拿，拿完再按「已移除」')}</p>
+                <h4>{manualStage === 'pre' ? t('baipu:pre_remove_title', '先拿走落点上的旧子') : interpolate(t('baipu:removal_title', '请拿走被提的 {n} 子'), { n: removalPoints.length })}</h4>
+                <p>{manualStage === 'pre' ? t('baipu:pre_remove_hint', '蓝灯处先拿走，再按谱上的颜色放回') : t('baipu:removal_hint', '亮蓝灯的那几颗 —— 提子要人自己拿，拿完再按「已移除」')}</p>
               </>
             ) : mood === 'done' ? (
               <>
                 <h4>{t('baipu:done_title', '这份谱摆完了')}</h4>
                 <p>{collect
                   ? interpolate(t('baipu:done_hint', '一共 {n} 手 · 采到 {f} 帧'), { n: steps.length, f: frameCount })
-                  : interpolate(t('baipu:done_hint_auto', '一共 {n} 手 · 进度已清掉，按左上角返回'), { n: steps.length })}</p>
+                  : interpolate(t('baipu:done_hint_saved', '一共 {n} 手 · 按左上角返回'), { n: steps.length })}</p>
               </>
             ) : mood === 'trying' ? (
               <>
@@ -747,8 +757,8 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
               </>
             ) : mood === 'setup' ? (
               <>
-                <h4>{setupCard().h}</h4>
-                <p>{setupCard().p}</p>
+                <h4>{!camera ? interpolate(t('baipu:setup_entry_title', '先把盘面摆成第 {n} 手'), { n: k }) : setupCard().h}</h4>
+                <p>{!camera ? t('baipu:manual_entry_hint', '照屏上的盘面摆好，再按「盘面已摆对」') : setupCard().p}</p>
               </>
             ) : (
               <>
@@ -763,34 +773,35 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             )}
           </div>
           <div className="clock">
-            <b>{mood === 'removal' ? (currentStep?.removed.length ?? 0) : moveNo}</b>
+            <b>{mood === 'removal' ? removalPoints.length : moveNo}</b>
             <span>{mood === 'removal' ? t('baipu:stones_unit', '子') : t('baipu:which_move', '第几手')}</span>
           </div>
         </div>}
 
-        {!collect && ([
-          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑') },
-          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白') },
-        ]).map(({ color, name, side }) => {
+        <div className="baipu-players ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>{!collect && ([
+          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑'), rank: presentPlayerRank(knownRank(meta?.player_black_rank), t) },
+          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白'), rank: presentPlayerRank(knownRank(meta?.player_white_rank), t) },
+        ]).map(({ color, name, side, rank }, index) => {
           const turn = nextColor === color && phase !== 'done' && mood !== 'trying' && mood !== 'hint';
           return (
-            <div key={color} className={turn ? 'pcard turn' : 'pcard'} data-testid={`baipu-player-${color === 'B' ? 'black' : 'white'}`} data-turn={turn}>
+            <div key={color} className={`pcard ai-player-card kiosk-player-card${turn ? ' turn' : ''}`} data-testid={`baipu-player-${color === 'B' ? 'black' : 'white'}`} data-turn={turn}>
+              <PlayerCardSurface left={index === 0} />
               <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
               <div>
-                <h4 title={name}>{name}</h4>
+                <h4 className="kiosk-player-name-line"><span title={name}>{name}</span><span className="kiosk-player-rank" title={rank.title}>{rank.label}</span></h4>
                 <p>{side}{turn && coord ? ` · ${coord}` : ''}</p>
               </div>
             </div>
           );
-        })}
+        })}</div>
 
         {/* ── AI 支招只在打开时出现；采集机保留帧数和几何状态。 */}
         {hint.open ? (
           <KioskFold
             fold="hint"
             testId="baipu-hint-fold"
-            title={t('baipu:hint_title', 'AI 支招 · 白灯闪烁处')}
-            value={t('baipu:hint_value', '再按一次收起')}
+            title={camera ? t('baipu:hint_paused_title', 'AI支招 · 识别暂停') : t('baipu:hint_title', 'AI 支招 · 白灯闪烁处')}
+            value={t('baipu:hint_resume', '再按AI支招继续摆谱')}
             bodyClassName="ledger"
           >
             {hint.status === 'loading' ? (
@@ -830,7 +841,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             <div className="lrow">
               <b>{interpolate(
                 t('baipu:removed_n', '本手提子 {n} 子'),
-                { n: mood === 'removal' ? (currentStep?.removed.length ?? 0) : 0 },
+                { n: mood === 'removal' ? removalPoints.length : 0 },
               )}</b>
               <span className="led" style={{ background: LED_HEX.remove }} aria-hidden="true" />
               <i>{t('baipu:legend_remove', '蓝灯 = 该拿走')}</i>
@@ -843,6 +854,28 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           </KioskFold>
         ) : null}
 
+        {(history.record || history.error || history.saveError || history.saving) && <div className="pcard" data-testid="baipu-history-status" role="status">
+          <div><p>{history.saving ? t('kifu:history_saving', '正在保存进度')
+            : history.saveError ? t('kifu:history_save_error', '进度保存失败')
+              : history.error ? t('kifu:history_error', '摆谱历史暂不可用')
+                : history.record?.sync_state === 'conflict' ? t('kifu:history_conflict', '进度冲突，请选择保留哪份')
+                  : history.record?.sync_state === 'pending' ? t('kifu:history_pending', '已保存到本机，等待同步')
+                    : history.record?.sync_state === 'refused' ? t('kifu:history_refused', '本机已保存，同步被拒绝')
+                      : history.record?.authority === 'local_cache' ? t('kifu:history_local_cache', '账户的本机缓存')
+                        : history.record?.authority === 'this_node' ? t('kifu:history_this_node', '保存在此设备') : t('kifu:history_saved', '进度已保存')}</p>
+            {history.saveError && <Button disabled={history.saving} onClick={() => void history.save(cursorRef.current)}>{t('common:retry', '重试')}</Button>}
+            {history.record?.sync_state === 'conflict' && <div>
+              <Button disabled={history.saving} onClick={() => void resolveHistory('use_cloud')}>{t('kifu:history_use_cloud', '使用云端进度')}</Button>
+              <Button disabled={history.saving} onClick={() => void resolveHistory('keep_local')}>{t('kifu:history_keep_local', '保留本机进度')}</Button>
+            </div>}
+          </div>
+        </div>}
+
+        <div className="baipu-tabs" role="tablist" aria-label={t('baipu:panel_tabs', '摆谱信息')}>
+          <button type="button" role="tab" id="baipu-tab-moves" aria-controls="baipu-panel-moves" aria-selected={railTab === 'moves'} onClick={() => setRailTab('moves')}>{t('baipu:moves_tab', '着法')}</button>
+          <button type="button" role="tab" id="baipu-tab-info" aria-controls="baipu-panel-info" aria-selected={railTab === 'info'} onClick={() => setRailTab('info')}>{t('baipu:info_tab', '棋谱')}</button>
+        </div>
+        <div id="baipu-panel-moves" role="tabpanel" aria-labelledby="baipu-tab-moves" className="baipu-tab-panel" hidden={railTab !== 'moves'}>
         {/* ── 已经摆过的 ── */}
         <KioskFold
           fold="moves"
@@ -858,6 +891,12 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             <BaipuMoveRow key={r.n} row={r} k={k} nowRef={nowRef} passLabel={t('baipu:pass', '虚手')} />
           ))}
         </KioskFold>
+        </div>
+        <section id="baipu-panel-info" role="tabpanel" aria-labelledby="baipu-tab-info" className="baipu-tab-panel baipu-info" hidden={railTab !== 'info'}>
+          <h3>{title}</h3>
+          <p>{boardSize} {t('game:board_size_unit', '路')} · {t('game:komi', '贴目')} {meta?.komi ?? '—'}</p>
+          <p>{guidingLine}</p>
+        </section>
 
         <KioskActions
           testId="baipu-actions"
@@ -867,14 +906,14 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       </div>
 
       {capturePending && (
-        <Dialog open disableEscapeKeyDown data-testid="baipu-capture-pending">
+        <Dialog className="baipu-dialog" open disableEscapeKeyDown data-testid="baipu-capture-pending">
           <DialogTitle>{t('baipu:capturing', '正在拍照，请勿伸手')}</DialogTitle>
           <DialogContent><Typography>{t('baipu:capturing_hint', '手挡住了这一手就采不到，得重来。')}</Typography></DialogContent>
         </Dialog>
       )}
 
       {resumePrompt !== null && (
-        <Dialog open data-testid="baipu-resume">
+        <Dialog className="baipu-dialog" open data-testid="baipu-resume">
           <DialogTitle>{t('baipu:resume_ask', '接着上次摆？')}</DialogTitle>
           <DialogContent><Typography>{interpolate(
               collect
@@ -885,22 +924,22 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           <DialogActions sx={{ gap: 1 }}>
               <Button variant="outlined" data-testid="baipu-resume-restart"
                 onClick={() => {
-                  clearProgress(source, store);
+                  void history.save(0);
                   setOverwriteExisting(true);
                   setFrameCount(0); setLatestSavedFile(null); setCaptureError(null); setDrift(null);
                   initialCapturedRef.current = false;
-                  setK(0); setResumePrompt(null);
+                  commitCursor(0, false); setManualAction({ k: 0, stage: 'entry' }); setResumePrompt(null); setReconcileRevision(v => v + 1);
                 }}
               >{t('baipu:restart', '从头摆')}</Button>
               <Button variant="contained" data-testid="baipu-resume-continue"
-                onClick={() => { setK(resumePrompt); setOverwriteExisting(false); setResumePrompt(null); }}
+                onClick={() => { commitCursor(resumePrompt, false); setManualAction({ k: resumePrompt, stage: 'entry' }); setOverwriteExisting(false); setResumePrompt(null); setReconcileRevision(v => v + 1); }}
               >{t('baipu:resume', '接着摆')}</Button>
           </DialogActions>
         </Dialog>
       )}
 
       {undoOpen && (
-        <Dialog open onClose={() => setUndoOpen(false)} data-testid="baipu-undo-confirm">
+        <Dialog className="baipu-dialog" open onClose={() => setUndoOpen(false)} data-testid="baipu-undo-confirm">
           <DialogTitle>{t('baipu:undo_ask', '撤回上一手？')}</DialogTitle>
           <DialogContent><Typography>{t('baipu:undo_body', '先把刚摆的那颗子从盘上拿下来（被提的子也放回去），再按「已撤回」。')}</Typography></DialogContent>
           <DialogActions sx={{ gap: 1 }}>
@@ -915,15 +954,19 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       {/* 退出确认。**不是实现遗留,是这一屏已采纳的裁定**:「确认落子」一局按约 250 次,
           退出按一次,两颗不能同排;解法是移到角上(页控条)+ 二次确认,两半配套。 */}
       {exitOpen && (
-        <Dialog open onClose={() => setExitOpen(false)} data-testid="baipu-exit-confirm">
+        <Dialog className="baipu-dialog" open onClose={() => setExitOpen(false)} data-testid="baipu-exit-confirm">
           <DialogTitle>{t('baipu:exit_ask', '退出摆谱？')}</DialogTitle>
-          <DialogContent><Typography>{t('baipu:exit_body', '进度已经存下了，回来还能接着摆。')}</Typography></DialogContent>
+          <DialogContent><Typography>{history.saving ? t('kifu:history_saving', '正在保存进度')
+            : history.saveError ? t('kifu:history_save_error', '进度未保存，请重试')
+              : history.error ? t('kifu:history_error', '摆谱记录暂时不可用')
+                : t('baipu:exit_body_neutral', '退出后，可从棋谱页重新打开这份谱。')}</Typography></DialogContent>
           <DialogActions sx={{ gap: 1 }}>
               <Button variant="outlined" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</Button>
               <Button
                 variant="contained" color="error" data-testid="baipu-exit-confirm-action"
+                disabled={history.saving}
                 onClick={back}
-              >{t('baipu:exit', '退出')}</Button>
+              >{history.saveError || history.error ? t('baipu:exit_anyway', '仍然退出') : t('baipu:exit', '退出')}</Button>
           </DialogActions>
         </Dialog>
       )}

@@ -1,3 +1,5 @@
+import { drawStoneSprite, loadBoardImages, stoneImage } from '../board/boardUtils';
+import { type StoneStyleId, useBoardAppearance } from '../board/stoneAppearance';
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/material';
 import {
@@ -12,6 +14,11 @@ import {
   drawStone,
   drawLastMoveMarker,
 } from '../board/boardUtils';
+import { buildReplayBoardState, parseMove } from '../../utils/goReplay';
+
+// Preserve the replay helpers used by existing 2D and 3D callers.
+// eslint-disable-next-line react-refresh/only-export-components
+export { buildReplayBoardState, parseMove } from '../../utils/goReplay';
 
 // AI move marker for display on board
 export interface AiMoveMarker {
@@ -53,154 +60,6 @@ export interface LiveBoardProps {
   // parent and the board gets clipped.
   minContainerHeight?: number;
   minimumCanvasSize?: number; // Defaults to 400; responsive Galaxy pages can opt in to full scaling.
-}
-
-// Convert display coordinate (e.g., "Q16") to board indices
-// Shared with the 3D replay adapter; pure board logic does not retain component state.
-// eslint-disable-next-line react-refresh/only-export-components
-export function parseMove(move: string): [number, number] | null {
-  if (!move || move.length < 2) return null;
-  if (move.toLowerCase() === 'pass') return null;
-
-  const col = move[0].toUpperCase();
-  const row = parseInt(move.slice(1), 10);
-
-  if (isNaN(row)) return null;
-
-  // Column: A=0, B=1, ..., H=7, J=8 (skip I)
-  let x = col.charCodeAt(0) - 'A'.charCodeAt(0);
-  if (col > 'I') x -= 1;
-
-  // Row: 1=bottom, 19=top → invert for array index
-  const y = row - 1; // Now y=0 is bottom (row 1)
-
-  if (x < 0 || x >= 19 || y < 0 || y >= 19) return null;
-
-  return [x, y];
-}
-
-// Get adjacent positions (up, down, left, right)
-function getNeighbors(x: number, y: number, size: number): [number, number][] {
-  const neighbors: [number, number][] = [];
-  if (x > 0) neighbors.push([x - 1, y]);
-  if (x < size - 1) neighbors.push([x + 1, y]);
-  if (y > 0) neighbors.push([x, y - 1]);
-  if (y < size - 1) neighbors.push([x, y + 1]);
-  return neighbors;
-}
-
-// Find all stones in a connected group starting from (x, y)
-function findGroup(
-  board: (string | null)[][],
-  x: number,
-  y: number,
-  size: number
-): Set<string> {
-  const color = board[y][x];
-  if (!color) return new Set();
-
-  const group = new Set<string>();
-  const stack: [number, number][] = [[x, y]];
-
-  while (stack.length > 0) {
-    const [cx, cy] = stack.pop()!;
-    const key = `${cx},${cy}`;
-
-    if (group.has(key)) continue;
-    if (board[cy][cx] !== color) continue;
-
-    group.add(key);
-
-    for (const [nx, ny] of getNeighbors(cx, cy, size)) {
-      if (!group.has(`${nx},${ny}`) && board[ny][nx] === color) {
-        stack.push([nx, ny]);
-      }
-    }
-  }
-
-  return group;
-}
-
-// Count liberties (empty adjacent points) of a group
-function countLiberties(
-  board: (string | null)[][],
-  group: Set<string>,
-  size: number
-): number {
-  const liberties = new Set<string>();
-
-  for (const key of group) {
-    const [x, y] = key.split(',').map(Number);
-    for (const [nx, ny] of getNeighbors(x, y, size)) {
-      if (board[ny][nx] === null) {
-        liberties.add(`${nx},${ny}`);
-      }
-    }
-  }
-
-  return liberties.size;
-}
-
-// Remove captured stones (groups with zero liberties)
-// Returns array of captured positions for move number clearing
-function removeCaptures(
-  board: (string | null)[][],
-  lastX: number,
-  lastY: number,
-  size: number
-): [number, number][] {
-  const captured: [number, number][] = [];
-  const lastColor = board[lastY][lastX];
-  if (!lastColor) return captured;
-
-  const opponentColor = lastColor === 'B' ? 'W' : 'B';
-  const checkedGroups = new Set<string>();
-
-  // Check all neighbors of the last move for opponent groups
-  for (const [nx, ny] of getNeighbors(lastX, lastY, size)) {
-    if (board[ny][nx] === opponentColor) {
-      const groupKey = `${nx},${ny}`;
-      if (checkedGroups.has(groupKey)) continue;
-
-      const group = findGroup(board, nx, ny, size);
-      for (const key of group) {
-        checkedGroups.add(key);
-      }
-
-      const liberties = countLiberties(board, group, size);
-      if (liberties === 0) {
-        // Remove captured stones
-        for (const key of group) {
-          const [gx, gy] = key.split(',').map(Number);
-          board[gy][gx] = null;
-          captured.push([gx, gy]);
-        }
-      }
-    }
-  }
-  return captured;
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function buildReplayBoardState(moves: string[], currentMove: number, boardSize: number, stoneColors?: ('B' | 'W')[], handicapCount = 0) {
-  const board: (string | null)[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
-  const moveNumbers: (number | null)[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
-  let lastMove: [number, number] | null = null;
-  let lastPlayer: 'B' | 'W' = 'B';
-  for (let i = 0; i < Math.min(currentMove, moves.length); i++) {
-    const coords = parseMove(moves[i]);
-    if (!coords) continue;
-    const [x, y] = coords;
-    if (x >= boardSize || y >= boardSize) continue;
-    const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
-    board[y][x] = player;
-    moveNumbers[y][x] = i < handicapCount ? null : i + 1 - handicapCount;
-    const captured = removeCaptures(board, x, y, boardSize);
-    for (const [cx, cy] of captured) moveNumbers[cy][cx] = null;
-    if (i >= handicapCount) lastMove = coords;
-    lastPlayer = player;
-  }
-  return { board, moveNumbers, lastMove, lastPlayer };
 }
 
 // Jade green color for AI markers (matching play module style)
@@ -293,6 +152,7 @@ function drawPvStone(
   moveNumber: number,
   blackImg: HTMLImageElement | null,
   whiteImg: HTMLImageElement | null,
+  stoneStyle: StoneStyleId,
 ) {
   // Use gridToCanvas to get center coordinates (handles Y inversion)
   const { x: cx, y: cy } = gridToCanvas(layout, x, y, boardSize);
@@ -301,10 +161,10 @@ function drawPvStone(
   ctx.save();
   ctx.globalAlpha = 0.6; // Semi-transparent
 
-  const img = color === 'B' ? blackImg : whiteImg;
+  const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg, stoneStyle);
   if (img) {
     // Draw stone image (matching drawStone in boardUtils.ts)
-    ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+    drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, x, y);
   } else {
     // Fallback: draw circle
     ctx.beginPath();
@@ -364,6 +224,8 @@ export default function LiveBoard({
     ? undefined
     : { margin: 0.5, exact: true };
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [assetsVersion, setAssetsVersion] = useState(0);
+  const { boardStyle, stoneStyle } = useBoardAppearance();
   // Animation ref for pulsing effect timing
   const startTimeRef = useRef<number>(Date.now());
   // Hover position for ghost stone preview
@@ -371,26 +233,18 @@ export default function LiveBoard({
 
   // Load images
   useEffect(() => {
-    const loadImages = async () => {
-      const entries = Object.entries(BOARD_ASSETS);
-      await Promise.all(
-        entries.map(
-          ([key, src]) =>
-            new Promise<void>((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                imagesRef.current[key] = img;
-                resolve();
-              };
-              img.onerror = () => resolve(); // Continue even if image fails
-              img.src = src;
-            })
-        )
-      );
-      setImagesLoaded(true);
-    };
-    loadImages();
-  }, []);
+    let cancelled = false;
+    const fallbackBoard = new Image();
+    fallbackBoard.src = BOARD_ASSETS.board;
+    loadBoardImages(boardStyle, stoneStyle).then(images => {
+      if (!cancelled) {
+        imagesRef.current = images;
+        setImagesLoaded(true);
+        setAssetsVersion(v => v + 1);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [boardStyle, stoneStyle]);
 
   // Track container size
   useEffect(() => {
@@ -431,17 +285,17 @@ export default function LiveBoard({
     ctx.clearRect(0, 0, canvasSize, canvasSize);
 
     // Draw board background
-    drawBoardBackground(ctx, layout, imagesRef.current['board'] || null);
+    drawBoardBackground(ctx, layout, imagesRef.current['board'] || null, boardStyle);
 
     // Draw grid lines
-    drawGrid(ctx, layout, boardSize);
+    drawGrid(ctx, layout, boardSize, boardStyle);
 
     // Draw star points
-    drawStars(ctx, layout, boardSize);
+    drawStars(ctx, layout, boardSize, boardStyle);
 
     // Draw coordinates
     if (showCoordinates) {
-      drawCoordinates(ctx, layout, boardSize);
+      drawCoordinates(ctx, layout, boardSize, undefined, boardStyle);
     }
 
     // Draw ownership/territory overlay
@@ -477,7 +331,7 @@ export default function LiveBoard({
       for (let x = 0; x < boardSize; x++) {
         const stone = board[y][x];
         if (stone) {
-          drawStone(ctx, layout, x, y, boardSize, stone as 'B' | 'W', blackImg, whiteImg);
+          drawStone(ctx, layout, x, y, boardSize, stone as 'B' | 'W', blackImg, whiteImg, stoneStyle);
 
           // Draw move number on stone if enabled
           if (showMoveNumbers && moveNumbers[y][x]) {
@@ -510,7 +364,7 @@ export default function LiveBoard({
         if (coords) {
           const [x, y] = coords;
           if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x] && !tryOccupied.has(`${x},${y}`)) {
-            drawPvStone(ctx, layout, x, y, boardSize, tryPlayer, i + 1, blackImg, whiteImg);
+            drawPvStone(ctx, layout, x, y, boardSize, tryPlayer, i + 1, blackImg, whiteImg, stoneStyle);
             tryOccupied.add(`${x},${y}`);
             markerMove = coords;
             markerPlayer = tryPlayer;
@@ -558,9 +412,9 @@ export default function LiveBoard({
         // ghost of the stone to be placed
         ctx.save();
         ctx.globalAlpha = 0.45;
-        const img = color === 'B' ? blackImg : whiteImg;
+        const img = stoneImage(color, x, y, boardSize, color === 'B' ? blackImg : whiteImg, stoneStyle);
         if (img) {
-          ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+          drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, x, y);
         } else {
           ctx.beginPath();
           ctx.arc(cx, cy, stoneSize * 0.95, 0, Math.PI * 2);
@@ -612,7 +466,7 @@ export default function LiveBoard({
           const posKey = `${x},${y}`;
           // Only draw if position is empty (not occupied by real stones or previous PV stones)
           if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x] && !pvOccupied.has(posKey)) {
-            drawPvStone(ctx, layout, x, y, boardSize, pvPlayer, displayNumber, blackImg, whiteImg);
+            drawPvStone(ctx, layout, x, y, boardSize, pvPlayer, displayNumber, blackImg, whiteImg, stoneStyle);
             pvOccupied.add(posKey);
             displayNumber++;
           }
@@ -632,9 +486,9 @@ export default function LiveBoard({
         const stoneSize = layout.gridSize * 0.505;
         ctx.save();
         ctx.globalAlpha = 0.5;
-        const img = ghostColor === 'B' ? blackImg : whiteImg;
+        const img = stoneImage(ghostColor, hx, hy, boardSize, ghostColor === 'B' ? blackImg : whiteImg, stoneStyle);
         if (img) {
-          ctx.drawImage(img, cx - stoneSize, cy - stoneSize, stoneSize * 2, stoneSize * 2);
+          drawStoneSprite(ctx, img, cx, cy, stoneSize, boardSize, hx, hy);
         } else {
           ctx.beginPath();
           ctx.arc(cx, cy, stoneSize * 0.95, 0, Math.PI * 2);
@@ -663,7 +517,7 @@ export default function LiveBoard({
       const interval = setInterval(renderBoard, 100); // ~10fps for pulse
       return () => clearInterval(interval);
     }
-  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, aiMarkerLimit, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
+  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, assetsVersion, boardStyle, stoneStyle, showCoordinates, pvMoves, aiMarkers, aiMarkerLimit, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
   const coordsToMove = (x: number, y: number): string => {

@@ -54,14 +54,17 @@ function phaseVisual(phase: PhysicalPhase): PhaseVisual | null {
 }
 
 /** Small inline LED advisory chip: dot + label, colours read from LED_HEX/LED_LABEL only. */
-const LedChip = ({ intent }: { intent: LedIntent }) => (
+const LedChip = ({ intent }: { intent: LedIntent }) => {
+  const { t } = useTranslation();
+  return (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
     <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: LED_HEX[intent] }} />
     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-      {LED_LABEL[intent]}
+      {t(LED_LABEL[intent], LED_LABEL[intent])}
     </Typography>
   </Box>
 );
+};
 
 // State-E celebration: white double-blink mirroring the real machine's LED double-flash
 // cadence (opacity 1 -> 0.2 -> 1, twice, ~350ms each).
@@ -105,7 +108,7 @@ const PhysicalStatePanel = ({ state, onDismiss }: PhysicalStatePanelProps) => {
           }}
         />
         <Typography variant="subtitle1" sx={{ flex: 1 }}>
-          {titleZh}
+          {t(titleZh, titleZh)}
         </Typography>
         {intent && <LedChip intent={intent} />}
         {onDismiss && (
@@ -117,8 +120,7 @@ const PhysicalStatePanel = ({ state, onDismiss }: PhysicalStatePanelProps) => {
 
       {state.phase === 'ready' && (
         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-          屏幕点击 + 实体落子
-        </Typography>
+          {t("屏幕点击 + 实体落子", "屏幕点击 + 实体落子")}</Typography>
       )}
 
       {state.phase === 'setup' && (

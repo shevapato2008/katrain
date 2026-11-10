@@ -17,21 +17,21 @@ const PlayMenu = () => {
             title: i18n.t('play:vs_ai_free', "Play vs AI (Free)"),
             desc: i18n.t('play:vs_ai_free_desc', "Practice with full analysis, undo, and custom settings."),
             icon: <SmartToyIcon sx={{ fontSize: 60, color: 'primary.main' }} />,
-            path: '/galaxy/play/ai?mode=free',
+            path: '/play/ai?mode=free',
             disabled: false
         },
         {
             title: i18n.t('play:rated_ai', "Rated Game vs AI"),
             desc: i18n.t('play:rated_ai_desc', "Play a ranked game against a human-like AI. No analysis during game."),
             icon: <SportsEsportsIcon sx={{ fontSize: 60, color: 'secondary.main' }} />,
-            path: '/galaxy/play/ai?mode=rated',
+            path: '/play/ai?mode=rated',
             disabled: false
         },
         {
             title: i18n.t('play:hvh', "Human vs Human"),
             desc: i18n.t('play:hvh_desc', "Challenge a friend or find an opponent online."),
             icon: <PersonIcon sx={{ fontSize: 60, color: 'text.secondary' }} />,
-            path: '/galaxy/play/human',
+            path: '/play/human',
             disabled: false
         }
     ];
@@ -48,7 +48,7 @@ const PlayMenu = () => {
                 <Button
                     variant="outlined"
                     color="inherit"
-                    onClick={() => navigate('/galaxy/report')}
+                    onClick={() => navigate('/report')}
                     sx={{ minHeight: 40, borderColor: 'divider', color: 'text.secondary', px: 2, flex: 'none' }}
                 >
                     {i18n.t('play:game_records', 'Game Records')}

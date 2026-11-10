@@ -4,7 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
-import { readAudioPref } from '../../utils/audioPrefs';
+import { readAudioPref, readStoneSoundTonePref } from '../../utils/audioPrefs';
+import {
+  getActiveBoardStyle,
+  getActiveStoneStyle,
+  setActiveBoardStyle,
+  setActiveStoneStyle,
+} from '../../components/board/stoneAppearance';
 
 // B6: SettingsPage pulls in useSettings/useAuth/useGeometry (the last directly, the
 // auth one via AccountSection). Mock each context module directly — same idiom as
@@ -17,7 +23,16 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useNavigate: () => mockNavigate,
 }));
 
+const strictBox = vi.hoisted(() => ({ enabled: false }));
+vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return strictBox.enabled; } }));
 const mockSetLanguage = vi.fn();
+const typography = vi.hoisted(() => ({
+  preference: { font: 'wenkai', size: 'large' },
+  setPreference: vi.fn(), retry: vi.fn(),
+}));
+vi.mock('../typography/KioskTypographyContext', () => ({
+  useKioskTypography: () => ({ ...typography, loading: false, saving: false, error: null }),
+}));
 vi.mock('../../context/SettingsContext', () => ({
   useSettings: () => ({
     language: 'cn',
@@ -108,7 +123,7 @@ describe('屏 27 设置 · 分组与导航', () => {
     renderPage();
     const nav = screen.getByTestId('settings-nav');
     const labels = [...nav.querySelectorAll('button')].map((b) => b.textContent);
-    expect(labels).toEqual(['账号与平台', '实体棋盘', '落子与提示', '声音', '语言', '关于']);
+    expect(labels).toEqual(['实体棋盘', '落子与提示', '声音', '语言', '字体与字号', '关于']);
 
     const groups = [...document.querySelectorAll('[data-group]')].map(
       (g) => g.querySelector('.kiosk-seclabel h2')?.textContent,
@@ -138,7 +153,7 @@ describe('屏 27 设置 · 分组与导航', () => {
     const nav = screen.getByTestId('settings-nav');
     const current = [...nav.querySelectorAll('button')].filter((b) => b.getAttribute('aria-current') === 'true');
     expect(current).toHaveLength(1);
-    expect(current[0].textContent).toBe('账号与平台');
+    expect(current[0].textContent).toBe('实体棋盘');
   });
 
   // 设置是 Dock 项 ⇒ L1 ⇒ 没有返回键。
@@ -159,30 +174,25 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
-  // 上一版那四张平台卡是 `pointer-events:none` 的死装饰,而且列的是
-  // 99围棋/野狐/腾讯/新浪 —— **和真正能连的三家对不上**。
-  it('平台账号来自真实状态，并从对弈首页选择连接', async () => {
+  it('设置页移除账号与平台分组', () => {
     renderPage();
-    expect(screen.getByText('跨平台账号')).toBeInTheDocument();
-    expect(await screen.findByTestId('platform-account-ogs')).toHaveTextContent('未连接');
-    expect(screen.getByTestId('platform-account-golaxy')).toHaveTextContent('未连接');
-    expect(screen.queryByText(/99围棋/)).toBeNull();
-    expect(screen.queryByText(/腾讯围棋/)).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: '去连接' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play');
+    expect(screen.queryByText('账号与平台')).toBeNull();
+    expect(screen.queryByTestId('settings-logout')).toBeNull();
   });
 
-  it('实体棋盘那一组给的是真读数和一条去标定的路', () => {
+  it('实体棋盘的状态在标定入口上方，未连接设备时禁止进入', () => {
     mockGeometry({ loaded: true });
     renderPage();
-    expect(screen.getByText('还没标定')).toBeInTheDocument();
-    // 措辞照抄标定屏那三格(同一件事只有一套写法);LED 那一格照视觉赛道 V4:
-    // 它只说**串口**通没通,不代表每颗灯都亮。
+    expect(screen.getByText('请先连接摄像头、LED')).toBeInTheDocument();
+    const statusRow = screen.getByLabelText('摄像头 · 标定 · LED');
+    expect(statusRow.compareDocumentPosition(screen.getByText('重新标定棋盘')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByTestId('settings-cap-camera')).toHaveTextContent('未连接');
     expect(screen.getByTestId('settings-cap-calib')).toHaveTextContent('未标定');
     expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('未连接');
-    fireEvent.click(screen.getByRole('button', { name: '开始标定' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
+    const button = screen.getByRole('button', { name: '开始标定' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('三件器件都在时,三格照标定屏的说法', () => {
@@ -203,12 +213,12 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     renderPage();
     for (const key of ['camera', 'calib']) {
       const cell = screen.getByTestId(`settings-cap-${key}`);
-      expect(cell).toHaveTextContent('—');
-      expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
+      expect(cell).toHaveTextContent('未确认');
+      expect(cell.querySelector('.kiosk-board-status__good')).toBeNull();
     }
     expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('未确认');
     expect(screen.queryByText('未连接')).toBeNull();
-    expect(screen.queryByText('还没标定')).toBeNull();
+    expect(screen.queryByText('请先连接摄像头、LED')).toBeNull();
   });
 
   // 404 ⇒ `phase='disabled'`:这台盒子没起采集服务。把人送进标定屏再让那屏的空态弹回来,
@@ -224,7 +234,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     fireEvent.click(btn);
     expect(mockNavigate).not.toHaveBeenCalled();
     for (const key of ['camera', 'calib']) {
-      expect(screen.getByTestId(`settings-cap-${key}`)).toHaveTextContent('—');
+      expect(screen.getByTestId(`settings-cap-${key}`)).toHaveTextContent('未确认');
     }
     expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('已连接');
     expect(screen.queryByText('未连接')).toBeNull();
@@ -237,7 +247,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     renderPage();
     const cell = screen.getByTestId('settings-cap-led');
     expect(cell).toHaveTextContent(ledReady === false ? '未连接' : '未确认');
-    expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
+    expect(cell.querySelector('.kiosk-board-status__good')).toBeNull();
   });
 
   // 今天的行为不许退化。
@@ -250,6 +260,42 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(screen.getByText('这次开机已标定')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '开始标定' }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
+  });
+
+  it('实体棋盘渲染棋盘样式与棋子样式下拉菜单，排除石材与星河，且切换即时同步 store 与 localStorage', () => {
+    setActiveBoardStyle('kaya');
+    setActiveStoneStyle('clamshell-slate');
+    renderPage();
+
+    const boardGroup = document.querySelector('[data-group="board"]');
+    expect(boardGroup).not.toBeNull();
+    expect(boardGroup).toHaveTextContent('棋盘样式');
+    expect(boardGroup).toHaveTextContent('屏幕棋盘木纹与线条配色');
+    expect(boardGroup).toHaveTextContent('棋子样式');
+    expect(boardGroup).toHaveTextContent('屏幕棋子材质与光泽效果');
+
+    for (const label of ['日式本榧', '新榧云杉', '碳化楠竹', '胡桃沉香']) {
+      expect(boardGroup).toHaveTextContent(label);
+    }
+    for (const label of ['蛤碁石', '云子', '玉石玛瑙', '简约']) {
+      expect(boardGroup).toHaveTextContent(label);
+    }
+    expect(screen.queryByText('石材')).toBeNull();
+    expect(screen.queryByText('星河')).toBeNull();
+
+    const stoneSelect = screen.getByTestId('kiosk-stone-style-select') as HTMLSelectElement;
+    expect(stoneSelect.value).toBe('clamshell-slate');
+    fireEvent.change(stoneSelect, { target: { value: 'jade-agate' } });
+    expect(getActiveStoneStyle()).toBe('jade-agate');
+    expect(localStorage.getItem('katrain_stone_style')).toBe('jade-agate');
+    expect(stoneSelect.value).toBe('jade-agate');
+
+    const boardSelect = screen.getByTestId('kiosk-board-style-select') as HTMLSelectElement;
+    expect(boardSelect.value).toBe('kaya');
+    fireEvent.change(boardSelect, { target: { value: 'bamboo' } });
+    expect(getActiveBoardStyle()).toBe('bamboo');
+    expect(localStorage.getItem('katrain_board_style')).toBe('bamboo');
+    expect(boardSelect.value).toBe('bamboo');
   });
 
   // 一屏之内所有选择组用**同一种控件**(规范 §12)—— 所以是分段不是 MUI 开关。
@@ -298,6 +344,33 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(readAudioPref('sfx')).toBe(true);
   });
 
+  it('落子音色渲染6种音色下拉菜单，切换即更新 readStoneSoundTonePref 并开启音效', () => {
+    localStorage.clear();
+    renderPage();
+    const toneSelect = screen.getByTestId('kiosk-stone-tone-select') as HTMLSelectElement;
+    const options = [...toneSelect.querySelectorAll('option')];
+    expect(options.map((o) => o.textContent)).toEqual([
+      '随机自然',
+      '清脆本榧',
+      '温润蛤石',
+      '沉稳云子',
+      '脆响竹盘',
+      '醇厚木韵',
+    ]);
+    expect(toneSelect.value).toBe('random');
+
+    // 先关闭落子音效，再选择一种音色应自动重新打开音效并写入音色偏好
+    const sfxGroup = screen.getByRole('group', { name: '落子音效' });
+    const [, sfxOff] = [...sfxGroup.querySelectorAll('button')];
+    fireEvent.click(sfxOff);
+    expect(readAudioPref('sfx')).toBe(false);
+
+    fireEvent.change(toneSelect, { target: { value: 'stone3' } }); // 沉稳云子 (stone3)
+    expect(readStoneSoundTonePref()).toBe('stone3');
+    expect(readAudioPref('sfx')).toBe(true);
+    expect(toneSelect.value).toBe('stone3');
+  });
+
   it('语音那一行照实说它什么时候才会响', () => {
     renderPage();
     expect(screen.getByText(/只在用实体棋盘时会响/)).toBeInTheDocument();
@@ -322,6 +395,21 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(await screen.findByTestId('about-version')).toHaveTextContent('1.17.1');
     expect(screen.getByTestId('about-engine-local')).toHaveTextContent('可用');
     expect(screen.getByTestId('about-engine-cloud')).toHaveTextContent('没配置');
+  });
+
+  it('模型行只显示服务端返回的当前模型', async () => {
+    mockHealth({ status: 'ok', katago_model: 'kata1-b28c512-s123', engines: { local: 'reachable', cloud: 'reachable' } });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('about-katago-model')).toHaveTextContent('kata1-b28c512-s123'));
+    expect(screen.getByTestId('about-katago-model')).toHaveTextContent('KataGo 模型');
+    expect(screen.queryByText(/报告模型|对弈模型/)).toBeNull();
+  });
+
+  it('模型不可用时如实说明', async () => {
+    mockHealth({ status: 'ok', katago_model: null, engines: { local: 'reachable', cloud: 'reachable' } });
+    renderPage();
+    await waitFor(() => expect(health.engineHealth).toHaveBeenCalled());
+    expect(screen.getByTestId('about-katago-model')).toHaveTextContent('暂时无法获取');
   });
 
   it('引擎回了错误码:说「连不上」,码写在那一行的小字里', async () => {
@@ -363,9 +451,27 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(container.textContent).not.toMatch(/设备名|device/i);
   });
 
-  it('账号那一块还在 —— 退出登录一个功能不少', () => {
+  it('字体和字号均即时调用同一共享设置，且位于关于之前', () => {
     renderPage();
-    expect(screen.getByTestId('settings-logout')).toBeInTheDocument();
-    expect(screen.getByText('张三')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '隶书' }));
+    fireEvent.click(screen.getByRole('button', { name: '小一号' }));
+    expect(typography.setPreference).toHaveBeenCalledWith({ font: 'lishu' });
+    expect(typography.setPreference).toHaveBeenCalledWith({ size: 'medium' });
+    const groups = [...document.querySelectorAll('[data-group]')].map((el) => el.getAttribute('data-group'));
+    expect(groups.indexOf('typography')).toBeLessThan(groups.indexOf('about'));
+    expect(screen.queryByText('预览')).toBeNull();
   });
+});
+
+
+it('strict Box removes local language and font controls while keeping local size', () => {
+  strictBox.enabled = true;
+  mockGeometry({ loaded: true });
+  mockHealth({ status: 'ok', engines: {} });
+  renderPage();
+  expect(screen.queryByTestId('settings-language')).not.toBeInTheDocument();
+  expect(screen.queryByRole('group', { name: '字体' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '小一号' }));
+  expect(typography.setPreference).toHaveBeenCalledWith({ size: 'medium' });
+  strictBox.enabled = false;
 });

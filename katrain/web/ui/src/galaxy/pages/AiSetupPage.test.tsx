@@ -19,6 +19,9 @@ import { AiLadderApiError } from '../../features/aiLadder/api';
 // out-of-scope behavior — so tests locate a Select by its <label> text instead of relying
 // on the accessible-name computation.
 
+const { unlockSound } = vi.hoisted(() => ({ unlockSound: vi.fn().mockResolvedValue(true) }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ unlock: unlockSound }) }));
+
 const mockNavigate = vi.fn();
 const mockRequestNavigation = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -106,9 +109,9 @@ vi.mock('../../context/SettingsContext', () => ({
 const renderPage = (mode = 'free') => {
   const params = new URLSearchParams({ mode });
   return render(
-    <MemoryRouter initialEntries={[`/galaxy/play/ai/setup?${params.toString()}`]}>
+    <MemoryRouter initialEntries={[`/play/ai?${params.toString()}`]}>
       <Routes>
-        <Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} />
+        <Route path="/play/ai" element={<AiSetupPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -182,7 +185,7 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     expect(summary).toHaveTextContent('10 Minutes · 3×30 Seconds');
 
     await user.click(screen.getByTestId('free-return-action'));
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play');
+    expect(mockNavigate).toHaveBeenCalledWith('/play');
   });
 
   it('shows a rung selector (not the human-rank slider) once 棋力阶梯 is chosen', async () => {
@@ -300,6 +303,20 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(mockRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('mode navigation keeps rated and free clock defaults', async () => {
+    const at = (mode: string) => <MemoryRouter><Routes location={`/play/ai?mode=${mode}`}>
+      <Route path="/play/ai" element={<AiSetupPage />} />
+    </Routes></MemoryRouter>;
+    const view = render(at('free'));
+    view.rerender(at('rated'));
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '开始正式对局' }));
+    await waitFor(() => expect(mockStartRanked).toHaveBeenCalledWith(expect.objectContaining({ time_enabled: true, main_time: 30, byo_length: 30, byo_periods: 3 }), 'test-token'));
+    view.rerender(at('free'));
+    await user.click(await screen.findByRole('switch', { name: 'Enable Timer' }));
+    expect(screen.getByTestId('free-game-summary')).toHaveTextContent('10 Minutes · 3×30 Seconds');
+  });
+
   it('starts rated play only through the authoritative endpoint', async () => {
     renderPage('rated');
     const user = userEvent.setup();
@@ -308,8 +325,9 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     // Board size, ruleset, komi and handicap are server-owned (the calibration
     // conditions) and the request model forbids extras — the page sends seat + clock.
     await waitFor(() => expect(mockStartRanked).toHaveBeenCalledWith(expect.objectContaining({
-      color: 'black',
+      color: 'black', time_enabled: true, main_time: 30, byo_length: 30, byo_periods: 3,
     }), 'test-token'));
+    expect(unlockSound.mock.invocationCallOrder.at(-1)).toBeLessThan(mockStartRanked.mock.invocationCallOrder.at(-1)!);
     const sent = mockStartRanked.mock.calls[0][0];
     expect(sent).not.toHaveProperty('board_size');
     expect(sent).not.toHaveProperty('rules');
@@ -317,7 +335,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(sent).not.toHaveProperty('handicap');
     expect(mockCreateSession).not.toHaveBeenCalled();
     expect(mockNewGame).not.toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/ranked-s1?mode=rated&game_id=g1');
+    expect(mockNavigate).toHaveBeenCalledWith('/play/game/ranked-s1?mode=rated&game_id=g1');
     expect(JSON.parse(sessionStorage.getItem('ai-ladder-before:ranked-s1')!)).toEqual(expect.objectContaining({
       game_id: 'g1',
     }));
@@ -338,7 +356,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     await user.click(await screen.findByRole('button', { name: '继续对局' }));
 
     expect(mockNavigate).toHaveBeenCalledOnce();
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/game/occupied-session?mode=rated&game_id=occupied-game');
+    expect(mockNavigate).toHaveBeenCalledWith('/play/game/occupied-session?mode=rated&game_id=occupied-game');
     expect(JSON.parse(sessionStorage.getItem('ai-ladder-before:occupied-session')!)).toEqual(expect.objectContaining({
       game_id: 'occupied-game',
     }));
@@ -460,8 +478,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
       blocking_game: { ...blockingGame(), game_id: 'new-game', session_id: 'new-session' },
     };
     view.rerender(
-      <MemoryRouter initialEntries={['/galaxy/play/ai/setup?mode=rated']}>
-        <Routes><Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} /></Routes>
+      <MemoryRouter initialEntries={['/play/ai?mode=rated']}>
+        <Routes><Route path="/play/ai" element={<AiSetupPage />} /></Routes>
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByRole('button', { name: '继续对局' })).toBeEnabled());
@@ -494,8 +512,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
       blocking_game: { ...blockingGame(), game_id: 'game-b', session_id: 'session-b' },
     };
     view.rerender(
-      <MemoryRouter initialEntries={['/galaxy/play/ai/setup?mode=rated']}>
-        <Routes><Route path="/galaxy/play/ai/setup" element={<AiSetupPage />} /></Routes>
+      <MemoryRouter initialEntries={['/play/ai?mode=rated']}>
+        <Routes><Route path="/play/ai" element={<AiSetupPage />} /></Routes>
       </MemoryRouter>,
     );
 
@@ -821,7 +839,7 @@ describe('AiSetupPage — 未登录访客', () => {
     renderPage('rated');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: '返回对弈' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play', { replace: true });
+    expect(mockNavigate).toHaveBeenCalledWith('/play', { replace: true });
   });
 
   it('自由对弈：让游客进，但开局前先说清楚这一局不会被保存', async () => {

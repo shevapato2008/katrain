@@ -25,7 +25,7 @@ const CurrentLocation = () => {
 };
 
 const renderPlayMenu = () => render(
-  <MemoryRouter initialEntries={['/galaxy/play']}>
+  <MemoryRouter initialEntries={['/play']}>
     <GameNavigationProvider>
       <PlayMenu />
       <CurrentLocation />
@@ -43,19 +43,19 @@ describe('PlayMenu', () => {
 
     await user.click(screen.getByRole('button', { name: 'Game Records' }));
 
-    expect(screen.getByTestId('current-location')).toHaveTextContent('/galaxy/report');
+    expect(screen.getByTestId('current-location').textContent).toBe('/report');
   });
 
   it.each([
-    [/Play vs AI \(Free\)/, '/galaxy/play/ai?mode=free'],
-    [/Rated Game vs AI/, '/galaxy/play/ai?mode=rated'],
-    [/Human vs Human/, '/galaxy/play/human'],
+    [/Play vs AI \(Free\)/, '/play/ai?mode=free'],
+    [/Rated Game vs AI/, '/play/ai?mode=rated'],
+    [/Human vs Human/, '/play/human'],
   ])('keeps the %s mode card navigation', async (mode, destination) => {
     const user = userEvent.setup();
     renderPlayMenu();
 
     await user.click(screen.getByRole('button', { name: mode }));
 
-    expect(screen.getByTestId('current-location')).toHaveTextContent(destination);
+    expect(screen.getByTestId('current-location').textContent).toBe(destination);
   });
 });

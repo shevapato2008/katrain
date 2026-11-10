@@ -77,7 +77,7 @@ describe('本地对局玩家卡上的钟', () => {
   test('不限时的本地对局(main 0 · byo 0 · paused):仍是「第 N 手 / 不限时」', () => {
     render(panel(state({ timer: timer({ paused: true, settings: { main_time: 0, byo_length: 0, byo_periods: 3, minimal_use: 0, sound: false } }) })));
     expect(screen.getByText('第 1 手')).toBeInTheDocument();
-    expect(screen.getByText('不限时')).toBeInTheDocument();
+    expect(screen.getAllByText('不限时')).toHaveLength(2);
     expect(screen.queryByText('00:00')).toBeNull();
   });
 
@@ -86,7 +86,7 @@ describe('本地对局玩家卡上的钟', () => {
     render(panel(state({ game_type: 'free', timer: timer(), B: { main_time_used: 600, periods_used: 3 } }), onTimeExpired));
     expect(screen.queryByText('超时')).toBeNull();
     expect(screen.queryByText('本局已下')).toBeNull();
-    expect(screen.getByText('不限时')).toBeInTheDocument();
+    expect(screen.getAllByText('不限时')).toHaveLength(2);
     expect(onTimeExpired).not.toHaveBeenCalled();
   });
 });

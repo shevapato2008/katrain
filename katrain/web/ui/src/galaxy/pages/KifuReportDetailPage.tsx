@@ -8,6 +8,7 @@ import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
 import { kifuAnalysisParametersValid, kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
+import { formatKifuRank } from '../../utils/rank';
 import { useSound } from '../../hooks/useSound';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -22,7 +23,7 @@ import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import LiveMatchDisplayControls from './live/LiveMatchDisplayControls';
 import ReplayBoard3D from '../components/board/ReplayBoard3D';
 
-const BACK_TO = '/galaxy/kifu';
+const BACK_TO = '/kifu';
 
 export default function KifuReportDetailPage({ replayOnly = false }: { replayOnly?: boolean }) {
   const { albumId } = useParams<{ albumId: string }>();
@@ -110,8 +111,8 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
               result: album.result, rules: album.rules,
               player_black: album.display_player_black ?? album.player_black,
               player_white: album.display_player_white ?? album.player_white,
-              black_rank: album.display_black_rank ?? album.black_rank,
-              white_rank: album.display_white_rank ?? album.white_rank, komi: album.komi,
+              black_rank: formatKifuRank(album.display_black_rank, album.black_rank, t, lang),
+              white_rank: formatKifuRank(album.display_white_rank, album.white_rank, t, lang), komi: album.komi,
             }}
             task={replayOnly ? null : { status: detail?.status ?? 'loading', report_type: 'deep', requested_visits: detail?.requested_visits }}
             currentMove={at} currentAnalysis={analysis}

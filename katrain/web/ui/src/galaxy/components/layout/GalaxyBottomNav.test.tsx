@@ -9,7 +9,7 @@ vi.mock('../../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_
 
 const RouteChange = () => {
   const navigate = useNavigate();
-  return <button onClick={() => navigate('/galaxy/live')}>change route</button>;
+  return <button onClick={() => navigate('/live')}>change route</button>;
 };
 
 describe('GalaxyBottomNav', () => {
@@ -29,7 +29,7 @@ describe('GalaxyBottomNav', () => {
     expect(directDestinations).toHaveLength(5);
 
     fireEvent.click(screen.getByRole('button', { name: 'Home' }));
-    expect(requestNavigation).toHaveBeenCalledWith('/galaxy');
+    expect(requestNavigation).toHaveBeenCalledWith('/');
   });
 
   it('puts every remaining destination in More and closes it on route change', async () => {

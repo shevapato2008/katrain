@@ -14,6 +14,10 @@ sgfout
 sgf_selfplay
 sgf_ogs
 log*
+!katrain/img/logo*
+!katrain/web/ui/public/assets/img/logo*
+!katrain/img/favicon*
+!katrain/web/ui/public/assets/img/favicon*
 tmp.pickle
 my
 logs
@@ -50,6 +54,7 @@ katrain/web/static/assets/
 katrain/web/static/index.html
 # public/ files copied into static/ root by vite at build time (source lives in katrain/web/ui/public/)
 katrain/web/static/pinyin-ime.js
+katrain/web/static/rime-client.js
 katrain/web/static/smartkeyboard.js
 katrain/web/static/smartkeyboard.css
 katrain/web/static-kiosk-2d/
@@ -232,9 +237,11 @@ katrain/web/ui/test-results/
 
 # Local admin-console screenshots and browser smoke artifacts; not runtime inputs
 /output/
+/katrain/web/ui/output/
 
 # Disposable browser CLI snapshots; reviewed design evidence lives under superpowers/tracks/
 /.playwright-cli/
+/katrain/web/ui/.playwright-cli/
 /superpowers/tracks/admin-console/prototype/index.html
 
 # Failed research intermediates: HTTP 403 response saved as a PDF, and an

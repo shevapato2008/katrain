@@ -1,13 +1,13 @@
 """Disabled-by-default incremental Kifu orchestration.
 
-Frozen manifests are resumed before new source discovery. All network and
+Recent source discovery precedes frozen-package recovery. All network and
 publishing work runs outside long database transactions.
 """
 
 from __future__ import annotations
 
 import asyncio
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from datetime import datetime, timedelta, timezone
 import fcntl
 import inspect
@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import time
 from uuid import uuid4
+from urllib.parse import urlsplit
 
 import httpx
 from sqlalchemy import select, text
@@ -25,18 +26,32 @@ from sqlalchemy.exc import NoResultFound
 from katrain.cron import config
 from katrain.cron.db import engine
 from katrain.cron.jobs.base import BaseJob
+from katrain.kifu_ingest import catalog as rank_catalog, sync as rank_transport
 from katrain.kifu_ingest.catalog import (
     lookup_qualified_identities,
     publish_manifest,
     qualified_raw_event_templates,
 )
 from katrain.kifu_ingest.exclusions import historical_excluded_ids, known_source_ids
-from katrain.kifu_ingest.orchestration import _validated, derive_staged_record, prepare_staged_games
+from katrain.kifu_ingest.orchestration import (
+    _validated,
+    derive_staged_record,
+    isolate_unportable_identities,
+    prepare_staged_games,
+)
 from katrain.kifu_ingest.names import NameRejected, NameServiceError, NeedsCredentials, QwenNameService
+from katrain.kifu_ingest.ranks import FORMAT_V2
 from katrain.kifu_ingest.source_19x19 import Source19x19
-from katrain.kifu_ingest.staging import Stage, discover_and_download
+from katrain.kifu_ingest.recent import discover_recent, match_time
+from katrain.kifu_ingest.staging import Stage, staging_writer_lock
 from katrain.kifu_ingest.state import StateStore, batches, items
-from katrain.kifu_ingest.sync import send_verified_manifest, verify_album_api
+from katrain.kifu_ingest.sync import (
+    _receiver_command,
+    check_production_identities,
+    send_verified_manifest,
+    validate_test_verification,
+    verify_album_api,
+)
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
@@ -202,7 +217,11 @@ async def _call(fn, *args):
 
 
 async def process_package_queue(store, manifests, process, *, now=None, timeout_seconds=None):
-    """Continue independent frozen packages; persist each failure at its phase."""
+    """Continue packages and persist each failure at its phase.
+
+    timeout_seconds is only for cancellable async work. Publication callers must
+    await their worker to completion and use cooperative boundary checks.
+    """
     now = now or datetime.now(timezone.utc)
     failures = 0
     for manifest in manifests:
@@ -214,7 +233,7 @@ async def process_package_queue(store, manifests, process, *, now=None, timeout_
                 row = {"status": "unregistered"}
             if row["status"] == "retry_wait":
                 retry_at = row.get("next_retry_at")
-                if retry_at is not None and retry_at > now:
+                if retry_at is not None and retry_at.replace(tzinfo=retry_at.tzinfo or timezone.utc) > now:
                     continue
                 phase = row["resume_phase"]
                 kwargs = {"expected_status": "retry_wait"}
@@ -235,9 +254,11 @@ async def process_package_queue(store, manifests, process, *, now=None, timeout_
                 row = await asyncio.to_thread(_batch_row, store, key)
             except NoResultFound:
                 row = {"status": "unregistered"}
+            failed_phase = row.get("resume_phase") if row["status"] == "retry_wait" else row["status"]
+            error = f"{failed_phase}: {type(exc).__name__}: {exc}"[:512]
             if row["status"] == "retry_wait" and isinstance(exc, ValueError) and "durable " in str(exc):
                 await asyncio.to_thread(
-                    store.advance_batch, key, "quarantined", expected_status="retry_wait", error=str(exc)[:512]
+                    store.advance_batch, key, "quarantined", expected_status="retry_wait", error=error
                 )
             if row["status"] not in ("unregistered", "retry_wait", "quarantined", "prod_synced"):
                 await asyncio.to_thread(
@@ -245,21 +266,27 @@ async def process_package_queue(store, manifests, process, *, now=None, timeout_
                     key,
                     "retry_wait",
                     expected_status=row["status"],
-                    error=(str(exc) or f"package phase exceeded {timeout_seconds}s")[:512],
+                    error=error,
                     next_retry_at=now + timedelta(minutes=5),
                 )
             failures += 1
-            logger.exception("kifu package %s failed at %s", key, row["status"])
+            logger.exception("kifu package %s failed at %s", key, failed_phase)
     return failures
 
 
-def group_staged_items(items, *, review_enabled):
+def group_staged_items(items, *, review_enabled, review_free_ids=None):
     if not review_enabled:
         return [[item] for item in items]
+    if review_free_ids is not None:
+        # Fully reusable games can publish even while another game's translation
+        # is waiting for tomorrow's budget. No reviewed scope is cropped here.
+        ready = [item for item in items if item["external_id"] in review_free_ids]
+        paid = [item for item in items if item["external_id"] not in review_free_ids]
+        return [group for subset in (ready, paid) for group in group_staged_items(subset, review_enabled=True)]
     return [items[start : start + 100] for start in range(0, len(items), 100)]
 
 
-def select_review_items(records, resolved, *, reusable_events, max_new_names, isolated=None):
+def select_review_items(records, resolved, *, reusable_events, max_new_names, isolated=None, review_free_ids=None):
     """Choose a finite batch before any paid request; leave overflow staged."""
     chosen, deferred, names = [], [], set()
     isolated = isolated if isolated is not None else []
@@ -286,7 +313,24 @@ def select_review_items(records, resolved, *, reusable_events, max_new_names, is
         else:
             chosen.append(item)
             names.update(required)
+            if not required and review_free_ids is not None:
+                review_free_ids.add(item["external_id"])
     return chosen, deferred
+
+
+async def select_portable_review_items(
+    records, resolved, *, check_identities, reusable_events, max_new_names, isolated=None, review_free_ids=None
+):
+    isolated = isolated if isolated is not None else []
+    excluded = await isolate_unportable_identities([game for _, game in records], resolved, check_identities, isolated)
+    return select_review_items(
+        [(item, game) for item, game in records if game["source_item_id"] not in excluded],
+        resolved,
+        reusable_events=reusable_events,
+        max_new_names=max_new_names,
+        isolated=isolated,
+        review_free_ids=review_free_ids,
+    )
 
 
 def register_frozen_batch(store, key, digest):
@@ -362,6 +406,20 @@ def record_staged_item(store, item):
         staging_path=item.get("raw_sgf_path"),
         source_metadata=item.get("metadata"),
     )
+    observation = item.get("recent", {})
+    if observation.get("terminal"):
+        # Source observations never downgrade a native PROD receipt/success.
+        if row["status"] not in ("quarantined", "prod_published", "prod_synced") and not row.get("prod_receipt"):
+            reason = observation.get("classification", "terminal_source_error")
+            evidence = item.get("last_error") or observation.get("change_evidence") or ""
+            row = store.advance_item(
+                "19x19",
+                item["external_id"],
+                "quarantined",
+                expected_status=row["status"],
+                error=f"{reason}: {evidence}"[:512],
+            )
+        return row
     if item["status"] == "downloaded" and row["status"] == "discovered":
         row = store.advance_item(
             "19x19",
@@ -405,12 +463,33 @@ def quarantine_staged_item(stage, store, source_id, reason):
     )
 
 
-async def resume_batch(store, manifest, digest, *, test_verify, sync, prod_verify, test_publish=None):
-    """Recover at durable boundaries; an API timeout never repeats publication."""
+async def resume_batch(
+    store, manifest, digest, *, test_verify, sync, prod_verify, test_publish=None, deadline=None, allow_prod=True
+):
+    """Repair search at durable boundaries by replaying the original native operation."""
+    from katrain.web.kifu.search_sync import sync_mode
+
     key = manifest["publication_key"]
     row = _batch_row(store, key)
     status = row["status"]
-    if status == "names_ready":
+    repair_search = sync_mode() == "enabled"
+    if (
+        repair_search
+        and status in {"test_published", "test_verified"}
+        and (deadline is None or time.monotonic() < deadline)
+    ):
+        if test_publish is None:
+            raise ValueError("original TEST publisher is required for search repair")
+        replay = await _call(test_publish, manifest, digest)
+        if replay != row["test_receipt"]:
+            raise ValueError("TEST repair receipt differs from original publication")
+    if repair_search and status == "prod_published" and (deadline is None or time.monotonic() < deadline):
+        # Reuse the already authorized restricted receiver and original TEST
+        # verification for this exact manifest. TEST never reaches PROD ES/DB.
+        replay = await _call(sync, manifest, digest, row["test_verification"])
+        if replay["receipt"] != row["prod_receipt"]:
+            raise ValueError("PROD repair receipt differs from original publication")
+    if status == "names_ready" and (deadline is None or time.monotonic() < deadline):
         if test_publish is None:
             raise ValueError("test publisher is required")
         receipt = await _call(test_publish, manifest, digest)
@@ -418,21 +497,26 @@ async def resume_batch(store, manifest, digest, *, test_verify, sync, prod_verif
             store.advance_batch, key, "test_published", expected_status="names_ready", receipt=receipt
         )
         status = row["status"]
-    if status == "test_published":
+    if status == "test_published" and (deadline is None or time.monotonic() < deadline):
         result = await _call(test_verify, manifest, row["test_receipt"])
         result = {**result, "manifest_sha256": digest}
+        validate_test_verification(manifest, digest, result)
+        if manifest.get("format") == FORMAT_V2 and result.get("receipt_sha256") != canonical_sha256(
+            row["test_receipt"]
+        ):
+            raise ValueError("TEST verification receipt differs from original publication")
         row = await asyncio.to_thread(
             store.advance_batch, key, "test_verified", expected_status="test_published", receipt=result
         )
         status = row["status"]
-    if status == "test_verified":
+    if status == "test_verified" and allow_prod and (deadline is None or time.monotonic() < deadline):
         response = await _call(sync, manifest, digest, row["test_verification"])
         receipt = response["receipt"]
         row = await asyncio.to_thread(
             store.advance_batch, key, "prod_published", expected_status="test_verified", receipt=receipt
         )
         status = row["status"]
-    if status == "prod_published":
+    if status == "prod_published" and (deadline is None or time.monotonic() < deadline):
         result = await _call(prod_verify, manifest, row["prod_receipt"])
         result = {**result, "manifest_sha256": digest}
         row = await asyncio.to_thread(
@@ -441,8 +525,113 @@ async def resume_batch(store, manifest, digest, *, test_verify, sync, prod_verif
     return row
 
 
+def _receipt_source_ids(receipt):
+    if not isinstance(receipt, dict) or not isinstance(receipt.get("games"), list):
+        return set()
+    return {
+        game["source_item_id"]
+        for game in receipt["games"]
+        if isinstance(game, dict)
+        and game.get("source_key") == "19x19"
+        and isinstance(game.get("source_item_id"), str)
+        and game["source_item_id"].isdigit()
+    }
+
+
+def _published_source_ids(store, candidate_ids):
+    """Resolve publication authority only for this round's finite candidates."""
+    found = known_source_ids(store.engine, candidate_ids=candidate_ids)
+    with store.engine.connect() as connection:
+        rows = connection.execute(
+            select(items.c.test_receipt, items.c.prod_receipt).where(
+                items.c.source_key == "19x19", items.c.external_id.in_(candidate_ids)
+            )
+        )
+        for row in rows:
+            found.update(_receipt_source_ids(row.test_receipt) & candidate_ids)
+            found.update(_receipt_source_ids(row.prod_receipt) & candidate_ids)
+    return found
+
+
+def _frozen_scope(manifest, row, stage, discovery):
+    """Authorize un-PROD writes only against this round's exact source version."""
+    if row["status"] in ("prod_synced", "quarantined"):
+        return "complete_or_quarantined"
+    if row.get("prod_receipt"):
+        return "prod_verify"
+    checked = set(discovery["checked_ids"])
+    lower = datetime.fromisoformat(discovery["head"]["window_start"])
+    upper = datetime.fromisoformat(discovery["head"]["window_end"])
+    all_recent = True
+    for game in manifest["games"]:
+        item = stage.manifest["items"].get(game["source_item_id"], {})
+        recent = item.get("recent", {})
+        if recent.get("terminal"):
+            return "source_quarantined"
+        played = match_time(recent.get("metadata", item.get("metadata", {})))
+        all_recent &= played is not None and lower <= played <= upper
+    if not all_recent:
+        return "test_verify" if row.get("test_receipt") else "legacy_deferred"
+    for game in manifest["games"]:
+        item = stage.manifest["items"][game["source_item_id"]]
+        if game["source_item_id"] not in checked:
+            return "source_unchecked"
+        observed = item.get("recent", {}).get("raw_sha256")
+        original = item.get("raw_sha256")
+        if not original or not observed or game["raw_sha256"] != observed or game["raw_sha256"] != original:
+            return "source_version_mismatch"
+    return "recent"
+
+
 def _receiver_timeout(deadline):
     return max(1, deadline - time.monotonic())
+
+
+def _publication_preflight():
+    """Configured hourly admission must have both native and search writers."""
+    if not config.KIFU_INGEST_ENABLED:
+        return
+    from katrain.web.kifu.search_sync import sync_mode
+    from katrain.web.kifu.search_es import SearchSettings
+
+    try:
+        if sync_mode() != "enabled":
+            raise ValueError()
+    except ValueError:
+        raise ValueError("kifu_ingest_preflight: KIFU_SEARCH_SYNC_MODE, KIFU_SEARCH_BACKEND") from None
+    try:
+        SearchSettings.from_env(role="writer").client_options()
+    except (ValueError, OSError):
+        raise ValueError(
+            "kifu_ingest_preflight: KIFU_ES_URL, KIFU_ES_WRITER_*, KIFU_ES_CA_CERT, KIFU_ES_INDEX_ALIAS"
+        ) from None
+    try:
+        _receiver_command(config.KIFU_INGEST_SSH_HOST, config.KIFU_INGEST_SSH_KEY, config.KIFU_INGEST_KNOWN_HOSTS)
+    except (ValueError, TypeError):
+        raise ValueError(
+            "kifu_ingest_preflight: CRON_KIFU_INGEST_SSH_HOST, CRON_KIFU_INGEST_SSH_KEY, CRON_KIFU_INGEST_KNOWN_HOSTS"
+        ) from None
+    for field in ("KIFU_INGEST_SSH_KEY", "KIFU_INGEST_KNOWN_HOSTS"):
+        try:
+            if not Path(getattr(config, field)).is_file():
+                raise ValueError()
+        except (OSError, ValueError):
+            raise ValueError("kifu_ingest_preflight: CRON_" + field) from None
+    for field in ("KIFU_INGEST_TEST_API_URL", "KIFU_INGEST_PROD_API_URL"):
+        try:
+            parsed = urlsplit(getattr(config, field))
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username
+                or parsed.password
+                or parsed.query
+                or parsed.fragment
+            ):
+                raise ValueError()
+            parsed.port
+        except (ValueError, TypeError):
+            raise ValueError("kifu_ingest_preflight: CRON_" + field) from None
 
 
 class KifuIngestJob(BaseJob):
@@ -453,15 +642,23 @@ class KifuIngestJob(BaseJob):
         await asyncio.to_thread(self._run_lock)
 
     def _run_lock(self):
+        _publication_preflight()
         # An async loop and its DB/network calls execute in this worker thread;
         # the main cron event loop remains free for analysis and other jobs.
         with _session_lock(engine) as acquired:
             if not acquired:
                 logger.info("kifu ingest skipped: another run holds the session lock")
                 return
-            asyncio.run(self._run_locked())
+            with ExitStack() as stack:
+                try:
+                    stack.enter_context(staging_writer_lock(Path(config.KIFU_INGEST_STAGING_DIR)))
+                except BlockingIOError:
+                    logger.info("kifu ingest skipped: staging writer lock is held")
+                    return
+                asyncio.run(self._run_locked())
 
     async def _run_locked(self):
+        _publication_preflight()
         stage_root = Path(config.KIFU_INGEST_STAGING_DIR)
         stage = Stage(stage_root)
         store = StateStore(engine)
@@ -471,14 +668,10 @@ class KifuIngestJob(BaseJob):
             test_base = config.KIFU_INGEST_TEST_API_URL
             prod_base = config.KIFU_INGEST_PROD_API_URL
 
-            async def test_verify(manifest, receipt):
-                return await verify_album_api(client, test_base, manifest, receipt)
-
-            async def prod_verify(manifest, receipt):
-                return await verify_album_api(client, prod_base, manifest, receipt)
+            sgf_cache = {}
 
             def publish(manifest, digest):
-                return publish_manifest(engine, manifest, expected_manifest_sha256=digest)
+                return publish_manifest(engine, manifest, expected_manifest_sha256=digest, sgf_cache=sgf_cache)
 
             def sync(manifest, digest, verification):
                 return send_verified_manifest(
@@ -488,7 +681,34 @@ class KifuIngestJob(BaseJob):
                     host=config.KIFU_INGEST_SSH_HOST,
                     key_path=config.KIFU_INGEST_SSH_KEY,
                     known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
+                    # Killing SSH cannot cancel a remote Docker writer. Keep
+                    # both local writer locks until its native receipt returns;
+                    # TOTAL_SECONDS remains a cooperative admission budget.
+                    timeout=None,
+                )
+
+            def check_identities(request):
+                return check_production_identities(
+                    request,
+                    host=config.KIFU_INGEST_SSH_HOST,
+                    key_path=config.KIFU_INGEST_SSH_KEY,
+                    known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
                     timeout=_receiver_timeout(deadline),
+                )
+
+            def test_rank_context(manifest_sha256, receipt_sha256, *, timeout):
+                return rank_catalog.resolve_rank_publication_context(
+                    engine, manifest_sha256, receipt_sha256, deadline=time.monotonic() + timeout
+                )
+
+            def prod_rank_context(manifest_sha256, receipt_sha256, *, timeout):
+                return rank_transport.read_rank_publication_context(
+                    host=config.KIFU_INGEST_SSH_HOST,
+                    key_path=config.KIFU_INGEST_SSH_KEY,
+                    known_hosts=config.KIFU_INGEST_KNOWN_HOSTS,
+                    manifest_sha256=manifest_sha256,
+                    receipt_sha256=receipt_sha256,
+                    timeout=timeout,
                 )
 
             package_dir = stage_root / "packages"
@@ -497,7 +717,29 @@ class KifuIngestJob(BaseJob):
             package_dir.mkdir(exist_ok=True)
             packaged_ids = set()
 
-            async def process_manifest(manifest):
+            async def process_manifest(manifest, *, verify_deadline=deadline, allow_prod=True):
+                async def test_verify(package, receipt):
+                    return await verify_album_api(
+                        client,
+                        test_base,
+                        package,
+                        receipt,
+                        deadline=verify_deadline,
+                        checkpoint_dir=stage_root / "api-verification",
+                        rank_context_loader=test_rank_context,
+                    )
+
+                async def prod_verify(package, receipt):
+                    return await verify_album_api(
+                        client,
+                        prod_base,
+                        package,
+                        receipt,
+                        deadline=verify_deadline,
+                        checkpoint_dir=stage_root / "api-verification",
+                        rank_context_loader=prod_rank_context,
+                    )
+
                 digest = _validated(manifest)
                 row = await asyncio.to_thread(register_frozen_batch, store, manifest["publication_key"], digest)
                 for game in manifest["games"]:
@@ -515,48 +757,68 @@ class KifuIngestJob(BaseJob):
                         sync=sync,
                         prod_verify=prod_verify,
                         test_publish=publish,
+                        deadline=verify_deadline,
+                        allow_prod=allow_prod,
                     )
                     await asyncio.to_thread(reconcile_items, store, manifest, row)
 
-            failed_packages = 0
+            # Reading local frozen packages is allowed before the head scan;
+            # their network work must wait until this round's source observation.
+            failed_packages, frozen = 0, []
             for path in sorted(package_dir.glob("*.json")):
-                if time.monotonic() + 350 >= deadline:
-                    if failed_packages:
-                        raise RuntimeError(f"kifu round failed: {failed_packages} package(s)")
-                    return
                 try:
+                    if path.is_symlink():
+                        raise ValueError("frozen package symlink is unsafe")
                     manifest = json.loads(path.read_text(encoding="utf-8"))
+                    _validated(manifest)
                     packaged_ids.update(game["source_item_id"] for game in manifest["games"])
+                    frozen.append(manifest)
                 except (OSError, ValueError, KeyError, TypeError) as exc:
                     failed_packages += 1
-                    logger.error("kifu package %s could not be read: %s", path.name, exc)
-                    continue
-                failed_packages += await process_package_queue(
-                    store, [manifest], process_manifest, timeout_seconds=max(1, deadline - time.monotonic())
-                )
+                    logger.error("kifu package %s could not be read: %s: %s", path.name, type(exc).__name__, exc)
 
-            if time.monotonic() >= deadline:
-                if failed_packages:
-                    raise RuntimeError(f"kifu round failed: {failed_packages} package(s)")
-                return
-            with engine.connect() as connection:
-                known = set(connection.scalars(select(items.c.external_id)))
-            known.update(await asyncio.to_thread(known_source_ids, engine))
-            known.update(historical_excluded_ids())
-            source = Source19x19(client, deadline=min(deadline, time.monotonic() + config.KIFU_INGEST_SOURCE_SECONDS))
-            discovery = await discover_and_download(
+            published = set()
+
+            async def published_lookup(candidate_ids):
+                found = await asyncio.to_thread(_published_source_ids, store, candidate_ids)
+                published.update(found)
+                return found
+
+            source_deadline = min(deadline, time.monotonic() + config.KIFU_INGEST_SOURCE_SECONDS)
+            source = Source19x19(client, deadline=source_deadline)
+            discovery = await discover_recent(
                 source,
                 stage,
-                known,
+                published_lookup=published_lookup,
+                excluded_ids=historical_excluded_ids(),
                 max_downloads=config.KIFU_INGEST_MAX_GAMES,
-                deadline=min(deadline, time.monotonic() + config.KIFU_INGEST_SOURCE_SECONDS),
+                max_head_pages=config.KIFU_INGEST_HEAD_PAGES,
+                max_rechecks=config.KIFU_INGEST_MAX_RECHECKS,
+                max_requests=config.KIFU_INGEST_MAX_REQUESTS,
+                window_days=config.KIFU_INGEST_WINDOW_DAYS,
+                deadline=source_deadline,
+            )
+            touched_ids = (
+                set(discovery["candidate_ids"]) | set(discovery["checked_ids"]) | set(discovery["quarantined_ids"])
             )
             for item in discovery["items"]:
+                if item["external_id"] not in touched_ids:
+                    continue
+                # Published observation baselines need no new ingestion journal.
+                if item["external_id"] in published:
+                    try:
+                        await asyncio.to_thread(_item_row, store, "19x19", item["external_id"])
+                    except NoResultFound:
+                        continue
                 await asyncio.to_thread(record_staged_item, store, item)
+            eligible_ids = set(discovery["eligible_ids"])
             ledger = DailyTokenBudget(stage_root, config.KIFU_INGEST_MAX_TOKENS, stage._atomic)
 
             async def audit_call(entry):
                 await asyncio.to_thread(ledger.record_call, entry)
+
+            async def rejection_audit(record):
+                return await asyncio.to_thread(stage.save_name_rejection, record)
 
             async def reserve_call(upper_bound):
                 return await asyncio.to_thread(ledger.reserve, upper_bound)
@@ -576,6 +838,7 @@ class KifuIngestJob(BaseJob):
                 max_items=max(1, config.KIFU_INGEST_MAX_NEW_NAMES),
                 max_total_tokens=config.KIFU_INGEST_MAX_TOKENS if config.KIFU_INGEST_LLM_ENABLED else 0,
                 audit_call=audit_call,
+                rejection_audit=rejection_audit,
                 reserve_call=reserve_call,
                 settle_call=settle_call,
                 initial_tokens_used=await asyncio.to_thread(ledger.spent),
@@ -587,6 +850,7 @@ class KifuIngestJob(BaseJob):
                 if (
                     time.monotonic() + 350 >= deadline
                     or len(records) >= config.KIFU_INGEST_MAX_GAMES
+                    or item["external_id"] not in eligible_ids
                     or item["status"] != "downloaded"
                     or item["external_id"] in packaged_ids
                 ):
@@ -601,6 +865,7 @@ class KifuIngestJob(BaseJob):
                     continue
                 records.append((item, game))
 
+            review_free_ids = set()
             if names.key and records:
                 players = {game["metadata"][f"player_{slot}"] for _, game in records for slot in ("black", "white")}
                 events = {game["metadata"]["event"] for _, game in records}
@@ -609,12 +874,14 @@ class KifuIngestJob(BaseJob):
                 )
                 event_templates = await asyncio.to_thread(qualified_raw_event_templates, engine, raw_values=events)
                 ambiguous_items = []
-                candidates, deferred = select_review_items(
+                candidates, deferred = await select_portable_review_items(
                     records,
                     resolved,
+                    check_identities=check_identities,
                     reusable_events=set(event_templates["templates"]),
                     max_new_names=config.KIFU_INGEST_MAX_NEW_NAMES,
                     isolated=ambiguous_items,
+                    review_free_ids=review_free_ids,
                 )
                 for source_id, reason in ambiguous_items:
                     await asyncio.to_thread(quarantine_staged_item, stage, store, source_id, reason)
@@ -623,13 +890,23 @@ class KifuIngestJob(BaseJob):
             else:
                 candidates = [item for item, _ in records]
 
-            for group in group_staged_items(candidates, review_enabled=bool(names.key)):
+            for group in group_staged_items(
+                candidates, review_enabled=bool(names.key), review_free_ids=review_free_ids
+            ):
                 if time.monotonic() + 350 >= deadline:
                     break
                 isolated = []
                 try:
                     manifest = await asyncio.wait_for(
-                        prepare_staged_games(group, engine=engine, client=client, names=names, isolated=isolated),
+                        prepare_staged_games(
+                            group,
+                            engine=engine,
+                            client=client,
+                            names=names,
+                            isolated=isolated,
+                            check_identities=check_identities,
+                            decision_store=stage,
+                        ),
                         timeout=max(1, deadline - time.monotonic() - 350),
                     )
                 except NeedsCredentials:
@@ -660,29 +937,90 @@ class KifuIngestJob(BaseJob):
                     stage._atomic(package, payload)
                 packaged_ids.update(game["source_item_id"] for game in manifest["games"])
                 prepared += len(manifest["games"])
-                failed_packages += await process_package_queue(
-                    store, [manifest], process_manifest, timeout_seconds=max(1, deadline - time.monotonic())
-                )
+                failed_packages += await process_package_queue(store, [manifest], process_manifest)
+            # A frozen recent TEST package still completes the same pipeline,
+            # even though catalog authority correctly excluded it from prepare.
+            tail = []
+            legacy_deferred = 0
+            for manifest in frozen:
+                key = manifest["publication_key"]
+                try:
+                    row = await asyncio.to_thread(_batch_row, store, key)
+                except NoResultFound:
+                    row = {"status": "unregistered"}
+                scope = _frozen_scope(manifest, row, stage, discovery)
+                if scope in ("source_quarantined", "source_version_mismatch"):
+                    if row["status"] not in ("quarantined", "unregistered"):
+                        await asyncio.to_thread(
+                            store.advance_batch,
+                            key,
+                            "quarantined",
+                            expected_status=row["status"],
+                            error=scope,
+                        )
+                    logger.error("kifu frozen package %s held: %s", key, scope)
+                elif scope == "recent":
+                    if time.monotonic() < deadline:
+                        failed_packages += await process_package_queue(store, [manifest], process_manifest)
+                elif scope in ("prod_verify", "test_verify"):
+                    tail.append(manifest)
+                elif scope != "complete_or_quarantined":
+                    legacy_deferred += scope == "legacy_deferred"
+                    logger.info("kifu frozen package %s deferred: %s; manual resume for legacy work", key, scope)
+
+            # One allowance shared by every historical receipt, with durable
+            # per-album checkpoints. Never cancel synchronous publishers.
+            tail_deadline = min(deadline, time.monotonic() + config.KIFU_INGEST_RECOVERY_SECONDS)
+
+            async def verify_receipt_only(manifest):
+                await process_manifest(manifest, verify_deadline=tail_deadline, allow_prod=False)
+
+            for manifest in tail:
+                if time.monotonic() >= tail_deadline:
+                    break
+                failed_packages += await process_package_queue(store, [manifest], verify_receipt_only)
+
             unprepared = [
                 item["external_id"]
                 for item in discovery["items"]
-                if item["status"] == "downloaded" and item["external_id"] not in packaged_ids
+                if item["external_id"] in discovery["candidate_ids"]
+                and item["external_id"] not in published | packaged_ids
+                and not item.get("recent", {}).get("terminal")
+                and not (item["status"] == "failed" and item.get("next_retry_at") is None)
             ]
-            if unprepared:
-                logger.error(
-                    "kifu pending: %d downloaded SGFs lack a reviewed package; needs_credentials=%d",
-                    len(unprepared),
-                    needs_credentials,
-                )
+            legacy_pending = sum(
+                item["external_id"] not in touched_ids | packaged_ids
+                and not item.get("recent", {}).get("terminal")
+                and not (item["status"] == "failed" and item.get("next_retry_at") is None)
+                and not (item.get("recent", {}).get("raw_sha256") and not item.get("raw_sgf_path"))
+                for item in discovery["items"]
+            )
+            coverage = discovery["coverage"]
+            terminal_count = sum(
+                bool(item.get("recent", {}).get("terminal"))
+                or (item["status"] == "failed" and item.get("next_retry_at") is None)
+                for item in stage.items()
+            )
             logger.info(
-                "kifu discovery %s: downloaded=%s, pending=%s, deferred_until=%s",
-                discovery["status"],
-                discovery["downloaded"],
-                sum(item["status"] != "downloaded" for item in discovery["items"]),
-                discovery["deferred_until"],
+                "kifu recent head: completed_at=%s window=%s..%s coverage=%s; "
+                "actionable_window_pending=%d needs_credentials=%d terminal=%d legacy_deferred=%d legacy_pending=%d",
+                discovery["head"].get("completed_at"),
+                discovery["head"]["window_start"],
+                discovery["head"]["window_end"],
+                json.dumps(coverage, sort_keys=True),
+                len(unprepared),
+                needs_credentials,
+                terminal_count,
+                legacy_deferred,
+                legacy_pending,
             )
             if discovery["status"] == "partial":
-                logger.error("kifu discovery partial; deferred_until=%s", discovery["deferred_until"])
+                logger.warning(
+                    "kifu limited source coverage; boundary_still_in_window=%s urgent=%s deferred_until=%s",
+                    coverage["boundary_in_window"],
+                    coverage["head_page_cap"] and coverage["boundary_in_window"],
+                    discovery["deferred_until"],
+                )
             if discovery["errors"] or failed_packages:
                 raise RuntimeError(
                     f"kifu round failed: {len(discovery['errors'])} source request(s), "

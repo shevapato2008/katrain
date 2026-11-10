@@ -1,5 +1,11 @@
 import { useId } from 'react';
-import { BOARD_ASSETS } from '../../components/board/boardUtils';
+import {
+  getBoardStylePalette,
+  getBoardTextureDataUrl,
+  getBoardTextureUrl,
+  stoneSpriteUrl,
+  useBoardAppearance,
+} from '../../components/board/stoneAppearance';
 import { boardExtent, coordToXY, lineAt, starsFor, windowViewBox, type GoWindow } from './goBoard';
 
 const U = 100;                 // SVG 内部单位
@@ -81,6 +87,8 @@ export function GoBoardSvg({
   window?: GoWindow;
 }) {
   const uid = useId().replace(/:/g, '');
+  const { boardStyle, stoneStyle } = useBoardAppearance();
+  const palette = getBoardStylePalette(boardStyle);
   const W = boardExtent(size, U);
   const P = (c: string) => {
     const { x, y } = coordToXY(c, size);
@@ -91,20 +99,27 @@ export function GoBoardSvg({
   for (let i = 0; i < size; i += 1) {
     const w = i === 0 || i === size - 1 ? EDGE_W : LINE_W;
     lines.push(
-      <line key={`h${i}`} className="ln" x1={lineAt(0, U)} y1={lineAt(i, U)} x2={lineAt(size - 1, U)} y2={lineAt(i, U)} strokeWidth={w} />,
-      <line key={`v${i}`} className="ln" x1={lineAt(i, U)} y1={lineAt(0, U)} x2={lineAt(i, U)} y2={lineAt(size - 1, U)} strokeWidth={w} />,
+      <line key={`h${i}`} className="ln" x1={lineAt(0, U)} y1={lineAt(i, U)} x2={lineAt(size - 1, U)} y2={lineAt(i, U)} stroke={palette.gridColor} strokeWidth={w} />,
+      <line key={`v${i}`} className="ln" x1={lineAt(i, U)} y1={lineAt(0, U)} x2={lineAt(i, U)} y2={lineAt(size - 1, U)} stroke={palette.gridColor} strokeWidth={w} />,
     );
   }
 
   const stone = (c: string, isBlack: boolean) => {
     const p = P(c);
+    const { x: col, y: row } = coordToXY(c, size);
     return (
-      // `data-stone` / `data-at`:**给测试和几何闸用的把手**。子是画出来的圆,DOM 上问不出
+      // `data-stone` / `data-at`:**给测试和几何闸用的把手**。子是绘制的图片,DOM 上问不出
       // 「Q16 上有没有黑子」—— 没有把手就只能去数 circle,而数出来的数字换个装饰就变。
       <g key={`${isBlack ? 'b' : 'w'}${c}`} data-stone={isBlack ? 'b' : 'w'} data-at={c}>
-        {/* 落影:往下偏 3%,不是模糊 —— 7″ 屏上高斯模糊看不出来,只吃 GPU */}
-        <circle cx={p.x} cy={p.y + U * 0.03} r={STONE_R} fill="rgba(40,20,8,.34)" />
-        <circle cx={p.x} cy={p.y} r={STONE_R} fill={`url(#s${isBlack ? 'b' : 'w'}-${uid})`} />
+        {!isBlack && stoneStyle === 'jade-agate' && (
+          <circle
+            cx={p.x + STONE_R * 0.12}
+            cy={p.y + STONE_R * 0.12}
+            r={STONE_R * 0.86}
+            fill="rgba(255, 243, 210, 0.25)"
+          />
+        )}
+        <image href={stoneSpriteUrl(isBlack ? 'B' : 'W', size, col, row, stoneStyle)} x={p.x - STONE_R} y={p.y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
       </g>
     );
   };
@@ -129,8 +144,8 @@ export function GoBoardSvg({
     >
       <defs>
         <linearGradient id={`gw-${uid}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--gb-light)" />
-          <stop offset="1" stopColor="var(--gb-dark)" />
+          <stop offset="0" stopColor={palette.woodFill} />
+          <stop offset="1" stopColor={palette.woodSecondary} />
         </linearGradient>
         {/* 落子区的面 —— 见文件头 ③。`gr-` 这个名字不改:底下那个空点垫圆(`inkPad`)
             也取它,垫圆和盘面**必须是同一块面**,否则字底下会露出一枚色块。
@@ -138,19 +153,14 @@ export function GoBoardSvg({
             取到的是那一角对应的那块木纹,而不是把整张图塞进一角。 */}
         <pattern id={`gr-${uid}`} patternUnits="userSpaceOnUse" x="0" y="0" width={W} height={W}>
           <rect width={W} height={W} fill={`url(#gw-${uid})`} />
-          <image href={BOARD_ASSETS.board} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
+          <image href={getBoardTextureDataUrl(boardStyle)} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
+          <image href={getBoardTextureUrl(boardStyle)} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
         </pattern>
-        <radialGradient id={`sb-${uid}`} cx="34%" cy="30%">
-          <stop offset="0" stopColor="#585862" /><stop offset="1" stopColor="#0A0A0C" />
-        </radialGradient>
-        <radialGradient id={`sw-${uid}`} cx="34%" cy="30%">
-          <stop offset="0" stopColor="#FFFFFF" /><stop offset="1" stopColor="#CFC9BB" />
-        </radialGradient>
       </defs>
       <rect width={W} height={W} fill={`url(#gr-${uid})`} />
       {lines}
       {starsFor(size).map(([x, y]) => (
-        <circle key={`s${x}-${y}`} className="star" cx={lineAt(x, U)} cy={lineAt(y, U)} r={STAR_R} />
+        <circle key={`s${x}-${y}`} className="star" cx={lineAt(x, U)} cy={lineAt(y, U)} r={STAR_R} fill={palette.starColor} />
       ))}
       {ghost.map((c) => {
         const p = P(c);

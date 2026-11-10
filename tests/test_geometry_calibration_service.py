@@ -9,12 +9,20 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from katrain.vision.led_geometry_calibrator import CalibrationResult, check_frame_exposure
+from katrain.vision.calibration_stability import CalibrationStabilityGate, find_visible_grid
+from katrain.vision.led_geometry_calibrator import (
+    FIVE_POINT_ANCHORS,
+    CalibrationInterrupted,
+    CalibrationResult,
+    FivePointLedGeometryCalibrator,
+    check_frame_exposure,
+)
 from katrain.web.core import geometry_calibration_service as calibration_module
 from katrain.web.core.geometry_calibration_service import (
     CAMERA_AUTO_EXPOSURE_OFF,
     CAMERA_AUTO_EXPOSURE_ON,
     CalibrationBusy,
+    CalibrationCancelled,
     GeometryCalibrationService,
 )
 from tests.test_geometry_lock import _synth
@@ -39,6 +47,71 @@ class FakeLed:
 class FakeCapture:
     def is_connected(self):
         return True
+
+
+def test_usb_gate_covers_calibration_worker_and_resume(tmp_path):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    entered, finish = threading.Event(), threading.Event()
+
+    def resume():
+        assert gate.try_recovery() is None
+
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "g.npz", recovery_gate=gate, on_resume=resume
+    )
+
+    def run():
+        entered.set()
+        assert finish.wait(2)
+        resume()
+
+    service._run = run
+    try:
+        service.start(trigger="manual", empty_confirmed=True)
+        assert entered.wait(1)
+        assert gate.try_recovery() is None
+        finish.set()
+        assert service.wait(2)
+        recovery = gate.try_recovery()
+        assert recovery is not None
+        recovery.close()
+    finally:
+        finish.set()
+        service.stop()
+
+
+@pytest.mark.parametrize("operation", ["start", "preflight", "confirm_existing", "relocate"])
+def test_usb_recovery_atomically_refuses_geometry_operations(tmp_path, operation):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "g.npz", recovery_gate=gate
+    )
+    with gate.try_recovery():
+        with pytest.raises(CalibrationBusy):
+            getattr(service, operation)(
+                **({"trigger": "manual", "empty_confirmed": True} if operation == "start" else {})
+            )
+    service.stop()
+
+
+def test_thread_start_failure_releases_hardware_use(tmp_path, monkeypatch):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+
+    gate = HardwareRecoveryGate()
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "g.npz", recovery_gate=gate
+    )
+    monkeypatch.setattr(threading.Thread, "start", lambda self: (_ for _ in ()).throw(RuntimeError("start failed")))
+    with pytest.raises(RuntimeError, match="start failed"):
+        service.start(trigger="manual", empty_confirmed=True)
+    recovery = gate.try_recovery()
+    assert recovery is not None
+    recovery.close()
+    service.stop()
 
 
 @pytest.mark.parametrize("board_connected", [True, False, None])
@@ -389,50 +462,548 @@ def test_success_atomically_promotes_new_lock(tmp_path):
     assert (tmp_path / "geometry.npz").exists()
 
 
-def test_still_hand_blocks_first_led_and_cancel_wakes_wait(tmp_path):
+class _LogicalBoardCapture(FakeCapture):
+    """Camera frames advance beyond the requested cutoff without wall-clock sleeps."""
+
+    def __init__(self, frame):
+        self.frame = frame
+        self.seq = 0
+        self.ts = 0.0
+        self.samples = []
+        self.status = lambda: {}
+
+    def grab_fresh(self, *, after_ts=None, settle_ms=0.0, **_kwargs):
+        cutoff = time.monotonic() if after_ts is None else after_ts
+        self.seq += 1
+        self.ts = max(self.ts, cutoff + settle_ms / 1000.0) + 0.001
+        self.samples.append((self.status(), cutoff, settle_ms, self.seq, self.ts))
+        return self.frame.copy(), self.seq, self.ts
+
+
+class _LiveCallbackCalibrator:
+    def __init__(self, *, exercise, anchor_observer, **_kwargs):
+        self.exercise = exercise
+        self.anchor_observer = anchor_observer
+
+    def configure_live(self, *, before_capture, frame_guard, anchor_roi, on_lighting):
+        self.before_capture = before_capture
+        self.frame_guard = frame_guard
+        self.anchor_roi = anchor_roi
+        self.on_lighting = on_lighting
+
+    def calibrate(self):
+        self.exercise(self)
+        return CalibrationResult(ok=False, reason="fixture_finished")
+
+
+def _run_five_point_live_chain(tmp_path, scenario="stable", *, prior_lock=None):
+    """Run the real service/gate/calibrator; replace only hardware and final publication."""
+    folder = Path(__file__).parent / "data"
+    board = cv2.imread(str(folder / (
+        "rk3562_grid_reflection_20261029.png" if scenario.startswith("reflection") else
+        "rk3562_shadow_before_20261013.jpg" if scenario == "shadow" else "rk3562_empty_board_20261013.jpg"
+    )))
+    # Hardware LED positions are independent of the grid detector being tested.
+    physical_quad = (np.float32([[94, 34], [553, 33], [470, 325], [179, 325]])
+                     if scenario.startswith("reflection") else find_visible_grid(board))
+    physical_h = cv2.getPerspectiveTransform(
+        np.float32([[0, 0], [18, 0], [18, 18], [0, 18]]), physical_quad[[3, 0, 1, 2]],
+    )
+    hand = board.copy()
+    cv2.ellipse(hand, (170, 305), (55, 42), 20, 0, 360, (160, 175, 190), -1)
+    if scenario in ("hand", "baseline"):
+        # Exercise measurable movement, not the removed missing-grid prerequisite.
+        # A local occlusion changes pixels without translating the board itself.
+        hand = board.copy()
+        hand[130:250, 250:370] = np.random.default_rng(1).integers(70, 200, (120, 120, 3), dtype=np.uint8)
+    shadow = cv2.imread(str(folder / "rk3562_shadow_during_20261013.jpg"))
+    moved = cv2.warpAffine(board, np.float32([[1, 0, 24], [0, 1, 0]]),
+                           (board.shape[1], board.shape[0]))
+    events, waits, builds = [], [], []
+    runtime = {"geometry": prior_lock, "worker_geometry": prior_lock}
+    active_gate = None
+    checking_stability = False
+    injected = False
+    remaining_hand = 0
+    baseline_samples = 0
+    lit_samples = 0
+
+    def record(kind, **details):
+        events.append({"kind": kind, "status": service.status(), **details})
+
+    class Led(FakeLed):
+        current = None
+
+        def clear(self, *, strict=False):
+            self.current = None
+            record("clear")
+            return super().clear(strict=strict)
+
+        def set_rgb_points(self, points, *, strict=False):
+            nonlocal lit_samples
+            assert strict
+            self.current = (points[0]["row"], points[0]["col"])
+            lit_samples = 0
+            record("show", coord=self.current)
+            return {"ok": True, "shown_at": time.monotonic(), "errors": []}
+
+    class Capture(_LogicalBoardCapture):
+        def grab_fresh(self, **kwargs):
+            nonlocal injected, remaining_hand, baseline_samples, lit_samples
+            assert self.seq < 150, "calibration failed to make progress"
+            frame, seq, ts = super().grab_fresh(**kwargs)
+            if not checking_stability and service.status()["phase"] == "building_baseline":
+                baseline_samples += 1
+            if not checking_stability and led.current is not None:
+                lit_samples += 1
+            if not injected and (
+                scenario == "hand" and led.current == FIVE_POINT_ANCHORS[2]
+                or scenario == "baseline" and baseline_samples == 3
+            ):
+                injected, remaining_hand = True, 4
+            label = "board"
+            if remaining_hand:
+                frame, label = hand.copy(), "hand"
+                remaining_hand -= 1
+            elif scenario == "shadow" and led.current == FIVE_POINT_ANCHORS[2] and lit_samples == 2:
+                frame, label = shadow.copy(), "shadow"
+            elif scenario in ("moved", "reflection_moved", "reflection_slow_moved", "reflection_board_moved") and baseline_samples >= 3:
+                frame, label = moved.copy(), "moved"
+                if scenario == "reflection_slow_moved":
+                    frame = cv2.warpAffine(board, np.float32([[1, 0, baseline_samples - 2], [0, 1, 0]]),
+                                           (board.shape[1], board.shape[0]))
+                elif scenario == "reflection_board_moved":
+                    mask = np.zeros(board.shape[:2], np.uint8)
+                    cv2.fillConvexPoly(mask, physical_quad.astype(np.int32), 1)
+                    frame = board.copy()
+                    frame[mask.astype(bool)] = moved[mask.astype(bool)]
+            if led.current is not None and label != "hand":
+                row, col = led.current
+                x, y = cv2.perspectiveTransform(np.float32([[[col, row]]]), physical_h)[0, 0]
+                cv2.circle(frame, (round(x), round(y)), 5, (40, 255, 40), -1)
+            record("capture", seq=seq, label=label, stability=checking_stability,
+                   settle_ms=kwargs.get("settle_ms"), frame=frame)
+            return frame, seq, ts
+
+    led, capture = Led(), Capture(board)
+    lock = object()
+
+    def factory(**kwargs):
+        calibrator = FivePointLedGeometryCalibrator(**kwargs)
+
+        def build_lock(fit, frames, detected, attempts):
+            # Existing successful calibrator tests cover the real _build_lock. Keep
+            # the actual fit, frame guards and whole-set retry loop in this chain.
+            builds.append(frames)
+            assert fit.ok and len(detected) == 5
+            return lock
+
+        calibrator._build_lock = build_lock
+        return calibrator
+
+    def suspend():
+        runtime["worker_geometry"] = None
+        record("suspend")
+
+    def invalidate():
+        runtime["geometry"] = None
+        runtime["worker_geometry"] = None
+        record("degraded")
+
+    def resume():
+        runtime["worker_geometry"] = runtime["geometry"]
+        record("resume", worker_geometry=runtime["worker_geometry"])
+
+    service = GeometryCalibrationService(
+        led=led, capture=capture, save_path=tmp_path / "geometry.npz", calibrator_factory=factory,
+        initial_lock=prior_lock, on_suspend=suspend, on_degraded=invalidate, on_resume=resume,
+    )
+    if prior_lock is not None:
+        service._status.update(phase="waiting_empty", session_calibrated=True)
+    capture.status = service.status
+    service._converge_exposure = lambda **_kwargs: record("exposure")
+    service._prepare_drift_monitor = lambda _lock: None
+    service._persist_legacy = lambda _lock: record("publish")
+    real_wait, real_anchor = service._wait_stable, service._anchor_observed
+
+    def wait(gate, phase, current, *, reset=True):
+        nonlocal active_gate, checking_stability
+        active_gate, checking_stability = gate, True
+        first = capture.seq
+        try:
+            real_wait(gate, phase, current, reset=reset)
+        finally:
+            checking_stability = False
+            waits.append((phase, current, reset, capture.seq - first, gate))
+            record("wait_end")
+
+    def anchor(row, col, point, color):
+        real_anchor(row, col, point, color)
+        record("anchor", coord=(row, col))
+
+    service._wait_stable, service._anchor_observed = wait, anchor
+    try:
+        service._run()
+        if scenario in ("moved", "reflection_moved", "reflection_slow_moved", "reflection_board_moved"):
+            assert service.status()["phase"] == "failed", service.status()
+            assert service.status()["error"] == "board_moved"
+            assert service.status()["stopped_phase"] == "building_baseline"
+            assert service.current_lock is prior_lock
+            assert len(builds) == 0
+            assert not any(event["kind"] == "publish" for event in events)
+            if prior_lock is not None:
+                with pytest.raises(ValueError, match="no longer matches the moved board"):
+                    service.confirm_existing()
+            assert [event["coord"] for event in events if event["kind"] == "show"] == list(FIVE_POINT_ANCHORS)
+            return events, waits, builds
+        assert service.status()["phase"] == "ready", service.status()
+        assert service.current_lock is lock
+        assert led.current is None
+        assert [event["coord"] for event in events if event["kind"] == "anchor"] == list(FIVE_POINT_ANCHORS)
+        assert len(builds) == 1 and len(builds[0]) == 8
+        return events, waits, builds
+    finally:
+        service.stop()
+
+
+@pytest.mark.parametrize("scenario", ["stable", "shadow"])
+def test_real_five_point_chain_keeps_stability_and_accepts_person_shadow(tmp_path, scenario):
+    events, waits, _builds = _run_five_point_live_chain(tmp_path, scenario)
+    assert [count for _phase, _current, _reset, count, _gate in waits] == [5, 5] + [1] * 6
+    assert [reset for _phase, _current, reset, _count, _gate in waits] == [True, True] + [False] * 6
+    assert len({id(gate) for _phase, _current, _reset, _count, gate in waits}) == 1
+    assert [event["coord"] for event in events if event["kind"] == "show"] == list(FIVE_POINT_ANCHORS)
+    samples = [event for event in events if event["kind"] == "capture"]
+    assert all(event["status"]["pause_reason"] is None for event in samples[10:])
+    assert all(event["status"]["phase"] not in ("waiting_stable", "obstructed", "lighting_paused")
+               for event in samples[10:])
+    if scenario == "shadow":
+        shaded = [i for i, event in enumerate(samples) if event["label"] == "shadow"]
+        assert len(shaded) == 1
+        index = shaded[0]
+        assert [event["label"] for event in samples[index - 1:index + 2]] == ["board", "shadow", "board"]
+        assert all(not event["stability"] for event in samples[index - 1:index + 2])
+
+
+def test_real_reflection_completes_five_point_chain_with_grid_warning(tmp_path):
+    events, _waits, _builds = _run_five_point_live_chain(tmp_path, "reflection")
+    shows = [event for event in events if event["kind"] == "show"]
+    assert [event["coord"] for event in shows] == list(FIVE_POINT_ANCHORS)
+    assert any(event["status"].get("grid_warning") == "grid_not_visible" for event in shows)
+    assert not any(event["status"]["phase"] == "obstructed" for event in events)
+    assert events[-1]["status"]["grid_warning"] is None
+
+
+def test_missing_grid_still_rejects_board_moved_before_baseline(tmp_path, monkeypatch):
+    from katrain.vision import calibration_stability
+
+    monkeypatch.setattr(calibration_stability, "find_visible_grid", lambda *_args: None)
+    events, _waits, builds = _run_five_point_live_chain(tmp_path, "reflection_moved")
+    assert builds == []
+    assert not any(event["kind"] == "publish" for event in events)
+
+
+@pytest.mark.parametrize("scenario", ["reflection_slow_moved", "reflection_board_moved"])
+def test_missing_grid_rejects_baseline_displacement_with_stationary_background(tmp_path, monkeypatch, scenario):
+    from katrain.vision import calibration_stability
+
+    monkeypatch.setattr(calibration_stability, "find_visible_grid", lambda *_args: None)
+    events, _waits, builds = _run_five_point_live_chain(tmp_path, scenario)
+    assert builds == []
+    assert not any(event["kind"] == "publish" for event in events)
+
+
+def test_real_five_point_chain_motion_pauses_only_the_unconfirmed_point(tmp_path):
+    events, waits, _builds = _run_five_point_live_chain(tmp_path, "hand")
+    first = next(i for i, event in enumerate(events) if event.get("label") == "hand")
+    assert events[first + 1]["kind"] == "clear"
+    assert events[first + 1]["status"]["phase"] == "waiting_stable"
+    assert events[first + 1]["status"]["pause_reason"] == "board_motion"
+    hands = [event for event in events if event.get("label") == "hand"]
+    assert len(hands) == 4
+    assert all(np.array_equal(event["frame"], hands[0]["frame"]) for event in hands)
+    next_show = next(i for i in range(first + 1, len(events)) if events[i]["kind"] == "show")
+    recovery = [event for event in events[first + 1:next_show] if event["kind"] == "capture"]
+    required = waits[5][4].required_frames
+    assert [event["label"] for event in recovery] == ["hand"] * 3 + ["board"] * (required + 2)
+    assert all(event["stability"] for event in recovery[:-1])
+    assert all(len(event["status"]["detected_anchors"]) == 2 for event in recovery)
+    assert recovery[3]["status"]["phase"] == "waiting_stable"  # first frame after the movement
+    assert waits[5][0:4] == ("flashing_corners", 2, False, 4 + required)
+    assert [event["coord"] for event in events if event["kind"] == "show"] == [
+        *FIVE_POINT_ANCHORS[:3], *FIVE_POINT_ANCHORS[2:],
+    ]
+
+
+def test_real_five_point_chain_discards_interrupted_baseline_without_reflashing(tmp_path):
+    events, waits, builds = _run_five_point_live_chain(tmp_path, "baseline")
+    assert [event["coord"] for event in events if event["kind"] == "show"] == list(FIVE_POINT_ANCHORS)
+    baseline = [event for event in events if event["kind"] == "capture"
+                and not event["stability"] and event["status"]["phase"] == "building_baseline"]
+    assert len(baseline) == 11  # two accepted, one interruption, then a new complete set
+    assert [event["label"] for event in baseline] == ["board", "board", "hand"] + ["board"] * 8
+    assert all(event["settle_ms"] == 100.0 for event in baseline)
+    assert [id(frame) for frame in builds[0]] == [id(event["frame"]) for event in baseline[3:]]
+    assert waits[-1][0:4] == ("building_baseline", 5, False, 4 + waits[-1][4].required_frames)
+    assert all(len(event["status"]["detected_anchors"]) == 5
+               for event in events if event.get("label") == "hand")
+
+
+def test_live_baseline_rejects_stably_moved_board_after_five_anchors(tmp_path):
+    events, waits, builds = _run_five_point_live_chain(tmp_path, "moved")
+    assert any(event.get("label") == "moved" for event in events)
+    assert waits[-1][0] == "building_baseline"
+    assert builds == []
+
+
+def test_moved_baseline_invalidates_prior_ready_lock_before_resuming_worker(tmp_path):
+    prior_lock = object()
+    events, _waits, _builds = _run_five_point_live_chain(tmp_path, "moved", prior_lock=prior_lock)
+    degraded = [event for event in events if event["kind"] == "degraded"]
+    resumed = [event for event in events if event["kind"] == "resume"]
+    assert len(degraded) == len(resumed) == 1
+    assert events.index(degraded[0]) < events.index(resumed[0])
+    assert degraded[0]["status"]["session_calibrated"] is False
+    assert degraded[0]["status"]["lock_moved"] is True
+    assert degraded[0]["status"]["capabilities"]["geometry_ready"] is False
+    assert resumed[0]["worker_geometry"] is None
+
+
+def test_live_calibration_reuses_stability_between_all_five_points_and_baseline(tmp_path):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+    capture = _LogicalBoardCapture(board)
+    checkpoints = []
+    exposure_counts = []
+
+    def exercise(calibrator):
+        for index in range(6):
+            phase = "flashing_corners" if index < 4 else "verifying" if index == 4 else "building_baseline"
+            before = len(capture.samples)
+            calibrator.before_capture(phase, index, 5)
+            checkpoints.append((len(capture.samples) - before, service.status()))
+            if index < 5:
+                calibrator.anchor_observer(index, index, (100.0 + index, 100.0), "green")
+
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=capture, save_path=tmp_path / "geometry.npz",
+        calibrator_factory=lambda **kwargs: _LiveCallbackCalibrator(exercise=exercise, **kwargs),
+    )
+    capture.status = service.status
+    service._converge_exposure = lambda **_kwargs: exposure_counts.append(len(capture.samples))
+    try:
+        service._run()
+        assert exposure_counts == [0, 5]  # both exposure transitions still need the full five-frame gate
+        assert len(capture.samples) - sum(count for count, _ in checkpoints) == 10
+        assert [count for count, _ in checkpoints] == [1] * 6
+        assert [status["phase"] for _, status in checkpoints] == [
+            "flashing_corners", "flashing_corners", "flashing_corners", "flashing_corners",
+            "verifying", "building_baseline",
+        ]
+        assert [status["progress"]["current"] for _, status in checkpoints] == list(range(6))
+        assert [len(status["detected_anchors"]) for _, status in checkpoints] == list(range(6))
+        for status, cutoff, settle_ms, _seq, ts in capture.samples[10:]:
+            assert status["phase"] != "waiting_stable"
+            assert status["pause_reason"] is None
+            assert ts > cutoff + settle_ms / 1000.0
+        assert len(service.status()["detected_anchors"]) == 5
+    finally:
+        service.stop()
+
+
+def test_stability_release_checks_motion_in_the_first_capture_frame(tmp_path):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=_LogicalBoardCapture(board), save_path=tmp_path / "geometry.npz",
+    )
+    gate = CalibrationStabilityGate()
+    try:
+        service._wait_stable(gate, "flashing_corners", 2)
+        with pytest.raises(CalibrationInterrupted, match="board_motion"):
+            service._guard_live_frame(gate, np.roll(board, 20, axis=1), dark=True)
+        assert gate.stable_frames == 0
+        assert gate.motion.prev_frame is None
+        assert gate.capture_motion.prev_frame is None
+        assert service.status()["phase"] == "waiting_stable"
+        assert service.status()["pause_reason"] == "board_motion"
+    finally:
+        service.stop()
+
+
+def test_capture_guard_accepts_shadow_round_trip_without_repriming(tmp_path):
+    folder = Path(__file__).parent / "data"
+    before = cv2.imread(str(folder / "rk3562_shadow_before_20261013.jpg"))
+    shadow = cv2.imread(str(folder / "rk3562_shadow_during_20261013.jpg"))
+    capture = _LogicalBoardCapture(before)
+    resumed_counts = []
+    guarded_statuses = []
+
+    def exercise(calibrator):
+        # The initial _run stability gates prime on before. Never observe(shadow).
+        for frame in (before, shadow, before):
+            calibrator.frame_guard(frame, True)
+            guarded_statuses.append(service.status())
+        previous = len(capture.samples)
+        calibrator.before_capture("flashing_corners", 1, 5)
+        resumed_counts.append(len(capture.samples) - previous)
+
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=capture, save_path=tmp_path / "geometry.npz",
+        calibrator_factory=lambda **kwargs: _LiveCallbackCalibrator(exercise=exercise, **kwargs),
+    )
+    capture.status = service.status
+    try:
+        service._run()
+        assert len(guarded_statuses) == 3
+        assert all(status["pause_reason"] is None for status in guarded_statuses)
+        assert resumed_counts == [1]
+    finally:
+        service.stop()
+
+
+@pytest.mark.parametrize("invalid", ["none", "repeat_seq", "float_seq", "stale_ts", "settling_ts", "nan_ts"])
+def test_stability_rejects_missing_or_cached_frames(tmp_path, invalid):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+
+    class InvalidCapture(_LogicalBoardCapture):
+        def grab_fresh(self, **kwargs):
+            frame, seq, ts = super().grab_fresh(**kwargs)
+            if self.seq > 2:
+                raise AssertionError("stability consumed frames after invalid evidence")
+            if self.seq == 2:
+                cutoff = kwargs.get("after_ts", ts)
+                if invalid == "none":
+                    frame = None
+                elif invalid == "repeat_seq":
+                    seq -= 1
+                elif invalid == "float_seq":
+                    seq = float(seq)
+                elif invalid == "stale_ts":
+                    ts = cutoff
+                elif invalid == "settling_ts":
+                    ts = cutoff + kwargs["settle_ms"] / 2000.0
+                else:
+                    ts = float("nan")
+            return frame, seq, ts
+
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=InvalidCapture(board), save_path=tmp_path / "geometry.npz",
+    )
+    try:
+        with pytest.raises(RuntimeError, match="no_frames"):
+            service._wait_stable(CalibrationStabilityGate(), "flashing_corners", 0)
+    finally:
+        service.stop()
+
+
+@pytest.mark.parametrize("when", ["before_capture", "after_capture"])
+def test_stability_cancellation_takes_priority_over_frame_acceptance(tmp_path, when):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+    capture = _LogicalBoardCapture(board)
+    service = GeometryCalibrationService(led=FakeLed(), capture=capture, save_path=tmp_path / "geometry.npz")
+    grab = capture.grab_fresh
+
+    def cancelling_grab(**kwargs):
+        frame, seq, ts = grab(**kwargs)
+        service._cancel_event.set()
+        return None, seq, ts  # cancellation wins over missing-frame failure too
+
+    if when == "before_capture":
+        service._cancel_event.set()
+    else:
+        capture.grab_fresh = cancelling_grab
+    try:
+        with pytest.raises(CalibrationCancelled):
+            service._wait_stable(CalibrationStabilityGate(), "flashing_corners", 0)
+        assert capture.seq == (0 if when == "before_capture" else 1)
+    finally:
+        service.stop()
+
+
+def test_stability_does_not_capture_after_led_clear_failure(tmp_path):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+    led = FakeLed()
+    led.clear = lambda **_kwargs: {"ok": False, "shown_at": 1.0}
+    capture = _LogicalBoardCapture(board)
+    service = GeometryCalibrationService(led=led, capture=capture, save_path=tmp_path / "geometry.npz")
+    try:
+        with pytest.raises(RuntimeError, match="led_clear_failed"):
+            service._wait_stable(CalibrationStabilityGate(), "flashing_corners", 0)
+        assert capture.seq == 0
+    finally:
+        service.stop()
+
+
+def test_lighting_recheck_discards_stability_and_requires_fresh_frames(tmp_path):
+    board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
+    capture = _LogicalBoardCapture(board)
+    service = GeometryCalibrationService(led=FakeLed(), capture=capture, save_path=tmp_path / "geometry.npz")
+    gate = CalibrationStabilityGate()
+    service._converge_exposure = lambda **_kwargs: None
+    try:
+        service._wait_stable(gate, "flashing_corners", 2)
+        service._lighting_recheck.set()
+        service._wait_lighting("frame_overexposed", gate)
+        assert gate.stable_frames == 0
+        count = capture.seq
+        service._wait_stable(gate, "flashing_corners", 2, reset=False)
+        assert capture.seq - count == 5
+        assert service.status()["progress"]["current"] == 2
+    finally:
+        service.stop()
+
+
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_lighting_recheck_missing_frame_fails_without_reporting_underexposure(tmp_path, cancelled):
+    service = GeometryCalibrationService(led=FakeLed(), capture=FakeCapture(), save_path=tmp_path / "geometry.npz")
+    service._converge_exposure = lambda **_kwargs: None
+    service._lighting_recheck.set()
+    grabs = []
+
+    def missing(**_kwargs):
+        # Keep the old implementation bounded without providing a second frame.
+        grabs.append(True)
+        if len(grabs) > 1:
+            raise AssertionError("lighting recheck consumed frames after missing evidence")
+        if cancelled:
+            service._cancel_event.set()
+        else:
+            service._lighting_recheck.set()
+        return None, 1, time.monotonic()
+
+    service.capture.grab_fresh = missing
+    try:
+        with pytest.raises(CalibrationCancelled if cancelled else RuntimeError, match=None if cancelled else "no_frames"):
+            service._wait_lighting("frame_overexposed", CalibrationStabilityGate())
+        assert service.status()["pause_reason"] != "frame_underexposed"
+    finally:
+        service.stop()
+
+
+def test_static_missing_grid_attempts_led_and_fails_when_no_signal_exists(tmp_path):
     board = cv2.imread(str(Path(__file__).parent / "data" / "rk3562_empty_board_20261013.jpg"))
     cv2.ellipse(board, (170, 305), (55, 42), 20, 0, 360, (160, 175, 190), -1)
 
-    class CoveredCapture(FakeCapture):
-        def __init__(self):
-            self.seq = 0
-
-        def grab_fresh(self, **_kwargs):
-            self.seq += 1
-            time.sleep(0.01)
-            return board, self.seq, time.monotonic()
-
-    class NoFlashLed(FakeLed):
+    class UnseenLed(FakeLed):
         flashes = 0
 
         def set_rgb_points(self, *_args, **_kwargs):
             self.flashes += 1
-            raise AssertionError("first LED lit under a still hand")
+            return {"ok": True, "shown_at": time.monotonic(), "errors": []}
 
-    led = NoFlashLed()
-    service = GeometryCalibrationService(led=led, capture=CoveredCapture(), save_path=tmp_path / "geometry.npz")
+    led = UnseenLed()
+    service = GeometryCalibrationService(led=led, capture=_LogicalBoardCapture(board), save_path=tmp_path / "geometry.npz")
     service.start(trigger="manual", empty_confirmed=True)
     deadline = time.monotonic() + 2
-    while service.status()["phase"] != "obstructed" and time.monotonic() < deadline:
+    while service.status()["phase"] != "failed" and time.monotonic() < deadline:
         time.sleep(0.01)
-    assert service.status()["phase"] == "obstructed"
-    assert led.flashes == 0
-    service.cancel()
+    assert service.status()["phase"] == "failed"
+    assert service.status()["error"] == "anchor_not_found:0,0"
+    assert led.flashes == 2
     assert service.wait(timeout=2)
-    assert service.status()["phase"] == "cancelled"
     service.stop()
 
 
 def test_bright_frame_pauses_without_flash_and_requires_recheck(tmp_path):
-    class BrightCapture(FakeCapture):
-        def __init__(self):
-            self.seq = 0
-
-        def grab_fresh(self, **_kwargs):
-            self.seq += 1
-            time.sleep(0.01)
-            return np.full((360, 640, 3), 255, np.uint8), self.seq, time.monotonic()
-
     class NoFlashLed(FakeLed):
         flashes = 0
 
@@ -440,7 +1011,10 @@ def test_bright_frame_pauses_without_flash_and_requires_recheck(tmp_path):
             self.flashes += 1
 
     led = NoFlashLed()
-    service = GeometryCalibrationService(led=led, capture=BrightCapture(), save_path=tmp_path / "geometry.npz")
+    service = GeometryCalibrationService(
+        led=led, capture=_LogicalBoardCapture(np.full((360, 640, 3), 255, np.uint8)),
+        save_path=tmp_path / "geometry.npz",
+    )
     service.start(trigger="manual", empty_confirmed=True)
     deadline = time.monotonic() + 2
     while service.status()["phase"] != "lighting_paused" and time.monotonic() < deadline:
@@ -686,6 +1260,33 @@ def test_confirm_existing_promotes_loaded_lock_without_recalibration(tmp_path):
     assert capture.grab_calls == 1
     assert service._drift_monitor is not None
     assert not save_path.exists()
+
+
+def test_confirm_existing_rejects_when_reuse_disabled_without_changing_state(tmp_path):
+    old = _synth()
+    promoted = []
+    capture = FreshFakeCapture()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=old,
+        on_success=promoted.append,
+        allow_existing_reuse=False,
+    )
+    service._status.update(phase="failed", error="anchor_not_found:15,15")
+    before = service.status()
+    monitor = service._drift_monitor
+
+    with pytest.raises(ValueError, match="reuse is disabled"):
+        service.confirm_existing()
+
+    assert service.status() == before
+    assert service.current_lock is old
+    assert service._drift_monitor is monitor
+    assert capture.grab_calls == 0
+    assert promoted == []
+    service.stop()
 
 
 def test_confirm_existing_recovers_from_failed_calibration_when_lock_is_valid(tmp_path):
@@ -2556,6 +3157,66 @@ def test_manual_relocate_works_on_a_crowded_board(phase):
     assert out["phase"] == "ready"
     assert selector.calls[-1].name == "MANUAL_FALLBACK"
     assert len(calls.success) == 1 and calls.suspend == [] and calls.persist == []
+    service.stop()
+
+
+@pytest.mark.parametrize("reason", ["cancelled", "anchor_not_found:0,0"])
+def test_relocation_cannot_promote_loaded_lock_after_first_calibration_stops(tmp_path, reason):
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    promoted = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=320.0),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_lock(IMG_QUAD),
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason=reason)),
+        selector=selector,
+        on_success=promoted.append,
+        allow_existing_reuse=False,
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+    before = service.status()
+    assert before["phase"] == ("cancelled" if reason == "cancelled" else "failed")
+
+    with pytest.raises(ValueError, match="full calibration is required before relocation"):
+        service.relocate()
+
+    assert service.status() == before
+    assert selector.calls == []
+    assert promoted == []
+    service.stop()
+
+
+@pytest.mark.parametrize("phase", ["degraded", "cancelled", "failed"])
+def test_relocation_allowed_after_full_calibration_in_opt_out_mode(tmp_path, phase):
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=320.0),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_lock(IMG_QUAD),
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_lock(IMG_QUAD))),
+        selector=selector,
+        allow_existing_reuse=False,
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+    assert service.status()["phase"] == "ready"
+    if phase == "degraded":
+        service._apply_drift(FakeDrift(degraded=True))
+    else:
+        service.calibrator_factory = _result_calibrator_factory(CalibrationResult(ok=False, reason=phase))
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+    assert service.status()["phase"] == phase
+
+    assert service.relocate()["phase"] == "ready"
+    assert len(selector.calls) == 1
     service.stop()
 
 

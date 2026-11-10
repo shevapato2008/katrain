@@ -1,9 +1,9 @@
+import { uiMessage, uiError, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
-import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { interpolate } from '../utils/interpolate';
 import { spaceCjkLatin } from '../utils/cjkSpace';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
@@ -11,9 +11,12 @@ import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { PLATFORM_META } from '../constants/platforms';
+import { PLATFORM_MARKS } from '../constants/platformMarks';
+import { Icon } from '../shell/icons';
 import GOLAXY_PHONE_AREAS from '../constants/golaxyPhoneAreas.json';
 import { PlatformLoginAside } from '../components/platform/PlatformLoginAside';
 import { GolaxyScanPanel } from '../components/platform/GolaxyScanPanel';
+import './platformReviewed.css';
 
 /**
  * 登录独立成页(屏 07b/08,`sample-go/shots/07b-platform-login-pw.png` /
@@ -113,7 +116,7 @@ const PlatformLoginPage = () => {
   const [phoneArea, setPhoneArea] = useState(GOLAXY_PHONE_AREAS[0]);
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<UiMessage | string | null>(null);
   const [smsBusy, setSmsBusy] = useState(false);
   const [smsCooldownUntil, setSmsCooldownUntil] = useState(0);
   const [smsLeft, setSmsLeft] = useState(0);
@@ -170,9 +173,9 @@ const PlatformLoginPage = () => {
 
   const sendSms = async () => {
     if (!isAuthenticated) return;
-    if (!account.trim()) { setError(t('platform:need_phone', '请先输入手机号')); return; }
+    if (!account.trim()) { setError(uiMessage('platform:need_phone', '请先输入手机号')); return; }
     if (platform === 'golaxy' && !/^\d+$/.test(account.trim())) {
-      setError(t('platform:phone_digits_only', '手机号只能输入数字'));
+      setError(uiMessage('platform:phone_digits_only', '手机号只能输入数字'));
       return;
     }
     setSmsBusy(true);
@@ -182,7 +185,7 @@ const PlatformLoginPage = () => {
       setSmsLeft(60);
       setSmsCooldownUntil(Date.now() + 60_000);
     } catch (e) {
-      setError(platformErrorMessage(e, t('platform:sms_failed', '验证码没发出去')));
+      setError(uiError(e, 'platform:sms_failed', '验证码没发出去'));
     } finally {
       setSmsBusy(false);
     }
@@ -191,7 +194,7 @@ const PlatformLoginPage = () => {
   const submit = async () => {
     if (!isAuthenticated) return;
     if (platform === 'golaxy' && !/^\d+$/.test(account.trim())) {
-      setError(t('platform:phone_digits_only', '手机号只能输入数字'));
+      setError(uiMessage('platform:phone_digits_only', '手机号只能输入数字'));
       return;
     }
     setBusy(true);
@@ -204,7 +207,7 @@ const PlatformLoginPage = () => {
       );
       goToConnectedDest();
     } catch (e) {
-      setError(platformErrorMessage(e, t('platform:login_failed', '登录失败')));
+      setError(uiError(e, 'platform:login_failed', '登录失败'));
     } finally {
       setBusy(false);
     }
@@ -219,7 +222,18 @@ const PlatformLoginPage = () => {
         sub={sub}
       />
       <section className="setgrp inputgrp xplogin">
-        <PlatformLoginAside platform={platform} />
+        <aside className="reviewed-login-aside">
+          <div className="reviewed-login-brand">
+            {PLATFORM_MARKS[platform] && <img src={PLATFORM_MARKS[platform].src} alt="" />}
+            <div><strong>{name}</strong><span>{platform === 'ogs' ? 'online-go.com' : '19x19.com'}</span></div>
+          </div>
+          <p>{interpolate(t('platform:connect_account_hint', '使用{name}账号连接'), { name })}</p>
+          <details className="reviewed-login-info">
+            <summary aria-label={t('Info', '说明')}><Icon name="info" /></summary>
+            <PlatformLoginAside platform={platform} />
+          </details>
+          <span className="reviewed-login-disconnected">{t('platform:not_connected', '尚未连接')}</span>
+        </aside>
         <div className="xplogin__main">
           <div className="xpcol">
             <KioskSecLabel
@@ -261,7 +275,7 @@ const PlatformLoginPage = () => {
                       <select
                         className="xpfield__area"
                         data-testid="login-phone-area"
-                        aria-label="国家或地区区号"
+                        aria-label={t("国家或地区区号", "国家或地区区号")}
                         value={phoneArea.name}
                         onChange={(e) => setPhoneArea(
                           GOLAXY_PHONE_AREAS.find(({ name }) => name === e.target.value) ?? GOLAXY_PHONE_AREAS[0],
@@ -316,7 +330,7 @@ const PlatformLoginPage = () => {
                 </div>
 
                 {/* 登录出错要有落点 —— 没有落点的错误等于没报错。平台给的话原样显示,不换成自己编的。 */}
-                {error && <p className="loginerr" data-testid="login-error">{error}</p>}
+                {error && <p className="loginerr" data-testid="login-error">{renderUiMessage(error, t)}</p>}
 
                 <div className="igrow">
                   <span className="iglab" />

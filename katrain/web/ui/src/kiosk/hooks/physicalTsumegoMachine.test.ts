@@ -701,3 +701,15 @@ describe('physicalTsumegoMachine', () => {
     expect(finalState.pendingReply).toBeNull();
   });
 });
+
+describe('reset convergence', () => {
+ it.each(['ready', 'replying', 'removing', 'solved', 'restoring', 'setup', 'clearing_next'] as const)('restores initial target from %s without clearing or undo', (phase) => {
+ const board = boardWith(19, {'3,3': 1, '4,4': 2});
+ const result = reduce({...initialState, phase, preMoveBoard: empty(19), pendingReply: {player: 'W', coords: [8, 8]}}, {type: 'RESET', board});
+ expect(result.state.phase).toBe('restoring');
+ expect(result.state.preMoveBoard).toBeNull();
+ expect(result.state.pendingReply).toBeNull();
+ expect(result.state.targetBoard).toBe(board);
+ expect(result.commands).toEqual([{kind: 'ledClear'}, {kind: 'armMoves', armed: false}, {kind: 'setupMode', board}]);
+ });
+});

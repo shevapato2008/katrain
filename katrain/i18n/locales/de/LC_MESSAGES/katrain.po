@@ -3999,7 +3999,7 @@ msgid "login:box_gate_cta"
 msgstr "Zum StellaBox-Startbildschirm"
 
 msgid "vision:back_settings"
-msgstr "Einstellungen"
+msgstr "Zurück zu Einstellungen"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -4010,7 +4010,7 @@ msgid "vision:calibrate_title"
 msgstr "Brettkalibrierung"
 
 msgid "vision:calibrate_sub"
-msgstr "Zuerst das Brett leeren · 13 Punkte: 4 Ecken + 9 Sternpunkte"
+msgstr "Zuerst das Brett leeren · 5 Punkte: 4 Ecken und Mitte"
 
 msgid "vision:cancel_calibration"
 msgstr "Kalibrierung abbrechen"
@@ -7319,3 +7319,1313 @@ msgstr "Kein Stein"
 
 msgid "report:score_difference"
 msgstr "Punktedifferenz"
+
+msgid "kifu:history_guest"
+msgstr "Nur für diese Gastsitzung"
+
+msgid "kifu:history_local_cache"
+msgstr "Kontocache auf diesem Gerät"
+
+msgid "kifu:history_this_node"
+msgstr "Auf diesem Gerät gespeichert"
+
+msgid "kifu:history_cloud"
+msgstr "Cloudverlauf des Kontos"
+
+msgid "kifu:history_loading"
+msgstr "Nachspielverlauf wird geladen"
+
+msgid "kifu:history_error"
+msgstr "Nachspielverlauf ist nicht verfügbar"
+
+msgid "kifu:history_cache_empty"
+msgstr "Auf diesem Gerät ist kein Kontoverlauf zwischengespeichert"
+
+msgid "kifu:history_empty"
+msgstr "Noch kein Nachspielverlauf"
+
+msgid "kifu:history_guest_hint"
+msgstr "Der Gastverlauf wird am Ende der Sitzung gelöscht."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Beim Start des Nachspielens am physischen Brett wird der Fortschritt im "
+"aktuellen Konto gespeichert."
+
+msgid "kifu:history_pending"
+msgstr "Auf diesem Gerät gespeichert; wartet auf Synchronisierung"
+
+msgid "kifu:history_conflict"
+msgstr "Fortschrittskonflikt; zu behaltende Kopie wählen"
+
+msgid "kifu:history_refused"
+msgstr "Auf diesem Gerät gespeichert; Synchronisierung abgelehnt"
+
+msgid "kifu:history_saving"
+msgstr "Fortschritt wird gespeichert"
+
+msgid "kifu:history_save_error"
+msgstr "Fortschritt nicht gespeichert; bitte erneut versuchen"
+
+msgid "kifu:history_saved"
+msgstr "Fortschritt gespeichert"
+
+msgid "kifu:history_use_cloud"
+msgstr "Cloudfortschritt verwenden"
+
+msgid "kifu:history_keep_local"
+msgstr "Gerätefortschritt behalten"
+
+msgid "kifu:history_resolve_error"
+msgstr "Konflikt konnte nicht gelöst werden; Fortschritt erneut prüfen"
+
+msgid "baipu:operator_manual"
+msgstr "Zur manuellen Bestätigung gewechselt"
+
+msgid "baipu:pre_remove_title"
+msgstr "Zuerst den vorhandenen Stein am Ziel entfernen"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Steine an den blauen Lichtern entfernen, dann die aufgezeichneten Farben "
+"setzen"
+
+msgid "baipu:pre_remove_done"
+msgstr "Vorhandene Steine entfernt"
+
+msgid "baipu:entry_confirm"
+msgstr "Brett stimmt überein"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Das Brett wie angezeigt aufbauen, dann „Brett stimmt überein“ drücken"
+
+msgid "baipu:recheck"
+msgstr "Brett erneut erkennen"
+
+msgid "baipu:switch_manual"
+msgstr "Manuell bestätigen"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} Schritte abgeschlossen · Mit der Taste oben links zurück"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Nach dem Beenden können Sie diese Partie auf der Seite mit den "
+"Spielaufzeichnungen erneut öffnen."
+
+msgid "baipu:exit_anyway"
+msgstr "Trotzdem beenden"
+
+msgid "membership:account_checking"
+msgstr "Konto wird überprüft"
+
+msgid "membership:account_entry"
+msgstr "Nutzung, API-Punkte und Mitgliedschaft"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"Nach der Identitätsprüfung werden Mitgliedschaft, Free-Anspruch und API-"
+"Punktestand angezeigt."
+
+msgid "membership:account_retry"
+msgstr "Kontoprüfung wiederholen"
+
+msgid "membership:account_unconfirmed"
+msgstr "Kontostatus noch nicht bestätigt"
+
+msgid "membership:advanced"
+msgstr "Erweitert"
+
+msgid "membership:advanced_depth_ratio"
+msgstr ""
+"Erweiterte Berichte verbrauchen etwa das {ratio}-Fache eines "
+"Standardberichts."
+
+msgid "membership:advanced_depth_rule"
+msgstr ""
+"Der Verbrauch erweiterter Berichte richtet sich nach der Analysetiefe auf "
+"dem Server."
+
+msgid "membership:advanced_position_cost"
+msgstr "Erweitert: ca. {points} Punkte/Zug"
+
+msgid "membership:analysis_depth"
+msgstr "Analysetiefe"
+
+msgid "membership:api_balance"
+msgstr "API-Punktestand"
+
+msgid "membership:api_on_demand"
+msgstr "API-Analyse nach Bedarf"
+
+msgid "membership:api_prices"
+msgstr "API-Analysepreise"
+
+msgid "membership:api_topup"
+msgstr "API-Aufladung"
+
+msgid "membership:auth_after_login"
+msgstr "Nach Anmeldung verfügbar"
+
+msgid "membership:auth_box_login"
+msgstr "Auf der Box-Startseite anmelden"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Die Anmeldung erfolgt auf der SmartBox-Startseite. Danach über den Go-"
+"Einstieg zu diesem Modul zurückkehren."
+
+msgid "membership:auth_checking_action"
+msgstr "Wird bestätigt"
+
+msgid "membership:auth_checking_description"
+msgstr "Bitte kurz warten. Nach der Prüfung geht es automatisch weiter."
+
+msgid "membership:auth_checking_note"
+msgstr "Während der Prüfung werden keine Kontoinhalte gelesen."
+
+msgid "membership:auth_checking_title"
+msgstr "Anmeldestatus wird geprüft"
+
+msgid "membership:auth_description"
+msgstr ""
+"Nach Anmeldung Mitgliedschaftsnutzung, API-Punkte und Bestellungen ansehen."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"Die Anmeldung ist abgelaufen. Das Lesen persönlicher Mitgliedschafts- und "
+"Nutzungsdaten wurde angehalten. Nach erneuter Anmeldung geht es weiter."
+
+msgid "membership:auth_expired_title"
+msgstr "Bitte erneut anmelden"
+
+msgid "membership:auth_label"
+msgstr "Mitgliedschaft und Nutzung"
+
+msgid "membership:auth_login_continue"
+msgstr "Anmelden und fortfahren"
+
+msgid "membership:auth_login_title"
+msgstr "Anmelden, um Mitgliedschaft und Nutzung zu sehen"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"Nach der Anmeldung geht es zu dieser Seite zurück. Der Einstieg muss nicht "
+"erneut gesucht werden."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"Netzwerk oder Dienst sind vorübergehend nicht verfügbar. Bitte erneut "
+"versuchen. Die Anmeldedaten bleiben erhalten."
+
+msgid "membership:auth_unavailable_note"
+msgstr ""
+"Eine Abmeldung ist nicht nötig. Nach Wiederherstellung der Verbindung erneut"
+" versuchen."
+
+msgid "membership:auth_unavailable_title"
+msgstr "Anmeldestatus derzeit nicht prüfbar"
+
+msgid "membership:back_to_play"
+msgstr "Zurück zum Spiel"
+
+msgid "membership:billing_rules"
+msgstr "Abrechnung für Mitgliedschaft und API"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Das Mitgliedskontingent wird zuerst genutzt. Reicht eines der beiden "
+"Restkontingente nicht für die gesamte Analyse, wird diese vollständig mit "
+"vorhandenen API-Punkten bezahlt. Die Abrechnungsquellen werden nicht "
+"aufgeteilt. Bei zu wenigen Punkten bitte aufladen oder auf die Erneuerung "
+"des Kontingents warten. Es werden weder automatisch Punkte gekauft noch CNY "
+"abgebucht."
+
+msgid "membership:cancel"
+msgstr "Abbrechen"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"Die Verlängerung beginnt nach Ablauf der bestehenden Mitgliedschaft und "
+"setzt das aktuelle Kontingent nicht zurück. Verbindlich ist das Startdatum "
+"im Serverbeleg nach der Zahlung."
+
+msgid "membership:choose_topup"
+msgstr "Aufladebetrag wählen"
+
+msgid "membership:close"
+msgstr "Schließen"
+
+msgid "membership:compare_membership_api"
+msgstr "Mitgliedschaft und API vergleichen"
+
+msgid "membership:compare_plans"
+msgstr "Mitgliedschaften vergleichen"
+
+msgid "membership:compute"
+msgstr "Rechenaufwand"
+
+msgid "membership:confirm_consumption"
+msgstr "Bestätigen und starten"
+
+msgid "membership:confirm_position"
+msgstr "Analyse dieser Stellung bestätigen"
+
+msgid "membership:confirm_purchase"
+msgstr "Kauf bestätigen"
+
+msgid "membership:confirm_report"
+msgstr "Berichterstellung bestätigen"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "API-Punkte nutzen, höchstens {points}"
+
+msgid "membership:confirming"
+msgstr "Wird bestätigt"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Mitgliedschaft zuerst; bei unzureichendem Kontingent vollständig mit API-"
+"Punkten, höchstens {points} Punkte"
+
+msgid "membership:countdown_days"
+msgstr "{days} T. {hours} Std. {minutes} Min."
+
+msgid "membership:countdown_hours"
+msgstr "{hours} Std. {minutes} Min."
+
+msgid "membership:create_order"
+msgstr "Bestellung erstellen"
+
+msgid "membership:create_report"
+msgstr "Partiebericht erstellen"
+
+msgid "membership:creating_order"
+msgstr "Wird erstellt…"
+
+msgid "membership:current_plan"
+msgstr "Aktuelle Mitgliedschaft"
+
+msgid "membership:date_pending"
+msgstr "Noch nicht bestätigt"
+
+msgid "membership:done"
+msgstr "Fertig"
+
+msgid "membership:entitlement_pending"
+msgstr "Kontoleistungen noch nicht bestätigt"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Bitte vor der Analyse anmelden."
+
+msgid "membership:error_insufficient"
+msgstr ""
+"Mitgliedskontingent und API-Punkte reichen nicht aus. Bitte die "
+"Mitgliedschaftsseite öffnen."
+
+msgid "membership:error_operation_running"
+msgstr "Die Analyse läuft noch. Bitte später erneut abfragen."
+
+msgid "membership:error_position_failed"
+msgstr "Analyse nicht abgeschlossen. Bitte erneut versuchen."
+
+msgid "membership:error_position_refunded"
+msgstr ""
+"Analyse nicht abgeschlossen. Die verbrauchten Ressourcen wurden "
+"zurückerstattet. Bitte erneut versuchen."
+
+msgid "membership:error_position_unavailable"
+msgstr ""
+"Die Analyse einzelner Stellungen ist bei diesem Dienst nicht verfügbar."
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"Das Preisangebot ist abgelaufen oder passt nicht zur aktuellen Anfrage. "
+"Bitte das aktuelle Angebot bestätigen und erneut versuchen."
+
+msgid "membership:error_quote_failed"
+msgstr "Preisangebot konnte nicht geladen werden. Bitte erneut versuchen."
+
+msgid "membership:error_report_failed"
+msgstr "Bericht konnte nicht erstellt werden. Bitte erneut versuchen."
+
+msgid "membership:error_report_login_required"
+msgstr "Bitte vor dem Erstellen eines Berichts anmelden."
+
+msgid "membership:error_report_missing"
+msgstr "Bericht nicht gefunden. Bitte aktualisieren und erneut versuchen."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"Das Analyseergebnis ist abgelaufen oder derzeit nicht verfügbar. Bitte "
+"erneut analysieren."
+
+msgid "membership:error_service_busy"
+msgstr "Der Dienst ist stark ausgelastet. Bitte später erneut versuchen."
+
+msgid "membership:error_service_paused"
+msgstr "Der Analysedienst ist pausiert. Bitte später erneut versuchen."
+
+msgid "membership:error_service_unavailable"
+msgstr ""
+"Der Analysedienst ist vorübergehend nicht verfügbar. Bitte später erneut "
+"versuchen."
+
+msgid "membership:error_verification_required"
+msgstr "Bitte zuerst die Anmeldeprüfung abschließen und erneut versuchen."
+
+msgid "membership:example_depth"
+msgstr "Beispielhafte Analysetiefe"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Separater Anspruch auf {count} Standardberichte pro Kalenderwoche, "
+"vorbehaltlich der Identitätsprüfung. Kein allgemeines Analysekontingent."
+
+msgid "membership:free_pending"
+msgstr "Free-Anspruch noch nicht bestätigt"
+
+msgid "membership:free_remaining"
+msgstr "Diese Woche noch {count}"
+
+msgid "membership:free_reset_countdown"
+msgstr "Erneuerung in {time} · {date} (Pekinger Zeit)"
+
+msgid "membership:free_unavailable"
+msgstr "Free-Anspruch derzeit nicht verfügbar"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Für kostenlose Standardberichte ist zuerst eine verifizierte Identität "
+"erforderlich. Derzeit wird keine verfügbare Anzahl angezeigt. Bezahlte "
+"Mitgliedschaften erhalten keinen zusätzlichen Free-Berichtsanspruch."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Separater Standardberichtsanspruch pro Kalenderwoche"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · Standardberichte dieser Woche"
+
+msgid "membership:fulfillment_pending"
+msgstr ""
+"Der Leistungsbeleg ist noch nicht bestätigt. Bitte die Nutzungsdaten "
+"aktualisieren."
+
+msgid "membership:full_use_days"
+msgstr "Bei voller Nutzung des Kontingents für {days} Tage"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"Die Ersparnis setzt die vollständige Nutzung des Laufzeitkontingents voraus "
+"und hängt vom tatsächlichen Verbrauch ab. Verlängerungen beginnen nach "
+"Ablauf der bestehenden Mitgliedschaft."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"API ohne Abonnement: 1 CNY = 1 Punkt. Vor Beginn der Analyse das "
+"Preisangebot des Servers bestätigen."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Mitgliedschaft passend zur Nutzung wählen"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr ""
+"Gleiche Standardanalysemenge bei voller Nutzung des Laufzeitkontingents."
+
+msgid "membership:galaxy_intro"
+msgstr ""
+"Analysenutzung prüfen und zwischen Aufladung nach Bedarf und Mitgliedschaft "
+"wählen."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Bei häufiger Analyse spart eine Mitgliedschaft"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "Für gelegentliche Analysen nach Bedarf aufladen"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} Tage"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days} Tage Mitgliedschaft"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"Schätzung für Partien mit 300 Zügen einschließlich Anfangsstellung, begrenzt"
+" durch das verbleibende Laufzeitkontingent."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "Was kostet eine Partie mit 300 Zügen?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"Das Wochenkontingent wird montags um 00:00 Uhr Pekinger Zeit erneuert. Das "
+"Laufzeitkontingent endet mit dem Ablaufdatum."
+
+msgid "membership:galaxy_tabs"
+msgstr "Rubriken der Mitgliedschaftsseite"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"Läuft am {date} ab (Pekinger Zeit). Die Erneuerung am Montag erhöht das "
+"Laufzeitkontingent nicht."
+
+msgid "membership:galaxy_title"
+msgstr "Mitgliedschaft und Nutzung"
+
+msgid "membership:history_unavailable"
+msgstr "Bestellverlauf vorübergehend nicht verfügbar"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Kontoaktionen"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Konto, Mitgliedschaft und Aufladung"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Erweiterte Analyse"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "Erweitert: {points} Punkte, jeweils mit Anfangsstellung"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API-Guthaben"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API-Aufladung · Nach Verbrauch"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "API-Punkte aufladen"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "API-Punkte bei unzureichendem Mitgliedskontingent"
+
+msgid "membership:kiosk_back"
+msgstr "Zurück"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Zurück zu Einstellungen"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "Nach Bestätigung der Kontoleistungen sichtbar"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Betrag vor der Zahlung prüfen"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "{plan} wählen"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Mit Cloud synchronisiert"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Mitgliedschaften vergleichen"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Bitte zuerst Konto bestätigen"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Vor Analyse Quelle und Preisangebot bestätigen"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Bestellung wird erstellt…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "{points} Punkte gutgeschrieben"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Aktuelles API-Guthaben"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Aktuelle Leistungen"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Aktuelle Mitgliedschaft"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Voraussichtlich {start} bis {end} · Pekinger Zeit"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} Punkte"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "Free-Berichtsanspruch wird in der Cloud geprüft"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Free-Berichtsanspruch wird noch geprüft"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Nur Standardberichte, kein allgemeines Analysekontingent"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "Noch {remaining} / {limit} Berichte"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Bitte zuerst das Konto verifizieren. Nach erfolgreicher Prüfung wird der "
+"Anspruch dieser Woche angezeigt."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "Bei häufiger Nutzung kann eine Mitgliedschaft günstiger sein"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "Bei voller Nutzung günstiger als die API"
+
+msgid "membership:kiosk_history_error"
+msgstr ""
+"Bestellverlauf noch nicht synchronisiert. Bitte später erneut versuchen."
+
+msgid "membership:kiosk_member_first"
+msgstr "Analysen nutzen zuerst das Mitgliedskontingent"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Mitgliedschaft zuerst, dann API-Punkte"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"Die gekaufte Mitgliedschaft beginnt nach Ende der bereits bezahlten "
+"Laufzeit. Die bisherige Nutzung bleibt erhalten. Verbindlich sind die Zeiten"
+" im Zahlungsbeleg."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Mitgliedschaft kaufen"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr ""
+"Gültig von {start} bis {end} · Pekinger Zeit · Dieser Beleg ist verbindlich"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Mitgliedschaftsdienst vorübergehend nicht verfügbar"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"In der Testumgebung simuliert der Server das Zahlungsergebnis. Diese Seite "
+"löst keine Zahlung aus und gewährt selbst keine Leistungen."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Nächste Laufzeit: {plan} · Ab {date} · Pekinger Zeit"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr ""
+"Vor der Analyse Quelle und Preisangebot bestätigen. Keine automatische "
+"Aufladung."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr ""
+"Diese Seite gewährt selbst keine Leistungen. Bei Bedarf zurück zur Auswahl."
+
+msgid "membership:kiosk_no_orders"
+msgstr "Noch kein Bestellverlauf"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Standardanalyse"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "Bericht für {moves} Züge · Standard: {points} Punkte"
+
+msgid "membership:kiosk_not_available"
+msgstr "Noch nicht verfügbar"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Bestellbestätigung"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Bestellung abgelaufen"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Bestellung nicht abgeschlossen"
+
+msgid "membership:kiosk_order_history"
+msgstr "Bestellverlauf"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Bestellung {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Bestellung erstattet"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Zahlung vom Server bestätigt"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"Bestellstatus noch nicht synchronisiert. Erneuter Versuch läuft. Bitte nicht"
+" erneut bestellen."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"Bestellergebnis noch nicht bestätigt. Bitte zuerst den Bestellverlauf "
+"prüfen, um doppelte Bestellungen zu vermeiden."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Bestellung noch nicht bestätigt"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Bestellung gültig bis {date} · Pekinger Zeit"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Warten auf Zahlungsbestätigung des Servers"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"Vorhandene Ergebnisse können beliebig oft angesehen werden. Gebiet und "
+"Zugvorschläge sind im selben Ergebnis enthalten."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Bestätigt am {date} · Pekinger Zeit"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr ""
+"Die Zahlungsschnittstelle ist noch nicht verfügbar. Bitte den Bestellstatus "
+"später prüfen."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr ""
+"Vor der Bestätigung werden keine Restanteile angezeigt und keine "
+"Bestellungen erstellt."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Laufzeit noch zu prüfen"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Laufzeitkontingent noch zu prüfen"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Preise und Leistungen werden nach Bestätigung des Katalogs angezeigt."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Mitgliedschaftskatalog noch nicht synchronisiert"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} Berichte"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} Tage"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Gültig bis {date} · Pekinger Zeit"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} Punkte"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} Punkte / Zug"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Laufzeit- und Wochenrestkontingent müssen beide für die gesamte Analyse "
+"reichen. Andernfalls wird sie vollständig mit API-Punkten bezahlt, ohne "
+"Aufteilung. Keine automatische Aufladung in CNY."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API-Preise erklärt"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"Ein Bericht mit N Zügen enthält die Anfangsstellung, also N+1 Stellungen. "
+"Maßgeblich für die tatsächlichen Kosten ist das Preisangebot für die Partie "
+"vor Analysebeginn."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"Der Punktestand wird mit einer Genauigkeit von {precision} Punkten "
+"angezeigt. Standard: {normal} Punkte pro Stellung; erweitert: {advanced} "
+"Punkte pro Stellung."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Bei fehlender Verbindung oder unbekanntem Kontingent zuerst synchronisieren."
+" Vorhandene Ergebnisse können erneut angesehen werden; Gebiet und "
+"Zugvorschläge sind im selben Ergebnis enthalten."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Kauf erst nach Bestätigung von Konto und Kontingent"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Kontingent wird bestätigt"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Das Mitgliedskontingent wird nur genutzt, wenn beide Restkontingente "
+"reichen. Andernfalls wird die gesamte Analyse mit API-Punkten bezahlt, ohne "
+"Aufteilung. Vor Beginn Quelle und Preisangebot bestätigen. Bei zu wenigen "
+"Punkten manuell aufladen oder auf die Kontingenterneuerung warten."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Mitgliedskontingent und Ersparnis"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Kontingent noch nicht bestätigt"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"Die wöchentliche Höchstzahl wird für Standardberichte mit {moves} Zügen "
+"geschätzt und durch das Laufzeitrestkontingent begrenzt. Richtwerte für die "
+"Laufzeit: {references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"Die Mitgliedschaft endet nach der gekauften Laufzeit. Das Wochenkontingent "
+"wird montags um 00:00 Uhr Pekinger Zeit zurückgesetzt. Restanteile für "
+"Laufzeit und Woche werden getrennt berechnet; laufende Analysen sind bereits"
+" eingerechnet."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Ein Ergebnis enthält Gebiet und Zugvorschläge. Erneutes Ansehen kostet "
+"nichts zusätzlich. Erweiterte Analysen verbrauchen das {multiplier}-Fache "
+"des Standardkontingents."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"Die Ersparnis gegenüber der API-Standardanalyse setzt die vollständige "
+"Nutzung des Laufzeitkontingents voraus. Bei geringerer Nutzung variiert die "
+"tatsächliche Ersparnis. Free gewährt nur kostenlose Standardberichte, kein "
+"allgemeines Analysekontingent."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Kontingent noch von der Cloud zu prüfen"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Die Kontonutzung wird erneut synchronisiert. Für Guthaben und Leistungen ist"
+" der Cloud-Datenstand maßgeblich."
+
+msgid "membership:kiosk_remaining"
+msgstr "Verbleibend"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Restkontingent noch nicht bestätigt"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "{plan} verlängern"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"Für {moves} Züge geschätzt, begrenzt durch das Laufzeitrestkontingent; "
+"erweitert ca. {multiplier}-facher Verbrauch"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Laufende Analysen bereits eingerechnet"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"Ein Ergebnis enthält Gebiet und Zugvorschläge. Erneutes Ansehen kostet "
+"nichts zusätzlich."
+
+msgid "membership:kiosk_resync"
+msgstr "Erneut synchronisieren"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Zurück zur Auswahl"
+
+msgid "membership:kiosk_return_usage"
+msgstr "Zurück zur Nutzung"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "Ca. {percent} günstiger als die API"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"Ersparnis bei voller Nutzung des Laufzeitkontingents; bei geringerer Nutzung"
+" hängt sie vom Verbrauch ab"
+
+msgid "membership:kiosk_select_topup"
+msgstr "API-Aufladebetrag wählen"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Dienst vorübergehend nicht verfügbar"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Synchronisierung fehlgeschlagen"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Synchronisierung ausstehend"
+
+msgid "membership:kiosk_synced"
+msgstr "Synchronisiert"
+
+msgid "membership:kiosk_syncing"
+msgstr "Wird synchronisiert"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Bestellungen werden synchronisiert…"
+
+msgid "membership:kiosk_term"
+msgstr "Laufzeit"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Laufzeitende · Pekinger Zeit"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Verbleibender Anteil des Laufzeitkontingents"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Standardberichte · ca. {reports} in {days} Tagen"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Testumgebung"
+
+msgid "membership:kiosk_test_order"
+msgstr "Simulierte TEST-Bestellung · Keine echte Zahlung"
+
+msgid "membership:kiosk_title"
+msgstr "Mitgliedschaft und Aufladung"
+
+msgid "membership:kiosk_topup"
+msgstr "Aufladen"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "{amount} aufladen"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Aufladekatalog noch nicht synchronisiert"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Reichen beide Restkontingente, wird zuerst die Mitgliedschaft genutzt; "
+"andernfalls die gesamte Analyse mit API-Punkten bezahlt."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} Punkte"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} Punkte"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Noch nicht bestätigt"
+
+msgid "membership:kiosk_understood"
+msgstr "Verstanden"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Beide Restkontingente müssen für die Analyse reichen; andernfalls wird sie "
+"vollständig mit API-Punkten bezahlt."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "Nutzung kann derzeit nicht synchronisiert werden"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Verbraucht und in Analyse: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Bitte zuerst Kontoidentität bestätigen"
+
+msgid "membership:kiosk_view_order"
+msgstr "Bestellung {id} ansehen"
+
+msgid "membership:kiosk_view_plans"
+msgstr "Mitgliedschaften ansehen"
+
+msgid "membership:kiosk_week"
+msgstr "Diese Woche"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Verbleibender Anteil des Wochenkontingents"
+
+msgid "membership:kiosk_week_reports"
+msgstr "Bis zu ca. {reports} Berichte/Woche"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Montags 00:00 Uhr erneuert · Pekinger Zeit"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Kostenlose Standardberichte pro Woche"
+
+msgid "membership:loading"
+msgstr "Mitgliedschaft und Nutzung werden geladen…"
+
+msgid "membership:login"
+msgstr "Anmelden"
+
+msgid "membership:login_to_view"
+msgstr "Anmelden, um Mitgliedschaft und Nutzung zu sehen"
+
+msgid "membership:membership_first"
+msgstr "Mitgliedskontingent zuerst nutzen"
+
+msgid "membership:membership_free_pending_help"
+msgstr ""
+"Mitgliedschaft und Free-Anspruch sind noch nicht bestätigt. Bitte neu laden."
+
+msgid "membership:membership_order"
+msgstr "Mitgliedschaftsbestellung"
+
+msgid "membership:next_membership"
+msgstr "{plan} gekauft · Ab {date}"
+
+msgid "membership:no_orders"
+msgstr "Noch keine Bestellungen"
+
+msgid "membership:normal"
+msgstr "Standard"
+
+msgid "membership:normal_position_cost"
+msgstr "Standard: ca. {points} Punkte/Zug"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "Nach Bedarf kaufen, ohne Abonnement"
+
+msgid "membership:open"
+msgstr "Ansehen"
+
+msgid "membership:order_actual_end"
+msgstr "Tatsächliches Ende: {date} (Pekinger Zeit)"
+
+msgid "membership:order_actual_points"
+msgstr "Tatsächlich gutgeschrieben: {points} Punkte"
+
+msgid "membership:order_actual_start"
+msgstr "Tatsächlicher Beginn: {date} (Pekinger Zeit)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Voraussichtlicher Beginn: {start}, Ende: {end} (Pekinger Zeit). Verbindlich "
+"sind die Daten im Zahlungsbeleg."
+
+msgid "membership:order_expired"
+msgstr "Bestellung abgelaufen"
+
+msgid "membership:order_expires_at"
+msgstr "Bestellung gültig bis {date} (Pekinger Zeit)."
+
+msgid "membership:order_failed"
+msgstr "Bestellung nicht abgeschlossen"
+
+msgid "membership:order_history"
+msgstr "Bestellverlauf"
+
+msgid "membership:order_id"
+msgstr "Bestellnummer"
+
+msgid "membership:order_paid"
+msgstr "Bezahlt"
+
+msgid "membership:order_pending"
+msgstr "Warten auf Zahlung"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"Zahlungsstatus kann derzeit nicht bestätigt werden. Erneuter Versuch läuft. "
+"Bitte nicht erneut bezahlen."
+
+msgid "membership:order_refunded"
+msgstr "Erstattet"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"Bestellergebnis noch nicht bestätigt. Bitte zuerst den Bestellverlauf "
+"prüfen, um doppelte Bestellungen zu vermeiden."
+
+msgid "membership:order_topup"
+msgstr "API-Punkte aufladen"
+
+msgid "membership:payment_account_pending"
+msgstr ""
+"Zahlungsbestellungen sind erst nach Bestätigung von Konto und Nutzung "
+"möglich."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"Der Zahlungsweg ist noch nicht verfügbar. Bitte außerhalb dieser Seite keine"
+" Zahlungen an unbekannte Konten senden."
+
+msgid "membership:payments_disabled"
+msgstr "Zahlungen noch nicht verfügbar"
+
+msgid "membership:payments_unavailable"
+msgstr ""
+"Zahlungen sind noch nicht verfügbar. Derzeit können keine "
+"Zahlungsbestellungen erstellt werden."
+
+msgid "membership:pending_order_notice"
+msgstr "Warten auf Zahlung. Die Seite prüft den Serverstatus automatisch."
+
+msgid "membership:plan_pending"
+msgstr "Mitgliedschaftsleistungen noch nicht bestätigt"
+
+msgid "membership:plan_term"
+msgstr "/ {days} Tage"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} noch nicht verfügbar"
+
+msgid "membership:plans"
+msgstr "Mitgliedschaft"
+
+msgid "membership:points"
+msgstr "Punkte"
+
+msgid "membership:points_amount"
+msgstr "{points} Punkte"
+
+msgid "membership:points_exchange_rate"
+msgstr "1 CNY = 1 Punkt"
+
+msgid "membership:position_cost"
+msgstr "Kosten pro Zug"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Einzelne Stellungen und ganze Partien haben denselben Stückpreis. Eine ganze"
+" Partie wird nach Zugzahl plus Anfangsstellung berechnet."
+
+msgid "membership:processing"
+msgstr "Wird verarbeitet…"
+
+msgid "membership:quota"
+msgstr "Mitgliedskontingent"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"Restanteile für Laufzeit und Woche beziehen sich jeweils auf ihr eigenes "
+"Kontingent. Beide müssen für eine Analyse reichen. Reservierungen für "
+"laufende Analysen zählen als verbraucht und werden bei Fehlschlag "
+"zurückgegeben."
+
+msgid "membership:quota_expires_in"
+msgstr "Läuft in {time} ab"
+
+msgid "membership:quota_pending"
+msgstr "Kontingent noch nicht bestätigt"
+
+msgid "membership:quota_recovers_in"
+msgstr "Erneuerung in {time}"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Aktuelles Kontingent wird bestätigt"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"Beide Restkontingente werden getrennt berechnet und müssen für eine Analyse "
+"reichen. Reservierungen laufender Analysen sind im Verbrauchsanteil "
+"enthalten und werden bei Fehlschlag zurückgegeben."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"Vor Beginn werden Preisangebot und Abrechnungsquelle des Servers angezeigt. "
+"Solange Konto oder Nutzung nicht bestätigt sind, kann keine Analyse starten."
+" Erneutes Ansehen vorhandener Ergebnisse und Wechseln zwischen Gebiet und "
+"Zugvorschlägen kosten nichts zusätzlich."
+
+msgid "membership:refresh"
+msgstr "Aktualisieren"
+
+msgid "membership:reload"
+msgstr "Neu laden"
+
+msgid "membership:remaining_percent"
+msgstr "Verbleibend: {percent}"
+
+msgid "membership:renew_plan"
+msgstr "{plan} verlängern"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"Eine Verlängerung beginnt nach Ablauf der bestehenden Mitgliedschaft. "
+"Aktueller Verbrauch und Reservierungen werden nicht zurückgesetzt. Vor der "
+"Zahlung sind die Daten nur geschätzt; verbindlich ist der Zeitraum im "
+"Serverbeleg nach der Zahlung. Bezahlte Mitgliedschaften erhalten keinen "
+"zusätzlichen Free-Standardberichtsanspruch."
+
+msgid "membership:report_estimate_limit"
+msgstr ""
+"Für Partien mit 300 Zügen geschätzt, begrenzt durch das "
+"Laufzeitrestkontingent."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"Mit Anfangsstellung insgesamt 301 analysierte Stellungen. Die tatsächlichen "
+"Kosten richten sich nach dem Preisangebot des Servers vor dem Absenden."
+
+msgid "membership:retry"
+msgstr "Erneut versuchen"
+
+msgid "membership:savings_approx"
+msgstr "Ca. {percent} Ersparnis"
+
+msgid "membership:savings_vs_api"
+msgstr "Ca. {percent} günstiger als die API"
+
+msgid "membership:select_plan"
+msgstr "{plan} wählen"
+
+msgid "membership:server_authority"
+msgstr ""
+"Maßgeblich für Guthaben und Leistungen ist die Bestätigung des Servers."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"Dieser Dienst bietet derzeit keine Mitgliedschaftsnutzung an. Leistungen und"
+" Guthaben sind noch nicht bestätigt."
+
+msgid "membership:source_free"
+msgstr "Voraussichtlich mit kostenlosem Wochenbericht"
+
+msgid "membership:source_membership"
+msgstr "Voraussichtlich mit Mitgliedskontingent"
+
+msgid "membership:source_owned"
+msgstr "Dieses Ergebnis ist bereits vorhanden"
+
+msgid "membership:source_pending"
+msgstr "Abrechnungsquelle noch nicht bestätigt"
+
+msgid "membership:source_wallet"
+msgstr "Voraussichtlich mit API-Punkten"
+
+msgid "membership:stale"
+msgstr "Aktualisierung ausstehend"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Es werden die zuletzt geladenen Daten angezeigt. Konto und Abrechnungsquelle"
+" müssen erneut bestätigt werden. Käufe sind vorübergehend nicht möglich."
+
+msgid "membership:synced"
+msgstr "Synchronisiert"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Vorübergehend nicht verfügbar"
+
+msgid "membership:term_remaining"
+msgstr "Verbleibend in dieser Laufzeit"
+
+msgid "membership:term_report_reference"
+msgstr "{plan}: Richtwert von ca. {reports} Standardberichten je {days} Tage."
+
+msgid "membership:term_total_reports"
+msgstr "Ca. {reports} Berichte in {days} Tagen"
+
+msgid "membership:test_order_warning"
+msgstr "Simulierte TEST-Bestellung, keine echte Zahlung"
+
+msgid "membership:time_pending"
+msgstr "Zeitpunkt noch nicht bestätigt"
+
+msgid "membership:topup_amount"
+msgstr "{amount} aufladen"
+
+msgid "membership:topup_arrival"
+msgstr "{points} Punkte werden gutgeschrieben"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Gutschrift nach Zahlungsbestätigung. Bei unzureichendem Mitgliedskontingent "
+"werden vorhandene API-Punkte genutzt. Keine automatische Aufladung."
+
+msgid "membership:topup_option"
+msgstr "{amount}, Gutschrift: {points} Punkte"
+
+msgid "membership:unavailable"
+msgstr "Noch nicht verfügbar"
+
+msgid "membership:unavailable_title"
+msgstr "Mitgliedschaft und Nutzung vorübergehend nicht verfügbar"
+
+msgid "membership:unconfirmed_help"
+msgstr ""
+"Kontoleistungen und Guthaben sind noch nicht bestätigt. Bitte später erneut "
+"versuchen."
+
+msgid "membership:usage"
+msgstr "Nutzung"
+
+msgid "membership:used_and_reserved"
+msgstr "Verbraucht und in Analyse: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Gültig bis {date} (Pekinger Zeit)"
+
+msgid "membership:view_api_topup"
+msgstr "API-Aufladung ansehen"
+
+msgid "membership:view_plans"
+msgstr "Mitgliedschaften ansehen"
+
+msgid "membership:visits"
+msgstr "{count} Suchdurchläufe"
+
+msgid "membership:week_remaining"
+msgstr "Diese Woche verbleibend"
+
+msgid "membership:weekly_report_reference"
+msgstr "Standardberichte, bis zu ca. {reports} pro Woche"
+
+msgid "membership:weekly_reports"
+msgstr "Bis zu ca. {reports} Berichte pro Woche"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "Bis zu ca. {reports} Berichte pro Woche · Noch nicht verfügbar"
+
+msgid "membership:weekly_reset_rule"
+msgstr ""
+"Das Wochenkontingent wird jeden Montag um 00:00 Uhr Pekinger Zeit erneuert."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"Reicht die Mitgliedschaft nicht für die gesamte Analyse, wird diese "
+"vollständig mit vorhandenen API-Punkten bezahlt."
+
+msgid "kifu:first_page"
+msgstr "Erste Seite"
+
+msgid "kifu:last_page"
+msgstr "Letzte Seite"
+
+msgid "membership:order_cancelled"
+msgstr "Bestellung storniert"
+
+msgid "membership:wechat_another_screen"
+msgstr ""
+"Wenn Sie diese Seite auf dem Smartphone ansehen, öffnen Sie sie auf einem anderen Bildschirm und scannen Sie den Code "
+"mit WeChat auf Ihrem Smartphone."
+
+msgid "membership:wechat_cancel"
+msgstr "Bestellung stornieren"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "Die Stornierung wird geprüft. Wurde bereits bezahlt, ist der Zahlungsbeleg maßgeblich."
+
+msgid "membership:wechat_cancelling"
+msgstr "Wird storniert…"
+
+msgid "membership:wechat_close_help"
+msgstr "Beim Schließen wird diese Seite nur ausgeblendet. Sie können sie im Bestellverlauf erneut öffnen."
+
+msgid "membership:wechat_confirming"
+msgstr "Die Zahlung wird geprüft. Bitte geben Sie keine weitere Bestellung auf."
+
+msgid "membership:wechat_paid"
+msgstr "Zahlung mit WeChat Pay erfolgreich. Ihr Konto wird synchronisiert."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat-Pay-QR-Code"
+
+msgid "membership:wechat_qr_error"
+msgstr "Der QR-Code kann gerade nicht angezeigt werden. Bitte prüfen Sie diese Bestellung erneut."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "Der QR-Code ist noch nicht bereit. Ihre Bestellung wird geprüft."
+
+msgid "membership:wechat_retry"
+msgstr "Sicher erneut versuchen"
+
+msgid "membership:wechat_scan"
+msgstr "Scannen und bezahlen"
+
+msgid "membership:wechat_scan_help"
+msgstr "Scannen Sie den QR-Code mit der Scan-Funktion in WeChat auf Ihrem Smartphone."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR-Code noch {time} gültig"
+
+msgid "membership:wechat_waiting"
+msgstr "Warten auf die Zahlungsbestätigung von WeChat Pay"

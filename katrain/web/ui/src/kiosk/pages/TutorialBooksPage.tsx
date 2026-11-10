@@ -162,7 +162,7 @@ const TutorialBooksPage = () => {
       <KioskPagebar
         testId="tutorial-books-pagebar"
         backLabel={t('tutorial:title_cn', '课程')}
-        onBack={() => navigate('/kiosk/tutorial')}
+        onBack={() => navigate('/kiosk/tutorial/library')}
         // 分类的 slug **就是它的中文名**(`db_queries.py:22` 那四条写死的:入门 / 布局 / 中盘 / 官子),
         // 所以标题直接用地址里那一段 —— 不为一个已经在手上的字符串再发一次 `/categories`。
         title={decodeURIComponent(category)}

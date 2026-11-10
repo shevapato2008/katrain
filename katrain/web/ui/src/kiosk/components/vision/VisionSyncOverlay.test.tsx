@@ -42,6 +42,36 @@ describe('VisionSyncOverlay recovery presentation', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('refreshes open board-loss and capture copy without replaying recovery actions', () => {
+    vi.useFakeTimers();
+    const en: Record<string, string> = {
+      '棋盘检测异常': 'Board detection issue',
+      '请提走棋子': 'Remove captured stones',
+      '请提走 {stones}': 'Remove {stones}',
+      '{count} 颗黑子': '{count} black stones',
+    };
+    const ko: Record<string, string> = {
+      '棋盘检测异常': '바둑판 인식 오류',
+      '请提走棋子': '잡은 돌을 치우세요',
+      '请提走 {stones}': '{stones} 치우세요',
+      '{count} 颗黑子': '흑돌 {count}개',
+    };
+    mocks.translate.mockImplementation((key, fallback) => en[key] ?? fallback ?? key);
+    const lost = event(1, 'board_lost');
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByText('Board detection issue')).toBeInTheDocument();
+    mocks.translate.mockImplementation((key, fallback) => ko[key] ?? fallback ?? key);
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
+    expect(screen.getByText('바둑판 인식 오류')).toBeInTheDocument();
+    const captured = event(2, 'capture_pending', { positions: [[7, 7, 1], [8, 8, 1]] });
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, captured]} />);
+    expect(screen.getByText('잡은 돌을 치우세요')).toBeInTheDocument();
+    expect(screen.getByText('흑돌 2개 치우세요')).toBeInTheDocument();
+    expect(mocks.playMove).not.toHaveBeenCalled();
+    expect(mocks.visionResetSync).not.toHaveBeenCalled();
+  });
+
   it('does not re-prompt for the stone already submitted to a waiting platform', async () => {
     const mismatch = event(1, 'illegal_change', { positions: [[4, 5, 1]], missing: [] });
     const { rerender } = render(
@@ -412,5 +442,21 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(screen.queryByText('棋盘检测异常')).toBeNull();
     expect(screen.queryByText('盘面与对局不一致')).toBeNull();
     expect(dialogCount()).toBe(0);
+  });
+
+  it('shows the actionable shared mismatch while the platform still holds an uncertain send', async () => {
+    const pending = event(1, 'move_pending', { row: 4, col: 5, color: 1 });
+    const mismatch = event(2, 'illegal_change', { actionable: true, positions: [[4, 5, 1]], missing: [] });
+    const { rerender } = render(
+      <VisionSyncOverlay {...props} syncEvents={[pending, mismatch]}
+        platformPendingStone={{ row: 4, col: 5, color: 1 }} />,
+    );
+    expect(await screen.findByText('盘面与对局不一致')).toBeInTheDocument();
+    rerender(<VisionSyncOverlay {...props} currentNodeId={11} syncEvents={[pending, mismatch]}
+      platformPendingStone={{ row: 4, col: 5, color: 1 }} />);
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    rerender(<VisionSyncOverlay {...props} currentNodeId={11} syncEvents={[pending, mismatch, event(3, 'synced')]}
+      platformPendingStone={null} />);
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
   });
 });

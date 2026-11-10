@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API } from '../../api';
@@ -62,9 +62,9 @@ vi.mock('../context/VisionContext', () => ({
 }));
 
 // Strict kiosk sessions are authenticated through a cookie while token stays null.
-const authMock = vi.hoisted(() => ({ token: 'mock-token' as string | null, isAuthenticated: true }));
+const authMock = vi.hoisted(() => ({ token: 'mock-token' as string | null, isAuthenticated: true, userId: 1 }));
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: authMock.token, isAuthenticated: authMock.isAuthenticated, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
+  useAuth: () => ({ token: authMock.token, isAuthenticated: authMock.isAuthenticated, user: { id: authMock.userId, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
 // Mock Board with a lightweight stub that exposes a button to trigger onMove(3, 3) —
@@ -171,9 +171,15 @@ vi.mock('../../hooks/useGameSession', () => ({
 // Import after mocks
 import GamePage, { deriveAiTurnState, deriveHumanColor } from '../pages/GamePage';
 
+const SessionSwitcher = () => {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate('/kiosk/play/cross-platform/engine/game/other-session')}>change-session</button>;
+};
+
 const renderTree = (engineMode: boolean) => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter initialEntries={['/kiosk/play/cross-platform/engine/game/test-session']}>
+      <SessionSwitcher />
       <Routes>
         <Route path="/kiosk/play/cross-platform/engine/game/:sessionId" element={<GamePage engineMode={engineMode} />} />
       </Routes>
@@ -188,6 +194,7 @@ describe('GamePage engine mode', () => {
     vi.clearAllMocks();
     authMock.token = 'mock-token';
     authMock.isAuthenticated = true;
+    authMock.userId = 1;
     mockOnMove.mockReset();
     mockPhysicalEngineError = null;
     mockAwaitingRemovalReminder = null;
@@ -209,6 +216,11 @@ describe('GamePage engine mode', () => {
     mockGameState.count_min_moves = undefined;
     mockGameState.end_result = null;
     mockGameState.platform_engine_color = undefined;
+    mockGameState.game_id = 'test-game';
+    mockGameState.history = [
+      { node_id: 0, score: 0, winrate: 0.5 },
+      { node_id: 1, score: 0.3, winrate: 0.52 },
+    ];
   });
 
   it('星阵人机局保留灰色悔棋并显示三个可用动作；停一手走会话动作，认输仍走确认框', async () => {
@@ -239,7 +251,7 @@ describe('GamePage engine mode', () => {
 
     // 数子 now routes to the count API directly (HvAI completes immediately), NOT session.handleAction.
     fireEvent.click(screen.getByText('数子'));
-    await waitFor(() => expect(mockRequestCount).toHaveBeenCalledWith('test-session'));
+    await waitFor(() => expect(mockRequestCount).toHaveBeenCalledWith('test-session', 'mock-token'));
     expect(mockHandleAction).not.toHaveBeenCalledWith('count');
   });
 
@@ -340,7 +352,7 @@ describe('GamePage engine mode', () => {
 
       expect(screen.getByText('领地')).toBeInTheDocument();
       // 建议 was renamed to AI支招 (a one-shot hint action, not a toggle) in local free-play.
-      expect(screen.getByText('AI支招')).toBeInTheDocument();
+      expect(screen.getByText('支招')).toBeInTheDocument();
       expect(screen.getByText('图表')).toBeInTheDocument();
     });
 
@@ -422,7 +434,7 @@ describe('GamePage engine mode', () => {
       expect(overlay).toEqual({ kind: 'options', candidates });
     });
 
-    it('clicking the same active kind again toggles the overlay off (no re-fetch)', async () => {
+    it('clicking the same active area kind closes and reopens its cache (one request)', async () => {
       (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
       });
@@ -433,7 +445,70 @@ describe('GamePage engine mode', () => {
 
       fireEvent.click(screen.getByText('领地'));
       await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
       expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1);
+    });
+
+    it('reuses area after switching to options and refreshes no extra quota', async () => {
+      vi.mocked(API.platformEngineAnalysis)
+        .mockResolvedValueOnce({ ok: true, kind: 'area', data: { ownership: [], winrate: 0.6, delta: 1 } })
+        .mockResolvedValueOnce({ ok: true, kind: 'options', data: { candidates: [] } });
+      renderPage(true);
+      fireEvent.click(screen.getByText('领地'));
+      await screen.findByRole('dialog', { name: '领地判断' });
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'options'));
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+      expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2);
+      expect(API.platformEngineItems).toHaveBeenCalledTimes(3);
+    });
+
+    it('closing pending area caches its late answer without reviving the dialog or Canvas', async () => {
+      let resolve!: (value: unknown) => void;
+      vi.mocked(API.platformEngineAnalysis).mockReturnValueOnce(new Promise((r) => { resolve = r; }) as any);
+      renderPage(true);
+      fireEvent.click(screen.getByText('领地'));
+      await screen.findByRole('dialog', { name: '领地判断' });
+      fireEvent.click(screen.getByRole('button', { name: '关闭领地，继续下棋' }));
+      resolve({ ok: true, kind: 'area', data: { ownership: [], winrate: 0.6, delta: 1 } });
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: '领地判断' })).toBeNull());
+      expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', '');
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+      expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(1);
+    });
+
+    it('closing pending area suppresses a late insufficient dialog', async () => {
+      let resolve!: (value: unknown) => void;
+      vi.mocked(API.platformEngineAnalysis).mockReturnValueOnce(new Promise((r) => { resolve = r; }) as any);
+      renderPage(true);
+      fireEvent.click(screen.getByText('领地'));
+      await screen.findByRole('dialog', { name: '领地判断' });
+      fireEvent.click(screen.getByRole('button', { name: '关闭领地，继续下棋' }));
+      resolve({ ok: false, kind: 'area', reason: 'insufficient' });
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledTimes(2));
+      expect(screen.queryByText(/请在星阵.*充值/)).toBeNull();
+    });
+
+    it.each(['account', 'moves', 'logout', 'game', 'session'] as const)('invalidates cached area after %s change', async (change) => {
+      vi.mocked(API.platformEngineAnalysis).mockResolvedValue({ ok: true, kind: 'area', data: { ownership: [], winrate: 0.6, delta: 1 } });
+      const { rerender } = renderPage(true);
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+      if (change === 'account') authMock.userId = 2;
+      else if (change === 'logout') authMock.isAuthenticated = false;
+      else if (change === 'game') mockGameState.game_id = 'other-game';
+      else if (change === 'session') fireEvent.click(screen.getByText('change-session'));
+      else mockGameState.history = [{ node_id: 0, score: 0, winrate: 0.5 }, { node_id: 1, score: null, winrate: null, move: 'pass', player: 'B' }];
+      rerender(renderTree(true));
+      await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
+      authMock.isAuthenticated = true;
+      rerender(renderTree(true));
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2));
     });
 
     it('clicking a DIFFERENT kind replaces the active overlay (mutual exclusion)', async () => {
@@ -482,7 +557,7 @@ describe('GamePage engine mode', () => {
     });
 
     it.each(['move', 'end'] as const)('clears the overlay and evaluation after a %s', async (change) => {
-      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValue({
         ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
       });
       const { rerender } = renderPage(true);
@@ -501,6 +576,11 @@ describe('GamePage engine mode', () => {
       await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
       expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
       expect(screen.queryByTestId('engine-analysis-summary')).toBeNull();
+      mockGameState.current_node_id = 42;
+      mockGameState.end_result = null;
+      rerender(renderTree(true));
+      fireEvent.click(screen.getByText('领地'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledTimes(2));
     });
 
     it.each([

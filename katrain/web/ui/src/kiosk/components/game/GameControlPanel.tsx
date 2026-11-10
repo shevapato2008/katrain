@@ -1,20 +1,24 @@
+import { interpolate } from '../../utils/interpolate';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import '../../../kiosk-shell/engine-game-redesign.css';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
+import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
-import { localizedRank } from '../../../utils/rankUtils';
+import { presentPlayerRank, seatRank, UNKNOWN_RANK, type PlayerRank, type PlayerRanks } from '../../utils/playerRank';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { autoCountEligible } from '../../hooks/useAutoCount';
 import type { EngineItemCounts, GameState, PlatformClockState, PlayerInfo } from '../../../api';
 import { useGoClock } from './goClock';
 import { isFreeVsAi } from './gameKinds';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { useSound } from '../../../hooks/useSound';
+import { useByoyomiCountdownSound } from '../../../hooks/useByoyomiCountdownSound';
 import { computeClock, type ClockView } from '../../../utils/gameClock';
 
 interface Props {
   gameState: GameState;
+  playerRanks?: PlayerRanks;
   onAction: (action: string) => void;
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
@@ -70,8 +74,7 @@ interface Props {
   territory?: {
     remaining: number | null;
     phase: 'idle' | 'loading' | 'result' | 'error';
-    blackArea?: number;
-    whiteArea?: number;
+    visible?: boolean;
     disabled: boolean;
     retrySameRequest: boolean;
     onRequest: () => void;
@@ -185,10 +188,14 @@ function useClientElapsed(snapshot: object | undefined, running: boolean): numbe
   useEffect(() => {
     if (!running) return;
     const startedAt = Date.now();
-    const id = window.setInterval(() => {
-      setTick({ snapshot, elapsed: (Date.now() - startedAt) / 1000 });
-    }, 200);
-    return () => window.clearInterval(id);
+    const refresh = () => setTick({ snapshot, elapsed: (Date.now() - startedAt) / 1000 });
+    const onVisibility = () => { if (document.visibilityState !== 'hidden') refresh(); };
+    const id = window.setInterval(refresh, 200);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [snapshot, running]);
   return running && tick.snapshot === snapshot ? tick.elapsed : 0;
 }
@@ -198,19 +205,18 @@ function useClientElapsed(snapshot: object | undefined, running: boolean): numbe
  * 不是另起一块面板;规则和贴目同理,它们是**这一局开局时定死的**,写在页控条副标里
  * 一次就够。两处都占 0 高度,这正是右栏 516 能装下胜率块的原因。
  */
-function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
+function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_RANK, t, paired = false, untimedClock = false }: {
   color: 'B' | 'W';
+  paired?: boolean;
+  untimedClock?: boolean;
   info: PlayerInfo;
   captures: number;
   turn: boolean;
   state: string;
   clock: { value: string; label: string; phase?: 'byoyomi' | 'expired' } | null;
-  lang: string;
+  rank?: PlayerRank;
   t: (key: string, fallback?: string) => string;
 }) {
-  // 段位:阶梯 AI 的段位是 `rank_display` 里的字符串,其他人走数值 `calculated_rank`。
-  const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
-  const rank = !rawRank || rawRank === 'No Rank' ? null : rawRank;
   // ⚠️ 这里是**人名缺席时的占位**,站的是「谁在下」那个位置,不是「哪一方的子」。
   // 屏 04 对同一个位置承诺的是「黑方」(`PvpLocalSetupPage.tsx:227`,用的是自铸的
   // `setup:black_side`),而那一屏的注释白纸黑字写着「**和对局屏上那两张卡的回落值是同一句话**」。
@@ -220,11 +226,29 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   // (2026-08-26 一度把 fallback 改成「黑棋」去迁就 PO —— 那是把这处不一致钉死了:
   //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
   const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
+  if (paired) {
+    return (
+      <div className={`pcard ai-player-card kiosk-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
+        <PlayerCardSurface left={color === 'W'} />
+        <div className="ai-player-card__name">
+          <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
+          <h4 title={name}>{name}</h4><span className="kiosk-player-rank" title={presentPlayerRank(rank, t).title} aria-label={presentPlayerRank(rank, t).title}>{presentPlayerRank(rank, t).label}</span>
+        </div>
+        <div className={untimedClock ? 'clock clock--untimed' : 'clock'}>
+          {clock ? <><b>{clock.value}</b><span>{clock.label}</span></> : <span>{t('game:untimed', '不限时')}</span>}
+        </div>
+        <div className="ai-player-card__foot">
+          <span>{state} · {color === 'B' ? t('game:plays_black', '执黑') : t('game:plays_white', '执白')}</span>
+          <span>{t('game:captures', '提子')} {captures}</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />
       <div>
-        <h4>{rank ? `${name} · ${rank}` : name}</h4>
+        <h4 className="kiosk-player-name-line"><span title={name}>{name}</span><span className="kiosk-player-rank" title={presentPlayerRank(rank, t).title} aria-label={presentPlayerRank(rank, t).title}>{presentPlayerRank(rank, t).label}</span></h4>
         <p>
           {state} · {color === 'B' ? t('game:plays_black', '执黑') : t('game:plays_white', '执白')}
           {' · '}{t('game:captures', '提子')} {captures}
@@ -244,8 +268,10 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
  * 一方的玩家卡 + 时钟(A18)。时钟跟着本地时间走,所以 hook 挂在每张卡自己身上 ——
  * 放在父组件里算,每 250ms 一次的重渲会把胜率图、棋谱一起带着重画。
  */
-function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }: {
+function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, paired = false, rank }: {
   gameState: GameState;
+  paired?: boolean;
+  rank?: PlayerRank;
   color: 'B' | 'W';
   turn: boolean;
   state: string;
@@ -256,36 +282,14 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
   onTimeout?: (color: 'B' | 'W') => void;
 }) {
   const onExpired = useCallback(() => onTimeout?.(color), [onTimeout, color]);
-  const { play: playSound, stop: stopSound } = useSound();
-  const beepingRef = useRef(false);
   const reading = useGoClock(gameState, color, onExpired);
-  const countdownSecond = reading?.byoLeft == null ? null : Math.ceil(reading.byoLeft);
   const clockActive = turn && !gameState.end_result && !gameState.terminal_result
     && (gameState.children?.length ?? 0) === 0;
-  // `countdownbeep.wav` 是**整个读秒窗口**的那一条 5 秒轨(5 声,在 0/1/2/3/4s),不是一声。
-  // 原来按「剩余整秒变一次就放一次」触发 ⇒ 窗口内放 5 遍、5 份重叠,峰值落在 T−1 秒,
-  // 一直响到 T+3 秒,而卡片在 T 就已经写「0:00 超时」—— 这就是「声音和倒计时不同步」。
-  // 改成窗口边沿触发一次 + 离开窗口 stop,与桌面版 `gui/controlspanel.py:242-247` 同语义。
-  useEffect(() => {
-    const inWindow = clockActive
-      && gameState.timer?.paused === false
-      && gameState.timer.settings.sound === true
-      && !reading?.expired
-      && countdownSecond !== null
-      && countdownSecond >= 1
-      && countdownSecond <= 5;
-    if (!inWindow) {
-      // 窗口内落子/读秒进下一期/暂停 ⇒ 剩下的几声必须当场停,否则会盖到下一手上。
-      if (beepingRef.current) {
-        stopSound('countdownbeep');
-        beepingRef.current = false;
-      }
-      return;
-    }
-    if (beepingRef.current) return;
-    playSound('countdownbeep');
-    beepingRef.current = true;
-  }, [clockActive, countdownSecond, gameState.timer?.paused, gameState.timer?.settings.sound, playSound, stopSound, reading?.expired]);
+  useByoyomiCountdownSound(
+    reading?.byoLeft ?? null,
+    clockActive && gameState.timer?.paused === false && gameState.timer.settings.sound === true && !reading?.expired,
+    `${gameState.game_id}|${gameState.current_node_id}|${color}|${reading?.periodsLeft}`,
+  );
   const clock = reading === null ? untimed
     : reading.expired ? { value: '0:00', label: t('game:time_up', '超时') }
     : reading.byoLeft === null ? { value: formatTime(reading.mainLeft), label: t('game:time_left', '剩余') }
@@ -296,7 +300,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
   return (
     <PlayerRow
       color={color} info={gameState.players_info[color]} captures={gameState.prisoner_count[color]}
-      turn={turn} state={state} clock={clock} lang={lang} t={t}
+      turn={turn} state={state} clock={clock} rank={rank ?? seatRank(gameState, color, false, lang)} t={t} paired={paired} untimedClock={reading === null}
     />
   );
 }
@@ -316,15 +320,13 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
  * —— 这个数只在真浏览器里量,见 `tests/kiosk-screen-05-game.spec.ts` 的本地对局那几条。
  */
 const GameControlPanel = ({
-  gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
+  gameState, playerRanks, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
   onTimeout, counting = false, statusSlot = null, territory, platformClock = null, platformPhase = null,
   onlineScoringPending = false,
 }: Props) => {
   const { t, lang } = useTranslation();
-  const { play: playSound, stop: stopSound } = useSound();
-  const localBeepingRef = useRef(false);
 
   // 数子闸照抄 galaxy(`RightSidebarPanel`):后端 `/api/count/request` 在 count_min_moves
   // 之前一律拒,所以键灰着 —— 而**灰而不说原因**是这份稿子在别处专门骂过的事,
@@ -384,11 +386,13 @@ const GameControlPanel = ({
   };
   const stateWord = (c: 'B' | 'W') =>
     isGameOver ? t('game:ended', '本局结束')
-      : lobbyCountStopped ? (lobbyCountRetry ? '数子失败' : '正在自动数子')
+      : lobbyCountStopped ? (lobbyCountRetry ? t('数子失败', '数子失败') : t('正在自动数子', '正在自动数子'))
       : ogsGame && platformPhase === 'scoring' ? t('game:ogs_scoring_short', 'OGS 数子中')
       : ogsGame && platformPhase === 'paused' ? t('game:ogs_paused_short', 'OGS 暂停中')
       : onlineGame && c !== myColor && c === toMove ? t('game:opponent_turn', '对方回合')
       : onlineGame && c === myColor && c !== toMove ? t('game:waiting_for_opponent', '等待对方')
+      : nowIndex === 0 && gameState.handicap === 0 && c === 'W' && toMove === 'B'
+        ? t('game:waiting_for_black', '等待黑方')
       : c !== toMove ? t('game:played', '已落子')
       : isAiSeat(c) ? t('game:thinking', '思考中')
       : t('game:your_turn', '轮到你');
@@ -410,28 +414,12 @@ const GameControlPanel = ({
     clientElapsed,
   });
   const activeLocalClock = localClock(toMove);
-  const localCountdownSecond = activeLocalClock.phase === 'byoyomi'
-    ? Math.ceil(activeLocalClock.byoyomiLeft)
-    : null;
-  // 与 SeatRow 那处同一个缺陷、同一个修法:整轨只在进入读秒窗口时放一次,离开就停。
-  useEffect(() => {
-    const inWindow = localGame
-      && ticking
-      && timer?.settings.sound === true
-      && localCountdownSecond !== null
-      && localCountdownSecond >= 1
-      && localCountdownSecond <= 5;
-    if (!inWindow) {
-      if (localBeepingRef.current) {
-        stopSound('countdownbeep');
-        localBeepingRef.current = false;
-      }
-      return;
-    }
-    if (localBeepingRef.current) return;
-    playSound('countdownbeep');
-    localBeepingRef.current = true;
-  }, [localCountdownSecond, localGame, playSound, stopSound, ticking, timer?.settings.sound]);
+  useByoyomiCountdownSound(
+    activeLocalClock.phase === 'byoyomi' ? activeLocalClock.byoyomiLeft : null,
+    localGame && ticking && timer?.settings.sound === true && !gameState.terminal_result
+      && (gameState.children?.length ?? 0) === 0,
+    `${gameState.game_id}|${gameState.current_node_id}|${toMove}|${activeLocalClock.periodsLeft}`,
+  );
 
   // 到点那一刻调一次。回调走 ref:调用方每次渲染都给一个新函数,放进依赖会让「停在 0」连调。
   const timeExpired = !isGameOver && !awaitingCount && activeLocalClock.phase === 'expired';
@@ -453,7 +441,7 @@ const GameControlPanel = ({
   // 时钟栏(本地对局直接使用；其它对局不计时时作为 SeatRow 的回落)。没有时限时,
   // 不显示继承默认配置后累计的 main_time_used。这一栏唯一为真的量是
   // **当前是第几手**,而那是**局面的量、不是某一方的量** ⇒ 只挂在轮到的那张卡上,
-  // 另一张卡的时钟栏不渲染。两张都写「不限时」是把同一句话说两遍;
+  // paired 名卡双方都显示「不限时」，只有当前方额外显示手数；
   // 写 `0:00 本局已下` 更糟 —— 那不是「用了 0 秒」,是「压根没在计」。
   const clockFor = (c: 'B' | 'W'): { value: string; label: string; phase?: 'byoyomi' | 'expired' } | null => {
     const lc = localClock(c);
@@ -503,7 +491,7 @@ const GameControlPanel = ({
   // N14:升降级局整块不渲染「领地」「AI支招」;按需分析已由页面与服务端禁止。
   const analysisActions: KioskAction[] = engineMode || localGame || onlineGame || rankedGame ? [] : [
     {
-      key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
+      key: 'ownership', icon: 'map-trifold', label: t('Territory', '领地'),
       pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
       onClick: () => onToggleAnalysis('ownership'),
       disabled: analysisRequiresLogin,
@@ -512,7 +500,7 @@ const GameControlPanel = ({
     {
       // AI 支招 = 一次性动作(顶部 N 个候选点,实体盘上白闪),**不是开关** ——
       // 所以它没有 `pressed`。原来那个独立的顶栏支招键在 kiosk-ui-redesign 里已经并进来了。
-      key: 'hint', icon: 'lightbulb', label: t('Hints', 'AI支招'),
+      key: 'hint', icon: 'lightbulb', label: t('Suggest', '支招'),
       onClick: () => onHint?.(), disabled: !hintEnabled || analysisRequiresLogin,
       reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
     },
@@ -530,10 +518,10 @@ const GameControlPanel = ({
   // ⇒ 终局时它们整组不渲染,位置让给真正能用的着法导航。
   const playActions: KioskAction[] = isGameOver ? [] : [
     ...(rankedGame && territory ? [{
-      key: 'ranked-territory', icon: 'grid-nine' as const,
-      label: <span>领地 <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
-      onClick: territory.onRequest, disabled: territory.disabled,
-      reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
+      key: 'ranked-territory', icon: 'map-trifold' as const,
+      label: <span>{t("领地", "领地")} <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
+      onClick: territory.onRequest, disabled: territory.disabled, pressed: !!territory.visible,
+      reason: territory.remaining === 0 ? t('本局 3 次机会已用完', '本局 3 次机会已用完') : undefined,
     }] : []),
     ...(ogsGame && platformPhase === 'scoring' ? [
       {
@@ -593,26 +581,37 @@ const GameControlPanel = ({
   return (
     <>
       {localGame || onlineGame ? (
-        <>
+        <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
           <PlayerRow
             color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
             turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
-            clock={ogsGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t}
+            clock={ogsGame ? onlineClock('W') : clockFor('W')} rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} t={t} paired
           />
           <PlayerRow
             color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
             turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
-            clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
+            clock={ogsGame ? onlineClock('B') : clockFor('B')} rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} t={t} paired
           />
-        </>
+        </div>
+      ) : freeVsAi || rankedGame || engineMode ? (
+        <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
+          <SeatRow
+            gameState={gameState} color="W" rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+            untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout} paired
+          />
+          <SeatRow
+            gameState={gameState} color="B" rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+            untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout} paired
+          />
+        </div>
       ) : (
         <>
           <SeatRow
-            gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
+            gameState={gameState} color="W" rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout}
           />
           <SeatRow
-            gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
+            gameState={gameState} color="B" rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
             untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout}
           />
         </>
@@ -622,7 +621,7 @@ const GameControlPanel = ({
           在此之前 engineMode 下右栏中段是**空着约 148px** 的,登记在 scope.md 屏 10。
           `scrollbar` 是显式画的那根 —— `.kiosk-fold__body.mvrows` 把原生条宽度设成 0
           (460 的算术不许被滚动条改),所以「能滚」这件事得自己说出来。 */}
-      {showMoves && !(rankedGame && territory && (territory.phase !== 'idle' || territory.remaining === 0)) && (
+      {showMoves && (
         <KioskFold
           fold="moves"
           grow
@@ -641,43 +640,12 @@ const GameControlPanel = ({
         </KioskFold>
       )}
 
-      {rankedGame && territory && (territory.phase !== 'idle' || territory.remaining === 0) && (
-        <KioskFold
-          fold="ranked-territory" grow testId="ranked-territory-panel"
-          title="领地判断"
-          value={territory.phase === 'loading' ? '云端处理中'
-            : territory.phase === 'error' ? '未完成'
-            : territory.phase === 'result' ? '当前局面' : '次数已用完'}
-        >
-          <div className="ranked-territory-content" aria-live="polite">
-            {territory.phase === 'loading' ? <>
-              <h2>正在请求云端判断…</h2>
-              <p>按当前局面计算。请稍候，本次请求不会结束对局。</p>
-            </> : territory.phase === 'result' ? <>
-              <h2>领地判断结果</h2>
-              <p>棋盘已标出黑棋和白棋的预计归属区域。</p>
-              <div className="ranked-territory-areas">
-                <span><i className="black" />黑方区域<strong>约 {territory.blackArea}</strong></span>
-                <span><i className="white" />白方区域<strong>约 {territory.whiteArea}</strong></span>
-              </div>
-              <p className="ranked-territory-note">云端 AI 的当前局面判断，仅供参考；继续落子后请重新请求。正式胜负以终局数子为准。</p>
-            </> : territory.phase === 'error' ? <>
-              <h2>云端暂时无法判断</h2>
-              <p>{territory.retrySameRequest
-                ? '请求未返回结果。重试会沿用同一次请求，不会重复扣除机会；请查看剩余次数。对局仍可继续。'
-                : '领地额度暂时无法查询。可以再按“领地”尝试，对局仍可继续。'}</p>
-            </> : <>
-              <h2>本局 3 次机会已用完</h2>
-              <p>可以继续下棋或在满足条件后数子。此处的领地结果不会决定正式胜负。</p>
-            </>}
-          </div>
-        </KioskFold>
-      )}
+
 
       {showScore && (
         <KioskFold
           fold="eval"
-          title={t('game:eval_title', '胜率 · KataGo 原生通道')}
+          title={t('game:eval_title_short', '胜率 · KataGo')}
           value={goEvalSummary(gameState, t)}
         >
           <GoEvalGraph gameState={gameState} onNavigate={isGameOver ? onNavigate : undefined} />
@@ -693,9 +661,11 @@ const GameControlPanel = ({
           右端说明优先显示硬件故障，其次说明星阵数子的语义。 */}
       <div className="gtoggles gtoggles--switch" role="group" aria-label={t('game:display', '显示')}>
         <button type="button" role="switch" aria-checked={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
+          {(freeVsAi || rankedGame || engineMode) && <Icon name="grid-nine" />}
           {t('Coordinates', '坐标')}
         </button>
         <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
+          {(freeVsAi || rankedGame || engineMode) && <Icon name="list-numbers" />}
           {t('Move Numbers', '手数')}
         </button>
         {/* 右端说明按故障、实体盘摆子、星阵动作、游客限制、数子手数的顺序显示:
@@ -710,7 +680,7 @@ const GameControlPanel = ({
             那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {rankedGame && territory && !hardwareFault && !physicalStatus
-            ? `领地判断：本局剩余 ${territory.remaining ?? '—'} 次`
+            ? interpolate(t("领地判断：本局剩余 {value1} 次", "领地判断：本局剩余 {value1} 次"), { value1: territory.remaining ?? '—' })
             : hardwareFault
             ?? physicalStatus
             ?? (ogsGame
@@ -727,9 +697,9 @@ const GameControlPanel = ({
                 ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
                 // F4:双 pass 之后(awaitingCount)不再说「数子要下满 N 手」—— 门槛已经满足了。
                 : lobbyCountStopped && !lobbyCountRetry && !isGameOver
-                  ? '正在自动数子'
+                  ? t("正在自动数子", "正在自动数子")
                 : lobbyCountRetry && !isGameOver
-                  ? '自动数子失败，请按「数子」重试'
+                  ? t("自动数子失败，请按「数子」重试", "自动数子失败，请按「数子」重试")
                 : awaitingCount && !isGameOver
                   ? t('game:both_passed', '双方都停了一手')
                   : !isGameOver && !canCount
@@ -742,7 +712,7 @@ const GameControlPanel = ({
         // 所有点击按钮连续摆放；坐标/手数滑动开关留在上面的独立组。
         // 两行共用四列网格，因此三颗道具与四颗对局操作都是同一尺寸。
         <div className="engine-button-cluster" data-testid="engine-button-cluster">
-          <div className="items" role="group" aria-label={t('game:golaxy_items', '星阵道具 · 每按一次扣一次')}>
+          <div className="items" role="group" aria-label={t('game:territory_items', '星阵道具 · 查询使用道具')}>
             {items.map((it) => (
               <button
                 key={it.kind}

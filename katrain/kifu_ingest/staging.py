@@ -1,9 +1,13 @@
 """Crash-safe, database-free staging for incremental kifu collection."""
 
+from contextlib import contextmanager
+import errno
+import fcntl
 import hashlib
 import json
 import os
 import re
+import stat
 import tempfile
 import time
 from pathlib import Path
@@ -19,6 +23,30 @@ def _id(value):
     if not re.fullmatch(r"[0-9]+", result):
         raise ValueError("external_id must contain only digits")
     return result
+
+
+@contextmanager
+def staging_writer_lock(root):
+    """Exclusive nonblocking writer lock shared by hourly and manual writers.
+
+    Acquire before constructing Stage, so its in-memory manifest cannot be stale.
+    The production scheduler must use this lock too (or be stopped for maintenance).
+    """
+    root = Path(root)
+    if not root.is_absolute() or root.is_symlink():
+        raise ValueError("staging root must be an absolute non-symlink directory")
+    root = root.resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / ".writer.lock"
+    fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValueError("writer lock must be a regular file")
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
 
 
 class Stage:
@@ -79,10 +107,270 @@ class Stage:
     def items(self):
         return list(self.manifest["items"].values())
 
+    def _rank_decision_path(self, game, *, historical=False):
+        from katrain.kifu_ingest.ranks import rank_decision_request
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        request = rank_decision_request(game, historical=historical)
+        digest = canonical_sha256(request)
+        directory = self.root / "rank-snapshots"
+        if directory.is_symlink() or directory.exists() and not directory.is_dir():
+            raise ValueError("rank checkpoint directory unsafe")
+        path = directory / f"{digest}.json"
+        if path.is_symlink():
+            raise ValueError("rank checkpoint symlink unsafe")
+        return path, request, digest
+
+    @staticmethod
+    def _validate_rank_decision(game, decision):
+        from katrain.kifu_ingest.ranks import FORMAT_V2, validate_manifest_ranks
+
+        if not isinstance(decision, dict) or set(decision) != {"rank_snapshots", "rank_observations", "rank_facts"}:
+            raise ValueError("rank checkpoint decision invalid")
+        validate_manifest_ranks(
+            {
+                "format": FORMAT_V2,
+                "games": [{**game, **{key: decision[key] for key in ("rank_snapshots", "rank_observations")}}],
+                "rank_facts": decision["rank_facts"],
+            }
+        )
+
+    def load_rank_decision(self, game):
+        """Load the entire immutable decision, including an explicit unknown."""
+        # Historical checkpoints must be discovered before the new policy key;
+        # an old unknown or current-profile decision is immutable on retry.
+        for historical in (False, True):
+            decision = self._load_rank_decision(game, historical=historical)
+            if decision is not None:
+                return decision
+        return None
+
+    def _load_rank_decision(self, game, *, historical):
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        path, request, digest = self._rank_decision_path(game, historical=historical)
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            raise ValueError("rank checkpoint unsafe") from exc
+        with os.fdopen(fd, "rb") as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= 16 * 1024 * 1024:
+                raise ValueError("rank checkpoint exceeds limit or is not a regular file")
+            raw = handle.read(info.st_size + 1)
+            if len(raw) != info.st_size or os.fstat(handle.fileno()).st_size != info.st_size:
+                raise ValueError("rank checkpoint changed during read")
+        try:
+            record = json.loads(raw)
+            if (
+                set(record) != {"version", "request", "request_sha256", "decision", "decision_sha256"}
+                or type(record["version"]) is not int
+                or record["version"] != 1
+                or record["request"] != request
+                or record["request_sha256"] != digest
+                or canonical_sha256(record["request"]) != digest
+                or canonical_sha256(record["decision"]) != record["decision_sha256"]
+            ):
+                raise ValueError("rank checkpoint binding mismatch")
+            self._validate_rank_decision(game, record["decision"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("rank checkpoint invalid") from exc
+        return record["decision"]
+
+    def save_rank_decision(self, game, decision):
+        """Persist once; a retry must reuse rather than replace a frozen grade."""
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        from katrain.kifu_ingest.ranks import is_historical_snapshot
+
+        historical = all(is_historical_snapshot(x) for x in decision.get("rank_snapshots", {}).values())
+        path, request, digest = self._rank_decision_path(game, historical=historical)
+        existing = self.load_rank_decision(game)
+        if existing is not None:
+            if existing != decision:
+                raise ValueError("rank decision is already frozen")
+            return
+        self._validate_rank_decision(game, decision)
+        payload = json.dumps(
+            {
+                "version": 1,
+                "request": request,
+                "request_sha256": digest,
+                "decision": decision,
+                "decision_sha256": canonical_sha256(decision),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            allow_nan=False,
+        ).encode("utf-8")
+        if len(payload) > 16 * 1024 * 1024:
+            raise ValueError("rank checkpoint exceeds limit")
+        path.parent.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(path.parent, 0o700)
+        # Link the fully fsynced temporary file without overwriting an existing decision.
+        fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=".rank-")
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            try:
+                os.link(temporary, path)
+            except FileExistsError:
+                if self.load_rank_decision(game) != decision:
+                    raise ValueError("rank decision is already frozen")
+            for directory in (path.parent, self.root):
+                directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
+        finally:
+            os.unlink(temporary)
+
+    def _name_decision_path(self, request):
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        if (
+            not isinstance(request, dict)
+            or set(request) != {"kind", "key", "source_items", "context", "template_sources"}
+            or not isinstance(request["source_items"], list)
+            or not request["source_items"]
+        ):
+            raise ValueError("name decision checkpoint request invalid")
+        try:
+            digest = canonical_sha256(request)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("name decision checkpoint request must be JSON") from exc
+        directory = self.root / "name-decisions"
+        if directory.is_symlink() or directory.exists() and not directory.is_dir():
+            raise ValueError("name decision checkpoint directory unsafe")
+        path = directory / f"{digest}.json"
+        if path.is_symlink():
+            raise ValueError("name decision checkpoint symlink unsafe")
+        return path, digest
+
+    @staticmethod
+    def _validate_name_decision(request, decision):
+        from katrain.kifu_ingest.catalog import validate_decision
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        try:
+            validate_decision(decision)
+            if (
+                decision["kind"] != request["kind"]
+                or decision["key"] != request["key"]
+                or sorted(decision["source_items"], key=canonical_sha256)
+                != sorted(request["source_items"], key=canonical_sha256)
+            ):
+                raise ValueError("name decision differs from exact checkpoint request")
+            return canonical_sha256(decision)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("name decision checkpoint review or binding invalid") from exc
+
+    def load_name_decision(self, request):
+        """Load a complete reviewed decision only for this exact finite request."""
+        from katrain.web.kifu.name_candidates import canonical_sha256
+
+        path, digest = self._name_decision_path(request)
+        if not path.exists():
+            return None
+        if not path.is_file():
+            raise ValueError("name decision checkpoint must be a regular file")
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        except FileNotFoundError:
+            return None
+        except OSError as exc:
+            if exc.errno == errno.ELOOP:
+                raise ValueError("name decision checkpoint symlink unsafe") from exc
+            raise
+        with os.fdopen(fd, "rb") as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= 1024 * 1024:
+                raise ValueError("name decision checkpoint exceeds size limit or is not a file")
+            raw = handle.read(info.st_size)
+            if len(raw) != info.st_size or os.fstat(handle.fileno()).st_size != info.st_size:
+                raise ValueError("name decision checkpoint changed during read")
+        try:
+            record = json.loads(raw)
+            if (
+                not isinstance(record, dict)
+                or set(record) != {"version", "request_sha256", "request", "decision", "decision_content_sha256"}
+                or type(record["version"]) is not int
+                or record["version"] != 1
+                or record["request_sha256"] != digest
+                or record["request"] != request
+                or canonical_sha256(record["request"]) != digest
+                or record["decision_content_sha256"] != self._validate_name_decision(request, record["decision"])
+            ):
+                raise ValueError("name decision checkpoint content mismatch")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("name decision checkpoint invalid") from exc
+        return record["decision"]
+
+    def save_name_decision(self, request, decision):
+        """Atomically retain the actual review and all its signed finite members."""
+        path, digest = self._name_decision_path(request)
+        decision_digest = self._validate_name_decision(request, decision)
+        payload = json.dumps(
+            {
+                "version": 1,
+                "request_sha256": digest,
+                "request": request,
+                "decision": decision,
+                "decision_content_sha256": decision_digest,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            allow_nan=False,
+        ).encode("utf-8")
+        if len(payload) > 1024 * 1024:
+            raise ValueError("name decision checkpoint exceeds size limit")
+        new_directory = not path.parent.exists()
+        path.parent.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(path.parent, 0o700)
+        self._atomic(path, payload)
+        # _atomic fsyncs the file. Also persist its rename and the lazy directory.
+        for directory in (path.parent, self.root) if new_directory else (path.parent,):
+            fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+
+    def save_name_rejection(self, record):
+        """Persist one bounded diagnostic independently of signed name decisions."""
+        if not isinstance(record, dict) or re.fullmatch(r"[0-9a-f]{32}", record.get("id", "")) is None:
+            raise ValueError("name rejection diagnostic ID invalid")
+        payload = json.dumps(record, ensure_ascii=False, sort_keys=True, allow_nan=False).encode("utf-8")
+        if len(payload) > 65536:
+            raise ValueError("name rejection diagnostic exceeds size limit")
+        directory = self.root / "name-rejections"
+        if directory.is_symlink() or directory.exists() and not directory.is_dir():
+            raise ValueError("name rejection diagnostic directory unsafe")
+        new_directory = not directory.exists()
+        directory.mkdir(mode=0o700, exist_ok=True)
+        os.chmod(directory, 0o700)
+        path = directory / f"{record['id']}.json"
+        self._atomic(path, payload)
+        for durable in (directory, self.root) if new_directory else (directory,):
+            fd = os.open(durable, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        return str(path.relative_to(self.root))
+
     def remember(self, metadata):
         if not isinstance(metadata, dict):
             raise ValueError("metadata must be an object")
         external_id = _id(metadata.get("id"))
+        # Original source metadata is immutable, just like its raw SGF.
+        if external_id in self.manifest["items"]:
+            return self.manifest["items"][external_id]
         path = self.metadata_dir / f"{external_id}.json"
         self._atomic(path, json.dumps(metadata, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         items = self.manifest["items"]
@@ -98,8 +386,6 @@ class Stage:
                 "attempts": 0,
                 "next_retry_at": None,
             }
-        else:
-            items[external_id]["metadata"] = metadata
         self._persist()
         return items[external_id]
 

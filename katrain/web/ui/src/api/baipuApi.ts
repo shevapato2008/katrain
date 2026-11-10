@@ -37,6 +37,10 @@ export interface BaipuStep {
   row: number | null;
   col: number | null;
   color: 'B' | 'W' | null;
+  /** v2: clear these points before the recorded assignment; legacy defaults to []. */
+  pre_removed?: BaipuPoint[];
+  /** v2 physical action flag; legacy steps default to true. */
+  requires_placement?: boolean;
   removed: BaipuPoint[];
   board_hash: string;
 }
@@ -44,6 +48,8 @@ export interface BaipuStep {
 export interface BaipuMeta {
   player_black: string;
   player_white: string;
+  player_black_rank?: string | null;
+  player_white_rank?: string | null;
   result: string;
   handicap: number;
   komi: number;
@@ -52,6 +58,7 @@ export interface BaipuMeta {
 
 export interface BaipuLoadResponse {
   board_size: number;
+  replay_version?: number;
   steps: BaipuStep[];
   meta: BaipuMeta;
 }

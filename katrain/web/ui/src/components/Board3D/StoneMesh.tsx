@@ -1,12 +1,19 @@
 import { useMemo, useEffect, memo, forwardRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Mesh } from 'three';
+import { DEFAULT_STONE_APPEARANCE, useBoardAppearance } from '../board/stoneAppearance';
+import { createStoneGeometry, createStoneMaterial } from '../tutorials/stoneModel';
 import { STONE_RADIUS, STONE_HEIGHT, BOARD_SURFACE_Y } from './constants';
+import { stoneMeshScale } from './stoneScale';
 
 interface StoneMeshProps {
   color: 'B' | 'W';
   position: [number, number, number];
   opacity?: number;
+  /** Stable full-board coordinate variation, shared by static, drop and ghost stones. */
+  variant?: number;
+  angle?: number;
   scale?: number;
   satinFinish?: boolean;
   contactOpacity?: number;
@@ -14,76 +21,72 @@ interface StoneMeshProps {
   diameterRatio?: number;
 }
 
-// Shared geometry — all stones use the same sphere (1 geometry, not 361)
-const sharedGeometry = new THREE.SphereGeometry(STONE_RADIUS, 48, 32);
+// Board-resolution copies of the existing clamshell/slate model's authored shape.
+// Each color shares one geometry across all stones; the full-detail tutorial model is unchanged.
+const boardDetail = { radialSegments: 48, domeSegments: 18, edgeSegments: 6 };
+const sharedGeometry = {
+  B: createStoneGeometry('B', boardDetail),
+  W: createStoneGeometry('W', boardDetail),
+};
 const sharedSpriteGeometry = new THREE.PlaneGeometry(STONE_RADIUS * 2, STONE_RADIUS * 2);
 
 // Noop raycast — prevents stones from intercepting pointer events
 const noopRaycast = () => {};
 
-/** Shell texture for Hamaguri white stones. Cached at module level. */
-let cachedShellTexture: THREE.CanvasTexture | null = null;
-
-function getShellTexture(): THREE.CanvasTexture {
-  if (cachedShellTexture) return cachedShellTexture;
-  const size = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#f5edd8';
-  ctx.fillRect(0, 0, size, size);
-
-  const cx = size * 0.48, cy = size * 0.7;
-  for (let i = 0; i < 40; i++) {
-    const r = 6 + i * (size * 0.024);
-    const dark = i % 2 === 0;
-    ctx.strokeStyle = dark
-      ? `rgba(110, 80, 30, ${0.7 + Math.random() * 0.3})`
-      : `rgba(150, 120, 60, ${0.5 + Math.random() * 0.3})`;
-    ctx.lineWidth = dark ? 3 + Math.random() * 3 : 1.5 + Math.random() * 2;
-    ctx.beginPath();
-    ctx.arc(cx + (Math.random() - 0.5) * 4, cy + (Math.random() - 0.5) * 3, r, Math.PI * 0.08, Math.PI * 0.92);
-    ctx.stroke();
-  }
-
-  const cx2 = size * 0.55, cy2 = size * 0.75;
-  for (let i = 0; i < 15; i++) {
-    const r = 10 + i * (size * 0.035);
-    ctx.strokeStyle = `rgba(130, 100, 45, ${0.2 + Math.random() * 0.2})`;
-    ctx.lineWidth = 1 + Math.random() * 1.5;
-    ctx.beginPath();
-    ctx.arc(cx2, cy2, r, Math.PI * 0.15, Math.PI * 0.85);
-    ctx.stroke();
-  }
-
-  const g = ctx.createRadialGradient(size * 0.38, size * 0.3, size * 0.02, size * 0.45, size * 0.4, size * 0.2);
-  g.addColorStop(0, 'rgba(255, 252, 240, 0.35)');
-  g.addColorStop(1, 'rgba(255, 252, 240, 0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-
-  cachedShellTexture = new THREE.CanvasTexture(canvas);
-  return cachedShellTexture;
-}
-
-/** Local contact shadow for the overhead still; shared by its stones only. */
+/** Local contact shadow beneath 3D stones (eliminates need for receiveShadow on the flat board surface). */
 let contactTexture: THREE.CanvasTexture | null = null;
 function getContactTexture() {
   if (contactTexture) return contactTexture;
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 64;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createRadialGradient(32, 32, 18, 32, 32, 32);
-  gradient.addColorStop(0, 'rgba(0,0,0,.32)');
-  gradient.addColorStop(.55, 'rgba(0,0,0,.16)');
-  gradient.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 64, 64);
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx && typeof ctx.createRadialGradient === 'function') {
+    const gradient = ctx.createRadialGradient(64, 64, 12, 64, 64, 60);
+    gradient.addColorStop(0, 'rgba(12, 8, 3, 0.36)');
+    gradient.addColorStop(0.55, 'rgba(12, 8, 3, 0.16)');
+    gradient.addColorStop(1, 'rgba(12, 8, 3, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+  }
   contactTexture = new THREE.CanvasTexture(canvas);
+  contactTexture.colorSpace = THREE.SRGBColorSpace;
   return contactTexture;
 }
 
-const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
+/** Warm lower-right refractive caustic glow decal for translucent white jade-agate stones. */
+let causticTexture: THREE.CanvasTexture | null = null;
+function getCausticTexture() {
+  if (causticTexture) return causticTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx && typeof ctx.createRadialGradient === 'function') {
+    const g = ctx.createRadialGradient(74, 76, 4, 64, 64, 58);
+    g.addColorStop(0, 'rgba(255, 244, 214, 0.58)');
+    g.addColorStop(0.45, 'rgba(255, 232, 185, 0.24)');
+    g.addColorStop(1, 'rgba(255, 232, 185, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+  causticTexture = new THREE.CanvasTexture(canvas);
+  causticTexture.colorSpace = THREE.SRGBColorSpace;
+  return causticTexture;
+}
+
+const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, variant = 0, angle = 0, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
+  const { stoneStyle } = useBoardAppearance();
+  let invalidate: (() => void) | undefined;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    invalidate = useThree()?.invalidate;
+  } catch {
+    // Rendered outside R3F Canvas in unit tests
+  }
+
+  useEffect(() => {
+    invalidate?.();
+  }, [stoneStyle, invalidate]);
+
   const material = useMemo(() => {
     if (spriteTexture) return new THREE.MeshBasicMaterial({
       map: spriteTexture, transparent: true, opacity, depthWrite: false, toneMapped: false, fog: false,
@@ -94,43 +97,48 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       clearcoat: .18, clearcoatRoughness: .35,
       transparent: opacity < 1, opacity,
     });
-    if (color === 'B') {
-      return new THREE.MeshStandardMaterial({
-        color: 0x0a0a0a, roughness: 0.06, metalness: 0.15,
-        transparent: opacity < 1, opacity,
-      });
-    } else {
-      return new THREE.MeshStandardMaterial({
-        map: getShellTexture(), color: 0xf5edd8, roughness: 0.1, metalness: 0.04,
-        transparent: opacity < 1, opacity,
-      });
+    if (stoneStyle === DEFAULT_STONE_APPEARANCE.id) {
+      // The 3D shell recipe has eight seeds, independent of the 2D sprite count.
+      const mat = createStoneMaterial(color, variant % 8, false, 256);
+      mat.transparent = opacity < 1;
+      mat.opacity = opacity;
+      return mat;
     }
-  }, [color, opacity, satinFinish, spriteTexture]);
+    const mat = createStoneMaterial(color, variant % 8, false, 256, stoneStyle);
+    mat.transparent = opacity < 1;
+    mat.opacity = opacity;
+    return mat;
+  }, [color, opacity, variant, satinFinish, spriteTexture, stoneStyle]);
 
-  // Dispose material on change/unmount (but NOT the shared shell texture)
+  // Dispose per-stone material, not the shared procedural maps.
   useEffect(() => {
     return () => { material.dispose(); };
   }, [material]);
 
-  const scaleY = STONE_HEIGHT / STONE_RADIUS;
+  const showContactDisc = !spriteTexture && opacity >= 0.85;
+  const showJadeCaustic = !spriteTexture && !satinFinish && stoneStyle === 'jade-agate' && color === 'W' && opacity >= 0.85;
 
   return (
     <>
-      {satinFinish && <mesh position={[position[0] + .035, BOARD_SURFACE_Y + .009, position[2] + .035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
-        <planeGeometry args={[1.06, 1.06]} />
-        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity} transparent depthWrite={false} />
-      </mesh>}
       <mesh
         ref={ref}
         position={spriteTexture ? [position[0], position[1] + STONE_HEIGHT * scale, position[2]] : position}
-        rotation={spriteTexture ? [-Math.PI / 2, 0, 0] : undefined}
-        scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : [scale, scale * scaleY, scale]}
-        geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry}
+        rotation={spriteTexture ? [-Math.PI / 2, 0, 0] : [0, -angle, 0]}
+        scale={spriteTexture ? [scale * diameterRatio, scale * diameterRatio, 1] : stoneMeshScale(color, scale)}
+        geometry={spriteTexture ? sharedSpriteGeometry : sharedGeometry[color]}
         material={material}
         castShadow={!spriteTexture}
         receiveShadow={!spriteTexture}
         raycast={noopRaycast}
       />
+      {showContactDisc && <mesh position={[position[0] + 0.035, BOARD_SURFACE_Y + 0.008, position[2] + 0.035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[1.08 * scale, 1.08 * scale]} />
+        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity * opacity} transparent depthWrite={false} />
+      </mesh>}
+      {showJadeCaustic && <mesh position={[position[0] + 0.06, BOARD_SURFACE_Y + 0.009, position[2] + 0.06]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[0.96 * scale, 0.96 * scale]} />
+        <meshBasicMaterial map={getCausticTexture()} opacity={0.85 * opacity} transparent depthWrite={false} />
+      </mesh>}
     </>
   );
 });

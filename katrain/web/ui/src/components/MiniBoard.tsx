@@ -1,4 +1,10 @@
 import { useMemo } from 'react';
+import {
+  getBoardStylePalette,
+  getBoardTextureDataUrl,
+  stoneSpriteUrl,
+  useBoardAppearance,
+} from './board/stoneAppearance';
 import { Box } from '@mui/material';
 
 interface MiniBoardProps {
@@ -104,6 +110,8 @@ function getViewRegion(blacks: string[], whites: string[], boardSize: number): {
 }
 
 const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: MiniBoardProps) => {
+  const { boardStyle, stoneStyle } = useBoardAppearance();
+  const palette = getBoardStylePalette(boardStyle);
   const { minX, maxX, minY, maxY } = useMemo(
     () => getViewRegion(blackStones, whiteStones, boardSize),
     [blackStones, whiteStones, boardSize]
@@ -147,7 +155,9 @@ const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: Min
       sx={{
         width: size,
         height: size,
-        bgcolor: '#DEB887',
+        bgcolor: palette.woodFill,
+        backgroundImage: `url("${getBoardTextureDataUrl(boardStyle)}")`,
+        backgroundSize: 'cover',
         borderRadius: 1,
         position: 'relative',
         overflow: 'hidden'
@@ -162,7 +172,7 @@ const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: Min
             y1={isTopEdge ? cellSize * 0.5 : -lineExtension}
             x2={(i + 0.5) * cellSize}
             y2={isBottomEdge ? (visibleHeight - 0.5) * cellSize : size + lineExtension}
-            stroke="#8B7355"
+            stroke={palette.gridColor}
             strokeWidth={0.5}
           />
         ))}
@@ -174,7 +184,7 @@ const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: Min
             y1={(i + 0.5) * cellSize}
             x2={isRightEdge ? (visibleWidth - 0.5) * cellSize : size + lineExtension}
             y2={(i + 0.5) * cellSize}
-            stroke="#8B7355"
+            stroke={palette.gridColor}
             strokeWidth={0.5}
           />
         ))}
@@ -186,33 +196,34 @@ const MiniBoard = ({ size = 100, boardSize = 19, blackStones, whiteStones }: Min
             cx={(x - minX + 0.5) * cellSize}
             cy={(maxY - y + 0.5) * cellSize}
             r={starPointRadius}
-            fill="#5D4E37"
+            fill={palette.starColor}
           />
         ))}
 
-        {/* Black stones */}
-        {blackCoords.map(([x, y], i) => (
-          <circle
-            key={`b${i}`}
-            cx={(x - minX + 0.5) * cellSize}
-            cy={(maxY - y + 0.5) * cellSize}
-            r={stoneRadius}
-            fill="#1a1a1a"
-          />
-        ))}
-
-        {/* White stones */}
-        {whiteCoords.map(([x, y], i) => (
-          <circle
-            key={`w${i}`}
-            cx={(x - minX + 0.5) * cellSize}
-            cy={(maxY - y + 0.5) * cellSize}
-            r={stoneRadius}
-            fill="#f5f5f5"
-            stroke="#333"
-            strokeWidth={0.5}
-          />
-        ))}
+        {/* Coordinate variants stay stable when the thumbnail crop changes. */}
+        {(['B', 'W'] as const).map(color => (color === 'B' ? blackCoords : whiteCoords).map(([x, y], i) => {
+          const cx = (x - minX + 0.5) * cellSize;
+          const cy = (maxY - y + 0.5) * cellSize;
+          return (
+            <g key={`${color}${i}`}>
+              {color === 'W' && stoneStyle === 'jade-agate' && (
+                <circle
+                  cx={cx + stoneRadius * 0.12}
+                  cy={cy + stoneRadius * 0.12}
+                  r={stoneRadius * 0.86}
+                  fill="rgba(255, 243, 210, 0.25)"
+                />
+              )}
+              <image
+                href={stoneSpriteUrl(color, boardSize, x, boardSize - 1 - y, stoneStyle)}
+                x={cx - stoneRadius}
+                y={cy - stoneRadius}
+                width={stoneRadius * 2}
+                height={stoneRadius * 2}
+              />
+            </g>
+          );
+        }))}
       </svg>
     </Box>
   );

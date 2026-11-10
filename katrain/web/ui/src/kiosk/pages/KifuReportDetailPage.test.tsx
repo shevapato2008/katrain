@@ -7,6 +7,7 @@ import KifuReportDetailPage from './KifuReportDetailPage';
 
 const mocks = vi.hoisted(() => ({ getAlbum: vi.fn(), navigate: vi.fn(), board: {} as Record<string, unknown> }));
 vi.mock('react-router-dom', async (original) => ({ ...(await original<typeof import('react-router-dom')>()), useNavigate: () => mocks.navigate }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ isLoading: false, isGuest: false, identityKey: 'kifu-detail-owner', token: 'test-token', isAuthenticated: true }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum: mocks.getAlbum } }));
 const candidate = { move: 'Q10', visits: 800, winrate: 0.64, score_lead: 4.1, prior: 0.5, pv: ['Q10', 'D10'], psv: 1 };
 const analysis: MoveAnalysis = {
@@ -135,10 +136,20 @@ describe('职业报告固定右栏', () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
-    for (const value of ['赛事甲', '2026-10-01', 'W+R', '9p', '8p', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
+    for (const value of ['赛事甲', '2026-10-01', 'W+R', '九段', '八段', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
     expect(dialog).not.toHaveTextContent('已核验');
     fireEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/kifu/7/replay');
+  });
+
+  it('详情共用棋谱段位展示，保留规范化裸段的系统未知含义', async () => {
+    mocks.getAlbum.mockResolvedValue({ ...album, black_rank: '7d', white_rank: '7d', display_black_rank: '7p', display_white_rank: '7段' });
+    renderPage(); await loaded();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    const dialog = screen.getByRole('dialog', { name: '对局详情' });
+    expect(dialog).toHaveTextContent('黑棋手 · 七段');
+    expect(dialog).toHaveTextContent('白棋手 · 七段');
+    expect(dialog).not.toHaveTextContent('业余');
   });
 
   it('读取棋谱失败提供重试，分析读取失败也提供重试', async () => {
@@ -160,20 +171,20 @@ describe('职业报告固定右栏', () => {
       sgf_sha256: 'sgf', parameter_sha256: 'parameters', provenance: {} };
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'chinese' });
     renderPage(); await loaded();
-    const metadata = screen.getByTestId('kifu-report-metadata');
-    expect(metadata.querySelectorAll('span')).toHaveLength(3);
-    expect(within(metadata).getByText('日本规则', { exact: true })).toBeInTheDocument();
-    expect(within(metadata).getByText('贴目 0', { exact: true })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
     const actions = within(screen.getByTestId('kifu-report-actions')).getAllByRole('button');
     expect(actions).toHaveLength(4);
-    ['试下', '领地', '支招', '实体棋盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    ['试下', '领地', '支招', '实体盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
     const toggles = within(screen.getByTestId('kifu-report-toggles')).getAllByRole('button');
     expect(toggles).toHaveLength(2);
     ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
+    const metadata = screen.getByTestId('kifu-report-metadata');
+    expect(metadata.querySelectorAll('span')).toHaveLength(3);
+    expect(within(metadata).getByText('日本规则', { exact: true })).toBeInTheDocument();
+    expect(within(metadata).getByText('贴目 0', { exact: true })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('日本规则');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
@@ -188,14 +199,14 @@ describe('职业报告固定右栏', () => {
     analysisCompleted = true;
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'japanese', komi });
     renderPage(); await loaded();
-    const metadata = screen.getByTestId('kifu-report-metadata');
-    expect(metadata.querySelectorAll('span')).toHaveLength(3);
-    expect(within(metadata).getByText(label, { exact: true })).toBeInTheDocument();
-    expect(within(metadata).getByText(`贴目 ${komi}`, { exact: true })).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-report-head')).toBeNull();
     expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(6);
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog', { name: '对局详情' });
+    const metadata = screen.getByTestId('kifu-report-metadata');
+    expect(metadata.querySelectorAll('span')).toHaveLength(3);
+    expect(within(metadata).getByText(label, { exact: true })).toBeInTheDocument();
+    expect(within(metadata).getByText(`贴目 ${komi}`, { exact: true })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('分析已完成');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('—');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent(String(komi));
@@ -207,17 +218,17 @@ describe('职业报告固定右栏', () => {
 });
 
 
-it('报告的实体棋盘入口携带原始 SGF 和报告返回地址', async () => {
+it('报告的实体盘入口携带原始 SGF 和报告返回地址', async () => {
   renderPage(); await loaded();
   expect(screen.queryByRole('button', { name: '清空' })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '实体棋盘' }));
+  fireEvent.click(screen.getByRole('button', { name: '实体盘' }));
   expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/baipu/session/kifu_7', {
     state: expect.objectContaining({ sgf: album.sgf_content, backTo: '/kiosk/kifu/7', backLabel: '报告' }),
   });
 });
 
-it('非19路报告不能进入实体棋盘摆谱', async () => {
+it('非19路报告不能进入实体盘摆谱', async () => {
   mocks.getAlbum.mockResolvedValue({ ...album, board_size: 9, sgf_content: '(;SZ[9];B[dd])' });
   renderPage(); await loaded();
-  expect(screen.getByRole('button', { name: '实体棋盘' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '实体盘' })).toBeDisabled();
 });

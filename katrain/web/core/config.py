@@ -1,6 +1,7 @@
 import os
 import uuid as uuid_module
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 
 # 仓库里跟着代码走的字面量默认值。**唯一真源**——生产装配（下方 env 装配处）与
 # 字段默认值都引用它，不得各自再抄一份，否则改一处漏一处（参见 assert_secret_key_is_safe）。
@@ -50,6 +51,7 @@ class Settings(BaseModel):
     # Engine Settings
     LOCAL_KATAGO_URL: str = "http://127.0.0.1:8000"
     CLOUD_KATAGO_URL: str = ""
+    REPORT_ENGINE_HEALTH_URL: str = ""
 
     # Persistence
     DATABASE_PATH: str = "db.sqlite3"
@@ -74,13 +76,34 @@ class Settings(BaseModel):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
 
     DEFAULT_LANG: str = "cn"
+    KIFU_SEARCH_BACKEND: Literal["legacy", "elasticsearch"] = "legacy"
 
     # Board mode settings (see design.md Section 4.2)
     KATRAIN_MODE: str = "server"  # "server" or "board"
+    KATRAIN_USB_HUB_RECOVERY: bool = False
     REMOTE_API_URL: str = ""  # Remote server URL for board mode, e.g. "https://katrain.example.com"
     DEVICE_ID: str = ""  # Unique device identifier, auto-generated if empty
     KATRAIN_BOX_SSO: bool = False
     KATRAIN_BOX_SSO_BRIDGE_KEY_PATH: str = "/etc/smartbox/box-sso-bridge.key"
+
+    KATRAIN_ENVIRONMENT: Literal["production", "development", "test"] = "production"
+    PAYMENTS_MODE: Literal["disabled", "mock", "live"] = "disabled"
+    MEMBERSHIP_MODE: Literal["legacy", "enabled", "paused"] = "legacy"
+    MEMBERSHIP_REPORT_QUEUE_LIMIT: int = 8
+    MEMBERSHIP_POSITION_QUEUE_LIMIT: int = 4
+    MEMBERSHIP_POSITION_LEASE_SECONDS: int = 90
+    MEMBERSHIP_MAX_SALE_ENABLED: bool = True
+    PAYMENT_MOCK_EVENT_SECRET: str = ""
+    # Values are identifiers/paths only. Secrets are loaded from read-only files;
+    # public-key callback migration must be completed before live activation.
+    WECHAT_PAY_APP_ID: str = Field(default="", repr=False)
+    WECHAT_PAY_MCH_ID: str = Field(default="", repr=False)
+    WECHAT_PAY_MERCHANT_SERIAL: str = Field(default="", repr=False)
+    WECHAT_PAY_PRIVATE_KEY_PATH: str = Field(default="", repr=False)
+    WECHAT_PAY_API_V3_KEY_PATH: str = Field(default="", repr=False)
+    WECHAT_PAY_PUBLIC_KEY_ID: str = Field(default="", repr=False)
+    WECHAT_PAY_PUBLIC_KEY_PATH: str = Field(default="", repr=False)
+    WECHAT_PAY_NOTIFY_URL: str = Field(default="", repr=False)
 
     # Billing / paid-analysis (single-pool integer credits). Prices are per analysis action.
     BILLING_PRICES: dict = {"territory": 10, "hints": 10, "variations": 10}
@@ -118,7 +141,36 @@ class Settings(BaseModel):
         data.setdefault("MAX_SESSIONS", int(os.getenv("KATRAIN_MAX_SESSIONS", 100)))
         data.setdefault("LOCAL_KATAGO_URL", os.getenv("LOCAL_KATAGO_URL", "http://127.0.0.1:8000"))
         data.setdefault("CLOUD_KATAGO_URL", os.getenv("CLOUD_KATAGO_URL", ""))
+        data.setdefault("REPORT_ENGINE_HEALTH_URL", os.getenv("REPORT_ENGINE_HEALTH_URL", ""))
         data.setdefault("DATABASE_PATH", os.getenv("KATRAIN_DATABASE_PATH", "db.sqlite3"))
+
+        data.setdefault("KATRAIN_ENVIRONMENT", os.getenv("KATRAIN_ENVIRONMENT", "production"))
+        data.setdefault("PAYMENTS_MODE", os.getenv("PAYMENTS_MODE", "disabled"))
+        for suffix in (
+            "APP_ID", "MCH_ID", "MERCHANT_SERIAL", "PRIVATE_KEY_PATH", "API_V3_KEY_PATH",
+            "PUBLIC_KEY_ID", "PUBLIC_KEY_PATH", "NOTIFY_URL",
+        ):
+            name = f"WECHAT_PAY_{suffix}"
+            data.setdefault(name, os.getenv(name, ""))
+        data.setdefault("MEMBERSHIP_MODE", os.getenv("MEMBERSHIP_MODE", "legacy"))
+        data.setdefault("BILLING_ENFORCED", os.getenv("BILLING_ENFORCED", "false").lower() in ("1", "true", "yes"))
+        data.setdefault("FREE_WEEKLY_REPORTS", int(os.getenv("FREE_WEEKLY_REPORTS", "1")))
+        for key, default in (
+            ("MEMBERSHIP_REPORT_QUEUE_LIMIT", 8),
+            ("MEMBERSHIP_POSITION_QUEUE_LIMIT", 4),
+            ("MEMBERSHIP_POSITION_LEASE_SECONDS", 90),
+        ):
+            data.setdefault(key, int(os.getenv(key, default)))
+        data.setdefault(
+            "MEMBERSHIP_MAX_SALE_ENABLED",
+            os.getenv("MEMBERSHIP_MAX_SALE_ENABLED", "true").lower() in ("1", "true", "yes"),
+        )
+        data.setdefault("PAYMENT_MOCK_EVENT_SECRET", os.getenv("PAYMENT_MOCK_EVENT_SECRET", ""))
+        if data["PAYMENTS_MODE"] == "mock":
+            if data["KATRAIN_ENVIRONMENT"] == "production":
+                raise ValueError("Mock payments are forbidden in production")
+            if not os.getenv("KATRAIN_DATABASE_URL"):
+                raise ValueError("Mock payments require explicit KATRAIN_DATABASE_URL; config fallback is forbidden")
 
         # New DATABASE_URL support
         env_db_url = os.getenv("KATRAIN_DATABASE_URL")
@@ -164,9 +216,13 @@ class Settings(BaseModel):
 
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", INSECURE_DEFAULT_SECRET_KEY))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
+        data.setdefault("KIFU_SEARCH_BACKEND", os.getenv("KIFU_SEARCH_BACKEND", "legacy"))
 
         # Board mode settings
         data.setdefault("KATRAIN_MODE", os.getenv("KATRAIN_MODE", "server"))
+        data.setdefault(
+            "KATRAIN_USB_HUB_RECOVERY", os.getenv("KATRAIN_USB_HUB_RECOVERY", "false").lower() in ("1", "true", "yes")
+        )
         data.setdefault("REMOTE_API_URL", os.getenv("KATRAIN_REMOTE_URL", ""))
         data.setdefault(
             "KATRAIN_BOX_SSO",
@@ -191,6 +247,17 @@ class Settings(BaseModel):
             data["DATABASE_URL"] = f"sqlite:///./{db_path}"
 
         super().__init__(**data)
+        if self.MEMBERSHIP_MODE != "legacy" and not self.BILLING_ENFORCED:
+            raise ValueError("MEMBERSHIP_MODE enabled/paused requires BILLING_ENFORCED=true")
+        if (
+            min(
+                self.MEMBERSHIP_REPORT_QUEUE_LIMIT,
+                self.MEMBERSHIP_POSITION_QUEUE_LIMIT,
+                self.MEMBERSHIP_POSITION_LEASE_SECONDS,
+            )
+            < 1
+        ):
+            raise ValueError("Membership queue limits and lease must be positive")
 
 
 settings = Settings()

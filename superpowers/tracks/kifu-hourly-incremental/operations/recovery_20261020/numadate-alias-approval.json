@@ -1,0 +1,50 @@
+{
+  "alias": {
+    "alias": "沼馆沙辉哉",
+    "normalized_alias": "沼馆沙辉哉"
+  },
+  "approval": {
+    "date": "2026-10-20",
+    "reviewer_agent": "/root/kifu_backfill_names_astra_review",
+    "reviewer_role": "independent Astra identity review",
+    "scope": "One PROD alias row only; actual script reviewed separately before execution",
+    "status": "approved"
+  },
+  "constraints": [
+    "Never change authoritative_pages: existing first-pass qualification binds its owner preimage.",
+    "Do not rename, merge or create owners; do not copy TEST IDs or names/evidence.",
+    "Only register the exact reviewed alias to existing PROD5364 after collision and current native P5 checks.",
+    "No automatic undo after dependent publication."
+  ],
+  "database": "katrain_prod_20260725",
+  "format": "kifu-numadate-exact-alias-approval-v1",
+  "official_identity": {
+    "birth_date": "1992-11-02",
+    "name": "沼舘沙輝哉",
+    "review_basis": "Independent reviewer opened the official player page and 40th Meijin Tokyo preliminary bracket 26: March 6, Maeda Ryoji versus Numadate Sakiya, Numadate won.",
+    "romanization": "NUMADATE, Sakiya"
+  },
+  "old_sgf_proof": {
+    "comparison": "Both databases have identical SGF bytes, source path, metadata, same player slot and opponent. No direct old-game binding was found for TEST883 or TEST1016.",
+    "date_played": "2014-03-06",
+    "event": "第40期日本名人战预选",
+    "player_black": "沼官沙辉哉",
+    "player_white": "前田良二",
+    "prod_album_id": 124026,
+    "prod_owner_id": 5364,
+    "sgf_sha256": "9f3a8395b9bab863c88ca109f5e301e536acff02054a176b11811b6651bc1679",
+    "side": "black",
+    "source_path": "data/kifu-album/19x19/41442702.sgf",
+    "test_album_id": 124026,
+    "test_owner_id": 11140
+  },
+  "owner": {
+    "authoritative_pages": [],
+    "canonical_name": "沼官沙辉哉",
+    "id": 5364
+  },
+  "source_urls": [
+    "https://www.nihonkiin.or.jp/player/htm/ki000430.html",
+    "https://www.nihonkiin.or.jp/match/meijin/040.html"
+  ]
+}

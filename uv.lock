@@ -587,7 +587,7 @@ wheels = [
 
 [[package]]
 name = "edge-tts"
-version = "7.2.7"
+version = "7.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -595,9 +595,9 @@ dependencies = [
     { name = "tabulate" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/d2/1ce38f6e4fe7275207f4033b0971db489a0b594340ae6bac2320127e71ee/edge_tts-7.2.7.tar.gz", hash = "sha256:0127fba57a742bc48ff0a2a3b24b8324f7859260185274c335b4e54735aff325", size = 27508, upload-time = "2025-12-12T20:54:28.403Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a3/ce/14e713ba774063e00444a091eb790539fe0d848a9d8df35fd81a7639a28e/edge_tts-7.3.1.tar.gz", hash = "sha256:ee1fabf911b9ea83b38ae93aee5619ee41eaf0b109fef6e65d797dc4ebf1f20f", size = 35843, upload-time = "2026-10-13T18:22:53.226Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/89/92ac6b154ab87d236c15e5e0c73cb99be58efb1ea3eb9318c266bf9a36bf/edge_tts-7.2.7-py3-none-any.whl", hash = "sha256:ac11d9e834347e5ee62cbe72e8a56ffd65d3c4e795be14b1e593b72cf6480dd9", size = 30556, upload-time = "2025-12-12T20:54:26.956Z" },
+    { url = "https://files.pythonhosted.org/packages/35/86/3b97d755992777d5a9ca0e45a8ec96cc9858b2d6dd8f65f3f688d60e8709/edge_tts-7.3.1-py3-none-any.whl", hash = "sha256:2a3c79d6235a7a736d681233823ce5492e829b43eb47beae49aa181237a8f9a4", size = 38908, upload-time = "2026-10-13T18:22:51.772Z" },
 ]
 
 [[package]]
@@ -1041,11 +1041,13 @@ vision-train = [
 web = [
     { name = "alembic" },
     { name = "bcrypt" },
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
+    { name = "pypinyin" },
     { name = "python-jose", extra = ["cryptography"] },
     { name = "sgfmill" },
     { name = "sqlalchemy" },
@@ -1072,6 +1074,7 @@ requires-dist = [
     { name = "bcrypt", marker = "extra == 'web'", specifier = ">=4.0.1,<4.1" },
     { name = "beautifulsoup4", marker = "extra == 'cron'", specifier = ">=4.12" },
     { name = "chardet", specifier = ">=5.2.0,<6" },
+    { name = "cryptography", marker = "extra == 'web'", specifier = ">=3.4.0" },
     { name = "docutils", specifier = ">=0.21.2" },
     { name = "easyocr", marker = "extra == 'classifier'", specifier = ">=1.7.2" },
     { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.115.2,<0.116" },
@@ -1099,6 +1102,7 @@ requires-dist = [
     { name = "psycopg2-binary", marker = "extra == 'web'", specifier = ">=2.9.0" },
     { name = "pydantic", marker = "extra == 'web'", specifier = ">=2.6.1" },
     { name = "pygame", marker = "sys_platform == 'darwin'", specifier = "~=2.0" },
+    { name = "pypinyin", marker = "extra == 'web'", specifier = ">=0.50.0" },
     { name = "pyserial", marker = "extra == 'board'", specifier = ">=3.5" },
     { name = "pytesseract", marker = "extra == 'classifier'", specifier = ">=0.3.10" },
     { name = "python-jose", extras = ["cryptography"], marker = "extra == 'web'", specifier = ">=3.3.0" },
@@ -1120,7 +1124,7 @@ provides-extras = ["web", "cron", "vision", "board", "vision-train", "vision-onn
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = ">=24.8.0,<25" },
-    { name = "edge-tts", specifier = ">=7.2.7" },
+    { name = "edge-tts", specifier = "==7.3.1" },
     { name = "pillow", specifier = ">=11.2.1" },
     { name = "polib", specifier = ">=1.2.0,<2" },
     { name = "pyinstaller", specifier = ">=6.14.1" },
@@ -2460,6 +2464,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f3/91/9c6ee907786a473bf81c5f53cf703ba0957b23ab84c264080fb5a450416f/pyparsing-3.3.2.tar.gz", hash = "sha256:c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc", size = 6851574, upload-time = "2026-01-21T03:57:59.36Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl", hash = "sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d", size = 122781, upload-time = "2026-01-21T03:57:55.912Z" },
+]
+
+[[package]]
+name = "pypinyin"
+version = "0.55.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/a4/784cf98c09e0dc22776b0d7d8a4a5b761218bcae4608c2416ce1e167c8af/pypinyin-0.55.0.tar.gz", hash = "sha256:b5711b3a0c6f76e67408ec6b2e3c4987a3a806b7c528076e7c7b86fcf0eaa66b", size = 839836, upload-time = "2025-07-20T12:01:50.657Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b9/7b/4cabc76fcc21c3c7d5c671d8783984d30ac9d3bb387c4ba784fca3cdfa3a/pypinyin-0.55.0-py2.py3-none-any.whl", hash = "sha256:d53b1e8ad2cdb815fb2cb604ed3123372f5a28c6f447571244aca36fc62a286f", size = 840203, upload-time = "2025-07-20T12:01:48.535Z" },
 ]
 
 [[package]]

@@ -5,9 +5,6 @@ import { zenTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 
-const isStrictBoxKiosk =
-  __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
-
 // Code-split: kiosk and galaxy bundles load independently.
 // Galaxy + VideoRecorder reach three.js (via Board3D / direct import),
 // so they are excluded from the kiosk-2d build. Vite's `define`
@@ -21,9 +18,6 @@ const GalaxyApp = __KIOSK_2D_ONLY__
 const VideoRecorderPage = __KIOSK_2D_ONLY__
   ? null
   : lazy(() => import('./pages/VideoRecorderPage'));
-const ZenModeApp = isStrictBoxKiosk
-  ? null
-  : lazy(() => import('./ZenModeApp'));
 
 const AppRouter = () => {
   return (
@@ -36,15 +30,13 @@ const AppRouter = () => {
               <Routes>
                 <Route path="/kiosk/*" element={<KioskApp />} />
                 {!__KIOSK_2D_ONLY__ && GalaxyApp && (
-                  <Route path="/galaxy/*" element={<GalaxyApp />} />
+                  <Route path="/*" element={<GalaxyApp />} />
                 )}
                 {!__KIOSK_2D_ONLY__ && VideoRecorderPage && (
                   <Route path="/record" element={<VideoRecorderPage />} />
                 )}
-                {isStrictBoxKiosk ? (
+                {__KIOSK_2D_ONLY__ && (
                   <Route path="/*" element={<Navigate to="/kiosk" replace />} />
-                ) : ZenModeApp && (
-                  <Route path="/*" element={<ZenModeApp />} />
                 )}
               </Routes>
             </Suspense>

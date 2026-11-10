@@ -93,6 +93,7 @@ export interface GeometryStatus {
   progress?: { current: number; total: number };
   error?: string | null;
   pause_reason?: GeometryPauseReason | null;
+  grid_warning?: 'grid_not_visible' | null;
   metrics?: GeometryMetrics;
   geometry_revision?: number;
   detected_anchors?: GeometryAnchor[];

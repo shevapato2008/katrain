@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Alert } from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
 import { useGeometry } from '../context/GeometryContext';
@@ -18,13 +18,13 @@ import {
 import { SetupPopoverHost } from '../components/setup/SetupPopoverHost';
 import { SetupSelect } from '../components/setup/SetupSelect';
 import { SetupDerived } from '../components/setup/SetupDerived';
-import { komiReadout } from '../components/setup/komiReadout';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { readAudioPref, subscribeAudioPref, writeAudioPref } from '../../utils/audioPrefs';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { writeActiveSession } from '../utils/activeSession';
+import { Icon } from '../shell/icons';
 import { emphasized } from '../components/setup/emphasized';
 
 /**
@@ -69,6 +69,7 @@ const PvpLocalSetupPage = () => {
   const { token } = useAuth();
   const { isVisionEnabled, loaded: visionLoaded } = useVision();
   const geometry = useGeometry();
+  const { preflight } = geometry;
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -106,18 +107,21 @@ const PvpLocalSetupPage = () => {
     current.active = true;
     return () => { current.active = false; current.request += 1; };
   }, []);
-  // Calibration returns to this same setup instance; starting remains a separate user action.
-  useEffect(() => {
-    if (calibrationOpen && geometry.status.phase === 'ready' && geometry.status.session_calibrated
-      && geometry.status.capabilities.geometry_ready && geometry.status.capabilities.recognition_ready
-      && geometry.status.capabilities.model_ready !== false) setCalibrationOpen(false);
-  }, [calibrationOpen, geometry.status]);
   const leave = () => {
     attempt.current.request += 1;
     attempt.current.busy = false;
     navigate('/kiosk/play');
   };
-  const [error, setError] = useState('');
+  const [errorReason, setError] = useState<{ key: string; fallback: string } | { message: string } | null>(null);
+  const error = errorReason ? 'key' in errorReason ? t(errorReason.key, errorReason.fallback) : errorReason.message : '';
+  const [help, setHelp] = useState<'game' | 'players' | 'seat' | null>(null);
+  const groupTitles = { game: t('setup:game_terms', '这局棋'), players: t('local:players', '对局双方'), seat: t('setup:seat', '怎么坐') };
+  const sectionHead = (topic: keyof typeof groupTitles) => (
+    <KioskSecLabel zh={groupTitles[topic]} action={
+      <button type="button" className="local-setup-info" aria-label={`${groupTitles[topic]}${t('setup:help', '说明')}`}
+        aria-haspopup="dialog" onClick={() => setHelp(topic)}><Icon name="info" /></button>
+    } />
+  );
 
   const timePresets = TIME_PRESETS(t);
   const currentTimeKey = !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
@@ -162,6 +166,9 @@ const PvpLocalSetupPage = () => {
   const ruleLabels = RULE_LABEL(t);
   const handicapLabels = HANDICAP_LABEL(t);
   const terms = resolveGameTerms(rules, handicapKey, freeKomi);
+  const compactKomi = terms.komi === 0
+    ? t('setup:komi_none', '不贴目')
+    : `${terms.komi > 0 ? t('setup:komi_black_pays', '黑贴') : t('setup:komi_white_pays', '白贴')} ${interpolate(t('setup:komi_points', '{n} 目'), { n: Math.abs(terms.komi) })}`;
   const ruleDef = RULES.find((r) => r.key === rules) ?? RULES[0];
   const pickKomi = handicapKey === 'free';
   const freeKomiOptions = FREE_KOMI_VALUES.map((v) => ({
@@ -174,28 +181,46 @@ const PvpLocalSetupPage = () => {
       ? t('setup:seat_hint_not19', '这一局不是 19 路,只能下在屏幕上')
       : t('setup:seat_hint_uncalibrated', '这台机器没标定过摄像头,只能下在屏幕上');
 
-  const handleStart = async () => {
+  // Keep the original click's settings and return context while calibration is on screen.
+  const captureStart = () => ({
+    settings: {
+      board_size: boardSize,
+      rules: ruleDef.wire,
+      handicap: terms.handicap,
+      komi: terms.komi,
+      black_name: blackName,
+      white_name: whiteName,
+      time_enabled: timeEnabled,
+      main_time: mainTime,
+      byo_length: byoyomiTime,
+      byo_periods: byoyomiPeriods,
+    },
+    label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
+    onBoard: playInput.onBoard,
+    backState: backToState(location),
+  });
+  const pendingStart = useRef<ReturnType<typeof captureStart> | null>(null);
+
+  const startGame = useCallback(async (intent: ReturnType<typeof captureStart>, resuming = false) => {
     if (attempt.current.busy) return;
-    if (visionLoaded === false && playInput.onBoard) {
-      setError(t('local:device_check_pending', '正在读取设备状态，请稍后再试'));
-      return;
-    }
     const request = ++attempt.current.request;
     attempt.current.busy = true;
     const current = () => attempt.current.active && attempt.current.request === request;
     let createdSession: string | null = null;
     let published = false;
-    let checkingBoard = playInput.onBoard;
-    setError('');
+    let checkingBoard = intent.onBoard;
+    setError(null);
     setLoading(true);
     setChecking(checkingBoard);
     try {
       if (checkingBoard) {
-        const result = await geometry.preflight();
+        const result = await preflight();
         if (!current()) return;
         if (!result.ready) {
-          if (['required', 'degraded', 'failed', 'cancelled'].includes(result.status.phase)) setCalibrationOpen(true);
-          else setError(t('local:board_check_not_ready', '棋盘检查未就绪，请保持盘面稳定后重试'));
+          if (!resuming && ['required', 'degraded', 'failed', 'cancelled'].includes(result.status.phase)) {
+            pendingStart.current = intent;
+            setCalibrationOpen(true);
+          } else setError({ key: 'local:board_check_not_ready', fallback: '棋盘检查未就绪，请保持盘面稳定后重试' });
           return;
         }
       }
@@ -204,38 +229,22 @@ const PvpLocalSetupPage = () => {
       const { session_id } = await API.createSession(token ?? undefined);
       createdSession = session_id;
       if (!current()) return;
-      await API.gameSetup(session_id, 'pvp_local', {
-        board_size: boardSize,
-        // 见屏 02 同一处的注释:develop 那版(aeae84e1)在这里写
-        // `komi: handicap > 0 ? 0 : komi`,判据等价但覆盖不了让先/倒贴两档。
-        // 现在三个字段同出 `resolveGameTerms`。
-        rules: ruleDef.wire,
-        handicap: terms.handicap,
-        komi: terms.komi,
-        black_name: blackName,
-        white_name: whiteName,
-        time_enabled: timeEnabled,
-        main_time: mainTime,
-        byo_length: byoyomiTime,
-        byo_periods: byoyomiPeriods,
-      });
+      await API.gameSetup(session_id, 'pvp_local', intent.settings);
       if (!current()) return;
       writeActiveSession({
         kind: 'game',
-        // 铸的是新键,不套 PO 里的 `Black` / `White` —— 那两条是「黑棋 / 白棋」(说的是子),
-        // 这里说的是**人**(黑方 / 白方),和对局屏上那两张卡的回落值是同一句话。
-        label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
+        label: intent.label,
         route: `/kiosk/play/pvp/local/game/${session_id}`,
         ts: Date.now(),
         // 这一局下不下实体盘,开局这一刻定下(v2 §3.5):守卫和对局屏都读它,不再各自判断。
-        onBoard: playInput.onBoard,
+        onBoard: intent.onBoard,
       });
       published = true;
-      navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: backToState(location) });
+      navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: intent.backState });
     } catch (e) {
       if (current()) setError(checkingBoard
-        ? t('local:board_check_failed', '检查棋盘失败，请检查连接后重试')
-        : e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
+        ? { key: 'local:board_check_failed', fallback: '检查棋盘失败，请检查连接后重试' }
+        : e instanceof Error ? { message: e.message } : { key: 'Failed to create game', fallback: '创建对局失败' });
     } finally {
       if (createdSession && !published) await API.deleteSession(createdSession).catch(() => undefined);
       if (current()) {
@@ -244,16 +253,51 @@ const PvpLocalSetupPage = () => {
         setChecking(false);
       }
     }
+  }, [preflight, token, navigate]);
+
+  const handleStart = () => {
+    if (attempt.current.busy) return;
+    if (visionLoaded === false && playInput.onBoard) {
+      setError({ key: 'local:device_check_pending', fallback: '正在读取设备状态，请稍后再试' });
+      return;
+    }
+    void startGame(captureStart());
+  };
+
+  useEffect(() => {
+    if (!calibrationOpen || !pendingStart.current || attempt.current.busy) return;
+    const status = geometry.status;
+    if (status.phase !== 'ready' || !status.session_calibrated || !status.capabilities.geometry_ready
+      || !status.capabilities.recognition_ready || status.capabilities.model_ready === false) return;
+    const intent = pendingStart.current;
+    // Consume before preflight writes status or another ready poll can run this effect.
+    pendingStart.current = null;
+    void startGame(intent, true);
+  }, [calibrationOpen, geometry.status, startGame]);
+
+  const returnToSetup = () => {
+    pendingStart.current = null;
+    attempt.current.request += 1;
+    attempt.current.busy = false;
+    setLoading(false);
+    setChecking(false);
+    setError(null);
+    setCalibrationOpen(false);
   };
 
   if (calibrationOpen) return <GeometryCalibrationScreen
-    backLabel={t('local:return_setup', '返回设置')} onBack={() => setCalibrationOpen(false)}
+      t={t}
+    backLabel={t('local:return_setup', '返回设置')} onBack={returnToSetup}
     title={t('local:prestart_calibration', '先检查棋盘标定')}
-    sub={t('local:prestart_calibration_sub', '标定完成后返回设置，再开始对局')} requireRecognition
+    sub={error
+      ? `${error}；${t('local:return_setup_retry', '请返回设置后重试')}`
+      : loading ? t('local:entering_game', '正在进入对局…')
+        : t('local:prestart_calibration_resume', '标定成功后自动进入对局；失败可重试，返回设置保留参数')}
+    requireRecognition
   />;
 
   return (
-    <div className="kiosk-layout-a" data-testid="pvp-local-setup-page">
+    <div className="kiosk-layout-a local-setup-redesign" data-testid="pvp-local-setup-page">
       {/* 左栏 = 按下「开始对局」后真会出现的那个局面(规范 `:512`)。
           `color` 不传:这一屏没有「我执」那一次选择,见 `KioskSetupBoard` 的 prop 注释。 */}
       <KioskSetupBoard size={boardSize} handicap={terms.handicap} />
@@ -266,7 +310,7 @@ const PvpLocalSetupPage = () => {
           backLabel={t('Back to play', '返回对弈')}
           onBack={leave}
           title={t('game:local_pvp', '本地对局')}
-          sub={t('local:setup_sub', '开局设置 · 两人面对面')}
+          sub={t('local:setup_face_to_face', '两人面对面')}
         />
 
         <KioskScrollZone className="setgrp-scroll">
@@ -274,11 +318,7 @@ const PvpLocalSetupPage = () => {
               两个人面对面下,**终局怎么算是开局前必须谈好的事** —— 所以贴目在这一屏
               尤其要说得出口,而不是藏在一条轨的读数里。 */}
           <section className="setgrp" data-testid="setup-game-group">
-            <KioskSecLabel
-              zh={t('setup:game_terms', '这局棋')}
-              en="Game"
-              value={t('local:agree_first', '下之前先谈好')}
-            />
+            {sectionHead('game')}
             <div className="su-row">
               <SetupSelect
                 testId="setup-size"
@@ -306,28 +346,26 @@ const PvpLocalSetupPage = () => {
                 onChange={(k) => setHandicapKey(k as HandicapKey)}
               />
             </div>
-            <SetupDerived
-              testId="setup-komi"
-              label={t('Komi', '贴目')}
-              note={pickKomi
-                ? t('setup:komi_pick', '点此改贴目')
-                : t('setup:komi_derived', '随规则和让子定')}
-              options={pickKomi ? freeKomiOptions : undefined}
-              value={String(freeKomi)}
-              onChange={pickKomi ? (k) => setFreeKomi(Number(k)) : undefined}
-            >
-              {komiReadout(t, rules, handicapKey, freeKomi)}
-            </SetupDerived>
+            <div className="su-row local-setup-terms-row">
+              <SetupDerived
+                testId="setup-komi"
+                label={t('Komi', '贴目')}
+                note={pickKomi
+                  ? t('setup:komi_pick', '点此改贴目')
+                  : t('setup:komi_derived', '随规则和让子定')}
+                options={pickKomi ? freeKomiOptions : undefined}
+                value={String(freeKomi)}
+                onChange={pickKomi ? (k) => setFreeKomi(Number(k)) : undefined}
+              >
+                {compactKomi}
+              </SetupDerived>
+            </div>
           </section>
 
           {/* ── 对局双方 ── 压成一行两格。它是两个同类输入,不是两条并列的内容。
               留空就不写 SGF 的 PB/PW(`server.py:1093`),对局屏回落到「黑方 / 白方」。 */}
           <section className="setgrp" data-testid="setup-players-group">
-            <KioskSecLabel
-              zh={t('local:players', '对局双方')}
-              en="Players"
-              value={t('local:written_into_sgf', '会写进棋谱')}
-            />
+            {sectionHead('players')}
             <div className="su-row su-row--2">
               <label className="su-cell su-cell--input">
                 <span className="su-cell__k">
@@ -360,14 +398,13 @@ const PvpLocalSetupPage = () => {
                 />
               </label>
             </div>
-            <p className="su-hint">{t('local:names_hint', '留空就记成「黑方 / 白方」,不编名字')}</p>
           </section>
 
           {/* ── 怎么坐 ── 这一屏没有「我执」:两个人面对面,谁执黑是他们自己坐好的。
               空出来的那一格给落子提示音 —— 它是这一局的开关,和用时同级。 */}
           <section className="setgrp" data-testid="setup-seat-group">
-            <KioskSecLabel zh={t('setup:seat', '怎么坐')} en="Seat" />
-            <div className="su-row">
+            {sectionHead('seat')}
+            <div className="su-row local-setup-seat-row">
               <SetupSelect
                 testId="setup-input"
                 label={t('setup:input_where', '落子')}
@@ -408,25 +445,12 @@ const PvpLocalSetupPage = () => {
                 onChange={(k) => writeAudioPref('sfx', k === 'on')}
               />
             </div>
-            <p className="su-hint" data-testid="setup-seat-hint">{seatHint}</p>
+            <p className="su-hint" data-testid="setup-seat-hint">{!playInput.available ? seatHint : null}</p>
           </section>
         </KioskScrollZone>
 
         {/* 出错横幅在滚动区**外面** —— 它说的是「刚才那次开局失败了」,跟着设置滚走就等于没说。 */}
         {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
-
-        <p className="setnote" data-testid="setup-note">
-          {/* 两句话两个 key(原来是十个片段)。强调用 `<b>` 标记,位置由译者定。 */}
-          {emphasized(t(
-            'local:note3_line1',
-            '屏上<b>不给提示和形势判断</b>;双方各停一手后<b>自动数子</b>，死活按引擎判断。',
-          ))}
-          <br />
-          {emphasized(t(
-            'local:note3_line2',
-            '这一局<b>只留档，不动段位</b>；中途退出<b>不存谱</b>。',
-          ))}
-        </p>
 
         <button
           type="button"
@@ -435,8 +459,35 @@ const PvpLocalSetupPage = () => {
           disabled={loading}
           onClick={handleStart}
         >
+          <Icon name="caret-right" filled />
           {checking ? t('local:checking_board', '检查棋盘…') : loading ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
         </button>
+        <Dialog open={help !== null} onClose={() => setHelp(null)} aria-labelledby="local-setup-help-title"
+          aria-describedby="local-setup-help-content" className="local-setup-help" maxWidth="sm" fullWidth>
+          <DialogTitle id="local-setup-help-title">{help && groupTitles[help]}</DialogTitle>
+          <DialogContent id="local-setup-help-content">
+            {help === 'game' && <p>{t('local:terms_help', '两人下棋前请谈妥路数、规则、让子和贴目。先行方及贴目方向以当前设置为准；开局后不可更改。')}</p>}
+            {help === 'players' && <p>{t('local:names_hint', '留空就记成「黑方 / 白方」,不编名字')}</p>}
+            {help === 'seat' && <>
+              <p>{t('local:input_help', '实体盘仅支持已标定的 19 路；屏幕落子时直接点棋盘，双方在各自一侧确认。')}</p>
+              <p>{seatHint}</p>
+              <p className="setnote" data-testid="setup-note">
+                {/* 两句话两个 key(原来是十个片段)。强调用 `<b>` 标记,位置由译者定。 */}
+                {emphasized(t(
+                  'local:note3_line1',
+                  '屏上<b>不给提示和形势判断</b>;双方各停一手后<b>自动数子</b>，死活按引擎判断。',
+                ))}
+                <br />
+                {emphasized(t(
+                  'local:note3_line2',
+                  '这一局<b>只留档，不动段位</b>；中途退出<b>不存谱</b>。',
+                ))}
+              </p>
+
+            </>}
+          </DialogContent>
+          <DialogActions><Button onClick={() => setHelp(null)}>{t('Close', '关闭')}</Button></DialogActions>
+        </Dialog>
         </SetupPopoverHost.Provider>
       </div>
     </div>

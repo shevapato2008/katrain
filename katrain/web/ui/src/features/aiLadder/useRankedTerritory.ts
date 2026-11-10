@@ -1,25 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EngineOverlay } from '../../components/Board';
-import {
-  getAiLadderTerritoryQuota,
-  requestAiLadderTerritory,
-  type AiLadderTerritoryResult,
-} from './api';
+import { getAiLadderTerritoryQuota, requestAiLadderTerritory, type AiLadderTerritoryResult } from './api';
 
 type Phase = 'idle' | 'loading' | 'result' | 'error';
-type View = { position: string; phase: Phase; result?: AiLadderTerritoryResult };
+type View = { key: string; phase: Phase; visible: boolean; result?: AiLadderTerritoryResult };
+type Scope = { accountKey?: string; gameId?: string; positionIdentity?: string };
 
-/** A territory answer belongs to one session and one board node, including while the request is pending. */
-export function useRankedTerritory(sessionId: string | undefined, enabled: boolean, nodeId: string | number | null | undefined, moveCount: number) {
-  const position = `${sessionId ?? ''}|${nodeId ?? ''}|${moveCount}`;
-  const positionRef = useRef(position);
-  positionRef.current = position;
-  const [remaining, setRemaining] = useState<number | null>(null);
+/** One mounted page's current answer; hiding it never starts another paid request. */
+export function useRankedTerritory(
+  sessionId: string | undefined, enabled: boolean, nodeId: string | number | null | undefined,
+  moveCount: number, scope: Scope = {},
+) {
+  const quotaKey = JSON.stringify([sessionId, scope.accountKey, scope.gameId]);
+  const position = JSON.stringify([quotaKey, enabled, nodeId, moveCount, scope.positionIdentity]);
+  const current = useRef({ position, generation: 0, quotaKey, quotaGeneration: 0 });
+  if (current.current.position !== position) current.current = {
+    position, generation: current.current.generation + 1, quotaKey,
+    quotaGeneration: current.current.quotaGeneration + Number(current.current.quotaKey !== quotaKey),
+  };
+  const { generation, quotaGeneration } = current.current;
+  const viewKey = `${generation}:${position}`;
+  const [quota, setQuota] = useState<{ generation: number; remaining: number | null; inFlight: boolean }>({
+    generation: quotaGeneration, remaining: null, inFlight: false,
+  });
   const [quotaRefreshKey, setQuotaRefreshKey] = useState(0);
-  const [remoteInFlight, setRemoteInFlight] = useState(false);
-  const [view, setView] = useState<View>({ position, phase: 'idle' });
-  const pendingRef = useRef(false);
-  const retryRef = useRef<{ position: string; id: string } | null>(null);
+  const [view, setView] = useState<View>({ key: viewKey, phase: 'idle', visible: false });
+  const viewRef = useRef(view);
+  if (viewRef.current.key !== viewKey) viewRef.current = { key: viewKey, phase: 'idle', visible: false };
+  const updateView = useCallback((next: View) => { viewRef.current = next; setView(next); }, []);
+  const pendingRef = useRef<{ generation: number; quotaGeneration: number } | null>(null);
+  const retryRef = useRef<{ key: string; id: string } | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const remaining = enabled && quota.generation === quotaGeneration ? quota.remaining : null;
+  const remoteInFlight = enabled && quota.generation === quotaGeneration && quota.inFlight;
 
   useEffect(() => {
     if (!enabled || !sessionId) return;
@@ -27,60 +41,81 @@ export function useRankedTerritory(sessionId: string | undefined, enabled: boole
     let timer: ReturnType<typeof setTimeout> | undefined;
     const refresh = async () => {
       try {
-        const quota = await getAiLadderTerritoryQuota(sessionId, controller.signal);
-        if (controller.signal.aborted) return;
-        setRemaining(quota.remaining);
-        setRemoteInFlight(quota.in_flight);
-        if (quota.in_flight) timer = setTimeout(refresh, 2000);
-      } catch {
-        if (!controller.signal.aborted) {
-          setRemoteInFlight(false);
-          setView({ position: positionRef.current, phase: 'error' });
+        const response = await getAiLadderTerritoryQuota(sessionId, controller.signal);
+        if (controller.signal.aborted || !mounted.current || current.current.quotaGeneration !== quotaGeneration) return;
+        setQuota({ generation: quotaGeneration, remaining: response.remaining, inFlight: response.in_flight });
+        // Quota polling does not deliver a private answer. Once remote-only work
+        // settles, leave loading while preserving the user's open/close intent.
+        if (!response.in_flight && pendingRef.current?.quotaGeneration !== quotaGeneration
+          && viewRef.current.phase === 'loading' && !viewRef.current.result) {
+          updateView({ ...viewRef.current, phase: 'idle' });
         }
+        if (response.in_flight) timer = setTimeout(refresh, 2000);
+      } catch {
+        if (controller.signal.aborted || !mounted.current || current.current.quotaGeneration !== quotaGeneration) return;
+        setQuota((previous) => ({ generation: quotaGeneration,
+          remaining: previous.generation === quotaGeneration ? previous.remaining : null, inFlight: false }));
+        if (!viewRef.current.result && !pendingRef.current) updateView({ ...viewRef.current, phase: 'error' });
       }
     };
     void refresh();
     return () => { controller.abort(); if (timer) clearTimeout(timer); };
-  }, [sessionId, enabled, quotaRefreshKey]);
+  }, [sessionId, enabled, quotaGeneration, quotaRefreshKey, updateView]);
 
-  const request = useCallback(async () => {
-    if (!enabled || !sessionId || pendingRef.current || remoteInFlight) return;
-    const requestedPosition = positionRef.current;
-    if (remaining === 0 && retryRef.current?.position !== requestedPosition) return;
-    const requestId = retryRef.current?.position === requestedPosition
-      ? retryRef.current.id : crypto.randomUUID();
-    retryRef.current = { position: requestedPosition, id: requestId };
-    pendingRef.current = true;
-    setView({ position: requestedPosition, phase: 'loading' });
+  const dismiss = useCallback(() => updateView({ ...viewRef.current, visible: false }), [updateView]);
+  const activate = useCallback(async () => {
+    if (!enabled || !sessionId) return;
+    const active = viewRef.current;
+    // A cached answer or current pending view is a local toggle, even at quota zero.
+    if (active.result || (active.phase === 'loading' && pendingRef.current?.generation === generation)) {
+      updateView({ ...active, visible: !active.visible });
+      return;
+    }
+    if (pendingRef.current?.quotaGeneration === quotaGeneration || remoteInFlight) {
+      updateView({ ...active, phase: 'loading', visible: !active.visible });
+      return;
+    }
+    if (remaining === 0 && retryRef.current?.key !== viewKey) return;
+    const requestId = retryRef.current?.key === viewKey ? retryRef.current.id : crypto.randomUUID();
+    retryRef.current = { key: viewKey, id: requestId };
+    const pending = { generation, quotaGeneration };
+    pendingRef.current = pending;
+    updateView({ key: viewKey, phase: 'loading', visible: true });
+    const sameQuota = () => mounted.current && current.current.quotaGeneration === quotaGeneration;
+    const samePosition = () => sameQuota() && current.current.generation === generation;
     try {
       const result = await requestAiLadderTerritory(sessionId, requestId);
-      setRemaining(result.remaining);
-      retryRef.current = null;
-      if (positionRef.current !== requestedPosition) return;
+      if (!sameQuota()) return;
+      setQuota({ generation: quotaGeneration, remaining: result.remaining, inFlight: false });
+      if (retryRef.current?.key === viewKey) retryRef.current = null;
+      if (!samePosition()) return;
       if (result.stale || result.move_count !== moveCount) {
-        setView({ position: requestedPosition, phase: 'idle' });
+        updateView({ key: viewKey, phase: 'idle', visible: false });
         return;
       }
-      setView({ position: requestedPosition, phase: 'result', result });
+      updateView({ key: viewKey, phase: 'result', result, visible: viewRef.current.visible });
     } catch {
-      if (positionRef.current === requestedPosition) setView({ position: requestedPosition, phase: 'error' });
+      if (!sameQuota()) return;
+      if (samePosition()) updateView({ key: viewKey, phase: 'error', visible: viewRef.current.visible });
       setQuotaRefreshKey((key) => key + 1);
     } finally {
-      pendingRef.current = false;
+      if (pendingRef.current === pending) pendingRef.current = null;
+      if (sameQuota() && !samePosition() && viewRef.current.phase === 'loading') {
+        updateView({ ...viewRef.current, phase: 'idle', visible: false });
+      }
     }
-  }, [enabled, sessionId, remoteInFlight, remaining, moveCount]);
+  }, [enabled, sessionId, generation, quotaGeneration, remoteInFlight, remaining, viewKey, moveCount, updateView]);
 
-  const phase: Phase = !enabled ? 'idle' : remoteInFlight ? 'loading'
-    : view.position === position ? view.phase : 'idle';
-  const result = phase === 'result' ? view.result : undefined;
-  const overlay: EngineOverlay | null = result && result.ownership.length === 361
+  const active = enabled && view.key === viewKey ? view : undefined;
+  const phase: Phase = active?.phase && active.phase !== 'idle' ? active.phase : remoteInFlight ? 'loading' : 'idle';
+  const result = active?.result;
+  const visible = !!active?.visible;
+  const overlay: EngineOverlay | null = visible && result && result.ownership.length === 361
     ? { kind: 'area', ownership: result.ownership.map((value, index) => ({
       col: index % 19, row: 18 - Math.floor(index / 19), value,
-    })) }
-    : null;
+    })) } : null;
 
-  return { remaining: enabled ? remaining : null, phase, result, overlay, request,
-    retrySameRequest: retryRef.current?.position === position,
-    disabled: !enabled || pendingRef.current || remoteInFlight
-      || (remaining === 0 && retryRef.current?.position !== position) };
+  return { remaining, phase, result, visible, overlay, activate, request: activate, dismiss,
+    retrySameRequest: retryRef.current?.key === viewKey,
+    disabled: !enabled || !sessionId || (!result && phase !== 'loading' && remaining === 0 && retryRef.current?.key !== viewKey) };
 }

@@ -1,6 +1,12 @@
+import { boardVariantReason } from '../utils/nativePresentation';
+import './trainingReviewed.css';
+import { PhysicalBoardIcon } from '../shell/PhysicalBoardIcon';
+import { Icon } from '../shell/icons';
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { backToState, useBackTo } from '../hooks/useBackTo';
+import { sgfToCoords } from '../../utils/sgfParser';
+import type { Stone } from '../../hooks/useTsumegoProblem';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
@@ -74,7 +80,7 @@ const TsumegoProblemPage = () => {
     enterTryMode,
     exitTryMode,
     flushProgress,
-  } = useTsumegoProblem(problemId || '');
+  } = useTsumegoProblem(problemId || '', { boardVariant: 'kiosk19' });
 
   const { visionStatus } = useVision();
   const geometry = useOptionalGeometry();
@@ -86,13 +92,6 @@ const TsumegoProblemPage = () => {
     writePhysicalMode(v);
     setPhysicalMode(v);
   }, []);
-  // Reset re-runs the physical clearing→setup lifecycle (reset() keeps problem.id, so the
-  // hook's per-problem restart won't fire on its own — bump resyncKey to force it).
-  const [resyncKey, setResyncKey] = useState(0);
-  const handleReset = useCallback(() => {
-    reset();
-    setResyncKey((k) => k + 1);
-  }, [reset]);
   // recognition_ready = 相机+模型+几何全就绪；物理盘固定 19 路（PRD Q1：非 19 路题隐藏物理模式）
   // ⚠️ 2026-09-14(T9):recognition_ready **不含「本次开机确认过」**。服务启动时持久化的标定锁
   // 直接推进识别 worker ⇒ 盒子一重启它就是真,而几何是 required / session_calibrated=false。
@@ -137,6 +136,7 @@ const TsumegoProblemPage = () => {
   const [searchParams] = useSearchParams();
   const wantWrongSet = searchParams.get('set') === 'wrong';
   const wantAllSet = searchParams.get('set') === 'all';
+  const mixedWrongSet = wantWrongSet && searchParams.get('scope') === 'all';
 
   useEffect(() => {
     if (!problem) return;
@@ -147,7 +147,7 @@ const TsumegoProblemPage = () => {
       setSequenceCategory(category);
       setCategorySequence(ids);
     };
-    const preferredCategory = wantAllSet ? 'all' : problem.category;
+    const preferredCategory = wantAllSet || mixedWrongSet ? 'all' : problem.category;
     const fallbackToProblemCategory = () => {
       const cached = readSequence(problem.level, problem.category);
       if (cached && cached.length > 0) {
@@ -185,7 +185,7 @@ const TsumegoProblemPage = () => {
       disposed = true;
       controller.abort();
     };
-  }, [problem, wantAllSet]);
+  }, [problem, wantAllSet, mixedWrongSet]);
 
   // ---- 错题模式(T1)----
   // `?set=wrong` 且错题快照里有这道题 ⇒ 上/下一题、做对自动下一题、实体模式做对后的翻页,
@@ -193,18 +193,18 @@ const TsumegoProblemPage = () => {
   // 快照读不到 / 不含这道题(深链、换了标签页)⇒ 退回整类,**不假装还在错题里**。
   // 快照由统一 activity store 按账号隔离:同一标签页换人,读不到别人点错题页时写的那份。
   const wrongSequence = useMemo(
-    () => (wantWrongSet && problem ? readWrongSequence(problem.level, problem.category) : null),
-    [wantWrongSet, problem],
+    () => (wantWrongSet && problem ? readWrongSequence(problem.level, mixedWrongSet ? 'all' : problem.category) : null),
+    [wantWrongSet, mixedWrongSet, problem],
   );
   const inWrongSet = !!problemId && !!wrongSequence && wrongSequence.includes(problemId);
   const inAllSet = wantAllSet && sequenceCategory === 'all' && !!problemId && categorySequence.includes(problemId);
+  const inMixedJourney = inAllSet || (inWrongSet && mixedWrongSet);
   const sequence = inWrongSet && wrongSequence ? wrongSequence : categorySequence;
 
   const currentIndex = useMemo(
     () => (problemId ? sequence.indexOf(problemId) : -1),
     [sequence, problemId],
   );
-  const isFirst = currentIndex <= 0;
   const isLast = currentIndex >= 0 && currentIndex === sequence.length - 1;
   const prevId = currentIndex > 0 ? sequence[currentIndex - 1] : null;
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
@@ -214,24 +214,24 @@ const TsumegoProblemPage = () => {
   useEffect(() => {
     if (!problem) return;
     writeLastLevel(problem.level);
-    writeLastCategory(inAllSet ? 'all' : problem.category);
-    const journeyName = inAllSet
+    writeLastCategory(inMixedJourney ? 'all' : problem.category);
+    const journeyName = inMixedJourney
       ? t('Mixed training', '综合训练')
       : t(`tsumego:${problem.category}`, problem.category);
-    const head = `${levelChinese(problem.level)} · ${journeyName}`;
+    const head = `${levelChinese(problem.level, t)} · ${journeyName}`;
     writePracticeResume(
       inWrongSet
         ? {
             label: `${head} · ${interpolate(t('tsumego:wrongResume', '错题第 {n} 道'), { n: currentIndex + 1 })}`,
-            route: `/kiosk/tsumego/problem/${problem.id}?set=wrong`,
+            route: `/kiosk/tsumego/problem/${problem.id}?set=wrong${mixedWrongSet ? '&scope=all' : ''}`,
           }
         : {
-            label: `${head} · 第 ${currentIndex + 1} 题`,
+            label: interpolate(t('{head} · 第 {n} 题', '{head} · 第 {n} 题'), { head, n: currentIndex + 1 }),
             route: `/kiosk/tsumego/problem/${problem.id}${inAllSet ? '?set=all' : ''}`,
           },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
-  }, [problem, currentIndex, inWrongSet, inAllSet]);
+  }, [problem, currentIndex, inWrongSet, inAllSet, inMixedJourney, mixedWrongSet]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;
@@ -240,42 +240,29 @@ const TsumegoProblemPage = () => {
   const navigateToProblem = useCallback(
     (id: string) => {
       flushProgress(); // persist the leaving problem's attempt (4.1/4.2)
-      const setQuery = inWrongSet ? '?set=wrong' : inAllSet ? '?set=all' : '';
+      const setQuery = inWrongSet ? `?set=wrong${mixedWrongSet ? '&scope=all' : ''}` : inAllSet ? '?set=all' : '';
       navigate(`/kiosk/tsumego/problem/${id}${setQuery}`);
     },
-    [navigate, flushProgress, inWrongSet, inAllSet],
+    [navigate, flushProgress, inWrongSet, inAllSet, mixedWrongSet],
   );
-
-  const goToUnits = useCallback(() => {
-    flushProgress();
-    if (problem) {
-      const category = inAllSet ? 'all' : problem.category;
-      navigate(`/kiosk/tsumego/${problem.level}/${category}${inWrongSet ? '/wrong' : ''}`);
-    } else {
-      backWithoutProblem();
-    }
-  }, [navigate, problem, flushProgress, inWrongSet, inAllSet, backWithoutProblem]);
 
   const handlePrev = useCallback(() => {
     if (prevId) navigateToProblem(prevId);
   }, [prevId, navigateToProblem]);
 
   const handleNext = useCallback(() => {
-    if (nextId) {
-      navigateToProblem(nextId);
-    } else {
-      // Last problem in category — "下一题" becomes "返回单元".
-      goToUnits();
-    }
-  }, [nextId, navigateToProblem, goToUnits]);
+    if (nextId) navigateToProblem(nextId);
+  }, [nextId, navigateToProblem]);
 
   // Auto-advance (4.2): default ON, ~1.5s after solving, unless last problem or disabled.
   // Guard against double-fire (SuccessOverlay's timer + any re-render). Reset per problem.
   const autoAdvancedRef = useRef(false);
+  const resetClockPendingRef = useRef(false);
   // Reset per-problem UI flags when the route param changes (this page stays mounted across
   // prev/next + auto-advance, so React does NOT remount it — we must reset manually).
   useEffect(() => {
     autoAdvancedRef.current = false;
+    resetClockPendingRef.current = false;
   }, [problemId]);
 
   // Physical mode owns the clearing_next → advance handoff (PRD TR7); the timer-based
@@ -292,9 +279,10 @@ const TsumegoProblemPage = () => {
   // Physical-board tsumego — real hook with our availability gating (recognition + geometry + 19-路).
   const physical = usePhysicalTsumego({
     enabled: physicalEnabled,
+    physicalRequested: physicalMode,
     visionConnected: visionSync.connected,
     problemKey: problem?.id ?? null,
-    resyncKey,
+    resyncKey: 0,
     boardSize,
     stones,
     isSolved,
@@ -309,6 +297,25 @@ const TsumegoProblemPage = () => {
     onAdvance: handleAutoComplete, // 与既有 auto-advance 同一导航路径
   });
 
+  // A pending physical reset owns the screen board even while recognition is unavailable.
+  // Read the live intent in handlers so another input in the reset click's turn is fenced too.
+  const isPhysicalResetPending = () => physicalMode && physical.hasPendingReset();
+  const pendingPhysicalReset = isPhysicalResetPending();
+
+  const handleReset = useCallback(() => {
+    // Use the problem definition, never the current solution/try board.
+    const initialStones: Stone[] = [];
+    for (const [player, points] of [['B', problem?.initialBlack ?? []], ['W', problem?.initialWhite ?? []]] as const) {
+      for (const point of points) {
+        const coords = sgfToCoords(point, boardSize);
+        if (coords) initialStones.push({ player, coords });
+      }
+    }
+    resetClockPendingRef.current = physicalMode;
+    physical.resetToInitial(stonesToVisionBoard(initialStones, boardSize));
+    reset();
+  }, [problem, boardSize, physicalMode, physical.resetToInitial, reset]);
+
   // Physical mode: don't count board-setup time toward 用时. Rebase the answer clock the first
   // time the board reaches 'ready' after (re)entering setup; answer-phase revisits to 'ready'
   // (after a reply / wrong-move removal) keep the clock running.
@@ -318,16 +325,18 @@ const TsumegoProblemPage = () => {
       answerClockArmedRef.current = false;
       return;
     }
-    if (['clearing', 'clearing_next', 'setup'].includes(physical.phase)) {
+    if (['clearing', 'clearing_next', 'setup'].includes(physical.phase)
+      || (physical.phase === 'restoring' && resetClockPendingRef.current)) {
       answerClockArmedRef.current = true; // in setup → arm the next ready-restart
     } else if (physical.phase === 'ready' && answerClockArmedRef.current) {
       answerClockArmedRef.current = false;
+      resetClockPendingRef.current = false;
       restartTimer();
     }
   }, [physicalEnabled, physical.phase, restartTimer]);
 
   const inPhysicalSetup =
-    physicalEnabled && ['clearing', 'clearing_next', 'setup'].includes(physical.phase);
+    physicalEnabled && ['clearing', 'clearing_next', 'setup', 'restoring'].includes(physical.phase);
 
   // Flag wrong/extra physical stones on the electronic board with a red ✕. physical.extra is in
   // vision coords [row(0=top), col, color]; TsumegoBoard wants board coords [x=col, y=(size-1-row)].
@@ -357,8 +366,8 @@ const TsumegoProblemPage = () => {
   // 这一屏能诚实说出口的只有 `hint` 那一句,加上这一屏自己的规则(落子即判)。
   // 稿子第三个标签「示意题面」也去掉:它标的是「这题是稿子上现摆的」,真题来自题库,挂着就是撒谎。
   const categoryName = problem ? t(`tsumego:${problem.category}`, CATEGORY_META[problem.category]?.zh ?? problem.category) : '';
-  const journeyName = inAllSet ? t('Mixed training', '综合训练') : categoryName;
-  const levelName = problem ? levelChinese(problem.level) : '';
+  const journeyName = inMixedJourney ? t('Mixed training', '综合训练') : categoryName;
+  const levelName = problem ? levelChinese(problem.level, t) : '';
 
   // 这一题属于第几单元 —— 顺序表算得出来就算,算不出来(深链 + 取不到)就退回类目那一层。
   // 错题模式下没有「第几单元」:单元块画的是这份错题快照,返回去错题页(T1)。
@@ -373,7 +382,7 @@ const TsumegoProblemPage = () => {
       : sequence.slice((unitNumber - 1) * UNIT_SIZE, unitNumber * UNIT_SIZE);
   const backTarget = problem
     ? inWrongSet
-      ? `/kiosk/tsumego/${problem.level}/${problem.category}/wrong`
+      ? `/kiosk/tsumego/${problem.level}/${inMixedJourney ? 'all' : problem.category}/wrong`
       : unitNumber === null
         ? `/kiosk/tsumego/${problem.level}/${inAllSet ? 'all' : problem.category}`
         : `/kiosk/tsumego/${problem.level}/${inAllSet ? 'all' : problem.category}/${unitNumber}`
@@ -403,9 +412,9 @@ const TsumegoProblemPage = () => {
       key: 'hint',
       icon: 'lightbulb',
       label: showHint ? t('Hide Hint', '收提示') : t('Hint', '提示'),
-      onClick: toggleHint,
+      onClick: () => { if (!isPhysicalResetPending()) toggleHint(); },
       pressed: showHint,
-      disabled: physicalEnabled && physical.phase !== 'ready',
+      disabled: pendingPhysicalReset || (physicalEnabled && physical.phase !== 'ready'),
     },
     {
       key: 'undo',
@@ -413,11 +422,11 @@ const TsumegoProblemPage = () => {
       // ⚠️ **不能用 `t('Undo', …)`** —— cn PO 里 `Undo` 是「悔棋」,翻译表赢过默认值,
       // 屏上会写「悔棋」。做题没有对手,悔的是自己上一手,稿子写的是「退一手」。
       label: t('tsumego:undoMove', '退一手'),
-      onClick: undo,
+      onClick: () => { if (!isPhysicalResetPending()) undo(); },
       // 实体模式下屏幕上按一下会让机器和盘对不上,所以灰着。**原因只许说做得到的事**:
       // 状态机里没有「用户主动收回一手」这条流程,拿掉子机器毫无反应(T4);
-      // 「重摆」在实体模式下会重走清盘 → 摆题(`handleReset`),这句是真的。真流程待 Fan 拍板(prd.md §4 D1)。
-      disabled: physicalEnabled,
+      // 实体重摆保留正确棋子，直接核对题目初始局面。
+      disabled: physicalEnabled || pendingPhysicalReset,
       reason: t('tsumego:undoPhysicalReset', '实体棋盘上退不了一手；想重来，按「重摆」'),
     },
     { key: 'reset', icon: 'arrows-clockwise', label: t('Reset', '重摆'), onClick: handleReset },
@@ -426,26 +435,21 @@ const TsumegoProblemPage = () => {
       icon: 'caret-left',
       label: t('tsumego:prev', '上一题'),
       onClick: handlePrev,
-      disabled: isFirst,
-      reason: sequence.length === 0
+      disabled: !prevId,
+      reason: currentIndex < 0
         ? t('tsumego:noSequence', '读不到这一类的题号，上/下一题暂时用不了')
         : t('tsumego:isFirst', '这是第一题'),
     },
-    isLast
-      ? {
-          key: 'next',
-          icon: 'squares-four',
-          label: inWrongSet ? t('tsumego:backToWrong', '返回错题') : t('tsumego:backToUnit', '返回单元'),
-          onClick: backToUnit,
-        }
-      : {
-          key: 'next',
-          icon: 'skip-forward',
-          label: t('tsumego:next', '下一题'),
-          onClick: handleNext,
-          disabled: !nextId,
-          reason: t('tsumego:noSequence', '读不到这一类的题号，上/下一题暂时用不了'),
-        },
+    {
+      key: 'next',
+      icon: 'skip-forward',
+      label: t('tsumego:next', '下一题'),
+      onClick: handleNext,
+      disabled: !nextId,
+      reason: isLast
+        ? t('tsumego:isLast', '这是最后一题')
+        : t('tsumego:noSequence', '读不到这一类的题号，上/下一题暂时用不了'),
+    },
   ];
 
   if (loading || error) {
@@ -479,7 +483,7 @@ const TsumegoProblemPage = () => {
   }
 
   return (
-    <div className="kiosk-layout-a">
+    <div className="kiosk-layout-a training-problem-reviewed">
       {/* 盘跨满整个 516 木框:`TsumegoBoard` 是一块 canvas,**坐标画在它自己里面**,
           再套共享的四条刻度带就是两套坐标。见 `go-screens.css` 的 `--full`。 */}
       <div className="kiosk-board">
@@ -500,12 +504,12 @@ const TsumegoProblemPage = () => {
             hintCoords={hintCoords}
             showHint={showHint}
             extraMarkers={extraMarkers}
-            disabled={isSolved || (isFailed && !isTryMode)}
+            disabled={pendingPhysicalReset || isSolved || (isFailed && !isTryMode)}
             moveHistory={moveHistory}
             onPlaceStone={(x, y) => {
               // 实体模式下屏幕点击只在轮到人时受理(别的阶段盘由引导接管);
               // 受理之后由机器引导实体盘跟上。
-              if (physicalEnabled && physical.phase !== 'ready') return;
+              if (isPhysicalResetPending() || (physicalEnabled && !physical.canAcceptInput())) return;
               const preBoard = physicalEnabled ? stonesToVisionBoard(stones, boardSize) : null;
               const result = placeStone(x, y);
               if (result?.sound) playSound(result.sound);
@@ -550,7 +554,7 @@ const TsumegoProblemPage = () => {
         />
 
         <div className="panel">
-          <h3>{t('tsumego:thisProblem', '这一题')}</h3>
+          <h3>{t('tsumego:thisProblem', '这一题')}{problem?.board_variant?.status === 'adapted' ? interpolate(t(" · 19路版（原{source_size}路）", " · 19路版（原{source_size}路）"), { source_size: problem.board_variant.source_size }) : ''}</h3>
           <p className="qtext" data-testid="puzzle-statement">
             {problem?.hint ? <b>{problem.hint}。</b> : null}
             {t(
@@ -558,6 +562,7 @@ const TsumegoProblemPage = () => {
               '找出那一手 —— 落子即判，走错当场退回。',
             )}
           </p>
+          {problem?.board_variant?.status === 'unavailable' && <p className="qtext" data-testid="puzzle-original-board-reason">{interpolate(t("原{source_size}路题：{reason}", "原{source_size}路题：{reason}"), { source_size: problem.board_variant.source_size, reason: boardVariantReason(problem.board_variant.reason, t) })}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <span className="kiosk-tag">{categoryName}</span>
             <span className="kiosk-tag">{levelName}</span>
@@ -566,14 +571,14 @@ const TsumegoProblemPage = () => {
 
         <div className="railsec">
           <div className="rst">
-            <span>{physicalEnabled ? t('tsumego:physicalBoard', '实体棋盘') : t('tsumego:yourMoves', '你的走法')}</span>
+            <span>{physicalEnabled ? t('tsumego:physicalBoardShort', '实体盘') : t('tsumego:yourMoves', '你的走法')}</span>
             <b data-testid="puzzle-counters">
               {t('Time', '用时')} {inPhysicalSetup ? t('tsumego:preparingBoard', '准备中') : formatTime(elapsedTime)}
               {/* 一次都没试过时**不写「0 次」** —— 和屏 13 同一条:0 次是一个次数,
                   「还没开始」不是。做对的那一次要算进去(`attempts` 数的是失败的那几次)。 */}
-              {tries > 0 ? ` · ${interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries })}` : ''}
+              {tries > 0 ? interpolate(t(" · {value1}", " · {value1}"), { value1: interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries }) }) : ''}
               {lastDuration != null
-                ? ` · ${t('tsumego:lastTimeShort', '上次')} ${formatTime(lastDuration)}`
+                ? interpolate(t(" · {value1} {value2}", " · {value1} {value2}"), { value1: t('tsumego:lastTimeShort', '上次'), value2: formatTime(lastDuration) })
                 : ''}
             </b>
           </div>
@@ -617,7 +622,10 @@ const TsumegoProblemPage = () => {
                   </p>
                 )}
                 {physical.phase === 'restoring' && (
-                  <p className="qtext">{t('tsumego:physVerify', '正在核对棋盘和题面是否一致，请按灯光调整棋子。')}</p>
+                  <p className="qtext" data-testid="puzzle-physical-restore">
+                    {t('tsumego:physRestoreInitial', '保留正确棋子，取走红 × 标记的多余或错色棋子，按红灯补黑子、绿灯补白子。棋盘一致后自动开始。')}
+                    {interpolate(t('tsumego:physRestoreCounts', '（待取走 {extra} 颗，待补回 {missing} 颗）'), { extra: physical.extra.length, missing: physical.missing.length })}
+                  </p>
                 )}
                 {!physical.ledOk && (
                   <p className="qtext" data-testid="puzzle-led-down">
@@ -677,18 +685,17 @@ const TsumegoProblemPage = () => {
           </div>
         </div>
 
-        {/* 两个开关 + 右端一句「为什么那个开关是灰的」。`role="switch"` 不是 `aria-pressed`:
-            后者是「这个按钮此刻被按住」,而这两个是**状态**。长相与对局屏那排逐字相同。 */}
+        {/* 模式状态仍用 switch 语义；触屏外观与下方做题操作键一致。 */}
         <div className="gtoggles gtoggles--switch" role="group" aria-label={t('tsumego:modes', '模式')}>
           <button
             type="button"
             role="switch"
             aria-checked={isTryMode}
             data-testid="try-mode-toggle"
-            disabled={physicalEnabled && physical.phase !== 'ready'}
-            onClick={() => (isTryMode ? exitTryMode() : enterTryMode())}
+            disabled={pendingPhysicalReset || (physicalEnabled && physical.phase !== 'ready')}
+            onClick={() => { if (!isPhysicalResetPending()) (isTryMode ? exitTryMode() : enterTryMode()); }}
           >
-            {t('Try', '试下')}
+            <Icon name="hand-pointing" />{t('Try', '试下')}
           </button>
           <button
             type="button"
@@ -699,7 +706,7 @@ const TsumegoProblemPage = () => {
             disabled={!physicalMode && !physicalAvailable}
             onClick={() => setPhysical(!physicalMode)}
           >
-            {t('tsumego:physicalBoard', '实体棋盘')}
+            <PhysicalBoardIcon />{t('tsumego:physicalBoardShort', '实体盘')}
           </button>
           <i className="ghint" data-testid="puzzle-toggle-hint">{physicalHint?.text ?? ''}</i>
         </div>
@@ -707,10 +714,10 @@ const TsumegoProblemPage = () => {
         <div className="panel" data-testid="puzzle-unit">
           <h3>
             {inWrongSet
-              ? `${t('tsumego:wrongSet', '错题')} · ${interpolate(t('tsumego:wrong_total', '{n} 道'), { n: sequence.length })}`
+              ? interpolate(t("{value1} · {value2}", "{value1} · {value2}"), { value1: t('tsumego:wrongSet', '错题'), value2: interpolate(t('tsumego:wrong_total', '{n} 道'), { n: sequence.length }) })
               : unitNumber === null
                 ? t('tsumego:unitUnknown', '这一单元')
-                : `${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })} · ${interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length })}`}
+                : interpolate(t("{value1} · {value2}", "{value1} · {value2}"), { value1: interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber }), value2: interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length }) })}
           </h3>
           {unitIds.length > 0 ? (
             <div className="dots" data-testid="puzzle-dots">

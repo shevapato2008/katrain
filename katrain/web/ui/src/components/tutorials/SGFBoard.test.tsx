@@ -1,3 +1,4 @@
+import { stoneSpriteUrl } from '../board/stoneAppearance';
 import { render } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import SGFBoard from './SGFBoard';
@@ -21,4 +22,15 @@ it('draws a hollow contrasting last-stone ring while preserving book annotations
   expect(marker()).toBeNull();
   rerender(<SGFBoard payload={payload as any} />);
   expect(marker()).toBeNull();
+});
+
+it('uses shared stone images with stable absolute coordinates across crops', () => {
+  const { container, rerender } = render(<SGFBoard payload={payload as any} />);
+  const stone = () => container.querySelector('[data-stone-color="W"]');
+  expect(stone()?.tagName.toLowerCase()).toBe('image');
+  expect(stone()).toHaveAttribute('href', stoneSpriteUrl('W', 19, 4, 4));
+  expect(stone()).toHaveAttribute('width', String(32 * .44 * 2));
+  expect([...container.querySelectorAll('[data-stone-color]')].every(sprite => !sprite.hasAttribute('transform'))).toBe(true);
+  rerender(<SGFBoard payload={{ ...payload, viewport: { col: 3, row: 3, cols: 5, rows: 5 } } as any} />);
+  expect(stone()).toHaveAttribute('href', stoneSpriteUrl('W', 19, 4, 4));
 });

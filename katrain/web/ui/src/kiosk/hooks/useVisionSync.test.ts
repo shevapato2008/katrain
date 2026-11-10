@@ -68,3 +68,44 @@ describe('vision binding preparation', () => {
     expect(onBound).toHaveBeenCalledWith('new');
   });
 });
+
+describe('same-session game replacement', () => {
+  beforeEach(() => {
+    vi.stubGlobal('WebSocket', class { close() {} });
+    vi.spyOn(API, 'visionUnbind').mockResolvedValue(undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+  it('automatically runs the normal bind again for a new game without closing the socket or unbinding it', async () => {
+    const next = deferred();
+    const bind = vi.spyOn(API, 'visionBind').mockResolvedValueOnce(undefined).mockReturnValueOnce(next.promise);
+    const onBound = vi.fn().mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(({ game }) => useVisionSync('same-session', onBound, game),
+      { initialProps: { game: 'game-1' } });
+    await waitFor(() => expect(result.current.bindState).toBe('ready'));
+    rerender({ game: 'game-2' });
+    expect(result.current.bindState).toBe('preparing');
+    expect(bind).toHaveBeenCalledTimes(2);
+    expect(API.visionUnbind).not.toHaveBeenCalled();
+    await act(async () => next.resolve());
+    expect(result.current.bindState).toBe('ready');
+    expect(onBound).toHaveBeenCalledTimes(2);
+  });
+
+  it('queues the new game bind after an old pending response and never marks the old game ready', async () => {
+    const old = deferred(), next = deferred();
+    const bind = vi.spyOn(API, 'visionBind').mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
+    const onBound = vi.fn().mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(({ game }) => useVisionSync('same-session', onBound, game),
+      { initialProps: { game: 'game-1' } });
+    rerender({ game: 'game-2' });
+    await act(async () => old.resolve());
+    expect(bind).toHaveBeenCalledTimes(2);
+    expect(onBound).not.toHaveBeenCalled();
+    expect(result.current.bindState).toBe('preparing');
+    await act(async () => next.resolve());
+    expect(result.current.bindState).toBe('ready');
+    expect(onBound).toHaveBeenCalledTimes(1);
+  });
+});

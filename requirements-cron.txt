@@ -6,3 +6,4 @@ beautifulsoup4
 lxml
 chardet
 pydantic>=2,<3
+pypinyin>=0.50.0

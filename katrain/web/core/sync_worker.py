@@ -11,7 +11,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import SyncQueueEntry
-from katrain.web.core.remote_client import RemoteAPIClient
+from katrain.web.core.remote_client import RemoteAPIClient, user_game_write_refusal_code
 
 logger = logging.getLogger("katrain_web")
 
@@ -64,12 +64,14 @@ class SyncWorker:
         session_factory,
         remote_client: RemoteAPIClient,
         ai_ladder_repo=None,
+        baipu_sync=None,
     ):
         self._session_factory = session_factory
         self._remote_client = remote_client
         # Present on a board: lets a synced settlement bring the cloud's answer back,
         # so an account that also played elsewhere stops showing two different ranks.
         self._ai_ladder_repo = ai_ladder_repo
+        self._baipu_sync = baipu_sync
         self._sync_lock = asyncio.Lock()
         #: 云端对已送达结算的裁决,按 idempotency_key。见 `_absorb_response`。
         self._receipts: dict[str, dict] = {}
@@ -84,7 +86,10 @@ class SyncWorker:
             return 0
 
         async with self._sync_lock:
-            return await self._process_queue()
+            synced = await self._process_queue()
+            if self._baipu_sync is not None:
+                synced += await self._baipu_sync()
+            return synced
 
     async def _process_queue(self) -> int:
         synced = 0
@@ -181,6 +186,10 @@ class SyncWorker:
                 self._absorb_response(item, resp)
                 return  # Success
             elif resp.status_code == 409:
+                if item.operation == "create_user_game":
+                    refusal_code = user_game_write_refusal_code(resp)
+                    if refusal_code:
+                        raise PermanentError(f"HTTP 409 {refusal_code}: {resp.text[:200]}")
                 if item.operation == "settle_ai_ladder_ranked":
                     try:
                         body = resp.json()

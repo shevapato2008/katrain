@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import type { ActiveSession } from '../utils/activeSession';
 import type { PlatformInfo } from '../../api';
+import { Icon, type IconName } from '../shell/icons';
 import PlayPage from './PlayPage';
 
 const mockNavigate = vi.fn();
@@ -75,6 +76,8 @@ const expectAllDisconnected = () => {
   const [ogs, golaxy, fox] = platformButtons();
   expect(ogs).toHaveTextContent('点击登录');
   expect(golaxy).toHaveTextContent('点击登录');
+  expect(ogs.querySelector('.kiosk-card__t em')).toHaveTextContent(/^点击登录$/);
+  expect(golaxy.querySelector('.kiosk-card__t em')).toHaveTextContent(/^点击登录$/);
   expect(fox).toHaveTextContent('接口还没通');
   expect(fox).toHaveTextContent('暂不能对弈');
   expect(fox).not.toHaveTextContent('即将上线');
@@ -131,17 +134,41 @@ describe('PlayPage', () => {
     }
   });
 
-  it('四张模式卡完全等样式 —— 稿子里没有「主推」那一张', () => {
-    renderPage();
-    const modeCardLabels = ['自由对弈', '升降级对弈', '本地对局', '在线大厅'];
-    const buttons = modeCardLabels.map((label) => screen.getByText(label).closest('button'));
-    expect(buttons.every(Boolean)).toBe(true);
-    expect(new Set(buttons)).toHaveLength(4);
+  it('keeps equal choices with leading semantic icons, trailing carets, and their routes', async () => {
+    let view!: ReturnType<typeof renderPage>;
+    await act(async () => { view = renderPage(); });
+    const choices: [string, string, IconName][] = [
+      ['自由对弈', '/kiosk/play/ai/setup/free', 'robot'],
+      ['升降级对弈', '/kiosk/play/ai/setup/ranked', 'trophy'],
+      ['本地对局', '/kiosk/play/pvp/setup', 'users'],
+      ['在线大厅', '/kiosk/play/pvp/lobby', 'globe-hemisphere-west'],
+      ['全部对局', '/kiosk/report', 'clock-counter-clockwise'],
+    ];
+    const buttons = choices.map(([label]) => screen.getByText(label).closest('button')!);
+    expect(new Set(buttons)).toHaveLength(5);
+    expect(new Set(buttons.map((button) => button.className))).toHaveLength(1);
+    buttons.forEach((button, index) => {
+      expect(button.querySelector('.kiosk-card__tile')).toBeNull();
+      const icons = button.querySelectorAll('svg');
+      const title = button.querySelector('.kiosk-play-choice__title')!;
+      expect(icons).toHaveLength(2);
+      const expected = render(<><Icon name={choices[index][2]} /><Icon name="caret-right" /></>);
+      const expectedIcons = expected.container.querySelectorAll('svg');
+      expect(icons[0].innerHTML).toBe(expectedIcons[0].innerHTML);
+      expect(icons[1].innerHTML).toBe(expectedIcons[1].innerHTML);
+      expect(icons[0].compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(title.compareDocumentPosition(icons[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expected.unmount();
+      expect(button).toBeEnabled();
+      fireEvent.click(button);
+      expect(mockNavigate).toHaveBeenLastCalledWith(choices[index][1]);
+    });
+    platformButtons().forEach((button) => expect(button.querySelector('img')).toBeInTheDocument());
 
-    // 上一版把「自由对弈」做成 jade 渐变的 primary 卡(testid `mode-card-primary`)。
-    // 稿子四张一模一样 —— 差别由**内容**表达,不由卡的等级表达:
-    // 把一张卡做成主推,等于替用户决定他该下哪一种。
-    for (const b of buttons) expect(b!.className).toBe('kiosk-card');
+    useEngineReadinessMock.mockReturnValue('warming');
+    view.rerender(pageElement());
+    buttons.slice(0, 2).forEach((button) => expect(button).toBeDisabled());
+    buttons.slice(2).forEach((button) => expect(button).toBeEnabled());
   });
 
   it.each([
@@ -155,7 +182,8 @@ describe('PlayPage', () => {
     expect(screen.getByText('升降级对弈').closest('button')).toBeDisabled();
     expect(screen.getByText('本地对局').closest('button')).toBeEnabled();
     expect(screen.getByText('在线大厅').closest('button')).toBeEnabled();
-    expect(screen.getAllByText(subtitle)).toHaveLength(2);
+    expect(screen.getByRole('status')).toHaveTextContent(subtitle);
+    expect(screen.getByRole('status').closest('.kiosk-seclabel')).not.toBeNull();
   });
 
   it('restores AI mode subtitles and navigation when the engine is ready', () => {
@@ -275,6 +303,7 @@ describe('PlayPage', () => {
     expect(ogs).toHaveTextContent('点击登录');
     expect(fox).toHaveTextContent('接口还没通');
     expect(golaxy).toHaveTextContent('已连接');
+    expect(golaxy.querySelector('.dot')).toBeNull();
 
     fireEvent.click(ogs);
     fireEvent.click(fox);            // 禁用的,点了不该有任何去向

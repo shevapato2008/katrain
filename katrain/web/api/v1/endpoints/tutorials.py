@@ -4,13 +4,16 @@ Authoring routes live in the separate admin application.
 """
 
 import mimetypes
-from typing import List
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
+from sqlalchemy import select
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from katrain.web.core.db import get_db
+from katrain.web.core.models_db import TutorialBook, TutorialChapter, TutorialFigure, TutorialSection
 from katrain.web.core.storage import get_storage_backend, normalize_key
 from katrain.web.core.storage.base import MEDIA_CACHE_CONTROL
 from katrain.web.tutorials import db_queries
@@ -28,6 +31,90 @@ router = APIRouter()
 
 # Asset paths are resolved via the storage backend (katrain.web.core.storage),
 # which owns key normalization + path-traversal protection (normalize_key).
+
+
+def _public_ogs_course(db):
+    # Keep these imports inside request handling: startup init_db() creates every
+    # model already registered in Base.metadata, but OGS tables require explicit import.
+    from katrain.web.tutorials.ogs_import import SLUG
+    from katrain.web.tutorials.ogs_models import TutorialOgsCourse
+
+    row = db.execute(
+        select(TutorialBook, TutorialOgsCourse)
+        .join(TutorialOgsCourse, TutorialOgsCourse.book_id == TutorialBook.id)
+        .where(TutorialBook.slug == SLUG)
+    ).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="OGS course not found")
+    return row
+
+
+def _ogs_unavailable():
+    return HTTPException(status_code=503, detail="OGS tutorial course is unavailable")
+
+
+@router.get("/ogs-course")
+def get_public_ogs_course(lang: str = "zh-cn", db: Session = Depends(get_db)):
+    from katrain.web.tutorials.ogs_course import public_course_index
+
+    try:
+        book, course = _public_ogs_course(db)
+        if lang not in course.catalog["languages"]:
+            raise HTTPException(status_code=404, detail="OGS language not found")
+        return public_course_index(db, book, course, lang)
+    except (OperationalError, ProgrammingError, KeyError, TypeError, ValueError) as exc:
+        raise _ogs_unavailable() from exc
+
+
+@router.get("/ogs-course/source.zip")
+def get_public_ogs_source(db: Session = Depends(get_db)):
+    """Anonymous corresponding source for this OGS course only; no other books or storage credentials."""
+    from katrain.web.tutorials.ogs_source_cache import cached_source_zip
+
+    try:
+        book, course = _public_ogs_course(db)
+        return FileResponse(
+            cached_source_zip(db, book, course),
+            media_type="application/zip",
+            filename="ogs-course-source.zip",
+        )
+    except (OperationalError, ProgrammingError, KeyError, TypeError, ValueError) as exc:
+        raise _ogs_unavailable() from exc
+
+
+@router.get("/ogs-course/steps/{page}")
+def get_public_ogs_step(
+    page: int,
+    lang: str = "zh-cn",
+    db: Session = Depends(get_db),
+    board_variant: Optional[Literal["kiosk19"]] = None,
+):
+    from katrain.web.tutorials.ogs_course import public_step_output
+    from katrain.web.tutorials.ogs_models import TutorialOgsStep
+
+    try:
+        book, course = _public_ogs_course(db)
+        if lang not in course.catalog["languages"]:
+            raise HTTPException(status_code=404, detail="OGS language not found")
+        step = db.scalar(
+            select(TutorialOgsStep)
+            .join(TutorialFigure, TutorialOgsStep.figure_id == TutorialFigure.id)
+            .join(TutorialSection, TutorialFigure.section_id == TutorialSection.id)
+            .join(TutorialChapter, TutorialSection.chapter_id == TutorialChapter.id)
+            .where(
+                TutorialOgsStep.course_id == course.id, TutorialOgsStep.page == page, TutorialChapter.book_id == book.id
+            )
+        )
+        if step is None:
+            raise HTTPException(status_code=404, detail="OGS step not found")
+        result = public_step_output(book.id, step, lang)
+        if board_variant == "kiosk19":
+            from katrain.web.content.board_variants import adapt_ogs_step
+
+            return adapt_ogs_step(result)
+        return result
+    except (OperationalError, ProgrammingError, KeyError, TypeError, ValueError) as exc:
+        raise _ogs_unavailable() from exc
 
 
 # ── Categories (hardcoded) ────────────────────────────────────────────────────

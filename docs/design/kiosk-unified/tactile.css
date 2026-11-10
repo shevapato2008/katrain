@@ -1,0 +1,276 @@
+/* Selected kiosk finish: C4 rounded soft keys on the existing Go palette.
+   This layer changes button material and press travel, not page surfaces or geometry. */
+#stage .proposal-overlay button,
+#modal-root .modal button,
+#stage .proposal-overlay :is(.u-play-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-p-filter, .u-p-segment,
+  .u-p-ogs-filter) label {
+  border-radius: 17px;
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff29, transparent 75%),
+    linear-gradient(180deg, transparent 57%, #00000016);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004,
+    0 3px 0 #102019, 0 6px 10px #0007;
+  translate: 0 0;
+  transition: translate 130ms ease, box-shadow 130ms ease, background-image 130ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#stage .proposal-overlay button:is(:active, .is-pressing):not(:disabled),
+#modal-root .modal button:is(:active, .is-pressing):not(:disabled),
+#stage .proposal-overlay :is(.u-play-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-p-filter, .u-p-segment,
+  .u-p-ogs-filter) label:is(:active, .is-pressing) {
+  translate: 0 3px;
+  background-image: linear-gradient(180deg, #0000001b, transparent 62%);
+  box-shadow: inset 0 4px 9px #0008, inset 0 1px 0 #ffffff14,
+    0 1px 2px #0006;
+}
+
+#stage .proposal-overlay button:disabled,
+#modal-root .modal button:disabled {
+  background-image: none;
+  box-shadow: none;
+  translate: none;
+  transition: none;
+}
+
+/* Help and transport controls keep their circular silhouette. */
+#stage .proposal-overlay :is(.u-info, .u-play-info, .u-p-help, .u-lib-info,
+  .u-train-info, .u-growth-info, .u-report-info, .u-game-help,
+  .u-settings-help, .u-setup-info, .info),
+#stage .proposal-overlay .u-report-playback > button {
+  border-radius: 50%;
+}
+
+/* Analysis table rows are data rows, not raised action keys. */
+#stage .proposal-overlay .u-report-candidates > button {
+  border-radius: 0;
+  background-image: none;
+  box-shadow: none;
+}
+
+/* Fixed canvas edges still have room for the 3 px press travel. */
+#stage .proposal-overlay :is(.u-game-rail, .u-game-local-seat, .u-setup-rail) {
+  overflow: visible;
+}
+#stage .proposal-overlay .u-shell-dock button {
+  box-shadow: inset 0 1px 0 #ffffff26, 0 2px 0 #102019, 0 4px 6px #0005;
+}
+
+/* One shared shell for adjacent tabs and segmented choices. Action buttons stay separate. */
+#stage .proposal-overlay :is(.u-p-filter, .u-p-login-tabs, .u-p-segment,
+  .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-report-tabs, .u-report-phase, .u-report-side,
+  .u-settings-segment) {
+  gap: 0;
+  padding: 0;
+  border: 1px solid #52715c;
+  border-radius: 15px;
+  background: #1a2922;
+  box-shadow: inset 0 1px 0 #ffffff26, 0 2px 0 #0c1912, 0 4px 7px #0005;
+  overflow: hidden;
+}
+#stage .proposal-overlay :is(.u-p-filter, .u-p-login-tabs, .u-p-segment,
+  .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-report-tabs, .u-report-phase, .u-report-side,
+  .u-settings-segment) > :is(button, label) {
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background-image: radial-gradient(ellipse 100% 85% at 50% -15%, #ffffff32, transparent 72%),
+    linear-gradient(180deg, #ffffff0c, transparent 48%, #00000030);
+  box-shadow: inset 0 2px 0 #ffffff3d, inset 0 -3px 0 #07160fbd;
+  translate: none;
+  transition: background-color 130ms ease, box-shadow 130ms ease, filter 130ms ease;
+}
+#stage .proposal-overlay :is(.u-p-filter, .u-p-login-tabs, .u-p-segment,
+  .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-report-tabs, .u-report-phase, .u-report-side,
+  .u-settings-segment) > :is(button, label):not(:first-of-type) {
+  border-left: 1px solid #52715c;
+}
+#stage .proposal-overlay :is(.u-p-filter, .u-p-login-tabs, .u-p-segment,
+  .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-report-tabs, .u-report-phase, .u-report-side,
+  .u-settings-segment) > :is(button, label):is(:active, .is-pressing) {
+  translate: none;
+  background-image: linear-gradient(180deg, #00000042, #00000017 65%, transparent);
+  box-shadow: inset 0 4px 9px #000b, inset 0 1px 0 #ffffff12;
+  filter: brightness(.9);
+}
+#stage .proposal-overlay :is(.u-p-filter, .u-p-login-tabs, .u-p-segment,
+  .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-report-tabs, .u-report-phase, .u-report-side,
+  .u-settings-segment) > button:disabled {
+  background-image: none;
+  box-shadow: none;
+  filter: none;
+}
+#stage .proposal-overlay :is(.u-lib-tabs, .u-report-tabs):has(> :nth-child(6)) > :nth-child(3n + 1) {
+  border-left: 0;
+}
+#stage .proposal-overlay :is(.u-lib-tabs, .u-report-tabs):has(> :nth-child(6)) > :nth-child(n + 4) {
+  border-top: 1px solid #52715c;
+}
+#stage .proposal-overlay .u-lib-detail-head + .u-lib-match + .u-lib-switch .u-lib-pane > .u-lib-switch > .u-lib-tabs {
+  grid-template-rows: repeat(2, 1fr);
+}
+#stage .proposal-overlay .u-report-tabs {
+  grid-template-rows: repeat(2, 1fr);
+}
+#stage .proposal-overlay .u-report-tabs > button.is-on {
+  border-bottom-color: transparent;
+  background-color: #2a513a;
+  color: #f1f9f0;
+}
+#stage .proposal-overlay .u-p-lobby-tab-capsule > label {
+  background-image: radial-gradient(ellipse 100% 85% at 50% -15%, #ffffff32, transparent 72%),
+    linear-gradient(180deg, #ffffff0c, transparent 48%, #00000030);
+  box-shadow: inset 0 2px 0 #ffffff3d, inset 0 -3px 0 #07160fbd;
+}
+#stage .proposal-overlay .u-p-lobby-tab-capsule > label:is(:active, .is-pressing) {
+  background-image: linear-gradient(180deg, #00000042, #00000017 65%, transparent);
+  box-shadow: inset 0 4px 9px #000b, inset 0 1px 0 #ffffff12;
+  filter: brightness(.9);
+}
+#stage .proposal-overlay .u-p-filter { width: 448px; height: 44px; }
+#stage .proposal-overlay .u-p-ogs-filter-tabs { height: 51px; display: flex; flex: none; }
+#stage .proposal-overlay .u-p-ogs-filter-tabs > input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+#stage .proposal-overlay .u-p-ogs-filter-tabs > label { display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+#stage .proposal-overlay .u-train-unit-switch { height: 44px; display: flex; flex: none; }
+#stage .proposal-overlay .u-train-unit-switch > button { min-width: 150px; }
+
+/* Training home establishes the shared tab finish: a recessed capsule with
+   one inset, raised selection. Keep individual actions outside this group. */
+#stage .proposal-overlay :is(.u-p-lobby-tab-capsule, .u-p-filter, .u-p-login-tabs,
+  .u-p-segment, .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs,
+  .u-lib-view-toggle, .u-lib-section-view, .u-report-tabs, .u-report-phase,
+  .u-report-side, .u-settings-segment) {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #46634d;
+  border-radius: 15px;
+  background: #19291f;
+  box-shadow: inset 0 2px 4px #07140bb3, 0 1px 0 #486750;
+  overflow: hidden;
+}
+#stage .proposal-overlay :is(.u-p-lobby-tab-capsule, .u-p-filter, .u-p-login-tabs,
+  .u-p-segment, .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs,
+  .u-lib-view-toggle, .u-lib-section-view, .u-report-tabs, .u-report-phase,
+  .u-report-side, .u-settings-segment) > :is(button, label) {
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  color: #c7d9ca;
+  filter: none;
+  translate: none;
+  transition: background 130ms ease, box-shadow 130ms ease, filter 130ms ease, translate 130ms ease;
+}
+#stage .proposal-overlay :is(.u-p-filter, .u-p-login-tabs, .u-p-segment,
+  .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs,
+  .u-lib-view-toggle, .u-lib-section-view, .u-report-tabs, .u-report-phase,
+  .u-report-side, .u-settings-segment) > :is(button, label):not(:first-of-type),
+#stage .proposal-overlay .u-p-lobby-tab-capsule > label + label,
+#stage .proposal-overlay :is(.u-lib-tabs, .u-report-tabs):has(> :nth-child(6)) > :nth-child(n + 4) {
+  border-left: 0;
+  border-top: 0;
+}
+#stage .proposal-overlay :is(.u-p-login-tabs, .u-p-room-tabs, .u-train-unit-switch,
+  .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+  .u-lib-section-view, .u-report-phase, .u-report-side, .u-settings-segment) > :is(.is-active, .is-on, [aria-selected="true"], [aria-pressed="true"]),
+#stage .proposal-overlay .u-report-tabs > button.is-on,
+#stage .proposal-overlay #u-p-lobby-games:checked ~ .u-p-lobby-tabs .u-p-lobby-tab-capsule > label[for="u-p-lobby-games"],
+#stage .proposal-overlay #u-p-lobby-players:checked ~ .u-p-lobby-tabs .u-p-lobby-tab-capsule > label[for="u-p-lobby-players"],
+#stage .proposal-overlay .u-p-filter > #u-p-peer-all:checked + label,
+#stage .proposal-overlay .u-p-filter > #u-p-peer-rank:checked + label,
+#stage .proposal-overlay .u-p-segment > input:checked + label,
+#stage .proposal-overlay .u-p-ogs-filter-tabs > input:checked + label,
+#stage .proposal-overlay .u-lib-radio:nth-of-type(1):checked ~ .u-lib-tabs > label:nth-child(1),
+#stage .proposal-overlay .u-lib-radio:nth-of-type(2):checked ~ .u-lib-tabs > label:nth-child(2),
+#stage .proposal-overlay .u-lib-radio:nth-of-type(3):checked ~ .u-lib-tabs > label:nth-child(3),
+#stage .proposal-overlay .u-lib-radio:nth-of-type(4):checked ~ .u-lib-tabs > label:nth-child(4),
+#stage .proposal-overlay .u-lib-radio:nth-of-type(5):checked ~ .u-lib-tabs > label:nth-child(5),
+#stage .proposal-overlay .u-lib-radio:nth-of-type(6):checked ~ .u-lib-tabs > label:nth-child(6),
+#stage .proposal-overlay #u-lib-view-raw:checked ~ .u-lib-baipu-head .u-lib-view-toggle > label:first-child,
+#stage .proposal-overlay #u-lib-view-warped:checked ~ .u-lib-baipu-head .u-lib-view-toggle > label:last-child,
+#stage .proposal-overlay #u-lib-board-part:checked ~ .u-lib-rail .u-lib-section-view > label:first-child,
+#stage .proposal-overlay #u-lib-board-full:checked ~ .u-lib-rail .u-lib-section-view > label:last-child {
+  background: linear-gradient(#3d674b, #284936);
+  color: #f0f7ee;
+  box-shadow: inset 0 1px 0 #ffffff68, inset 0 -2px 0 #142f1b, 0 3px 5px #0008;
+}
+#stage .proposal-overlay :is(.u-p-lobby-tab-capsule, .u-p-filter, .u-p-login-tabs,
+  .u-p-segment, .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+  .u-train-unit-switch, .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs,
+  .u-lib-view-toggle, .u-lib-section-view, .u-report-tabs, .u-report-phase,
+  .u-report-side, .u-settings-segment) > :is(button, label):is(:active, .is-pressing) {
+  translate: 0 2px;
+  filter: brightness(.88);
+  box-shadow: inset 0 3px 6px #0008;
+}
+/* One-row tab hit areas remain at least 44 px after the inset. */
+#stage .proposal-overlay :is(.u-p-lobby-tab-capsule, .u-p-filter, .u-p-room-tabs,
+  .u-train-unit-switch, .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs,
+  .u-lib-view-toggle, .u-lib-section-view, .u-report-phase, .u-report-side) {
+  min-height: 50px;
+  height: 50px;
+}
+#stage .proposal-overlay :is(.u-lib-tabs, .u-report-tabs):has(> :nth-child(6)) {
+  min-height: 96px;
+  height: 96px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #stage .proposal-overlay :is(.u-p-lobby-tab-capsule, .u-p-filter, .u-p-login-tabs, .u-p-segment,
+    .u-p-room-tabs, .u-p-ogs-filter-tabs, .u-train-rank-tabs,
+    .u-train-unit-switch, .u-train-list-tabs, .u-growth-tabs, .u-lib-tabs, .u-lib-view-toggle,
+    .u-lib-section-view, .u-report-tabs, .u-report-phase, .u-report-side,
+    .u-settings-segment) > :is(button, label) { transition: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #stage .proposal-overlay button,
+  #modal-root .modal button,
+  #stage .proposal-overlay :is(.u-play-tabs, .u-lib-tabs, .u-lib-view-toggle,
+    .u-lib-section-view, .u-p-filter, .u-p-segment,
+    .u-p-ogs-filter) label { transition: none; }
+}
+
+/* Analysis categories form a single touch-scrollable capsule on both reports. */
+#stage .proposal-overlay .u-report-tabs,
+#stage .proposal-overlay .u-report-tabs:has(> :nth-child(6)) {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: 100%;
+  height: 50px;
+  min-height: 50px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+#stage .proposal-overlay .u-report-tabs::-webkit-scrollbar { display: none; }
+#stage .proposal-overlay .u-report-tabs > button {
+  flex: 0 0 116px;
+  min-width: 116px;
+  height: 44px;
+  scroll-snap-align: center;
+}
+#stage .proposal-overlay .u-report-rail > .u-report-work { height: 236px; }
+#stage .proposal-overlay .u-report-rail .u-report-candidates { height: 170px; }

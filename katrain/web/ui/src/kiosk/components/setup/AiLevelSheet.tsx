@@ -1,3 +1,4 @@
+import { rankLabel, aiOpponentName } from '../../utils/playerRank';
 import { useEffect, useRef } from 'react';
 import type { EngineLevel } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -62,10 +63,10 @@ const AiLevelSheet = ({ levels, currentElo, onPick, onClose, testId }: AiLevelSh
                 onClick={() => { onPick(l.elo_score); onClose(); }}
               >
                 <span className="idx">{i + 1}</span>
-                <span className="nm">{l.name} · {l.level_name}</span>
+                <span className="nm">{aiOpponentName(l.name, t)} · {rankLabel(l.level_name, t)}</span>
                 <span className="el">
                   {interpolate(t('platform:display_elo', '展示 Elo {v}'), { v: l.display_elo })}
-                  {l.ref_rank ? ` · ${interpolate(t('platform:ref_rank', '对标{r}'), { r: l.ref_rank })}` : ''}
+                  {l.ref_rank ? interpolate(t(" · {value1}", " · {value1}"), { value1: interpolate(t('platform:ref_rank', '对标{r}'), { r: rankLabel(l.ref_rank, t) }) }) : ''}
                 </span>
               </button>
             </div>

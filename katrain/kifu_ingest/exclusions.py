@@ -48,17 +48,34 @@ def assert_source_allowed(source_key, source_item_id):
         raise ValueError("historically excluded 19x19 source ID")
 
 
-def known_source_ids(engine):
-    """Read both primary paths and provenance links so old games are not redownloaded."""
+def known_source_ids(engine, *, candidate_ids=None):
+    """Read catalog/provenance publication, optionally for only finite candidates.
+
+    Hidden albums still count as published. Hourly ingestion always supplies the
+    current bounded candidate set; inventory callers may retain the full query.
+    """
+    paths_filter = links_filter = None
+    if candidate_ids is not None:
+        candidate_ids = set(candidate_ids)
+        if not candidate_ids:
+            return set()
+        if any(not isinstance(i, str) or not re.fullmatch(r"[0-9]+", i) for i in candidate_ids):
+            raise ValueError("candidate source IDs must be numeric strings")
+        origins = [f"data/kifu-album/19x19/{i}.sgf" for i in candidate_ids]
+        paths_filter = KifuAlbum.source_path.in_(origins)
+        links_filter = KifuAlbumSource.origin_path.in_(origins)
     found = set()
     with engine.connect() as connection:
         paths = connection.execute(
-            select(KifuAlbum.source_path).where(KifuAlbum.source_path.like("data/kifu-album/19x19/%"))
+            select(KifuAlbum.source_path).where(
+                paths_filter if paths_filter is not None else KifuAlbum.source_path.like("data/kifu-album/19x19/%")
+            )
         )
         links = connection.execute(
             select(KifuAlbumSource.origin_path)
             .join(KifuSource, KifuSource.id == KifuAlbumSource.source_id)
             .where(KifuSource.source_key == "19x19")
+            .where(links_filter if links_filter is not None else True)
         )
         for path in (*paths.scalars(), *links.scalars()):
             match = _ORIGIN.fullmatch(path or "")

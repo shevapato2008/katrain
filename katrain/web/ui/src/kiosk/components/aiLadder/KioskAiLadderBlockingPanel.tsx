@@ -1,3 +1,5 @@
+import { interpolate } from '../../utils/interpolate';
+import { rankLabel } from '../../utils/playerRank';
 import { useState } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import {
@@ -33,16 +35,16 @@ interface KioskAiLadderBlockingPanelProps {
 }
 
 /** 时长 → 「多久之前」。`null` 走 absent,**不退化成 0** —— 没发生过和刚发生是相反的两件事。 */
-const formatSpan = (seconds: number): string => {
-  if (seconds < 60) return `${seconds} 秒`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟`;
-  return `${Math.floor(seconds / 3600)} 小时`;
+const formatSpan = (seconds: number, t: (key: string, fallback?: string) => string): string => {
+  if (seconds < 60) return interpolate(t('{n} 秒', '{n} 秒'), { n: seconds });
+  if (seconds < 3600) return interpolate(t('{n} 分钟', '{n} 分钟'), { n: Math.floor(seconds / 60) });
+  return interpolate(t('{n} 小时', '{n} 小时'), { n: Math.floor(seconds / 3600) });
 };
-const formatAge = (seconds: number | null | undefined, absent: string): string =>
-  typeof seconds === 'number' ? `${formatSpan(seconds)}前` : absent;
+const formatAge = (seconds: number | null | undefined, absent: string, t: (key: string, fallback?: string) => string): string =>
+  typeof seconds === 'number' ? interpolate(t('{duration}前', '{duration}前'), { duration: formatSpan(seconds, t) }) : absent;
 /** 「已经持续了多久」。和上面差一个「前」:心跳是时点,成绩已压是时段。 */
-const formatDuration = (seconds: number | null | undefined, absent: string): string =>
-  typeof seconds === 'number' ? formatSpan(seconds) : absent;
+const formatDuration = (seconds: number | null | undefined, absent: string, t: (key: string, fallback?: string) => string): string =>
+  typeof seconds === 'number' ? formatSpan(seconds, t) : absent;
 
 /**
  * 挡局屏的**右栏**(`kiosk-side`)。左栏是那块实体棋盘,由页面挂 `SmartBoardConsole`。
@@ -72,7 +74,7 @@ const KioskAiLadderBlockingPanel = ({
   onEndGame,
   onRetrySettlement,
 }: KioskAiLadderBlockingPanelProps) => {
-  useTranslation();
+  const { t } = useTranslation();
   // 举起的确认落在**哪一局**上,而不是一个裸布尔:后台每 15 秒复查,换成另一局时这个
   // `armed` 自己就是假的(派生值,不需要 effect 去追);还是同一局但状态变了,弹窗留着,
   // 而里面每一句都从**当下**这份数据现算。
@@ -97,7 +99,7 @@ const KioskAiLadderBlockingPanel = ({
                段位名是被挡住那一局的对手,摆成最大的字会被读成「我正要开的这局」。 */}
         <section className="kiosk-section" data-testid="kiosk-ladder-blocking-header">
           <div className="kiosk-seclabel">
-            <h2>{game.state === 'pending_settlement' ? '成绩未送达' : '未完成对局'}</h2>
+            <h2>{game.state === 'pending_settlement' ? t("成绩未送达", "成绩未送达") : t("未完成对局", "未完成对局")}</h2>
             <em>{game.state === 'pending_settlement' ? 'Undelivered' : 'Unfinished'}</em>
             <span className="rule" />
             <b className="secval" data-testid="kiosk-ladder-ownership">{ownershipLabel(game)}</b>
@@ -126,12 +128,12 @@ const KioskAiLadderBlockingPanel = ({
         <section className="kiosk-section" data-testid="kiosk-ladder-blocking-facts">
           <div className="kiosk-status kiosk-status--2">
             <div className="kiosk-status__cell">
-              <span className="kiosk-status__k">对手档位</span>
-              <b className="kiosk-status__v" data-testid="kiosk-ladder-blocking-name">{game.opponent_rank_name}</b>
+              <span className="kiosk-status__k">{t("对手档位", "对手档位")}</span>
+              <b className="kiosk-status__v" data-testid="kiosk-ladder-blocking-name">{rankLabel(game.opponent_rank_name, t)}</b>
             </div>
             <div className="kiosk-status__cell">
-              <span className="kiosk-status__k">我执</span>
-              <b className="kiosk-status__v">{game.user_color === 'B' ? '● 黑棋' : '○ 白棋'}</b>
+              <span className="kiosk-status__k">{t("我执", "我执")}</span>
+              <b className="kiosk-status__v">{game.user_color === 'B' ? t("● 黑棋", "● 黑棋") : t("○ 白棋", "○ 白棋")}</b>
             </div>
             <div className="kiosk-status__cell">
               {/* 标签跟着 `ownership` 走:心跳是 origin-only 上报的,而 `current_device`
@@ -140,12 +142,12 @@ const KioskAiLadderBlockingPanel = ({
                   **只报距今多久,不配失联阈值** —— 象棋那屏配了阈值,因为它的模型里还有
                   接管窗口;围棋把那一整套删了,再摆阈值等于把删掉的判据从 UI 长回来。 */}
               <span className="kiosk-status__k">{heartbeatLabel(game)}</span>
-              <b className="kiosk-status__v">{formatAge(game.heartbeat_age_seconds, '未收到过')}</b>
+              <b className="kiosk-status__v">{formatAge(game.heartbeat_age_seconds, t("未收到过", "未收到过"), t)}</b>
             </div>
             <div className="kiosk-status__cell">
-              <span className="kiosk-status__k">成绩已压</span>
+              <span className="kiosk-status__k">{t("成绩已压", "成绩已压")}</span>
               <b className="kiosk-status__v" data-testid="kiosk-ladder-sync-fact">
-                {formatDuration(game.pending_since_seconds, '不适用')}
+                {formatDuration(game.pending_since_seconds, t("不适用", "不适用"), t)}
               </b>
             </div>
           </div>
@@ -162,8 +164,7 @@ const KioskAiLadderBlockingPanel = ({
                 onClick={() => game.session_id && onContinue(game.session_id)}
                 disabled={pending}
               >
-                继续对局
-              </button>
+                {t("继续对局", "继续对局")}</button>
             )}
             {canRetrySync && (
               // 守卫 2:站在**有在途结算的这台盒子**前的人,第一个看到的必须是「把成绩救回去」,
@@ -175,7 +176,7 @@ const KioskAiLadderBlockingPanel = ({
                 onClick={() => onRetrySettlement?.(game.game_id)}
                 disabled={syncRetryPending}
               >
-                {syncRetryPending ? '正在重试…' : '立即重试'}
+                {syncRetryPending ? t("正在重试…", "正在重试…") : t("立即重试", "立即重试")}
               </button>
             )}
             {/* 破坏性按钮**屏上不描红** —— 照象棋模板:屏上次级是描边,红留给不可回头那一步
@@ -198,7 +199,7 @@ const KioskAiLadderBlockingPanel = ({
           <DialogContentText>{displace.body}</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button autoFocus onClick={() => setArmedGameId(null)} sx={{ minHeight: 44 }}>取消</Button>
+          <Button autoFocus onClick={() => setArmedGameId(null)} sx={{ minHeight: 44 }}>{t("取消", "取消")}</Button>
           <Button
             color={displace.color}
             disabled={pending}

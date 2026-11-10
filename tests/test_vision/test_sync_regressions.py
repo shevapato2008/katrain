@@ -137,3 +137,87 @@ class TestBoardLossEpisodes:
 
         assert m.update(empty_board()) == []
         assert m.state == SyncState.SYNCED
+
+
+def test_confirmed_owner_preserves_raw_maturity_and_cannot_be_rebought():
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.vision.sync import SyncStateMachine, SyncEventType
+
+    sync = SyncStateMachine()
+    sync.bind()
+    sync.confirm_pose_lock()
+    board = np.zeros((19, 19), dtype=int)
+    board[3, 3] = 1
+    move = ConfirmedMove(3, 3, 1, observation_seq=9, binding_epoch=2, expected_revision=7)
+    assert sync.claim_confirmed_move(move, board)
+    for _ in range(5):
+        assert not sync.update(board)
+    assert sync._mismatch_count == 5
+    assert not sync.release_confirmed_move((2, 7, 8))
+    assert sync.release_confirmed_move(move.token)
+    assert not sync.claim_confirmed_move(ConfirmedMove(3, 3, 1, 10, 2, 7), board)
+    events = sync.update(board)
+    assert events[0].type == SyncEventType.ILLEGAL_CHANGE
+    assert events[0].data == {"positions": [(3, 3, 1)], "missing": [], "actionable": True}
+
+
+def test_confirmed_owner_leaves_other_extra_and_color_change_actionable():
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.vision.sync import SyncStateMachine, SyncEventType
+
+    sync = SyncStateMachine()
+    sync.bind()
+    sync.confirm_pose_lock()
+    board = np.zeros((19, 19), dtype=int)
+    board[3, 3] = 1
+    move = ConfirmedMove(3, 3, 1, 9, 2, 7)
+    assert sync.claim_confirmed_move(move, board)
+    board[4, 4] = 2
+    for _ in range(5):
+        events = sync.update(board)
+    assert events[0].data["positions"] == [(4, 4, 2)]
+    board[3, 3] = 2
+    for _ in range(5):
+        events = sync.update(board)
+    assert events[0].type == SyncEventType.ILLEGAL_CHANGE
+    assert (3, 3, 2) in events[0].data["positions"]
+
+
+def test_legacy_zero_token_never_owns_a_difference():
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.vision.sync import SyncStateMachine
+
+    sync = SyncStateMachine()
+    board = np.zeros((19, 19), dtype=int)
+    board[3, 3] = 1
+    assert not sync.claim_confirmed_move(ConfirmedMove(3, 3, 1), board)
+
+
+def test_owned_extra_does_not_mask_mature_missing_capture_or_board_lost():
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.vision.sync import SyncStateMachine, SyncEventType
+
+    sync = SyncStateMachine(missing_hold_seconds=7)
+    sync.bind()
+    sync.confirm_pose_lock()
+    expected = np.zeros((19, 19), dtype=int)
+    expected[1, 1] = 1
+    sync.set_expected_board(expected)
+    sync.update(expected, timestamp=-1)
+    observed = np.zeros((19, 19), dtype=int)
+    observed[3, 3] = 1
+    sync.claim_confirmed_move(ConfirmedMove(3, 3, 1, 9, 2, 7), observed)
+    for t in range(12):
+        events = sync.update(observed, timestamp=t)
+    assert events[0].type == SyncEventType.ILLEGAL_CHANGE
+    assert events[0].data["positions"] == []
+    assert events[0].data["missing"] == [(1, 1, 1)]
+    observed[:4, :4] = 2
+    assert sync.update(observed)[0].type == SyncEventType.BOARD_LOST
+
+    sync.reset(expected)
+    sync.set_expected_board(np.zeros((19, 19), dtype=int))
+    observed = expected.copy()
+    observed[3, 3] = 1
+    sync.claim_confirmed_move(ConfirmedMove(3, 3, 1, 10, 2, 8), observed)
+    assert sync.update(observed)[0].type == SyncEventType.CAPTURE_PENDING

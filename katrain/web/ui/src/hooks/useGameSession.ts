@@ -1,3 +1,5 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../kiosk/utils/uiMessage';
+import { useTranslation } from './useTranslation';
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { API, verifiedSpectatorCount, type EndGameResponse, type GameState, type PhysicalEngineErrorState, type PlatformClockState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
@@ -36,11 +38,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const { token, centralRoom = false, deferMoveSoundUntilPaint = false, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
+    const [error, setError] = useState<UiMessage | string | null>(null);
     // 断线是持续状态，与一次性操作失败分开；保留 error 的既有文案供其它调用方使用。
     const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | 'gone' | 'central' | null>(null);
     const [retryEpoch, setRetryEpoch] = useState(0);
     const [reconnecting, setReconnecting] = useState(false);
+    const [connected, setConnected] = useState(false);
     const [lastLog, setLastLog] = useState<string | null>(null);
     // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
     const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
@@ -175,6 +179,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         if (sessionId) {
             let disposed = false;
             let ownedWs: WebSocket | null = null;
+            setConnected(false);
             const connect = async () => {
                 try {
                     const data = await API.getState(sessionId, token);
@@ -193,6 +198,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     wsRef.current = ws;
                     ws.onopen = () => {
                         if (wsRef.current !== ws) return;
+                        setConnected(true);
                         setConnectionLost(null);
                         setReconnecting(false);
                         if (centralRoom) setError(null);
@@ -207,9 +213,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                                 setPlatformPhase(msg.state.platform_phase);
                             }
                         } else if (centralRoom && msg.type === 'error' && msg.code === 'CENTRAL_DISCONNECTED') {
+                            setConnected(false);
                             setConnectionLost('central');
                             setReconnecting(false);
-                            setError('中央对局连接中断');
+                            setError(uiMessage('中央对局连接中断', '中央对局连接中断'));
                         } else if (msg.type === 'spectator_count') {
                             // Lightweight update for spectator count only (doesn't reset timers)
                             setGameState(prev => prev ? { ...prev, sockets_count: msg.count, spectator_count: verifiedSpectatorCount(msg.spectator_count) } : prev);
@@ -288,12 +295,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                        「点了没反应」。对局状态全靠这条推送，它断 = 页面在撒谎。 */
                     ws.onclose = (event) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
+                        setConnected(false);
                         clearQueuedSounds();
                         setPlatformPendingMove(null);
                         if (centralRoom && event.code === 1013) {
                             setConnectionLost('central');
                             setReconnecting(false);
-                            setError('中央对局连接中断');
+                            setError(uiMessage('中央对局连接中断', '中央对局连接中断'));
                         } else if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
                             if (gameEndedRef.current) {
                                 /* 这一局已经有结果了 —— 结果不能被「这一局没了」顶掉。服务端那边
@@ -310,7 +318,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             // 「请重新登录」,而重新登录救不了它。说错原因和印原始报错一样不算人话。
                             console.warn('Game session is gone on the server');
                             setConnectionLost('gone');
-                            setError(SESSION_GONE_MESSAGE);
+                            setError(uiMessage('game:session_gone', SESSION_GONE_MESSAGE));
                         } else if (event.code === WS_POLICY_VIOLATION) {
                             // Kiosk's GamePage shows a fixed sentence for 'rejected' (raw 1008
                             // reasons aren't actionable on a 7" screen - see the comment above
@@ -319,11 +327,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             // the actual reason - do not delete it in a future cleanup.
                             console.error("Game WebSocket rejected:", event.reason);
                             setConnectionLost('rejected');
-                            setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
+                            setError(uiMessage('game:realtime_rejected', '实时连接被拒绝（{reason}），棋盘不会自动更新，请重新登录后重试', { reason: event.reason || '' }));
                         } else if (!event.wasClean) {
                             console.warn("Game WebSocket closed:", event.code, event.reason);
                             setConnectionLost('dropped');
-                            setError("实时连接已断开，棋盘不会自动更新，请刷新页面");
+                            setError(uiMessage('实时连接已断开，棋盘不会自动更新，请刷新页面', '实时连接已断开，棋盘不会自动更新，请刷新页面'));
                         }
                     };
                 } catch (err) {
@@ -331,17 +339,18 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     console.error("Failed to connect", err);
                     if (centralRoom && typeof err === 'object' && err !== null && 'status' in err && err.status === 503) {
                         setConnectionLost('central');
-                        setError('中央对局连接中断');
+                        setError(uiMessage('中央对局连接中断', '中央对局连接中断'));
                         setReconnecting(false);
                         return;
                     }
-                    setError("Failed to connect to game");
+                    setError(uiMessage('Failed to connect to game', 'Failed to connect to game'));
                     setReconnecting(false);
                 }
             };
             connect();
             return () => {
                 disposed = true;
+                setConnected(false);
                 clearQueuedSounds();
                 if (wsRef.current === ownedWs) {
                     wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
@@ -404,7 +413,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             // 在落空分支上收不窄,下面读 `result.state` 当场报错(GamePage 的 send() 记过)。
             if (result && 'status' in result) {
                 setConnectionLost('gone');
-                setError(SESSION_GONE_MESSAGE);
+                setError(uiMessage('game:session_gone', SESSION_GONE_MESSAGE));
                 return;
             }
             // Apply state from the HTTP response immediately (a WebSocket broadcast may
@@ -418,7 +427,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                 // 同一个信号的第三条来路。**不能**把 e.message 放进 error:那正是
                 // `Request failed 404: {"detail":…}` 上屏的那条路。
                 setConnectionLost('gone');
-                setError(SESSION_GONE_MESSAGE);
+                setError(uiMessage('game:session_gone', SESSION_GONE_MESSAGE));
                 throw e;
             }
             const message = e instanceof Error ? e.message : 'Game action failed';
@@ -436,7 +445,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // 自己另开一个"gone"标志。
     const reportSessionGone = useCallback(() => {
         setConnectionLost('gone');
-        setError(SESSION_GONE_MESSAGE);
+        setError(uiMessage('game:session_gone', SESSION_GONE_MESSAGE));
     }, []);
 
     const initNewSession = useCallback(async () => {
@@ -464,7 +473,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // disable-while-pending wiring). This hook's own onmessage switch above only handles
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
-        sessionId, setSessionId, gameState, setGameState, error, connectionLost, reconnecting, reconnect,
+        sessionId, setSessionId, gameState, setGameState, error: renderUiMessage(error, t) || null, connectionLost, connected, reconnecting, reconnect,
         clearError, reportSessionGone, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,

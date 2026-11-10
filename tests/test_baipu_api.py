@@ -184,8 +184,14 @@ class TestBaipuCaptureEndpoint:
             pass
 
         geo = GeometryLock(
-            corners=np.zeros((4, 2), np.float32), points=pts, xs=xs, ys=xs,
-            M=np.eye(3), Minv=np.eye(3), out_size=950, baseline=np.zeros((19, 19, 3), np.float32),
+            corners=np.zeros((4, 2), np.float32),
+            points=pts,
+            xs=xs,
+            ys=xs,
+            M=np.eye(3),
+            Minv=np.eye(3),
+            out_size=950,
+            baseline=np.zeros((19, 19, 3), np.float32),
         )
 
         class _FidLed:
@@ -234,3 +240,18 @@ class TestBaipuCaptureEndpoint:
         gc = r.json()["geometry_correction"]
         assert gc["status"] in ("corrected", "stale", "frozen", "off")
         assert "median_cells" in gc["drift"]
+
+
+@pytest.mark.parametrize("sgf", ["(;SZ[19];B[aa];W[aa];W[aa])", "(;SZ[9]AW[ab][ba];B[aa])"])
+def test_load_exposes_versioned_ff4_contract(client, sgf):
+    response = client.post("/baipu/load", json={"sgf": sgf})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["replay_version"] == 2
+    assert all("pre_removed" in s and "requires_placement" in s for s in data["steps"])
+
+
+def test_load_rejects_out_of_board_before_negative_indexing(client):
+    response = client.post("/baipu/load", json={"sgf": "(;SZ[9];B[as])"})
+    assert response.status_code == 422
+    assert "coordinate" in response.json()["detail"]

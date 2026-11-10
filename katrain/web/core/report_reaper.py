@@ -4,6 +4,7 @@ Task 6 把 reason="report" 排除出通用 TTL 回收器之后，复盘预扣就
 结算器一个管理者**，而结算器按 ReportTask 行遍历。这里收两类它够不着的钱：
 任务行已经没了的孤儿预扣，和卡在 authorizing 的半成品。
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -65,6 +66,8 @@ def reap_stale_authorizing(db: Session, ttl_sec: int = 600, limit: int = 200) ->
     tasks = (
         db.query(models_db.ReportTask)
         .filter(
+            models_db.ReportTask.billing_version.is_(None),
+            models_db.ReportTask.operation_id.is_(None),
             models_db.ReportTask.status == "authorizing",
             models_db.ReportTask.created_at < cutoff,
         )

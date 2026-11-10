@@ -15,6 +15,18 @@ export interface PlayerInfo {
 
 export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | 'pvp_lobby';
 
+export interface LobbyTerritoryResult {
+  session_id: string;
+  game_id: string;
+  current_node_id: number;
+  move_count: number;
+  board_size: [number, number];
+  ownership: number[];
+  black_area: number;
+  white_area: number;
+  stale: boolean;
+}
+
 export interface LocalConfirmationState {
   enabled: boolean;
   status: 'idle' | 'recognizing';
@@ -150,6 +162,10 @@ export interface GameState {
   // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —
   // see kiosk/pages/GamePage.tsx deriveHumanColor/deriveAiTurnState (G2).
   platform_engine_color?: 'B' | 'W' | null;
+  /** Verified platform seats; an empty map does not imply platform mode. */
+  platform_player_ranks?: Partial<Record<'B' | 'W', string | null>>;
+  /** Actual account owning the sole human seat in this eligible private AI game. */
+  rank_owner?: { user_id: number; color: 'B' | 'W' } | null;
   /** OGS online game: the authenticated box user's seat, supplied by the session bridge. */
   platform_my_color?: 'B' | 'W' | null;
   /** Self-owned PvP mirror also exposes this neutral seat alias. */
@@ -221,6 +237,7 @@ export interface PlatformStatusResponse {
 
 export interface EngineHealthResponse {
   status: string;
+  katago_model?: string | null;
   /** 产品版本(`katrain/core/constants.py` 的 `VERSION`)。老服务端不回它 ⇒ 可选;拿不到就不画,不写「未知」。 */
   version?: string;
   engines: {
@@ -338,8 +355,8 @@ export interface GolaxySpectatorSnapshot {
   game_id: string | null; // Null until matching upstream room/meta/state IDs establish identity.
   room_number: string | null;
   board_size: 19;
-  black: { username: string; rank: string | null } | null;
-  white: { username: string; rank: string | null } | null;
+  black: { username: string; rank?: string | null } | null;
+  white: { username: string; rank?: string | null } | null;
   black_stones: string[];
   white_stones: string[];
   move_number: number;
@@ -592,6 +609,8 @@ export const API = {
     apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
   requestCount: (sessionId: string, token?: string): Promise<any> =>
     apiPost("/api/count/request", { session_id: sessionId }, token),
+  lobbyTerritory: (sessionId: string, token?: string): Promise<LobbyTerritoryResult> =>
+    apiPost("/api/pvp/territory", { session_id: sessionId }, token),
   respondCount: (sessionId: string, accept: boolean, token?: string): Promise<any> =>
     apiPost("/api/count/respond", { session_id: sessionId, accept }, token),
   pauseTimer: (sessionId: string): Promise<SessionResponse> =>
@@ -738,8 +757,8 @@ export const API = {
   // 那条路是把假阳性收进基线当成现实。
   visionDenyStone: (row: number, col: number): Promise<void> =>
     apiPost("/api/v1/vision/deny-stone", { row, col }),
-  visionSetupMode: (targetBoard: number[][]): Promise<void> =>
-    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
+  visionSetupMode: (targetBoard: number[][], setupId?: string): Promise<void> =>
+    apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard, ...(setupId !== undefined ? { setup_id: setupId } : {}) }),
   visionMonitor: (active: boolean): Promise<void> =>
     apiPost("/api/v1/vision/monitor", { active }),
   visionPause: (paused: boolean): Promise<void> =>

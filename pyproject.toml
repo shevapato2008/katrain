@@ -47,6 +47,7 @@ web = [
     "uvicorn[standard]>=0.27.1",
     "pydantic>=2.6.1",
     "python-jose[cryptography]>=3.3.0",
+    "cryptography>=3.4.0",  # WeChat Pay RSA-SHA256 / AES-256-GCM
     "passlib[bcrypt]>=1.7.4",
     # passlib 1.7.4 is incompatible with bcrypt>=4.1 (removed __about__ shim -> its
     # import-time self-test raises "password cannot be longer than 72 bytes"). Pin to
@@ -57,6 +58,7 @@ web = [
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
     "alembic>=1.13.0",
+    "pypinyin>=0.50.0",
 ]
 cron = [
     "apscheduler>=3.10,<4",

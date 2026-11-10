@@ -43,12 +43,15 @@ class Capture:
 
 
 def load_capture(game_dir: Path) -> Capture:
-    from katrain.core.baipu import build_steps_from_sgf  # lazy: avoids i18n import at module load
+    from katrain.core.baipu import build_steps_from_sgf, validate_capture_archive
 
     game_dir = Path(game_dir)
     manifest = json.loads((game_dir / "manifest.json").read_text())
-    sgf = (game_dir / (manifest.get("sgf_path") or "game.sgf")).read_text()
-    steps = build_steps_from_sgf(sgf)["steps"]
+    with open(game_dir / (manifest.get("sgf_path") or "game.sgf"), "r", encoding="utf-8", newline="") as fh:
+        sgf = fh.read()
+    data = build_steps_from_sgf(sgf)
+    steps = data["steps"]
+    validate_capture_archive(manifest, sgf, steps, data["board_size"], sgf)
     geo = np.load(game_dir / (manifest.get("geometry_path") or "geometry.npz"), allow_pickle=True)
     return Capture(
         game_dir=game_dir,
@@ -378,6 +381,7 @@ def process_game(
     # stays False so programmatic callers / existing golden tests keep intersection-centered labels.
 ):
     game_dir = Path(game_dir)
+    cap = load_capture(game_dir)
     out_images, out_labels = Path(out_images), Path(out_labels)
     out_images.mkdir(parents=True, exist_ok=True)
     out_labels.mkdir(parents=True, exist_ok=True)
@@ -386,7 +390,6 @@ def process_game(
         verify_dir = Path(verify_dir)
         verify_dir.mkdir(parents=True, exist_ok=True)
 
-    cap = load_capture(game_dir)
     spacing = mean_grid_spacing(cap.xs, cap.ys)
     # Margin AROUND the grid so edge/corner stones are not clipped in half (see Q: edge recall).
     pad = int(round(margin_cells * spacing))

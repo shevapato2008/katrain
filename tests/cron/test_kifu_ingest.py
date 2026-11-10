@@ -5,6 +5,64 @@ from hashlib import sha256
 from types import SimpleNamespace
 
 import pytest
+
+
+def test_cron_publisher_syncs_after_real_commit_including_native_replay(tmp_path, monkeypatch):
+    from sqlalchemy import select
+    from katrain.cron.jobs import kifu_ingest
+    from katrain.kifu_ingest import catalog
+    from katrain.web.core.models_db import KifuNameBatch
+    from katrain.web.kifu import search_sync
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, manifest
+
+    engine = make_engine(tmp_path / "cron-search.db")
+    calls = []
+    try:
+        def begin(conn, kind, ref):
+            assert kind == "catalog_publish" and ref["manifest_sha256"] == digest
+            calls.append("pending")
+            return object()
+
+        def finish(conn, token):
+            with engine.connect() as observer:
+                assert observer.scalar(select(KifuNameBatch.id).where(KifuNameBatch.bundle_sha256 == digest)) is not None
+            calls.append("sync committed")
+
+        monkeypatch.setattr(search_sync, "begin_sync", begin)
+        monkeypatch.setattr(search_sync, "finish_sync", finish)
+        assert kifu_ingest.publish_manifest is catalog.publish_manifest
+        value = manifest()
+        digest = canonical_sha256(value)
+        receipt = kifu_ingest.publish_manifest(engine, value, expected_manifest_sha256=digest)
+        assert kifu_ingest.publish_manifest(engine, value, expected_manifest_sha256=digest) == receipt
+        assert calls == ["pending", "sync committed", "pending", "sync committed"]
+    finally:
+        engine.dispose()
+
+
+def test_fully_reusable_games_are_prepared_before_paid_names():
+    from katrain.cron.jobs.kifu_ingest import group_staged_items, select_review_items
+
+    records = [
+        ({"external_id": source_id}, {"metadata": {"player_black": "Black", "player_white": "White", "event": event}})
+        for source_id, event in [("1", "Known"), ("2", "New")]
+    ]
+    resolved = {
+        "player": {name: {"status": "qualified", "canonical_name": name} for name in ("Black", "White")},
+        "event": {"Known": {"status": "qualified", "canonical_name": "Known"}},
+    }
+    free = set()
+    selected, deferred = select_review_items(
+        records, resolved, reusable_events=set(), max_new_names=20, review_free_ids=free
+    )
+    assert not deferred and free == {"1"}
+    assert group_staged_items(selected, review_enabled=True, review_free_ids=free) == [
+        [{"external_id": "1"}],
+        [{"external_id": "2"}],
+    ]
+
+
 from sqlalchemy import create_engine, update
 
 
@@ -115,6 +173,76 @@ def test_review_batch_isolates_ambiguous_identity_before_name_budget():
     assert isolated == [("1", "ambiguous player identity requires review")]
 
 
+@pytest.mark.asyncio
+async def test_initial_review_selection_checks_production_before_spending_name_budget():
+    from katrain.cron.jobs.kifu_ingest import select_portable_review_items
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    records = [
+        (
+            {"external_id": "1"},
+            {
+                "source_item_id": "1",
+                "metadata": {"player_black": "TEST Only", "player_white": "Shared", "event": "Match"},
+            },
+        ),
+        (
+            {"external_id": "2"},
+            {"source_item_id": "2", "metadata": {"player_black": "Alice", "player_white": "White", "event": "Match"}},
+        ),
+    ]
+    resolved = {
+        "player": {
+            "TEST Only": {"status": "qualified", "canonical_name": "TEST Only"},
+            "Shared": {"status": "unresolved"},
+            "Alice": {"status": "unresolved"},
+            "White": {"status": "qualified", "canonical_name": "White"},
+        },
+        "event": {"Match": {"status": "qualified", "canonical_name": "Match"}},
+    }
+
+    def check(request):
+        return {
+            "status": "checked",
+            "request_sha256": canonical_sha256(request),
+            "results": [
+                "unresolved" if r["canonical_name"] == "TEST Only" else "qualified" for r in request["instructions"]
+            ],
+        }
+
+    isolated = []
+    chosen, deferred = await select_portable_review_items(
+        records, resolved, check_identities=check, reusable_events=set(), max_new_names=1, isolated=isolated
+    )
+    assert [r["external_id"] for r in chosen] == ["2"] and deferred == []
+    assert isolated == [("1", "production player identity unresolved")]
+
+
+@pytest.mark.asyncio
+async def test_initial_remote_unavailability_defers_before_name_selection(monkeypatch):
+    from katrain.cron.jobs import kifu_ingest as job
+    from katrain.kifu_ingest.sync import IdentityCheckUnavailable
+
+    records = [
+        (
+            {"external_id": "1"},
+            {"source_item_id": "1", "metadata": {"player_black": "Black", "player_white": "White", "event": "Match"}},
+        )
+    ]
+    resolved = {"player": {"Black": {"status": "qualified", "canonical_name": "Black"}}, "event": {}}
+    monkeypatch.setattr(job, "select_review_items", lambda *a, **k: pytest.fail("unavailable target reached selection"))
+
+    def check(request):
+        raise IdentityCheckUnavailable("production identity check unavailable")
+
+    isolated = []
+    with pytest.raises(IdentityCheckUnavailable):
+        await job.select_portable_review_items(
+            records, resolved, check_identities=check, reusable_events=set(), max_new_names=1, isolated=isolated
+        )
+    assert isolated == []
+
+
 def test_sync_refuses_unverified_package(monkeypatch):
     from katrain.kifu_ingest.sync import send_verified_manifest
 
@@ -159,6 +287,7 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
         known_hosts="/run/secrets/hosts",
     )
     assert result["status"] == "applied"
+    assert captured["timeout"] is None
     assert captured["args"] == [
         "ssh",
         "-o",
@@ -178,6 +307,160 @@ def test_sync_uses_fixed_ssh_command_and_stdin(monkeypatch):
         "kifu-incremental-receive",
     ]
     assert json.loads(captured["input"])["manifest"] == manifest
+
+
+def test_identity_precheck_uses_same_forced_receiver_and_bound_read_only_payload(monkeypatch):
+    from katrain.kifu_ingest.sync import check_production_identities
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [
+            {"kind": "player", "raw": "沼馆沙辉哉", "canonical_name": "沼馆沙辉哉", "name_decision": False}
+        ],
+    }
+    captured = {}
+
+    def run(args, **kwargs):
+        captured.update(args=args, **kwargs)
+        assert json.loads(kwargs["input"]) == request
+        return SimpleNamespace(
+            returncode=0,
+            stderr="private ssh text",
+            stdout=json.dumps(
+                {"status": "checked", "request_sha256": canonical_sha256(request), "results": ["qualified"]}
+            ),
+        )
+
+    monkeypatch.setattr("subprocess.run", run)
+    result = check_production_identities(request, host="prod.example", key_path="/key", known_hosts="/hosts", timeout=9)
+    assert result["results"] == ["qualified"]
+    assert captured["args"][-2:] == ["prod.example", "kifu-incremental-receive"]
+    assert "StrictHostKeyChecking=yes" in captured["args"]
+    assert "UserKnownHostsFile=/hosts" in captured["args"]
+    assert captured["timeout"] == 9
+
+
+@pytest.mark.parametrize("fault", ["exit", "transport", "json", "hash", "extra", "status", "length"])
+def test_identity_precheck_unavailability_is_controlled_and_never_returns_test_fallback(monkeypatch, fault):
+    from katrain.kifu_ingest.sync import check_production_identities, IdentityCheckUnavailable
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    request = {
+        "operation": "check-identities",
+        "game_count": 1,
+        "instructions": [{"kind": "player", "raw": "Black", "canonical_name": "Black", "name_decision": False}],
+    }
+
+    def run(*a, **k):
+        if fault == "transport":
+            raise OSError("ssh private-key token=secret")
+        response = {"status": "checked", "request_sha256": canonical_sha256(request), "results": ["qualified"]}
+        if fault == "hash":
+            response["request_sha256"] = "0" * 64
+        elif fault == "extra":
+            response["id"] = 17
+        elif fault == "status":
+            response["results"] = ["guessed_same_display"]
+        elif fault == "length":
+            response["results"] = []
+        return SimpleNamespace(
+            returncode=2 if fault == "exit" else 0,
+            stdout="invalid secret" if fault == "json" else json.dumps(response),
+            stderr="postgresql://private:secret@db",
+        )
+
+    monkeypatch.setattr("subprocess.run", run)
+    with pytest.raises(IdentityCheckUnavailable) as caught:
+        check_production_identities(request, host="prod", key_path="/key", known_hosts="/hosts")
+    assert str(caught.value) == "production identity check unavailable"
+
+
+@pytest.mark.parametrize(
+    "returncode,stdout,expected",
+    [
+        (
+            2,
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "invalid research: incremental research differs from reviewed text or sources",
+                }
+            ),
+            "receiver exited with status 2: invalid research: incremental research differs from reviewed text or sources",
+        ),
+        (
+            2,
+            json.dumps({"status": "error", "error": "reviewed text conflicts with an existing qualified name"}),
+            "receiver exited with status 2: reviewed text conflicts with an existing qualified name",
+        ),
+        (
+            2,
+            json.dumps(
+                {"status": "error", "error": "first-pass normalized name collision: jp:" + "private-name" * 1000}
+            ),
+            "receiver exited with status 2: first-pass normalized name collision: jp (name omitted)",
+        ),
+        (
+            2,
+            json.dumps({"status": "error", "error": "postgresql://user:password@db/kifu"}),
+            "receiver exited with status 2",
+        ),
+        (
+            2,
+            json.dumps({"status": "error", "error": "invalid research: token=private-key"}),
+            "receiver exited with status 2",
+        ),
+        (2, json.dumps({"status": "error", "error": "unrecognized rejection"}), "receiver exited with status 2"),
+        (2, "Traceback: postgresql://user:password@db/kifu", "receiver exited with status 2"),
+        (2, json.dumps({"status": "error", "error": {"key": "private-key"}}), "receiver exited with status 2"),
+        (2, json.dumps(["private-key"]), "receiver exited with status 2"),
+        (
+            255,
+            json.dumps({"status": "error", "error": "reviewed text conflicts with an existing qualified name"}),
+            "receiver exited with status 255",
+        ),
+    ],
+    ids=[
+        "research",
+        "qualified-name",
+        "bounded-collision",
+        "dsn",
+        "unknown-research",
+        "unknown",
+        "traceback",
+        "non-string",
+        "non-object",
+        "ssh-error",
+    ],
+)
+def test_sync_reports_only_safe_native_receiver_errors(monkeypatch, returncode, stdout, expected):
+    from katrain.kifu_ingest.sync import send_verified_manifest
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    manifest = {"games": [{"source_key": "19x19", "source_item_id": "1"}]}
+    digest = canonical_sha256(manifest)
+    monkeypatch.setattr(
+        "subprocess.run",
+        lambda *a, **k: SimpleNamespace(returncode=returncode, stdout=stdout, stderr="PRIVATE KEY: ssh-secret"),
+    )
+    with pytest.raises(RuntimeError) as caught:
+        send_verified_manifest(
+            manifest,
+            digest,
+            {
+                "status": "verified",
+                "manifest_sha256": digest,
+                "games": 1,
+                "checks": [{"album_id": 7, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")],
+            },
+            host="prod.example",
+            key_path="/run/secrets/key",
+            known_hosts="/run/secrets/hosts",
+        )
+    assert str(caught.value) == expected
+    assert len(str(caught.value)) <= 384
 
 
 def test_receiver_timeout_uses_remaining_round_budget(monkeypatch):
@@ -383,7 +666,12 @@ async def test_resume_verifies_test_before_sync_and_retries_verification_only():
 
     async def test_verified(*args):
         calls.append("test_verify")
-        return {"status": "verified", "manifest_sha256": digest}
+        return {
+            "status": "verified",
+            "manifest_sha256": digest,
+            "games": 1,
+            "checks": [{"album_id": 3, "lang": lang} for lang in ("cn", "tw", "jp", "ko", "en")],
+        }
 
     async def synced(*args):
         calls.append("sync")
@@ -469,7 +757,7 @@ async def test_failed_package_records_phase_and_continues_to_next_package():
     )
     assert processed == ["one", "two"]
     assert failures == 1
-    assert store.failures == [("one", "retry_wait", "TEST API timed out")]
+    assert store.failures == [("one", "retry_wait", "test_published: TimeoutError: TEST API timed out")]
     assert store.rows["one"]["next_retry_at"] > datetime(2026, 10, 19, tzinfo=timezone.utc)
 
 
@@ -681,6 +969,29 @@ def test_rejected_name_is_quarantined_in_stage_and_journal():
             assert kwargs["expected_status"] == "downloaded"
 
     quarantine_staged_item(Stage(), Store(), "12", "name review rejected")
+
+
+def test_name_rejection_reference_and_reason_survive_journal_error_limit(tmp_path):
+    from katrain.cron.jobs.kifu_ingest import quarantine_staged_item
+    from katrain.kifu_ingest.names import NameRejected
+    from katrain.kifu_ingest.staging import Stage
+
+    stage = Stage(tmp_path)
+    stage.manifest["items"]["12"] = {"external_id": "12", "status": "downloaded", "attempts": 0}
+    record = {"id": "a" * 32, "reason": "The event identity lacks evidence. " * 30}
+    error = NameRejected(record["reason"], reason_code="semantic_rejection")
+    error.diagnostic_ref = stage.save_name_rejection(record)
+    journal = []
+
+    class Store:
+        def advance_item(self, source, source_id, status, **kwargs):
+            journal.append(kwargs["error"][:512])
+
+    quarantine_staged_item(stage, Store(), "12", error.isolation_reason())
+    assert len(journal[0]) <= 512 and error.diagnostic_ref in journal[0]
+    assert "The event identity lacks evidence" in journal[0]
+    assert Stage(tmp_path).manifest["items"]["12"]["last_error"] == journal[0]
+    assert json.loads((tmp_path / error.diagnostic_ref).read_text())["reason"] == record["reason"]
 
 
 def test_frozen_game_journal_reaches_names_ready_without_writing_album_db():

@@ -78,14 +78,20 @@ class CronScheduler:
         if self._shutdown_event.is_set():
             return
 
-        from katrain.cron.controls import ControlPoller
+        from katrain.cron.controls import POLL_S, ControlPoller
 
         self._controls = ControlPoller(SessionLocal, self._recorder, self._scheduler)
-        # Honour an existing pause before the first runs fire; retry briefly rather than fail open.
-        for _ in range(6):
-            if await asyncio.to_thread(self._controls.poll, False) or self._shutdown_event.is_set():
+        # A missing first snapshot must never bypass a persisted manual pause.
+        while not self._shutdown_event.is_set():
+            if await asyncio.to_thread(self._controls.poll, False):
                 break
-            await asyncio.sleep(5)
+            try:
+                await asyncio.wait_for(self._shutdown_event.wait(), timeout=POLL_S)
+            except asyncio.TimeoutError:
+                pass
+
+        if self._shutdown_event.is_set():
+            return
 
         self._scheduler.start()
         logger.info("Scheduler started")

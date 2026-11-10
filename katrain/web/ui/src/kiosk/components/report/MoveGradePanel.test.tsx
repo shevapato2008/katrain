@@ -111,3 +111,18 @@ describe('MoveGradePanel shared workspace', () => {
     expect(screen.getByTestId('grade-match-dist')).toBeInTheDocument();
   });
 });
+
+it('reveals the focused far-right tab by scrolling only its strip', () => {
+  render(<MoveGradePanel {...props} recommendation={<div>推荐内容</div>} />);
+  const strip = screen.getByRole('group', { name: '着手评价' });
+  const button = screen.getByRole('button', { name: 'AI吻合度', exact: true });
+  Object.defineProperty(strip, 'clientWidth', { configurable: true, value: 400 });
+  Object.defineProperty(strip, 'offsetLeft', { configurable: true, value: 0 });
+  Object.defineProperty(button.parentElement, 'offsetLeft', { configurable: true, value: 600 });
+  Object.defineProperty(button.parentElement, 'offsetWidth', { configurable: true, value: 130 });
+  fireEvent.focus(button);
+  expect(strip.scrollLeft).toBe(330);
+  fireEvent.click(button);
+  expect(button).toHaveAttribute('aria-pressed', 'true');
+  expect(strip.scrollLeft).toBeGreaterThanOrEqual(330);
+});

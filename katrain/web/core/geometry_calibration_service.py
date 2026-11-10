@@ -8,6 +8,8 @@ import shutil
 import tempfile
 import threading
 import time
+from contextlib import nullcontext
+from functools import wraps
 from pathlib import Path
 
 import numpy as np
@@ -54,8 +56,21 @@ class CalibrationCancelled(RuntimeError):
     """Cancellation accepted before the durable publication boundary."""
 
 
+class CalibrationBoardMoved(RuntimeError):
+    """Confirmed LED points no longer align with the newly stable board."""
+
+
 class LegacyPublishRollbackError(RuntimeError):
     """Legacy geometry publication failed and its previous files could not be restored."""
+
+
+def _hardware_transaction(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        with self._hardware_use():
+            return method(self, *args, **kwargs)
+
+    return guarded
 
 
 class GeometryCalibrationService:
@@ -105,10 +120,15 @@ class GeometryCalibrationService:
         selector=None,
         auto_relocate=AUTO_RELOCATE_ON_DRIFT,
         restore_auto_exposure_on_success=False,
+        allow_existing_reuse=True,
+        recovery_gate=None,
     ):
+        self.recovery_gate = recovery_gate
         self.led = led
         self.capture = capture
         self.restore_auto_exposure_on_success = restore_auto_exposure_on_success
+        self.allow_existing_reuse = allow_existing_reuse
+        self._full_calibration_completed = False
         # 有人用摄像头时才做漂移检测(每次 ~0.5 s CPU)。None = 一直检测(旧行为)。
         self._drift_needed = drift_needed
         if save_path is None and persist_state is None:
@@ -140,6 +160,8 @@ class GeometryCalibrationService:
         self._thread = None
         self._geometry_revision = 0
         self._detected_anchors = []
+        self._stability_last_seq = -1
+        self._stability_last_ts = 0.0
         self._drift_monitor = None
         self._drift_stop = threading.Event()
         # 外框重定位(V1)。selector 懒建(_get_selector);_relocating 是「正在重定位」的互斥标志,
@@ -153,6 +175,7 @@ class GeometryCalibrationService:
             "phase": "required",
             "progress": {"current": 0, "total": 5},
             "pause_reason": None,
+            "grid_warning": None,
             "session_calibrated": False,
             "last_valid": initial_lock is not None,
             "trigger": None,
@@ -173,6 +196,26 @@ class GeometryCalibrationService:
         return self.selector
 
     def start(self, *, trigger: str, empty_confirmed: bool) -> None:
+        use = self._hardware_use()
+        try:
+            self._start_with_hardware_use(use, trigger=trigger, empty_confirmed=empty_confirmed)
+        except BaseException:
+            use.__exit__(None, None, None)
+            raise
+
+    def _hardware_use(self):
+        if self.recovery_gate is None:
+            return nullcontext()
+        use = self.recovery_gate.try_use()
+        if use is None:
+            raise CalibrationBusy("USB hardware recovery in progress")
+        return use
+
+    def _run_with_hardware_use(self, use):
+        with use:
+            self._run()
+
+    def _start_with_hardware_use(self, use, *, trigger, empty_confirmed):
         if self.led is None:
             raise ValueError("LED is required for geometry calibration")
         if not empty_confirmed:
@@ -191,14 +234,21 @@ class GeometryCalibrationService:
                 phase="waiting_empty",
                 progress={"current": 0, "total": 5},
                 pause_reason=None,
+                grid_warning=None,
                 trigger=trigger,
                 error=None,
                 stopped_phase=None,
                 metrics={},
                 relocate_error=None,
             )
-            self._thread = threading.Thread(target=self._run, daemon=True, name="geometry-calibration")
-            self._thread.start()
+            self._thread = threading.Thread(
+                target=self._run_with_hardware_use, args=(use,), daemon=True, name="geometry-calibration"
+            )
+            try:
+                self._thread.start()
+            except BaseException:
+                self._thread = None
+                raise
 
     def cancel(self) -> None:
         with self._lock:
@@ -259,6 +309,7 @@ class GeometryCalibrationService:
 
     PREFLIGHT_TIMEOUT_S = 8.0
 
+    @_hardware_transaction
     def preflight(self) -> dict:
         """Check the existing reference against fresh, still camera frames on demand."""
         from katrain.vision.motion_filter import MotionFilter
@@ -415,9 +466,12 @@ class GeometryCalibrationService:
             reason = "timeout"
         return {"ready": reason is None, "reason": reason, "status": status}
 
+    @_hardware_transaction
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
+            if not self.allow_existing_reuse:
+                raise ValueError("existing geometry reuse is disabled")
             if self._relocating:
                 raise ValueError("relocation in progress")
             if self._preflighting:
@@ -774,8 +828,34 @@ class GeometryCalibrationService:
                 # staging cleanup must not make callers infer the opposite state.
                 logger.warning("legacy geometry staging cleanup failed at %s: %s", staging_path, cleanup_exc)
 
+    def _grab_stability_frame(self, gate: CalibrationStabilityGate, *, after_ts: float, settle_ms: float):
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before stability capture")
+        cutoff = max(after_ts, self._stability_last_ts)
+        frame, seq, ts = self.capture.grab_fresh(after_ts=cutoff, settle_ms=settle_ms)
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled during stability capture")
+        if (
+            frame is None
+            or not isinstance(seq, (int, np.integer))
+            or isinstance(seq, (bool, np.bool_))
+            or seq <= self._stability_last_seq
+            or not isinstance(ts, (int, float, np.integer, np.floating))
+            or not np.isfinite(ts)
+            or ts <= cutoff + settle_ms / 1000.0
+        ):
+            gate.reset()
+            raise RuntimeError("no_frames")
+        self._stability_last_seq, self._stability_last_ts = seq, ts
+        return frame
+
     def _wait_lighting(self, reason: str, gate: CalibrationStabilityGate) -> None:
-        self.led.clear(strict=True)
+        gate.reset()
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before lighting recheck")
+        cleared = self.led.clear(strict=True)
+        if not cleared.get("ok"):
+            raise RuntimeError("led_clear_failed")
         while not self._cancel_event.is_set():
             with self._lock:
                 self._status["phase"] = "lighting_paused"
@@ -786,39 +866,45 @@ class GeometryCalibrationService:
             self._lighting_recheck.clear()
             self._converge_exposure(force_auto=True)
             gate.reset()
-            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
-            if frame is None:
-                reason = "frame_underexposed"
-                continue
+            frame = self._grab_stability_frame(
+                gate, after_ts=max(time.monotonic(), cleared["shown_at"]), settle_ms=0.0,
+            )
             whole_ok, whole_reason, _ = check_frame_exposure(frame)
             if not whole_ok:
                 reason = whole_reason
                 continue
-            visible, grid_reason = gate.observe(frame)
-            if grid_reason == "board_occluded":
-                return  # regular stable wait explains the occlusion after recheck
-            issue, _stats = check_grid_lighting(frame, gate.quad)
+            _visible, grid_reason = gate.observe(frame)
+            issue, _stats = check_grid_lighting(frame, gate.quad) if gate.grid_visible else (None, {})
             reason = issue
             if reason is None:
+                gate.reset()  # exposure changes require a complete new stable sequence
                 return
+        raise CalibrationCancelled("calibration cancelled during lighting recheck")
 
-    def _wait_stable(self, gate: CalibrationStabilityGate, resume_phase: str, current: int) -> None:
-        self.led.clear(strict=True)
-        gate.reset()
+    def _wait_stable(
+        self, gate: CalibrationStabilityGate, resume_phase: str, current: int, *, reset: bool = True,
+    ) -> None:
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before stability wait")
+        cleared = self.led.clear(strict=True)
+        if not cleared.get("ok"):
+            gate.reset()
+            raise RuntimeError("led_clear_failed")
+        if reset:
+            gate.reset()
         last_logged = 0.0
-        with self._lock:
-            self._status["phase"] = "waiting_stable"
-            self._status["pause_reason"] = "board_motion"
+        cutoff = max(time.monotonic(), cleared["shown_at"])
         while not self._cancel_event.is_set():
-            frame, _seq, _ts = self.capture.grab_fresh(settle_ms=120.0)
-            if frame is None:
-                continue
+            frame = self._grab_stability_frame(gate, after_ts=cutoff, settle_ms=120.0)
+            cutoff = self._stability_last_ts
             whole_ok, whole_reason, _ = check_frame_exposure(frame)
             if not whole_ok:
                 self._wait_lighting(whole_reason, gate)
                 gate.reset()
                 continue
             ready, reason = gate.observe(frame)
+            with self._lock:
+                self._status["grid_warning"] = None if gate.grid_visible else "grid_not_visible"
             if not ready:
                 now = time.monotonic()
                 if now - last_logged >= 2.0:
@@ -829,30 +915,47 @@ class GeometryCalibrationService:
                     self._status["phase"] = "obstructed" if reason == "board_occluded" else "waiting_stable"
                     self._status["pause_reason"] = reason
                 continue
-            issue, _stats = check_grid_lighting(frame, gate.quad)
+            issue, _stats = check_grid_lighting(frame, gate.quad) if gate.grid_visible else (None, {})
             if issue is not None:
                 self._wait_lighting(issue, gate)
                 gate.reset()
                 continue
+            if gate.anchors_displaced():
+                # A stable new position cannot share LED points fitted at the old position.
+                with self._lock:
+                    self._status["phase"] = resume_phase
+                raise CalibrationBoardMoved("board_moved")
             self._progress(resume_phase, current, 5)
             logger.info("geometry stability ready phase=%s point=%d motion=%s",
                         resume_phase, current, gate.last_motion_ratios)
-            gate.capture_motion.reset()
             return
+        raise CalibrationCancelled("calibration cancelled during stability wait")
 
     def _guard_live_frame(self, gate: CalibrationStabilityGate, frame, dark: bool) -> None:
+        if self._cancel_event.is_set():
+            raise CalibrationCancelled("calibration cancelled before capture guard")
         whole_ok, whole_reason, _ = check_frame_exposure(frame)
         if not whole_ok:
+            gate.reset()
             raise LightingInterrupted(whole_reason)
         reason = gate.capture_reason(frame)
+        with self._lock:
+            self._status["grid_warning"] = None if gate.grid_visible else "grid_not_visible"
+        if reason == "board_moved":
+            raise CalibrationBoardMoved("board_moved")
         if reason is not None:
             logger.info("geometry capture interrupted phase=%s point=%d reason=%s dark=%s",
                         self._status["phase"], self._status["progress"]["current"], reason, dark)
+            gate.reset()
+            with self._lock:
+                self._status["phase"] = "obstructed" if reason == "board_occluded" else "waiting_stable"
+                self._status["pause_reason"] = reason
             raise CalibrationInterrupted(reason)
         # Assess lighting on dark frames. The LED is intentionally absent from this sample.
-        if dark:
+        if dark and gate.grid_visible:
             issue, _stats = check_grid_lighting(frame, gate.quad)
             if issue is not None:
+                gate.reset()
                 raise LightingInterrupted(issue)
 
     def _run(self) -> None:
@@ -864,17 +967,25 @@ class GeometryCalibrationService:
             self.on_suspend()
             # Exposure can be too dark for the grid to be visible at all. Brighten
             # first without flashing, then require a clear, stable grid before LED.
+            gate = None
+
+            def observe_anchor(row, col, point, color):
+                self._anchor_observed(row, col, point, color)
+                if gate is not None:
+                    gate.confirm_anchor(row, col, point)
+
             calibrator = self.calibrator_factory(
                 led=self.led,
                 capture=self.capture,
                 cancel_event=self._cancel_event,
                 progress=self._progress,
-                anchor_observer=self._anchor_observed,
+                anchor_observer=observe_anchor,
             )
             if hasattr(calibrator, "configure_live"):
                 gate = CalibrationStabilityGate()
+                self._stability_last_seq, self._stability_last_ts = -1, 0.0
                 calibrator.configure_live(
-                    before_capture=lambda phase, current, _total: self._wait_stable(gate, phase, current),
+                    before_capture=lambda phase, current, _total: self._wait_stable(gate, phase, current, reset=False),
                     frame_guard=lambda frame, dark: self._guard_live_frame(gate, frame, dark),
                     anchor_roi=gate.anchor_roi,
                     on_lighting=lambda reason: self._wait_lighting(reason, gate),
@@ -946,10 +1057,12 @@ class GeometryCalibrationService:
                 self.current_lock = result.lock
                 self._drift_monitor = drift_monitor
                 self._geometry_revision += 1
+                self._full_calibration_completed = True
                 self._status.update(
                     phase="ready",
                     progress={"current": 5, "total": 5},
                     pause_reason=None,
+                    grid_warning=None,
                     session_calibrated=True,
                     last_valid=True,
                     error=None,
@@ -966,6 +1079,17 @@ class GeometryCalibrationService:
             with self._lock:
                 self._status["stopped_phase"] = self._status["phase"]
                 self._status["phase"] = "cancelled"
+        except CalibrationBoardMoved:
+            with self._lock:
+                self._status["stopped_phase"] = self._status["phase"]
+                self._status.update(
+                    phase="failed", error="board_moved", session_calibrated=False, lock_moved=True,
+                )
+            # Invalidate the old runtime warp before on_resume can re-arm the worker.
+            try:
+                self.on_degraded()
+            except Exception as invalidate_exc:
+                logger.error("runtime geometry invalidation failed after board movement: %s", invalidate_exc)
         except LegacyPublishRollbackError as exc:
             logger.error("legacy geometry rollback failed; invalidating runtime geometry: %s", exc)
             with self._lock:
@@ -1028,6 +1152,7 @@ class GeometryCalibrationService:
     def _init_drift_monitor(self, lock) -> None:
         self._drift_monitor = self._prepare_drift_monitor(lock)
 
+    @_hardware_transaction
     def _relocate(self, scenario, *, trigger: str, allowed_phases) -> str | None:
         """外框重定位一次:占住互斥 → 取帧 → 选择器 → relock → 交付 → 发布。成功回 None,失败回原因串。
 
@@ -1041,6 +1166,8 @@ class GeometryCalibrationService:
                 raise CalibrationBusy("geometry calibration or relocation already running")
             if self._status["phase"] not in allowed_phases:
                 raise ValueError("relocate is only available after drift, cancel or failure")
+            if not self.allow_existing_reuse and not self._full_calibration_completed:
+                raise ValueError("full calibration is required before relocation")
             if self.current_lock is None:
                 raise ValueError("no existing geometry to relocate")
             if not self._is_ready(self.capture):
@@ -1171,19 +1298,22 @@ class GeometryCalibrationService:
                 if self._status["phase"] != "ready" or self._preflighting:
                     continue
             try:
-                frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
-                if frame is None:
-                    continue
-                with self._lock:
-                    if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
+                with self._hardware_use():
+                    frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+                    if frame is None:
                         continue
-                with self._monitor_update_lock:
-                    if self._monitor_reset_pending is monitor:
-                        monitor.reset_streak()
-                        self._monitor_reset_pending = None
-                        continue
-                    drift = monitor.update(frame)
-                self._apply_drift(drift, monitor=monitor)
+                    with self._lock:
+                        if self._preflighting or self._status["phase"] != "ready" or monitor is not self._drift_monitor:
+                            continue
+                    with self._monitor_update_lock:
+                        if self._monitor_reset_pending is monitor:
+                            monitor.reset_streak()
+                            self._monitor_reset_pending = None
+                            continue
+                        drift = monitor.update(frame)
+                    self._apply_drift(drift, monitor=monitor)
+            except CalibrationBusy:
+                continue
             except Exception:
                 time.sleep(0.1)
 

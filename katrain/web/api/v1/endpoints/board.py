@@ -5,8 +5,10 @@ Board-side: live match proxy to remote server (when KATRAIN_MODE=board).
 """
 
 import logging
+from typing import Literal, Optional
 
 import httpx
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
@@ -47,6 +49,34 @@ async def _proxy(call, what: str):
 
 
 # ── Tutorial Proxy (board mode only) ──
+@router.get("/tutorials/ogs-course")
+async def proxy_ogs_course(request: Request, lang: str = "zh-cn"):
+    c = _get_remote_client(request)
+    return await _proxy(lambda: c.get_ogs_course(lang), "OGS course")
+
+
+@router.get("/tutorials/ogs-course/source.zip")
+async def proxy_ogs_source(request: Request):
+    c = _get_remote_client(request)
+    return RedirectResponse(f"{c.base_url}/api/v1/tutorials/ogs-course/source.zip", status_code=302)
+
+
+@router.get("/tutorials/ogs-course/steps/{page}")
+async def proxy_ogs_step(
+    request: Request,
+    page: int,
+    lang: str = "zh-cn",
+    board_variant: Optional[Literal["kiosk19"]] = None,
+):
+    c = _get_remote_client(request)
+    result = await _proxy(lambda: c.get_ogs_step(page, lang), "OGS step")
+    if board_variant == "kiosk19":
+        from katrain.web.content.board_variants import adapt_ogs_step
+
+        return adapt_ogs_step(result)
+    return result
+
+
 @router.get("/tutorials/categories")
 async def proxy_tutorial_categories(request: Request):
     c = _get_remote_client(request)

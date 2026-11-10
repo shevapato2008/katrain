@@ -8,18 +8,55 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from sqlalchemy import text
 
 from katrain.cron import config
 from katrain.cron.clients.katago import KataGoClient
 from katrain.cron.db import SessionLocal
 from katrain.cron.jobs.base import BaseJob
-from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
+from katrain.cron.models import BillingOperationDB, ReportTaskDB, ReportTaskMoveDB, UserGameDB
 from katrain.cron.sgf import ParsedGame, parse_game
 from katrain.cron.report_position import position_snapshot
 
 logger = logging.getLogger("katrain_cron.report_analyze")
 
 MAX_RETRIES = 3
+REPORT_BILLING_VERSION = "membership_20261102_v1"
+
+
+def _paid(task):
+    return task.billing_version is not None or task.operation_id is not None
+
+
+def _lock_paid_task(db, task_id, *, generation=None, operation_id=None):
+    snapshot = db.query(ReportTaskDB).filter_by(id=task_id).one_or_none()
+    if snapshot is None:
+        return None, None
+    # Same lock order as web settlement/admission. No money code lives in cron.
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(text("SELECT id FROM users WHERE id=:uid FOR UPDATE"), {"uid": snapshot.user_id})
+    op = (
+        db.query(BillingOperationDB)
+        .filter_by(id=snapshot.operation_id, user_id=snapshot.user_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    task = db.query(ReportTaskDB).filter_by(id=task_id).with_for_update().populate_existing().one_or_none()
+    if (
+        task is None
+        or op is None
+        or task.operation_id != op.id
+        or op.task_id != task.id
+        or op.kind != "report"
+        or op.game_id != task.user_game_id
+        or op.status not in ("reserved", "running")
+        or op.generation != task.generation
+        or (generation is not None and (task.generation != generation or task.status != "running"))
+        or (operation_id is not None and task.operation_id != operation_id)
+    ):
+        return None, None
+    return task, op
 
 
 class ReportAnalyzerJob(BaseJob):
@@ -63,10 +100,13 @@ class ReportAnalyzerJob(BaseJob):
                     self._reset_runtime_stale_tasks()
                     stale_check_counter = 0
                 while self._running and len(self._workers) < self.max_concurrent_tasks:
-                    claimed_task_id = self._claim_pending_task()
-                    if not claimed_task_id:
+                    claim = self._claim_pending_task(with_fence=True)
+                    if not claim:
                         break
-                    worker = asyncio.create_task(self._process_task(claimed_task_id))
+                    task_id, generation, operation_id = claim
+                    worker = asyncio.create_task(
+                        self._process_task(task_id, generation=generation, operation_id=operation_id)
+                    )
                     self._workers.add(worker)
                 await asyncio.sleep(self.poll_interval)
             except asyncio.CancelledError:
@@ -91,10 +131,27 @@ class ReportAnalyzerJob(BaseJob):
         _get_resume_move_number will skip already-analyzed moves.
         """
         with SessionLocal() as db:
-            running_tasks = db.query(ReportTaskDB).filter(ReportTaskDB.status == "running").all()
+            running_tasks = (
+                db.query(ReportTaskDB)
+                .filter(ReportTaskDB.status == "running")
+                .order_by(ReportTaskDB.user_id, ReportTaskDB.operation_id, ReportTaskDB.id)
+                .all()
+            )
             if not running_tasks:
                 return
             for task in running_tasks:
+                if _paid(task):
+                    task, op = _lock_paid_task(db, task.id)
+                    if task is None or task.status != "running":
+                        continue
+                    task.generation += 1
+                    op.generation, op.lease_expires_at = task.generation, None
+                    task.status, task.error_message = (
+                        "failed",
+                        "Interrupted paid report; authorization will be refunded",
+                    )
+                    task.completed_at = None
+                    continue
                 task.status = "pending"
                 task.error_message = None
             db.commit()
@@ -114,11 +171,21 @@ class ReportAnalyzerJob(BaseJob):
                     ReportTaskDB.status == "running",
                     ReportTaskDB.updated_at < cutoff,
                 )
+                .order_by(ReportTaskDB.user_id, ReportTaskDB.operation_id, ReportTaskDB.id)
                 .all()
             )
             if not stale_tasks:
                 return
             for task in stale_tasks:
+                if _paid(task):
+                    task, op = _lock_paid_task(db, task.id)
+                    if task is None or task.status != "running" or task.updated_at >= cutoff:
+                        continue
+                    task.generation += 1
+                    op.generation, op.lease_expires_at = task.generation, None
+                    task.status, task.error_message = "failed", "Stale paid report; authorization will be refunded"
+                    task.completed_at = None
+                    continue
                 task.status = "pending"
                 task.error_message = "Reset: stale running task"
             db.commit()
@@ -135,7 +202,7 @@ class ReportAnalyzerJob(BaseJob):
                 logger.exception("Unhandled report worker error")
         self._workers.difference_update(done)
 
-    def _claim_pending_task(self) -> int | None:
+    def _claim_pending_task(self, *, with_fence=False):
         with SessionLocal() as db:
             task = (
                 db.query(ReportTaskDB)
@@ -145,13 +212,35 @@ class ReportAnalyzerJob(BaseJob):
             )
             if not task:
                 return None
+            if _paid(task):
+                task, op = _lock_paid_task(db, task.id)
+                if task is None or task.status != "pending":
+                    return None
+                task.generation += 1
+                op.generation, op.status, op.lease_expires_at = task.generation, "running", None
+                # A generation is one complete report, never a mixed-attempt prefix.
+                db.query(ReportTaskMoveDB).filter_by(task_id=task.id).delete(synchronize_session=False)
+                task.analyzed_moves = 0
+            else:
+                task = (
+                    db.query(ReportTaskDB)
+                    .filter_by(id=task.id, status="pending")
+                    .with_for_update(skip_locked=True)
+                    .populate_existing()
+                    .one_or_none()
+                )
+                if task is None:
+                    return None
             task.status = "running"
             task.started_at = task.started_at or datetime.now(timezone.utc)
             task.completed_at = None
             task.error_message = None
+            # Copy the fence before commit expires ORM state and another claim
+            # can run. A delayed coroutine must never adopt a later attempt.
+            claim = (task.id, task.generation, task.operation_id) if _paid(task) else (task.id, None, None)
             db.commit()
             logger.info("Claimed report task %d (type=%s, visits=%d)", task.id, task.report_type, task.requested_visits)
-            return task.id
+            return claim if with_fence else task.id
 
     def _get_resume_move_number(self, db, task_id: int) -> int:
         latest = (
@@ -172,7 +261,15 @@ class ReportAnalyzerJob(BaseJob):
 
     # ── Task processing ──
 
-    async def _process_task(self, task_id: int):
+    async def _process_task(self, task_id: int, *, generation=None, operation_id=None):
+        with SessionLocal() as db:
+            task = db.query(ReportTaskDB).filter_by(id=task_id).one_or_none()
+            if task is not None and _paid(task):
+                paid = True
+            else:
+                paid = False
+        if paid:
+            return await self._process_paid_task(task_id, generation=generation, operation_id=operation_id)
         with SessionLocal() as db:
             task = db.query(ReportTaskDB).filter(ReportTaskDB.id == task_id).first()
             if not task:
@@ -205,7 +302,9 @@ class ReportAnalyzerJob(BaseJob):
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
             expected_sha = config.KATAGO_EXPECTED_MODEL_SHA256
-            if expected_sha and (task.model_sha256 not in (None, expected_sha) or (resume_from and not task.model_sha256)):
+            if expected_sha and (
+                task.model_sha256 not in (None, expected_sha) or (resume_from and not task.model_sha256)
+            ):
                 task.status = "failed"
                 task.error_message = "已有棋谱报告使用旧版或未知模型，不能混合续跑；请联系管理员处理"
                 db.commit()
@@ -284,6 +383,95 @@ class ReportAnalyzerJob(BaseJob):
                 db.commit()
                 logger.info("Report task %d completed (%d moves)", task_id, len(moves))
 
+    async def _process_paid_task(self, task_id, *, generation=None, operation_id=None):
+        import hashlib
+
+        if generation is None or operation_id is None:
+            return
+        with SessionLocal() as db:
+            task, op = _lock_paid_task(db, task_id, generation=generation, operation_id=operation_id)
+            if task is None or task.status != "running":
+                return
+            generation, operation_id = task.generation, task.operation_id
+            game = db.query(UserGameDB).filter_by(id=task.user_game_id, user_id=task.user_id).one_or_none()
+            parsed = parse_game(task.analysis_sgf or "")
+            expected_sha, requested_visits, total_moves = task.model_sha256, task.requested_visits, task.total_moves
+            step = 4 if op.profile == "advanced" else 1
+            if (
+                not game
+                or not game.sgf_content
+                or not task.sgf_hash
+                or hashlib.sha256(game.sgf_content.encode()).hexdigest() != task.sgf_hash
+                or task.billing_version != REPORT_BILLING_VERSION
+                or op.catalog_version != REPORT_BILLING_VERSION
+                or not task.analysis_sgf
+                or not expected_sha
+                or op.model_sha256 != expected_sha
+                or requested_visits != (2000 if op.profile == "advanced" else 500)
+                or op.profile not in ("normal", "advanced")
+                or not 1 <= total_moves <= 500
+                or len(parsed.moves) != total_moves
+                or op.units != (total_moves + 1) * step
+                or parsed.invalid_moves
+                or parsed.dropped_midgame_setup
+            ):
+                task.status, task.error_message = "failed", "Paid report input no longer matches its authorization"
+                db.commit()
+                return
+            db.commit()
+        for move_number in range(total_moves + 1):
+            if not self._running:
+                return
+            result = await self._analyze_position(
+                task_id=task_id,
+                parsed=parsed,
+                move_number=move_number,
+                requested_visits=requested_visits,
+                expected_model_sha256=expected_sha,
+                generation=generation,
+            )
+            with SessionLocal() as db:
+                task, op = _lock_paid_task(db, task_id, generation=generation, operation_id=operation_id)
+                if task is None:
+                    return
+                if (
+                    result is None
+                    or result.get("status") != "success"
+                    or type(result.get("root_visits")) is not int
+                    or result["root_visits"] < requested_visits
+                ):
+                    self._mark_task_for_retry_or_failure(task, f"Analysis failed at move {move_number}")
+                    # Invalidate every in-flight result before another whole attempt may run.
+                    task.generation += 1
+                    op.generation = task.generation
+                    db.commit()
+                    return
+                record = ReportTaskMoveDB(task_id=task_id, move_number=move_number)
+                db.add(record)
+                for key, value in result.items():
+                    if hasattr(record, key):
+                        setattr(record, key, value)
+                task.analyzed_moves = move_number
+                db.commit()
+        with SessionLocal() as db:
+            task, op = _lock_paid_task(db, task_id, generation=generation, operation_id=operation_id)
+            if task is None:
+                return
+            rows = db.query(ReportTaskMoveDB).filter_by(task_id=task_id).order_by(ReportTaskMoveDB.move_number).all()
+            complete = (
+                len(rows) == total_moves + 1
+                and [r.move_number for r in rows] == list(range(total_moves + 1))
+                and all(
+                    r.status == "success" and type(r.root_visits) is int and r.root_visits >= requested_visits
+                    for r in rows
+                )
+            )
+            task.status = "completed" if complete else "failed"
+            task.error_message = None if complete else "Incomplete paid report"
+            task.completed_at = datetime.now(timezone.utc) if complete else None
+            task.retry_count = 0 if complete else task.retry_count
+            db.commit()
+
     # ── KataGo analysis ──
 
     async def _analyze_position(
@@ -292,6 +480,8 @@ class ReportAnalyzerJob(BaseJob):
         parsed: ParsedGame,
         move_number: int,
         requested_visits: int,
+        expected_model_sha256: str | None = None,
+        generation: int | None = None,
     ) -> dict[str, Any] | None:
         board_size = parsed.board_size
         moves = parsed.moves
@@ -310,8 +500,13 @@ class ReportAnalyzerJob(BaseJob):
         last_exc = None
         for attempt in range(3):
             try:
+                paid_args = {"expected_model_sha256": expected_model_sha256} if expected_model_sha256 else {}
                 response = await self._katago.analyze(
-                    request_id=f"report_{task_id}_{move_number}",
+                    request_id=(
+                        f"report_{task_id}_{generation}_{move_number}"
+                        if generation is not None
+                        else f"report_{task_id}_{move_number}"
+                    ),
                     moves=played,
                     rules=parsed.rules,
                     komi=parsed.komi,
@@ -324,6 +519,7 @@ class ReportAnalyzerJob(BaseJob):
                     initial_player=parsed.initial_player,
                     priority=config.REPORT_ANALYSIS_PRIORITY,
                     extra_override=extra_override or None,
+                    **paid_args,
                 )
                 break
             except Exception as exc:

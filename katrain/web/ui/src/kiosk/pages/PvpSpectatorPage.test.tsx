@@ -56,6 +56,12 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
+it.each([undefined, null, 9, {}])('keeps the board and shows unknown for non-label grade %s', async (rank) => {
+  vi.mocked(fetch).mockResolvedValue(reply({ ...snapshot, player_b_rank_label: rank, player_w_rank_label: '  ' }));
+  await open(); expect(screen.getAllByText('等级未知')).toHaveLength(2); expect(screen.queryByText('尚未定级')).toBeNull();
+  expect(screen.getByTitle('黑方棋友')).toBeInTheDocument();
+});
+
 it('sounds once for a new live stone and keeps initial, duplicate and older snapshots silent', async () => {
   await open();
   expect(playSound).not.toHaveBeenCalled();
@@ -150,6 +156,10 @@ it('renders true metadata and core coordinates using the existing readonly spect
   expect(document.querySelector('[data-stone="w"][data-at="Q16"]')).not.toBeNull();
   expect(screen.getByRole('img', { name: '大厅观战棋盘' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /认输|停一手|悔棋|上一手|分析|实体盘/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '观战说明' }));
+  expect(screen.getByRole('dialog', { name: '观战说明' })).toHaveTextContent('每 2 秒从大厅同步一次');
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+  expect(screen.queryByRole('dialog', { name: '观战说明' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /返回大厅/ }));
   expect(screen.getByText('已返回大厅')).toBeInTheDocument();
   await act(async () => { await vi.advanceTimersByTimeAsync(10000); });

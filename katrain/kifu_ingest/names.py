@@ -18,6 +18,8 @@ from uuid import uuid4
 
 import httpx
 
+from katrain.web.kifu.name_parse import parse_player
+
 
 LANGUAGES = ("cn", "tw", "jp", "ko", "en")
 METHODS = frozenset({"retain_original", "orthographic_conversion", "transliteration", "translation"})
@@ -123,9 +125,37 @@ class NeedsCredentials(NameServiceError):
 class NameRejected(NameServiceError):
     """Generation or independent review failed closed."""
 
+    def __init__(self, reason, *, reason_code="candidate_validation"):
+        super().__init__(reason)
+        self.reason_code = reason_code
+        self.diagnostic_ref = None
+
+    def isolation_reason(self):
+        # Journals cap errors at 512 characters: put the durable reference first.
+        prefix = f"audit={self.diagnostic_ref} " if self.diagnostic_ref else ""
+        return f"{prefix}[{self.reason_code}] {self}"[:512]
+
+
+class NameDiagnosticStorageError(NameServiceError):
+    """A rejection could not be persisted; no repair or approval may proceed."""
+
+    def __init__(self, rejection, diagnostic):
+        super().__init__(f"name rejection diagnostic storage failed: {rejection}")
+        self.rejection, self.diagnostic = rejection, diagnostic
+
+
+_REVIEW_INSTRUCTIONS = (
+    'Return {"decision":"approve"} or {"decision":"reject","reason":"concise explanation"}. '
+    "A reject reason must be a nonblank string of at most 500 characters. Do not rewrite the candidate."
+)
+
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def _invalid_json_constant(value):
+    raise ValueError("non-finite JSON constant")
 
 
 class QwenNameService:
@@ -144,6 +174,7 @@ class QwenNameService:
         reserve_call=None,
         settle_call=None,
         initial_tokens_used: int = 0,
+        rejection_audit=None,
     ):
         if concurrency < 1 or max_items < 1 or timeout <= 0 or max_output_tokens < 1 or max_total_tokens < 0:
             raise ValueError("concurrency, max_items and timeout must be positive")
@@ -157,10 +188,11 @@ class QwenNameService:
         self.audit_call = audit_call
         self.reserve_call = reserve_call
         self.settle_call = settle_call
+        self.rejection_audit = rejection_audit
         self._items = 0
         self._semaphore = asyncio.Semaphore(concurrency)
 
-    async def _audit(self, *, role, attempt, status_code, request_id=None, usage=None):
+    async def _audit(self, *, role, attempt, status_code, request_id=None, usage=None, entity=None):
         if self.audit_call is None:
             return
         entry = {
@@ -174,12 +206,85 @@ class QwenNameService:
             "max_output_tokens": self.max_output_tokens,
             "max_total_tokens": self.max_total_tokens,
             "tokens_used": self.tokens_used,
+            "entity": entity,
         }
         result = self.audit_call(entry)
         if inspect.isawaitable(result):
             await result
 
-    async def _call(self, role: str, content: dict) -> tuple[dict, dict]:
+    def _bounded_evidence(self, value, limit=4096):
+        """Bound final-content evidence, with explicit JSON/text boundaries and integrity."""
+        if value is None:
+            return {"available": False, "value": None, "truncated": False, "sha256": None}
+        raw = json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False).encode("utf-8")
+        encoded_key = json.dumps(self.key, ensure_ascii=False)[1:-1].encode("utf-8") if self.key else b""
+        safe = raw.replace(encoded_key, b"[redacted]") if encoded_key else raw
+        record = {
+            "available": True,
+            "value": json.loads(safe) if len(safe) <= limit else None,
+            "truncated": len(safe) > limit,
+            "sha256": sha256(raw).hexdigest(),
+            "bytes": len(raw),
+            "redacted": safe != raw,
+        }
+        if record["truncated"]:
+            record["json_prefix"] = safe[:limit].decode("utf-8", errors="ignore")
+        return record
+
+    @staticmethod
+    def _review(review):
+        if not isinstance(review, dict) or "decision" not in review or set(review) - {"decision", "reason"}:
+            raise NameRejected("independent review fields invalid", reason_code="review_protocol_invalid")
+        if review["decision"] not in ("approve", "reject"):
+            raise NameRejected("independent review decision invalid", reason_code="review_protocol_invalid")
+        if review["decision"] == "reject" and "reason" not in review:
+            raise NameRejected("independent review reject reason missing", reason_code="review_reason_missing")
+        if "reason" in review and (
+            not isinstance(review["reason"], str) or not review["reason"].strip() or len(review["reason"]) > 500
+        ):
+            raise NameRejected("independent review reason invalid", reason_code="review_reason_invalid")
+        if review["decision"] == "reject":
+            raise NameRejected(
+                f"independent review rejected candidate: {review['reason'].strip()}", reason_code="semantic_rejection"
+            )
+
+    async def _record_rejection(self, rejection, entity, *, scope, phase, attempt, candidate, review, calls):
+        reason = str(rejection)
+        if self.key:
+            reason = reason.replace(self.key, "[redacted]")
+            rejection.args = (reason,)
+        record = {
+            "version": 1,
+            "id": uuid4().hex,
+            "at": _now(),
+            "kind": entity["kind"],
+            "key": entity["key"][:1024],
+            "key_truncated": len(entity["key"]) > 1024,
+            "key_sha256": sha256(entity["key"].encode("utf-8")).hexdigest(),
+            "source_items": self._bounded_evidence(entity["source_items"], 8192),
+            "scope": scope,
+            "phase": phase,
+            "attempt": attempt,
+            "reason_code": rejection.reason_code,
+            "reason": reason.removeprefix("independent review rejected candidate: ")[:1024],
+            "reason_truncated": len(reason) > 1024,
+            "reason_sha256": sha256(reason.encode("utf-8")).hexdigest(),
+            "candidate": self._bounded_evidence(candidate, 8192),
+            "review": self._bounded_evidence(review),
+            "calls": calls,
+        }
+        if self.rejection_audit is not None:
+            try:
+                reference = self.rejection_audit(record)
+                if inspect.isawaitable(reference):
+                    reference = await reference
+                if not isinstance(reference, str) or not reference or len(reference) > 200:
+                    raise ValueError("diagnostic writer must return a bounded reference")
+                rejection.diagnostic_ref = reference
+            except Exception as exc:
+                raise NameDiagnosticStorageError(rejection, record) from exc
+
+    async def _call(self, role: str, content: dict, *, entity=None, diagnostic=None) -> tuple[dict, dict]:
         body = {
             "model": self.model,
             "messages": [
@@ -203,7 +308,19 @@ class QwenNameService:
             "temperature": 0,
             "max_tokens": self.max_output_tokens,
         }
+        call = {
+            "model": self.model[:200],
+            "request_id": None,
+            "at": _now(),
+            "prompt_sha256": sha256(json.dumps(body, ensure_ascii=False, sort_keys=True).encode()).hexdigest(),
+            "output_sha256": None,
+            "output_hash_scope": None,
+            "output": self._bounded_evidence(None),
+        }
+        if diagnostic is not None:
+            diagnostic[role] = call
         for attempt in range(2):
+            call["request_attempt"] = attempt + 1
             reservation = None
             if self.reserve_call is not None:
                 # UTF-8 bytes exceed prompt tokens for ordinary text; leave room for
@@ -222,28 +339,39 @@ class QwenNameService:
                     timeout=self.timeout,
                 )
             except httpx.RequestError as exc:
-                await self._audit(role=role, attempt=attempt + 1, status_code="transport_error")
+                await self._audit(role=role, attempt=attempt + 1, status_code="transport_error", entity=entity)
                 if attempt == 0:
                     continue
                 raise NameServiceError("Qwen transport failure") from None
+            header_request_id = response.headers.get("x-request-id")
+            call["request_id"] = header_request_id[:256] if header_request_id else None
             if response.status_code == 429 and attempt == 0:
-                await self._audit(role=role, attempt=attempt + 1, status_code=429)
+                await self._audit(role=role, attempt=attempt + 1, status_code=429, entity=entity)
                 continue
             if response.status_code != 200:
-                await self._audit(role=role, attempt=attempt + 1, status_code=response.status_code)
+                await self._audit(role=role, attempt=attempt + 1, status_code=response.status_code, entity=entity)
                 raise NameServiceError(f"Qwen HTTP {response.status_code}")
+            call["output_sha256"] = sha256(response.content).hexdigest()
+            call["output_hash_scope"] = "provider_response"
             if len(response.content) > 64_000:
-                await self._audit(role=role, attempt=attempt + 1, status_code=200)
-                raise NameRejected("Qwen response exceeds size limit")
+                await self._audit(
+                    role=role, attempt=attempt + 1, status_code=200, request_id=header_request_id, entity=entity
+                )
+                raise NameRejected("Qwen response exceeds size limit", reason_code="provider_output_oversized")
             try:
                 envelope = response.json()
                 if not isinstance(envelope, dict):
                     raise ValueError("object required")
             except (ValueError, TypeError):
-                await self._audit(role=role, attempt=attempt + 1, status_code=200)
-                raise NameRejected("Qwen response is invalid or incomplete") from None
+                await self._audit(
+                    role=role, attempt=attempt + 1, status_code=200, request_id=header_request_id, entity=entity
+                )
+                raise NameRejected(
+                    "Qwen response envelope is invalid", reason_code="provider_output_malformed"
+                ) from None
             request_id = envelope.get("id") or response.headers.get("x-request-id")
             request_id = str(request_id) if request_id else f"local-call:{uuid4()}"
+            call["request_id"] = request_id[:256]
             usage = envelope.get("usage")
             usage_valid = isinstance(usage, dict) and all(
                 isinstance(usage.get(field), int) and usage[field] >= 0
@@ -263,18 +391,26 @@ class QwenNameService:
                 status_code=200,
                 request_id=request_id,
                 usage=usage if usage_valid else None,
+                entity=entity,
             )
             if self.reserve_call is None and self.tokens_used > self.max_total_tokens:
                 raise NameServiceError("Qwen token budget exhausted")
             try:
                 choice = envelope["choices"][0]
+                final_content = choice["message"]["content"]
+                if not isinstance(final_content, str):
+                    raise ValueError("final response content must be text")
+                call["output"] = self._bounded_evidence(final_content)
+                call["output_sha256"] = sha256(final_content.encode("utf-8")).hexdigest()
+                call["output_hash_scope"] = "final_content"
                 if choice.get("finish_reason") not in (None, "stop"):
-                    raise ValueError("incomplete response")
-                output = json.loads(choice["message"]["content"])
+                    raise NameRejected("Qwen response is incomplete", reason_code="provider_output_truncated")
+                output = json.loads(final_content, parse_constant=_invalid_json_constant)
                 if not isinstance(output, dict):
                     raise ValueError("object required")
-            except (ValueError, KeyError, IndexError, TypeError):
-                raise NameRejected("Qwen response is invalid or incomplete") from None
+                json.dumps(output, ensure_ascii=False, allow_nan=False).encode("utf-8")
+            except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+                raise NameRejected("Qwen response is invalid", reason_code="provider_output_malformed") from None
             if not usage_valid:
                 raise NameServiceError("Qwen actual usage unavailable")
             return output, {
@@ -289,7 +425,7 @@ class QwenNameService:
         raise NameServiceError("Qwen rate limited")
 
     @staticmethod
-    def _candidate(candidate: dict, kind: str, key: str, sources: list[dict]) -> dict:
+    def _candidate(candidate: dict, kind: str, key: str, sources: list[dict], context=None) -> dict:
         if not {"displays", "methods", "original_language", "source_urls"} <= set(candidate) or not set(candidate) <= {
             "displays",
             "methods",
@@ -305,12 +441,29 @@ class QwenNameService:
             or any(not isinstance(value, str) or not value.strip() or len(value) > 120 for value in displays.values())
         ):
             raise NameRejected("candidate requires five nonempty displays")
-        if not isinstance(methods, dict) or set(methods) != set(LANGUAGES) or not set(methods.values()) <= METHODS:
+        if (
+            not isinstance(methods, dict)
+            or set(methods) != set(LANGUAGES)
+            or any(not isinstance(method, str) or method not in METHODS for method in methods.values())
+        ):
             raise NameRejected("candidate methods invalid")
+        if kind == "raw_player" and not (isinstance(context, dict) and context.get("verified_reuse_displays")):
+            retained = parse_player(key, None).name
+            if any(methods[lang] == "retain_original" and displays[lang] != retained for lang in LANGUAGES):
+                raise NameRejected("raw player retain_original differs from parsed name")
         if not isinstance(candidate["original_language"], str) or not candidate["original_language"].strip():
             raise NameRejected("original language missing")
+        if kind == "raw_player" and isinstance(context, dict) and context.get("verified_reuse_displays"):
+            for field in ("displays", "original_language", "methods"):
+                if candidate[field] != context.get(f"verified_reuse_{field}"):
+                    raise NameRejected(f"{field} differs from qualified raw player template")
         urls = candidate["source_urls"]
-        if not isinstance(urls, list) or len(urls) != len(set(urls)) or not set(urls) <= {s["url"] for s in sources}:
+        if (
+            not isinstance(urls, list)
+            or any(not isinstance(url, str) for url in urls)
+            or len(urls) != len(set(urls))
+            or not set(urls) <= {s["url"] for s in sources}
+        ):
             raise NameRejected("candidate invented a source URL")
         literal = _RANK.sub("", key).strip() if kind == "raw_player" else key.strip()
         if re.search(r"[\u3400-\u9fff]", literal) and displays["cn"] != literal:
@@ -323,6 +476,52 @@ class QwenNameService:
             digits = re.findall(r"\d+", key)
             if any(not all(d in value for d in digits) for value in displays.values()):
                 raise NameRejected("event year or round number lost")
+            english = displays["en"]
+            # Finite known mistranslations only; do not infer a catalog identity
+            # from these terms or turn the event parser into a full glossary.
+            if re.search(r"日本棋[圣聖][战戰戦]", key) and (
+                not re.search(r"\bKisei\b", english, re.I)
+                or "本因坊" not in key
+                and re.search(r"\bHoninbo\b", english, re.I)
+                or "名人" not in key
+                and re.search(r"\bMeijin\b", english, re.I)
+            ):
+                raise NameRejected("English Japanese Kisei title was substituted")
+            if re.findall(r"(?<!\d)(\d+)\s*[强強]", key) == ["8"] and re.search(
+                r"\bRound\s+(?:of\s+)?16\b", english, re.I
+            ):
+                raise NameRejected("English 8-player stage contradicts Round of 16")
+            if "青白江" in key and re.search(r"\bQingshuijiang\b", english, re.I):
+                raise NameRejected("English Qingbaijiang place name was misspelled")
+            if re.search(r"[烂爛]柯[杯盃]", key) and re.search(r"\bLangke\b", english, re.I):
+                raise NameRejected("English Lanke cup name was misspelled")
+            korean = displays["ko"]
+            if (
+                re.search(r"挑[战戰][赛賽]\s*[357]\s*番棋", key)
+                and not re.search(r"挑[战戰]者|[决決]定[赛賽战戰戦]", key)
+                and (
+                    re.search(r"挑[戦戰]者\s*決定", displays["jp"])
+                    or re.search(r"도전자\s*결정", korean)
+                    or re.search(r"\bchallenger[\s-]+(?:determination|decider)\b", english, re.I)
+                )
+            ):
+                raise NameRejected("Title match series was mistranslated as challenger determination")
+            series_lengths = re.findall(r"(?<!\d)(\d+)\s*番棋", key)
+            if (
+                len(set(series_lengths)) == 1
+                and series_lengths[0] in {"3", "5", "7"}
+                and re.search(rf"(?<!\d){series_lengths[0]}\s*선승", korean)
+            ):
+                raise NameRejected("Korean best-of series was mistranslated as first-to-N wins")
+            if re.search(r"[吴吳]清源[杯盃]", key) and re.search(r"우\s*청원\s*배", korean):
+                raise NameRejected("Korean Wu Qingyuan Cup name was mistransliterated")
+            if (
+                re.search(r"李[维維]清", key)
+                and "이유청" in korean
+                and "리웨이칭" not in korean
+                and "이유청" not in key
+            ):
+                raise NameRejected("Korean Li Weiqing event name was mistransliterated")
         return candidate
 
     async def translate_and_review(
@@ -381,6 +580,11 @@ class QwenNameService:
                 },
                 "output_shape_rule": "displays and methods must be objects keyed by language, never arrays",
             }
+            if kind == "raw_player" and isinstance(context, dict) and context.get("verified_reuse_displays"):
+                prompt["verified_reuse_rule"] = (
+                    "Preserve displays, original_language and methods exactly as supplied in context's "
+                    "verified_reuse fields; they describe existing qualified provenance, not a new identity claim."
+                )
             literal = _RANK.sub("", key).strip() if kind == "raw_player" else key.strip()
             if re.search(r"[\u3400-\u9fff]", literal):
                 prompt["required_cn_literal"] = literal
@@ -398,26 +602,58 @@ class QwenNameService:
                     "Before returning JSON, check all five displays for every token. "
                     "Keep the cn original unchanged unless an orthographic conversion is explained."
                 )
+                prompt["english_event_rules"] = [
+                    "For Japanese Kisei (日本棋圣战/日本棋聖戦), use Kisei. Honinbo means 本因坊 and Meijin means "
+                    "名人; do not insert either unless the original explicitly names it.",
+                    "If the only numbered knockout stage is 8强/8強, it is an 8-player stage: "
+                    "Quarterfinal or Round of 8, never Round of 16, even with a Top 8 suffix.",
+                    "青白江 is Qingbaijiang, never Qingshuijiang.",
+                    "烂柯杯/爛柯盃 uses Lanke, never Langke. Preserve the original domestic/world/team scope.",
+                ]
+                prompt["event_semantic_rules"] = [
+                    "Title match series: unqualified 挑战赛/挑戰賽 followed by 3/5/7番棋 is a title match, "
+                    "e.g. jp 挑戦手合, ko 도전N번기, en Title Match. Never substitute jp 挑戦者決定, "
+                    "ko 도전자 결정, or English challenger determination/decider. Preserve explicit "
+                    "挑战者/挑戰者 or 决定赛/決定賽 qualifiers when they are in the original.",
+                    "Korean best-of series: for one unambiguous 3/5/7番棋 length, N番棋 is best-of-N, "
+                    "not first to N wins (N선승/N선승부). Use N번기 or another semantically correct form; "
+                    "5番棋 may be 3선승제(5번기). Multiple distinct series lengths need stage-aware review, "
+                    "not a whole-event rejection; 1番棋 may correctly use 1선승제.",
+                    "Korean Wu Qingyuan Cup: 吴清源杯/吳清源盃 uses the official cup name 오청원배, "
+                    "never 우청원배; preserve the remaining event and stage details.",
+                    "Korean Li Weiqing: when the original event literally includes 李维清/李維清, "
+                    "preserve 리웨이칭 rather than substituting 이유청. If 리웨이칭 is already preserved "
+                    "or the original also explicitly names 이유청, do not globally reject 이유청; "
+                    "independently review the other player's name. This rule does not identify other players.",
+                ]
             repair_reason = None
+            entity = {"kind": kind, "key": key, "source_items": source_items}
             for repair in range(2):
+                candidate, review, calls, phase = None, None, {}, "producer"
                 try:
                     candidate, producer = await self._call(
-                        "producer", {**prompt, "repair_attempt": repair, "repair_reason": repair_reason}
+                        "producer",
+                        {**prompt, "repair_attempt": repair, "repair_reason": repair_reason},
+                        entity=entity,
+                        diagnostic=calls,
                     )
-                    self._candidate(candidate, kind, key, sources)
+                    self._candidate(candidate, kind, key, sources, context=context)
+                    phase = "reviewer"
                     review, reviewer = await self._call(
                         "reviewer",
                         {
                             **prompt,
                             "candidate": candidate,
-                            "review_instructions": "Approve or reject this exact candidate. "
-                            'Return {"decision":"approve"} or {"decision":"reject"}; do not rewrite it.',
+                            "review_instructions": "Approve or reject this exact candidate. " + _REVIEW_INSTRUCTIONS,
                         },
+                        entity=entity,
+                        diagnostic=calls,
                     )
-                    if set(review) != {"decision"} or review["decision"] != "approve":
-                        raise NameRejected("independent review rejected candidate")
+                    self._review(review)
                     if producer["request_id"] == reviewer["request_id"]:
-                        raise NameRejected("producer and review request IDs coincide")
+                        raise NameRejected(
+                            "producer and review request IDs coincide", reason_code="review_independence_invalid"
+                        )
                     from katrain.kifu_ingest.catalog import review_content_sha256, validate_decision
 
                     decision = {
@@ -440,6 +676,16 @@ class QwenNameService:
                     validate_decision(decision)
                     return decision
                 except NameRejected as exc:
+                    await self._record_rejection(
+                        exc,
+                        entity,
+                        scope="initial",
+                        phase=phase,
+                        attempt=repair + 1,
+                        candidate=candidate,
+                        review=review,
+                        calls=calls,
+                    )
                     if repair:
                         raise
                     repair_reason = str(exc)
@@ -462,22 +708,51 @@ class QwenNameService:
         }
         if "cn_conversion_note" in decision:
             candidate["cn_conversion_note"] = decision["cn_conversion_note"]
-        review, reviewer = await self._call(
-            "reviewer",
-            {
-                "kind": decision["kind"],
-                "key": decision["key"],
-                "candidate": candidate,
-                "sources": decision["sources"],
-                "source_items": source_items,
-                "review_instructions": "Approve or reject this exact candidate for only these source items. "
-                'Return {"decision":"approve"} or {"decision":"reject"}; do not rewrite it.',
-            },
-        )
-        if set(review) != {"decision"} or review["decision"] != "approve":
-            raise NameRejected("independent review rejected narrowed source scope")
-        if decision["producer"]["request_id"] == reviewer["request_id"]:
-            raise NameRejected("producer and review request IDs coincide")
+        entity = {"kind": decision["kind"], "key": decision["key"], "source_items": source_items}
+        calls = {
+            "producer": {
+                "model": decision["producer"].get("model"),
+                "request_id": decision["producer"].get("request_id"),
+                "at": decision["producer"].get("at"),
+                "prompt_sha256": None,
+                "output_sha256": None,
+                "output_hash_scope": None,
+                "output": self._bounded_evidence(None),
+            }
+        }
+        review = None
+        try:
+            review, reviewer = await self._call(
+                "reviewer",
+                {
+                    "kind": decision["kind"],
+                    "key": decision["key"],
+                    "candidate": candidate,
+                    "sources": decision["sources"],
+                    "source_items": source_items,
+                    "review_instructions": "Approve or reject this exact candidate for only these source items. "
+                    + _REVIEW_INSTRUCTIONS,
+                },
+                entity=entity,
+                diagnostic=calls,
+            )
+            self._review(review)
+            if decision["producer"]["request_id"] == reviewer["request_id"]:
+                raise NameRejected(
+                    "producer and review request IDs coincide", reason_code="review_independence_invalid"
+                )
+        except NameRejected as exc:
+            await self._record_rejection(
+                exc,
+                entity,
+                scope="narrowed",
+                phase="reviewer",
+                attempt=1,
+                candidate=candidate,
+                review=review,
+                calls=calls,
+            )
+            raise
         narrowed = {**decision, "source_items": source_items}
         narrowed["review"] = {
             **reviewer,

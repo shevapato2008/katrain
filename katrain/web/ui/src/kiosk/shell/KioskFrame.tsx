@@ -24,12 +24,13 @@ function useKioskScale(): number {
  * @param topbar 顶栏节点(Task 3 之前先传旧 Header,Task 3 起恒传 <KioskTopbar/>)
  * @param extras 盖在整屏之上、但仍跟着画布缩放的东西(弹窗、全局提示)
  */
-export function KioskFrame({ level, topbar, dock, extras, children }: {
+export function KioskFrame({ level, topbar, dock, extras, children, journey }: {
   level: 1 | 2;
   topbar?: ReactNode;
   dock?: ReactNode;
   extras?: ReactNode;
   children: ReactNode;
+  journey?: string;
 }) {
   const scale = useKioskScale();
   return (
@@ -44,7 +45,7 @@ export function KioskFrame({ level, topbar, dock, extras, children }: {
     >
       {/* data-level 写成字符串:tokens.css 那条选择器是 [data-level="1"],
           它决定 L1 的中间区下缘停在 504 还是 586 —— 写错整屏内容会被 Dock 压住。 */}
-      <div className="kiosk-screen" data-level={String(level)}>
+      <div className="kiosk-screen" data-level={String(level)} data-journey={journey}>
         {topbar}
         <div className="kiosk-content">{children}</div>
         {dock}

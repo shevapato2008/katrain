@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const matchId = process.env.GALAXY_LIVE_MATCH_ID ?? 'yike_184016';
-const livePath = `/galaxy/live/${matchId}`;
+const livePath = `/live/${matchId}`;
 
 /* 右栏四档（spec §2.3，2026-08-30 由三档加宽而来）。每一档取边界前后 1px：
    闸的每条分支都要被执行过一次，新加的 1920 档同样要有「前一档」（1919）那一行。
@@ -233,7 +233,7 @@ test.describe('Galaxy sidebar journeys', () => {
     const trigger = page.getByTestId('galaxy-sidebar-toggle');
     await trigger.click();
     await page.getByTestId('galaxy-sidebar-nav').getByRole('button').first().click();
-    await expect(page).toHaveURL(/\/galaxy\/?$/);
+    await expect(page).toHaveURL('/');
     await expect(page.getByTestId('galaxy-sidebar-overlay')).toHaveCount(0);
 
     await page.goto(livePath);

@@ -1,0 +1,366 @@
+{
+  "scope": "Read-only source investigation; no repository/business-data/service/scheduler/lock mutation; no import, translation, model, or publication run. Local evidence files only.",
+  "published_develop_observed": "c49cbb44296cdb5edc83992a1a3ec47c64f3b702",
+  "samples": [
+    {
+      "source_id": "91694911",
+      "test_album_id": 179093,
+      "prod_album_id": 178757,
+      "date": "2026-10-25",
+      "pb": "藤泽里菜",
+      "pw": "上野梨纱",
+      "sgf_sha256": "b044277aaac3223d3304fee2b958358418a83624d8c817fedb850c1994d845c2",
+      "response_sha256": "fd9e6bbfd7f0a83b87dc83af6837f9e5d80584543c2f28ed7f685de2763e3a1a",
+      "package_file": "91694911-0dbd77cb3a429076.json",
+      "publication_key": "19x19-91694911-b044277aaac3223d",
+      "manifest_sha256": "0dbd77cb3a4290768ad9955542a51a8dc85cc6517231a0778faf06b42417d8fb",
+      "native_test_batch_id": 925,
+      "native_prod_batch_id": 918,
+      "source_api_url": "https://api.19x19.com/api/engine/games/shared/91694911",
+      "source_http_status": 200,
+      "source_business_code": "0",
+      "source_response_data_keys": [
+        "id",
+        "userCode",
+        "sgf"
+      ],
+      "source_raw_root_keys": [
+        "CA",
+        "AP",
+        "SZ",
+        "PB",
+        "PW",
+        "RE",
+        "KM"
+      ],
+      "source_raw_BR": null,
+      "source_raw_WR": null,
+      "source_metadata_blackLevel": 3002,
+      "source_metadata_whiteLevel": 3002,
+      "stage_raw_path": "/app/data/kifu_ingest/sgf/91694911.sgf",
+      "stage_metadata_path": "/app/data/kifu_ingest/metadata/91694911.json",
+      "package_path": "/app/data/kifu_ingest/packages/91694911-0dbd77cb3a429076.json",
+      "source_raw_equals_stage_canonical_package_prod": true,
+      "test_row_black_rank": null,
+      "test_row_white_rank": null,
+      "prod_row_black_rank": null,
+      "prod_row_white_rank": null,
+      "prod_api_display_black_rank": "",
+      "prod_api_display_white_rank": "",
+      "ingest_status": "prod_synced"
+    },
+    {
+      "source_id": "91638738",
+      "test_album_id": 179085,
+      "prod_album_id": 178749,
+      "date": "2026-10-24",
+      "pb": "高星",
+      "pw": "王爽",
+      "sgf_sha256": "0da65da0d6d75d9839585fdeac0f3860929e019ca03d7445c42887324a9bfd8f",
+      "response_sha256": "e0f4b62850c1c9ed6cbeef0ac41d5f7716c0b5c07f63f26447faa8d638b8300d",
+      "package_file": "91638738-2608c873a1f62fad.json",
+      "publication_key": "19x19-91638738-0da65da0d6d75d98",
+      "manifest_sha256": "2608c873a1f62fade6f3e5b5964befb69e43d32009920c3a7793c3c198920e1e",
+      "native_test_batch_id": 918,
+      "native_prod_batch_id": 911,
+      "source_api_url": "https://api.19x19.com/api/engine/games/shared/91638738",
+      "source_http_status": 200,
+      "source_business_code": "0",
+      "source_response_data_keys": [
+        "id",
+        "userCode",
+        "sgf"
+      ],
+      "source_raw_root_keys": [
+        "CA",
+        "AP",
+        "SZ",
+        "PB",
+        "PW",
+        "RE",
+        "KM"
+      ],
+      "source_raw_BR": null,
+      "source_raw_WR": null,
+      "source_metadata_blackLevel": 3002,
+      "source_metadata_whiteLevel": 3002,
+      "stage_raw_path": "/app/data/kifu_ingest/sgf/91638738.sgf",
+      "stage_metadata_path": "/app/data/kifu_ingest/metadata/91638738.json",
+      "package_path": "/app/data/kifu_ingest/packages/91638738-2608c873a1f62fad.json",
+      "source_raw_equals_stage_canonical_package_prod": true,
+      "test_row_black_rank": null,
+      "test_row_white_rank": null,
+      "prod_row_black_rank": null,
+      "prod_row_white_rank": null,
+      "prod_api_display_black_rank": "",
+      "prod_api_display_white_rank": "",
+      "ingest_status": "prod_synced"
+    },
+    {
+      "source_id": "91637528",
+      "test_album_id": 179084,
+      "prod_album_id": 178748,
+      "date": "2026-10-24",
+      "pb": "唐奕",
+      "pw": "周泓余",
+      "sgf_sha256": "97edeb6666a08122e24940c7d4e303f7c1a2f4f4dfb8c94b2dc7b7ef762557d8",
+      "response_sha256": "899f4ec92241c879de25ae6d224b9e8adcbfb2b222c4d59f654d710efb940d29",
+      "package_file": "91634842-c14e011c14dbca75.json",
+      "publication_key": "19x19-batch-534922d7c4f494e880adb71d",
+      "manifest_sha256": "c14e011c14dbca7511ae472e0c70c0f3fda4f0cb3ef2ba42e7dbe348de924824",
+      "native_test_batch_id": 916,
+      "native_prod_batch_id": 909,
+      "source_api_url": "https://api.19x19.com/api/engine/games/shared/91637528",
+      "source_http_status": 200,
+      "source_business_code": "0",
+      "source_response_data_keys": [
+        "id",
+        "userCode",
+        "sgf"
+      ],
+      "source_raw_root_keys": [
+        "CA",
+        "AP",
+        "SZ",
+        "PB",
+        "PW",
+        "RE",
+        "KM"
+      ],
+      "source_raw_BR": null,
+      "source_raw_WR": null,
+      "source_metadata_blackLevel": 3002,
+      "source_metadata_whiteLevel": 3002,
+      "stage_raw_path": "/app/data/kifu_ingest/sgf/91637528.sgf",
+      "stage_metadata_path": "/app/data/kifu_ingest/metadata/91637528.json",
+      "package_path": "/app/data/kifu_ingest/packages/91634842-c14e011c14dbca75.json",
+      "source_raw_equals_stage_canonical_package_prod": true,
+      "test_row_black_rank": null,
+      "test_row_white_rank": null,
+      "prod_row_black_rank": null,
+      "prod_row_white_rank": null,
+      "prod_api_display_black_rank": "",
+      "prod_api_display_white_rank": "",
+      "ingest_status": "prod_synced"
+    }
+  ],
+  "current_official_consumer": {
+    "observed_at": "2026-10-25T11:18:35.509Z",
+    "url": "https://www.19x19.com/engine/analyse",
+    "source_id": "91694911",
+    "computerLevelCount": 53,
+    "matches3002": [],
+    "getLevel3002": {
+      "value": 0,
+      "label": "",
+      "name": ""
+    },
+    "getLevelString3002": {
+      "value": 0,
+      "label": "",
+      "name": ""
+    },
+    "getLevelListNew3002": [],
+    "getLevelFunction": "function(e){var t=this.computerLevel,n=null;for(var r in t)if(t[r].value==e){n=this.deepCopy(t[r]);break}return n||(n={value:0,label:\"\",name:\"\"}),n}",
+    "getLevelListNewFunction": "function(){var e=this.deepCopy(this.computerLevel);for(var t in e)e[t].eloScore=e[t].value,e[t].boardSize=19,e[t].name=e[t].AIname,e[t].humanLevel=e[t].saveName||e[t].label,e[t].extra=null,e[t].saveName&&(e[t].extra={level_icon:\"img/\".concat(e[t].icon),level_name:e[t].label});return e}",
+    "components": [
+      {
+        "name": "sgfInfoCom",
+        "source_id": 91694911,
+        "game_type": "2",
+        "pb": "藤泽里菜",
+        "pw": "上野梨纱",
+        "blackLevelString": 3002,
+        "whiteLevelString": 3002,
+        "blackLevel": null,
+        "whiteLevel": null,
+        "sgfInfo": {
+          "br": {
+            "label": "黑方段位",
+            "value": null
+          },
+          "wr": {
+            "label": "白方段位",
+            "value": null
+          }
+        },
+        "levelChangeHandle3002": {
+          "value": 0,
+          "label": " ",
+          "name": "",
+          "api": "dcnn",
+          "sgf": true,
+          "game": false
+        },
+        "levelChangeHandleFunction": "function(t){var e=this.computerLevelReal,n=e[e.length-1];if(\"\"==t||void 0==t)return n;var a=isNaN(Number(t))?\"label\":\"value\";for(var i in e)if(e[i][a]==t){n=e[i];break}return n}",
+        "blackLevelStringFunction": "function(){var t=this.gameMeta,e=t.blackLevel,n=t.pbLevel;return n||e}",
+        "whiteLevelStringFunction": "function(){var t=this.gameMeta,e=t.whiteLevel,n=t.pwLevel;return n||e}",
+        "render_level_calls": [
+          "t.sgfInfoStatus.edit,expression:\"!sgfInfoStatus.edit\"}],attrs:{nickname:t.culPb,level:t.blackLevelString,gameType:t.gameType}}),n(\"span\",{directives:[{name:\"show\",rawName:\"v-show\",value:t.sgfInfoStatus.ed",
+          "t.sgfInfoStatus.edit,expression:\"!sgfInfoStatus.edit\"}],attrs:{nickname:t.culPw,level:t.whiteLevelString,gameType:t.gameType,reverse:!0}}),n(\"span\",{directives:[{name:\"show\",rawName:\"v-show\",value:t.sgfIn"
+        ]
+      },
+      {
+        "tag": "UserInfo",
+        "name": "",
+        "level": 3002,
+        "levelInfo": null,
+        "levelName": null,
+        "levelNameType": "undefined",
+        "domText": "藤泽里菜"
+      },
+      {
+        "tag": "levelCom",
+        "name": "levelCom",
+        "level": 3002,
+        "levelInfo": "",
+        "levelName": "",
+        "levelNameType": "string",
+        "noneLevelShow": false,
+        "domText": "",
+        "levelInfoFunction": "function(){var e=this.levelList_data,t=this.level,n=\"\";if(isNaN(Number(t)))return{humanLevel:t};for(var r in e)if(e[r].eloScore==t){n=e[r];break}if(n&&n.engine&&this.gameType!=this.ENUMS.AI_GAME_ENGINE&&(n=this.level),n.extra&&this.GLOBAL.isString(n.extra))try{n.extra=JSON.parse(n.extra)}catch(a){}return n}",
+        "levelNameFunction": "function(){var e=this.levelInfo,t=(this.gameType,e.extra);t=t||{};var n=t.level_name||e.humanLevel;return n&&\"\"!=n&&\" \"!=n||!this.noneLevelShow||(n=\"无等级\"),Object(i[\"g\"])(n)}"
+      },
+      {
+        "tag": "UserInfo",
+        "name": "",
+        "level": 3002,
+        "levelInfo": null,
+        "levelName": null,
+        "levelNameType": "undefined",
+        "domText": "上野梨纱"
+      },
+      {
+        "tag": "levelCom",
+        "name": "levelCom",
+        "level": 3002,
+        "levelInfo": "",
+        "levelName": "",
+        "levelNameType": "string",
+        "noneLevelShow": false,
+        "domText": "",
+        "levelInfoFunction": "function(){var e=this.levelList_data,t=this.level,n=\"\";if(isNaN(Number(t)))return{humanLevel:t};for(var r in e)if(e[r].eloScore==t){n=e[r];break}if(n&&n.engine&&this.gameType!=this.ENUMS.AI_GAME_ENGINE&&(n=this.level),n.extra&&this.GLOBAL.isString(n.extra))try{n.extra=JSON.parse(n.extra)}catch(a){}return n}",
+        "levelNameFunction": "function(){var e=this.levelInfo,t=(this.gameType,e.extra);t=t||{};var n=t.level_name||e.humanLevel;return n&&\"\"!=n&&\" \"!=n||!this.noneLevelShow||(n=\"无等级\"),Object(i[\"g\"])(n)}"
+      }
+    ],
+    "visible_text": "对弈\n研究\n报告\n直播\n死活题\n特训\n闯关\n课程\n棋谱库\n充值\n商城\n星阵少儿\n帮助\n设置\n登录\n免费注册\n注册可领新手大礼包！\n保存到本地\n文件名\t\n.sgf\n\n棋谱\t\n黑方\t\t黑方段位\t\t黑方代表队\t\n白方\t\t白方段位\t\t白方代表队\t\n贴目\t\t让子\t\t结果\t\n赛事\t\t地址\t\t\n日期\t\t比赛用时\t\t回合\t\n保存\n取消\n第45期女流本因坊战挑战赛5番棋2局1-0\n分先\n藤泽里菜\n提 10 子\n黑中盘胜\n上野梨纱\n提 18 子\n规则\n19路棋盘\n中国规则\n分先\n黑贴3又3/4子\n配置\n开始研究\n手数\n停一手\n移动\n删除\n摆黑\n摆白\n交替\n0\n领地\n0\n支招\n0\n变化图\n试下\n清空\n打开\n保存\n第239/239手",
+    "source_resources": [
+      {
+        "host": "assets.19x19.com",
+        "path": "/web-resource/golaxy/20261020_script/js/app.5daf8ee8.js"
+      },
+      {
+        "host": "api.19x19.com",
+        "path": "/api/engine/ai/name/list"
+      },
+      {
+        "host": "api.19x19.com",
+        "path": "/api/engine/games/meta/null/91694911"
+      },
+      {
+        "host": "api.19x19.com",
+        "path": "/api/engine/games/shared/91694911"
+      }
+    ],
+    "exportTemplate": {
+      "br": {
+        "label": "黑方段位",
+        "value": null
+      },
+      "wr": {
+        "label": "白方段位",
+        "value": null
+      },
+      "pb": {
+        "label": "黑方姓名",
+        "value": "藤泽里菜"
+      },
+      "pw": {
+        "label": "白方姓名",
+        "value": "上野梨纱"
+      },
+      "fileName": {
+        "label": "文件名",
+        "value": "Golaxy"
+      }
+    }
+  },
+  "current_official_meta_fields": [
+    {
+      "component": "engine",
+      "gameMetaKeys": [
+        "id",
+        "username",
+        "userCode",
+        "gamename",
+        "pb",
+        "pw",
+        "blackLevel",
+        "whiteLevel",
+        "startMoveNum",
+        "moveNum",
+        "rule",
+        "stone",
+        "komi",
+        "handicap",
+        "guess",
+        "boardSize",
+        "gameResult",
+        "gameType",
+        "explainStatus",
+        "predictStatus",
+        "analyzeStatus",
+        "analyzePo",
+        "analyzeShare",
+        "favourite",
+        "createTime",
+        "playTime",
+        "analyzeTime",
+        "visibleFlag",
+        "deleteFlag",
+        "whiteUserCode",
+        "blackUserCode",
+        "gameroomId",
+        "gameRound",
+        "mainTime",
+        "countdownTime",
+        "countdownNum",
+        "userPhotoList",
+        "userPhotoFileList"
+      ],
+      "rankFields": {
+        "blackLevel": 3002,
+        "whiteLevel": 3002
+      }
+    }
+  ],
+  "official_config": {
+    "url": "https://api.19x19.com/api/engine/ai/name/list?group_name=golaxy",
+    "http_status": 200,
+    "code": 0,
+    "response_sha256": "609bb6a4f462dc70d2eebd4b673e8c983286b1d64ceb68e39fae88372c5553d2",
+    "data_count": 39,
+    "matches_3002": []
+  },
+  "resources": [
+    {
+      "url": "https://assets.19x19.com/web-resource/golaxy/20261020_script/js/app.5daf8ee8.js",
+      "sha256": "be1c7fb9678113ef62338925f933411921b05d4c2c6ce7ad1079b61724ed91cd"
+    },
+    {
+      "url": "https://www.19x19.com/GLOBAL_TEM.js",
+      "sha256": "a98f409eca4168bad70a50a4e10ea22847d66cc1da41ae04533c025e2b0990bc"
+    }
+  ],
+  "export_observation": {
+    "real_panel_BR": null,
+    "real_panel_WR": null,
+    "browser_download_observed": false,
+    "download_wait_seconds": 10,
+    "actual_helper_attempt": {
+      "error": "Cannot read properties of null (reading 'value')"
+    },
+    "meaning": "No exported file claimed. Actual loaded app helper fails on null.value in this anonymous session; no extended debugging attempted. The actual template and non-null-only header writer contain no hidden professional/amateur mapping."
+  },
+  "conclusion": "3002 is unmapped by the current official live runtime, and renders empty for the exact real sample. Neither a concrete match rank nor p/d identity can be derived. This does not establish that 3002 is semantically a universal placeholder; old commented mapping is not used as authority. No reliable alternate ranked-SGF API was observed in this loaded page."
+}

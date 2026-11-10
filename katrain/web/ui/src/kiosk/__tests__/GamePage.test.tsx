@@ -188,15 +188,35 @@ describe('GamePage', () => {
     expect(sub).toHaveTextContent('不让子');
   });
 
-  it('renders all 7 ItemToggles', () => {
+  it('renders all 7 game actions', () => {
     renderPage();
     expect(screen.getByText('领地')).toBeInTheDocument();
-    expect(screen.getByText('AI支招')).toBeInTheDocument();
+    expect(screen.getByText('支招')).toBeInTheDocument();
     expect(screen.getByText('图表')).toBeInTheDocument();
     expect(screen.getByText('悔棋')).toBeInTheDocument();
     expect(screen.getByText('停一手')).toBeInTheDocument();
     expect(screen.getByText('认输')).toBeInTheDocument();
     expect(screen.getByText('数子')).toBeInTheDocument();
+  });
+
+  it('keeps display switches and territory distinct and preserves live action availability', () => {
+    renderPage();
+    const coordinates = screen.getByRole('switch', { name: '坐标' });
+    const numbers = screen.getByRole('switch', { name: '手数' });
+    const territory = screen.getByRole('button', { name: '领地' });
+    const icons = [coordinates, numbers, territory].map((button) => button.querySelector('svg')?.innerHTML);
+    expect(icons.every(Boolean)).toBe(true);
+    expect(new Set(icons).size).toBe(3);
+    expect(coordinates).toHaveAttribute('aria-checked', 'true');
+    expect(numbers).toHaveAttribute('aria-checked', 'false');
+    expect(territory).toBeEnabled();
+    expect(screen.getByRole('button', { name: '支招' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '数子' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '悔棋' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '认输' })).toBeEnabled();
+    fireEvent.click(coordinates);
+    expect(screen.getByRole('switch', { name: '坐标' })).toHaveAttribute('aria-checked', 'false');
   });
 
   // 着法导航整排原来 `disabled={!isGameOver}` —— 对局中全程是灰的。
@@ -240,7 +260,7 @@ describe('GamePage', () => {
       (mockGameState as Record<string, unknown>).analysis_delivered = false;
       renderPage();
       expect(screen.getByRole('button', { name: /领地/ })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /AI支招/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '支招' })).toBeDisabled();
       // 屏上那一句 —— **7 寸触屏够不着 tooltip,所以 `title` 不算数**,
       // 必须落在开关排右端那格。
       expect(document.querySelector('.gtoggles .ghint')).toHaveTextContent('登录后可用');

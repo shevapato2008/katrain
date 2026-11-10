@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Verify the kiosk-2d dist stays within the board boundary:
 #  - no three.js / @react-three (3D board removed from kiosk on 2026-07-13 to free Mali GPU)
-#  - no /galaxy/* routes (Galaxy-only pages/links must be DCE'd out)
+#  - no Galaxy application/page modules (Galaxy-only pages must be DCE'd out)
+#  - no retired /galaxy/* routes
 #  - no live API path at all (the kiosk has no live module; the board proxy was removed 2026-09-23)
 # Exits 0 on clean, 1 on any match.
 set -euo pipefail
@@ -22,7 +23,26 @@ if matches=$(grep -lE "THREE\.|from *[\"']three[\"']|@react-three" "$DIST"/asset
   fail=1
 fi
 
-# Galaxy route residue — kiosk must not link to or route any /galaxy/* page.
+# Check emitted source modules, including Galaxy code merged into shared chunks.
+# Legal /kiosk/play, API paths and shared component names are not Galaxy evidence.
+if ! node - "$DIST" <<'NODE'
+const fs = require('fs');
+const path = require('path');
+try {
+  const report = JSON.parse(fs.readFileSync(path.join(process.argv[2], 'kiosk-module-boundary.json'), 'utf8'));
+  if (!Array.isArray(report.galaxyModules) || report.galaxyModules.length) {
+    throw new Error(`Galaxy modules remain: ${JSON.stringify(report.galaxyModules)}`);
+  }
+} catch (error) {
+  console.error(`Cannot verify kiosk Galaxy module boundary: ${error.message}`);
+  process.exit(1);
+}
+NODE
+then
+  fail=1
+fi
+
+# Retired Galaxy route residue remains an additional check, not proof of DCE.
 if matches=$(grep -l "/galaxy/" "$DIST"/assets/*.js 2>/dev/null); then
   echo "❌ Found /galaxy/ route in:" >&2
   echo "$matches" >&2
@@ -63,7 +83,7 @@ fi
 
 if [[ $fail -eq 0 ]]; then
   size=$(du -sh "$DIST" | cut -f1)
-  echo "✅ kiosk boundary clean — no three.js / /galaxy/ / live API in $DIST ($size total)"
+  echo "✅ kiosk boundary clean — no Galaxy modules / retired routes / three.js / live API in $DIST ($size total)"
 fi
 
 exit $fail

@@ -9,8 +9,12 @@ import { EmojiEvents } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
+import { usePlayerRanks } from '../hooks/usePlayerRanks';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import TerritoryDialog from '../components/game/TerritoryDialog';
+import LobbyGamePanel from '../components/game/LobbyGamePanel';
+import { useLobbyTerritory } from '../hooks/useLobbyTerritory';
 import LocalConfirmGame from '../components/game/LocalConfirmGame';
 import { useLocalMoveConfirmation } from '../hooks/useLocalMoveConfirmation';
 import { KioskPagebar } from '../shell/KioskPagebar';
@@ -31,7 +35,7 @@ import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog'
 import HintPanel from '../components/physical/HintPanel';
 import { API, ApiError, type HintResponse, type OwnershipPoint, type JudgePoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { readActiveSession, writeActiveSession, clearActiveSession } from '../utils/activeSession';
-import { requestFailureKind } from '../../utils/requestFailure';
+import { requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
@@ -44,6 +48,8 @@ import { useGameCelebration } from '../hooks/useGameCelebration';
 import { isStrictBoxKiosk } from '../shell/boxUrls';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
+type EngineTerritoryResult = { ownership: OwnershipPoint[]; winrate: number; delta: number };
+type EngineTerritoryView = { generation: number; phase: 'idle' | 'loading' | 'result' | 'error'; visible: boolean; result?: EngineTerritoryResult };
 type AttentionPoint = { row: number; col: number }; // vision row 0 is the top edge
 
 export interface AiTurnState {
@@ -185,7 +191,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { token, user, isAuthenticated } = useAuth();
+  const { token, user, isAuthenticated, isGuest } = useAuth();
   const { pathname } = useLocation();
   const centralRoom = pathname.includes('/play/pvp/room/');
   const [centralUserId, setCentralUserId] = useState<number | null>(isStrictBoxKiosk ? null : user?.id ?? null);
@@ -195,6 +201,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [countPending, setCountPending] = useState(false);
   const [countNotice, setCountNotice] = useState<string | null>(null);
   const [countResponding, setCountResponding] = useState(false);
+  const countNoticeText = countNotice === '数子请求已被拒绝' ? t('game:count_request_rejected', '数子请求已被拒绝')
+    : countNotice === '数子请求已超时' ? t('game:count_request_timeout', '数子请求已超时')
+      : countNotice === '已拒绝数子请求' ? t('game:count_request_declined', '已拒绝数子请求')
+        : countNotice === '回应数子请求失败，请重试' ? t('game:count_response_failed', '回应数子请求失败，请重试')
+          : countNotice === '无法确认中央账号身份，暂不能处理数子请求' ? t('game:count_identity_unavailable', '无法确认中央账号身份，暂不能处理数子请求') : null;
   useEffect(() => {
     if (!centralRoom || !isAuthenticated) return;
     if (!isStrictBoxKiosk) { setCentralUserId(user?.id ?? null); return; }
@@ -268,9 +279,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // supposed to defer to (board-loss precedence: escalation > recalibration > board-lost).
   const [escalationOpen, setEscalationOpen] = useState(() => session.physicalReminder?.kind === 'escalation');
   const [hint, setHint] = useState<HintResponse | null>(null);
-  const [hintError, setHintError] = useState<string | null>(null);
+  const [hintFailure, setHintError] = useState<'ranked' | 'disabled' | 'insufficient' | 'failed' | null>(null);
+  const hintError = hintFailure === 'ranked' ? t('Not available in ranked games', '升降级对局不可用')
+    : hintFailure === 'disabled' ? t('Hint is not enabled', '支招功能未开放')
+      : hintFailure === 'insufficient' ? t('Insufficient balance', '余额不足')
+        : hintFailure === 'failed' ? t('Hint failed', '支招失败，请稍后再试') : null;
   const [engineErrorToast, setEngineErrorToast] = useState(false);
-  const [timeoutError, setTimeoutError] = useState<{ scope: string; message: string } | null>(null);
+  const [timeoutError, setTimeoutError] = useState<{ scope: string; reason: RequestFailureKind | 'not_delivered' } | null>(null);
   const timeoutRequestRef = useRef(false);
   const timeoutAttemptRef = useRef<{
     key: string; checks: number; retries: number; timer: number | null;
@@ -291,14 +306,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (sessionIsGameOver) setShowExitConfirm(false);
   }, [sessionIsGameOver]);
 
-  const [countError, setCountError] = useState<string | null>(null);
+  const [countError, setCountError] = useState<{ error: unknown } | null>(null);
   // A12:数子可能要等几秒(当前手没有分数时服务端先补一次分析,上限 15 秒)。
   // ref 挡同一帧里的连点(state 要等下一次渲染才看得见),state 负责屏上那句「正在数子…」。
   const countingRef = useRef(false);
   const [counting, setCounting] = useState(false);
   const [ogsScoring, setOgsScoring] = useState<{ scope: string; status: 'sending' | 'waiting' | 'error' } | null>(null);
   const [ogsNoDeadConfirm, setOgsNoDeadConfirm] = useState<string | null>(null);
-  const [onlineMoveError, setOnlineMoveError] = useState<string | null>(null);
+  const [onlineMoveFailure, setOnlineMoveError] = useState<'lobby' | 'conflict' | 'unavailable' | 'unconfirmed' | null>(null);
+  const onlineMoveError = onlineMoveFailure === 'lobby' ? t('game:lobby_move_unconfirmed', '这手尚未确认，请核对盘面后重试')
+    : onlineMoveFailure === 'conflict' ? t('game:ogs_move_conflict', 'OGS 未确认这手棋，请先核对盘面，勿重复落子')
+      : onlineMoveFailure === 'unavailable' ? t('game:ogs_move_unavailable', 'OGS 暂时不可用，这手尚未确认，请检查连接')
+        : onlineMoveFailure === 'unconfirmed' ? t('game:ogs_move_unconfirmed', '这手没有得到 OGS 确认，请核对后再操作') : null;
   const ogsScoringRef = useRef<string | null>(null);
   const ogsPhaseForReset = session.platformPhase ?? session.gameState?.platform_phase ?? null;
   useEffect(() => {
@@ -306,7 +325,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setOgsScoring(null);
     setOgsNoDeadConfirm(null);
   }, [sessionId, ogsPhaseForReset]);
-  const [resignError, setResignError] = useState<string | null>(null);
+  const [resignFailure, setResignError] = useState<RequestFailureKind | null>(null);
+  const resignError = resignFailure ? failureLine(t('game:resign_failed', '认输没成'), resignFailure, t) : null;
   const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
   const sessionGone = session.connectionLost === 'gone';
 
@@ -327,7 +347,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // another platform gets engine-play analysis tunnels.
   const platform = 'golaxy';
   const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
-  const [engineEvaluation, setEngineEvaluation] = useState<{ winrate: number; delta: number } | null>(null);
   const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
   const [judgeUndecided, setJudgeUndecided] = useState<{ positionKey: string; points: AttentionPoint[] } | null>(null);
   const [visionAttentionPoints, setVisionAttentionPoints] = useState<AttentionPoint[]>([]);
@@ -336,15 +355,42 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
   // calls before the first resolves (double quota spend + last-response-wins races).
   // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
-  const engineAnalysisPendingRef = useRef(false);
-  const enginePositionKey = `${sessionId}|${session.gameState?.game_id}|${session.gameState?.current_node_id}|${session.gameState?.end_result}|${session.gameState?.terminal_result}`;
-  const enginePositionRef = useRef(enginePositionKey);
-  enginePositionRef.current = enginePositionKey;
+  const engineAnalysisPendingRef = useRef<{ kind: EngineAnalysisKind; generation: number } | null>(null);
+  const territoryAccountKey = JSON.stringify([isAuthenticated, user?.id, token]);
+  const engineAccountRef = useRef(territoryAccountKey);
+  engineAccountRef.current = territoryAccountKey;
+  const engineGameScope = JSON.stringify([territoryAccountKey, sessionId, session.gameState?.game_id]);
+  const engineGameScopeRef = useRef(engineGameScope);
+  engineGameScopeRef.current = engineGameScope;
+  // History carries captured moves and passes; stones alone cannot identify a position.
+  const territoryPositionIdentity = JSON.stringify([
+    session.gameState?.history?.slice(0, (session.gameState?.current_node_index ?? 0) + 1)
+      .map(({ node_id, player, move }) => [node_id, player, move]),
+    session.gameState?.stones, session.gameState?.last_move, session.gameState?.is_pass,
+    session.gameState?.player_to_move, session.gameState?.board_size, session.gameState?.ruleset,
+    session.gameState?.komi, session.gameState?.handicap,
+  ]);
+  const enginePositionKey = JSON.stringify([territoryAccountKey, engineMode, sessionId,
+    session.gameState?.game_id, session.gameState?.current_node_id, territoryPositionIdentity,
+    session.gameState?.end_result, session.gameState?.terminal_result]);
+  const enginePositionRef = useRef({ key: enginePositionKey, generation: 0 });
+  if (enginePositionRef.current.key !== enginePositionKey) enginePositionRef.current = {
+    key: enginePositionKey, generation: enginePositionRef.current.generation + 1,
+  };
+  const engineGeneration = enginePositionRef.current.generation;
+  const engineMountedRef = useRef(true);
+  useEffect(() => { engineMountedRef.current = true; return () => { engineMountedRef.current = false; }; }, []);
+  const [engineTerritoryView, setEngineTerritoryView] = useState<EngineTerritoryView>({ generation: engineGeneration, phase: 'idle', visible: false });
+  const engineTerritoryRef = useRef(engineTerritoryView);
+  if (engineTerritoryRef.current.generation !== engineGeneration) engineTerritoryRef.current = { generation: engineGeneration, phase: 'idle', visible: false };
+  const updateEngineTerritory = (next: EngineTerritoryView) => { engineTerritoryRef.current = next; setEngineTerritoryView(next); };
+  const engineTerritory = engineTerritoryView.generation === engineGeneration ? engineTerritoryView : undefined;
   const rankedTerritory = useRankedTerritory(
     sessionId,
     !engineMode && !!session.gameState && isRankedGameType(session.gameState.game_type) && !endResultOf(session.gameState),
     session.gameState?.current_node_id,
     session.gameState?.current_node_index ?? 0,
+    { accountKey: territoryAccountKey, gameId: session.gameState?.game_id, positionIdentity: territoryPositionIdentity },
   );
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
@@ -387,28 +433,53 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setPhysicalSession({ ...physicalSession, poseEverLocked: true });
   }
   const geometry = useOptionalGeometry();
-  const visionSync = useVisionSync(physicalPlay && visionLoaded !== false ? sessionId ?? null : null, geometry?.completeRecalibration);
+  const visionSync = useVisionSync(
+    physicalPlay && visionLoaded !== false ? sessionId ?? null : null,
+    geometry?.completeRecalibration,
+    session.gameState?.game_id,
+  );
   const localPhysicalGame = physicalPlay && session.gameState?.game_type === 'pvp_local';
   const recoveryScope = `${sessionId}|${session.gameState?.game_id}`;
-  const geometryReady = !geometry?.status || (geometry.loaded !== false && geometry.status.phase === 'ready'
-    && geometry.status.session_calibrated && geometry.status.capabilities.geometry_ready
-    && geometry.status.capabilities.recognition_ready && geometry.status.capabilities.model_ready !== false);
+  const geometryValid = !geometry?.status || (geometry.loaded !== false && geometry.status.phase === 'ready'
+    && geometry.status.session_calibrated && geometry.status.capabilities.geometry_ready);
+  const geometryReady = geometryValid && (!geometry?.status || (
+    geometry.status.capabilities.recognition_ready === true && geometry.status.capabilities.model_ready !== false));
+  const cameraRecognitionReady = visionLoaded !== false && visionStatus.cameraConnected
+    && visionStatus.recognitionReady && geometryReady;
   const revision = geometry?.loaded !== false ? geometry?.status?.geometry_revision : undefined;
-  const [localRecovery, setLocalRecovery] = useState({ scope: recoveryScope, required: false, calibration: false, revision });
+  const [localRecovery, setLocalRecovery] = useState({ scope: recoveryScope, required: false, calibration: false, revision,
+    admitted: false, interrupted: false, cameraUnavailable: false, confirmationEpoch: 0 });
   const recoveryCurrent = useRef({ scope: recoveryScope, revision });
   recoveryCurrent.current = { scope: recoveryScope, revision };
   // A reload needs the current geometry, not a remembered 'ever ready' flag. Once lost,
   // recovery stays blocked until the original session actually binds a new reference.
-  const needsRecovery = localPhysicalGame && (geometry?.loaded !== false && !geometryReady
+  const cameraInterrupted = localRecovery.scope === recoveryScope && localRecovery.admitted && geometryValid
+    && visionLoaded !== false && !cameraRecognitionReady;
+  const interrupted = (localRecovery.scope === recoveryScope && localRecovery.interrupted) || cameraInterrupted;
+  const needsRecovery = localPhysicalGame && (geometry?.loaded !== false && !geometryValid
     || visionLoaded !== false && (poseEverLocked || (session.gameState?.current_node_index ?? 0) > 0)
-      && (!visionStatus.cameraConnected || !visionStatus.poseLocked)
-    || visionSync.bindState === 'error'
-    || (session.gameState?.current_node_index ?? 0) > 0 && session.gameState?.local_confirmation?.reason === 'unavailable');
+      && !visionStatus.poseLocked && !cameraInterrupted
+    || !interrupted && (visionSync.bindState === 'error'
+      || (session.gameState?.current_node_index ?? 0) > 0 && session.gameState?.local_confirmation?.reason === 'unavailable'));
+  const canAdmitLocal = cameraRecognitionReady && visionStatus.poseLocked && visionSync.bindState === 'ready'
+    && session.gameState?.local_confirmation?.reason !== 'unavailable';
   if (localRecovery.scope !== recoveryScope) {
-    setLocalRecovery({ scope: recoveryScope, required: needsRecovery, calibration: false, revision });
+    setLocalRecovery({ scope: recoveryScope, required: needsRecovery, calibration: false, revision,
+      admitted: canAdmitLocal, interrupted: false, cameraUnavailable: false, confirmationEpoch: 0 });
   } else if (localPhysicalGame && (needsRecovery || (localRecovery.revision !== undefined && revision !== undefined && revision !== localRecovery.revision))
     && (!localRecovery.required || revision !== localRecovery.revision)) {
-    setLocalRecovery({ ...localRecovery, required: true, revision });
+    // Geometry/reference loss invalidates pending binds and confirmation replies
+    // just like a device interruption; repeated polls retain this generation.
+    setLocalRecovery({ ...localRecovery, required: true, revision, admitted: false, interrupted: false, cameraUnavailable: false,
+      confirmationEpoch: localRecovery.confirmationEpoch + 1 });
+  } else if (cameraInterrupted !== localRecovery.cameraUnavailable) {
+    // Each new outage invalidates pending work, even while the previous outage
+    // still awaits explicit reconfirmation. Returning ready only clears the edge.
+    setLocalRecovery({ ...localRecovery, cameraUnavailable: cameraInterrupted,
+      interrupted: localRecovery.interrupted || cameraInterrupted,
+      confirmationEpoch: localRecovery.confirmationEpoch + (cameraInterrupted ? 1 : 0) });
+  } else if (localPhysicalGame && canAdmitLocal && !localRecovery.required && !localRecovery.admitted) {
+    setLocalRecovery({ ...localRecovery, admitted: true, revision });
   } else if (localRecovery.revision === undefined && revision !== undefined) {
     setLocalRecovery({ ...localRecovery, revision });
   }
@@ -437,13 +508,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       || !boundVision?.cameraConnected || !boundVision.poseLocked || !boundVision.recognitionReady
       || boundVision.boundSessionId !== sessionId) return false;
     session.setGameState(response.state);
-    setLocalRecovery({ scope, required: false, calibration: false, revision: bindRevision });
+    setLocalRecovery(previous => ({ scope, required: false, calibration: false, revision: bindRevision,
+      admitted: true, interrupted: false, cameraUnavailable: false, confirmationEpoch: previous.confirmationEpoch }));
     return true;
   };
-  const physicalPreparation = visionSync.bindState === 'error' || (localPhysicalGame && (localRecovery.required || needsRecovery)) ? 'error'
-    : visionSync.bindState === 'ready' && visionLoaded !== false && visionStatus.cameraConnected && visionStatus.poseLocked && (!localPhysicalGame || geometryReady) ? 'ready' : 'preparing';
+  const physicalPreparation = cameraInterrupted ? 'preparing'
+    : visionSync.bindState === 'error' || (localPhysicalGame && (localRecovery.required || needsRecovery)) ? 'error'
+    : visionSync.bindState === 'ready' && cameraRecognitionReady && visionStatus.poseLocked ? 'ready' : 'preparing';
   const confirmationGame = session.gameState;
-  const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}`;
+  const confirmationEpoch = localRecovery.scope === recoveryScope ? localRecovery.confirmationEpoch : 0;
+  const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}|${confirmationEpoch}`;
   const latestConfirmationScope = useRef(confirmationScope);
   useEffect(() => { latestConfirmationScope.current = confirmationScope; }, [confirmationScope]);
   // Screen play must count thinking/selection time, including on a camera-enabled box.
@@ -479,16 +553,23 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         const key = `${sessionId}|${confirmationGame.game_id}`;
         if (readyLocalScreen.current?.key === key) await readyLocalScreen.current.promise;
         else await API.readyLocalGame(sessionId, confirmationGame.game_id, 'screen', token ?? undefined);
-      } else if (request.action === 'move') {
-        // A failed initial reference preparation can be retried by this explicit
-        // confirmation. A ready same-game bind preserves its reference and clock.
-        await API.visionBind(sessionId);
       }
-      const response = await API.confirmLocalMove({ ...request, session_id: sessionId,
-        expected_game_id: confirmationGame.game_id, expected_node_id: confirmationGame.current_node_id,
-        color: confirmationGame.player_to_move === 'W' ? 'W' : 'B' }, token ?? undefined);
-      if (latestConfirmationScope.current === confirmationScope) session.setGameState(response.state);
-      return response;
+      try {
+        if (physicalPlay && request.action === 'move') {
+          // A ready same-game bind preserves its reference and clock, and clears
+          // the interrupted window's unavailable result before a new confirmation.
+          await API.visionBind(sessionId);
+        }
+        if (latestConfirmationScope.current !== confirmationScope) throw new Error('Confirmation scope changed');
+        const response = await API.confirmLocalMove({ ...request, session_id: sessionId,
+          expected_game_id: confirmationGame.game_id, expected_node_id: confirmationGame.current_node_id,
+          color: confirmationGame.player_to_move === 'W' ? 'W' : 'B' }, token ?? undefined);
+        if (latestConfirmationScope.current === confirmationScope) session.setGameState(response.state);
+        return response;
+      } finally {
+        if (physicalPlay) setLocalRecovery(previous => previous.scope === recoveryScope && previous.confirmationEpoch === confirmationEpoch
+          ? { ...previous, interrupted: false } : previous);
+      }
     },
   });
 
@@ -637,7 +718,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // that dialog is dismissed by the user, not by position changes. engineMode only.
   useEffect(() => {
     setEngineOverlay(null);
-    setEngineEvaluation(null);
+    engineTerritoryRef.current = { generation: enginePositionRef.current.generation, phase: 'idle', visible: false };
+    setEngineTerritoryView(engineTerritoryRef.current);
     setActiveEngineKind(null);
     setJudgeUndecided(null);
     stopJudgeVoice();
@@ -671,6 +753,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 也继续请求当前手分析。界面是否展示胜率块由 GameControlPanel 独立决定。
   const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
   const gs = session.gameState;
+  const lobbyTerritory = useLobbyTerritory({
+    sessionId, gameId: gs?.game_id, nodeId: gs?.current_node_id,
+    moveCount: gs?.current_node_index ?? 0, boardSize: gs?.board_size, token: token ?? undefined,
+    enabled: gs?.game_type === 'pvp_lobby' && !!(gs.platform_my_color ?? gs.my_color) && session.connected === true && !session.connectionLost
+      && !endResultOf(gs) && !gs.awaiting_count && !countPending && !countRequest && !counting,
+  });
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
     if (gs.game_type === 'pvp_online' || gs.game_type === 'pvp_lobby') return;
@@ -703,13 +791,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const refreshItemCounts = useCallback(async () => {
     if (!engineMode || !isAuthenticated) return;
     try {
-      setEngineItemCounts(await API.platformEngineItems(platform, token));
+      const counts = await API.platformEngineItems(platform, token);
+      if (engineMountedRef.current && engineAccountRef.current === territoryAccountKey) setEngineItemCounts(counts);
     } catch (e) {
       console.error(e);
     }
-  }, [engineMode, isAuthenticated, token]);
+  }, [engineMode, isAuthenticated, token, territoryAccountKey]);
 
   useEffect(() => {
+    setEngineItemCounts(null);
     void refreshItemCounts();
   }, [refreshItemCounts]);
 
@@ -717,6 +807,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
     String(user?.id ?? user?.username ?? 'anonymous'),
   );
+  const playerRanks = usePlayerRanks({ sessionId, gameState: session.gameState, user, token, isAuthenticated, isGuest, engineMode, lobbyRoom: centralRoom,
+    settlement: settlementFeedback?.status && settlementFeedback.kind !== 'pending' && settlementFeedback.kind !== 'error'
+      ? JSON.stringify(settlementFeedback.status.placement_state) : '',
+  });
   const celebrating = useGameCelebration(
     sessionId, session.gameState, session.gameState ? deriveHumanColor(session.gameState) : null,
   );
@@ -724,15 +818,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   if (centralRoom && session.connectionLost === 'central') {
     return <Box data-testid="central-room-disconnected" sx={{ display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 2, height: '100%', px: 4, textAlign: 'center' }}>
-      <Typography variant="h5">中央连接中断</Typography>
-      <Typography sx={{ color: 'text.secondary', fontSize: 14, maxWidth: 520 }}>
-        对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。
+      <Typography sx={{ fontSize: 28 }}>{t('game:central_disconnected', '中央连接中断')}</Typography>
+      <Typography sx={{ color: 'text.secondary', fontSize: 18, maxWidth: 520 }}>
+        {t('game:central_disconnected_body', '对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。')}
       </Typography>
       <button type="button" className="kiosk-btn" disabled={session.reconnecting} onClick={session.reconnect}>
-        {session.reconnecting ? '正在重新连接…' : '重新连接'}
+        {session.reconnecting ? t('game:central_reconnecting', '正在重新连接…') : t('game:central_reconnect', '重新连接')}
       </button>
       <button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/play/pvp/lobby')}>
-        返回在线大厅
+        {t('game:back_online_lobby', '返回在线大厅')}
       </button>
     </Box>;
   }
@@ -857,7 +951,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (!current()) return;
       const delay = [2000, 5000, 10000][attempt.retries++];
       if (delay !== undefined) later(delay);
-      else setTimeoutError({ scope: timeoutScope, message: t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局') });
+      else setTimeoutError({ scope: timeoutScope, reason: 'not_delivered' });
     };
     const send = async (): Promise<void> => {
       if (!current()) return;
@@ -921,7 +1015,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (detail?.code === 'time_not_expired' && detail.state) {
         session.setGameState(detail.state);
       } else {
-        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '超时判定没有完成'), requestFailureKind(error), t) });
+        setTimeoutError({ scope: timeoutScope, reason: requestFailureKind(error) });
       }
     } finally {
       timeoutRequestRef.current = false;
@@ -959,7 +1053,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // generic 10s "board detection abnormal" dialog: recalOpen both gates RecalibrationModal
   // itself (further suppressed `&& !escalationOpen`) AND feeds into VisionSyncOverlay's
   // suppressBoardLost, so at most one board-loss surface is ever visible at a time.
-  const recalOpen = physicalPlay && !isGameOver && (localPhysicalGame ? localRecovery.required || needsRecovery : poseEverLocked && !visionStatus.poseLocked);
+  const recalOpen = physicalPlay && !isGameOver && (localPhysicalGame ? localRecovery.required || needsRecovery
+    : poseEverLocked && !visionStatus.poseLocked && (!geometryValid || cameraRecognitionReady));
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
@@ -1055,9 +1150,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         }
       } catch (error) {
         // 结构化原因来自本地对局 v2；旧服务端/统一终局冲突仍由字符串回退覆盖。
-        setCountError(error instanceof ApiError
-          ? countErrorMessage(error, t)
-          : countFailureMessage(error instanceof Error ? error.message : ''));
+        setCountError({ error });
       } finally {
         countingRef.current = false;
         setCounting(false);
@@ -1080,11 +1173,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setAiPlacementStatus(null);
     } catch (e) {
       if (onlineGame) {
-        setOnlineMoveError(lobbyGame ? t('game:lobby_move_unconfirmed', '这手尚未确认，请核对盘面后重试') : e instanceof ApiError && e.status === 409
-          ? t('game:ogs_move_conflict', 'OGS 未确认这手棋，请先核对盘面，勿重复落子')
+        setOnlineMoveError(lobbyGame ? 'lobby' : e instanceof ApiError && e.status === 409
+          ? 'conflict'
           : e instanceof ApiError && [502, 503, 504].includes(e.status)
-            ? t('game:ogs_move_unavailable', 'OGS 暂时不可用，这手尚未确认，请检查连接')
-            : t('game:ogs_move_unconfirmed', '这手没有得到 OGS 确认，请核对后再操作'));
+            ? 'unavailable'
+            : 'unconfirmed');
       } else {
         console.error(e);
         if (engineMode) setEngineErrorToast(true);
@@ -1121,12 +1214,21 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     navigate('/kiosk/play');
   };
 
+  // The dedicated 弃局 action promises that the game disappears from the session.
+  // Unlike the legacy exit shortcut, do not report success or navigate if deletion fails.
+  const handleAbandonLocalGame = async () => {
+    if (!sessionId || !localGame || isGameOver) throw new Error('No active local game to abandon');
+    await API.deleteSession(sessionId);
+    clearActiveSession('game');
+    navigate('/kiosk/play');
+  };
+
   const handleLocalResign = async (color: 'B' | 'W') => {
     try {
       await session.handleAction('resign', { color });
       setShowResignConfirm(false);
     } catch (error) {
-      setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+      setResignError(requestFailureKind(error));
     }
   };
 
@@ -1160,48 +1262,80 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     } catch (e) {
       const msg = String(e);
       setHintError(
-        msg.includes('ranked_forbidden') ? t('Not available in ranked games', '升降级对局不可用')
-        : msg.includes('disabled') ? t('Hint is not enabled', '支招功能未开放')
-        : msg.includes('insufficient') ? t('Insufficient balance', '余额不足')
-        : t('Hint failed', '支招失败，请稍后再试')
+        msg.includes('ranked_forbidden') ? 'ranked'
+        : msg.includes('disabled') ? 'disabled'
+        : msg.includes('insufficient') ? 'insufficient'
+        : 'failed'
       );
     }
   };
 
-  // 星阵隧道分析 (领地/支招/变化图/数子) — engineMode only. Mutually exclusive: a new kind
-  // replaces any prior overlay; clicking the already-active kind toggles it off.
-  const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
-    if (engineAnalysisPendingRef.current) return;
-    if (activeEngineKind === kind) {
+  const dismissEngineTerritory = () => {
+    updateEngineTerritory({ ...engineTerritoryRef.current, visible: false });
+    if (activeEngineKind === 'area') {
       setActiveEngineKind(null);
       setEngineOverlay(null);
-      setEngineEvaluation(null);
+    }
+  };
+
+  // Only area keeps one current-position answer. Other engine tools retain their
+  // existing request/overlay behavior and share the same single-flight guard.
+  const handleEngineAnalysis = async (kind: EngineAnalysisKind, retry = false) => {
+    const area = engineTerritoryRef.current;
+    if (kind === 'area' && area.visible && !retry) { dismissEngineTerritory(); return; }
+    if (engineAnalysisPendingRef.current) {
+      if (kind === 'area' && engineAnalysisPendingRef.current.kind === 'area'
+        && engineAnalysisPendingRef.current.generation === engineGeneration) {
+        updateEngineTerritory({ ...area, visible: true });
+      }
+      return;
+    }
+    if (kind === 'area' && area.result) {
+      updateEngineTerritory({ ...area, visible: true });
+      setEngineOverlay({ kind: 'area', ownership: area.result.ownership });
+      setActiveEngineKind('area');
       setJudgeUndecided(null);
       stopJudgeVoice();
       return;
     }
-    if (!sessionId || !isAuthenticated) return;
-    // Capture the position identity at call time — if the board advances (a move
-    // played) while this request is in flight, the response below is for a stale
-    // position and must be discarded rather than resurrecting an old overlay.
+    if (activeEngineKind === kind) {
+      setActiveEngineKind(null);
+      setEngineOverlay(null);
+      setJudgeUndecided(null);
+      stopJudgeVoice();
+      return;
+    }
+    if (!sessionId || !isAuthenticated || sessionIsGameOver) return;
     const requestedPosition = enginePositionKey;
-    engineAnalysisPendingRef.current = true;
+    const requestedGeneration = engineGeneration;
+    const pending = { kind, generation: requestedGeneration };
+    const stillCurrent = () => engineMountedRef.current && enginePositionRef.current.generation === requestedGeneration;
+    engineAnalysisPendingRef.current = pending;
+    if (kind === 'area') updateEngineTerritory({ generation: requestedGeneration, phase: 'loading', visible: true });
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
-      // A settled call changed the balance (ok → one consumed; insufficient → it's 0);
-      // resync the badges. Fire-and-forget, and BEFORE the stale-position early return
-      // below so a discarded overlay still updates the count that was actually spent.
+      // Always ask the platform for its actual balance after a call, including a
+      // discarded old-position answer. Old accounts cannot overwrite new badges.
       void refreshItemCounts();
+      // Preserve judge's authoritative game-end response across cursor updates,
+      // while refusing a response from an old account/session/game.
+      if (res.ok && kind === 'judge' && res.ended && res.state) {
+        if (!engineMountedRef.current || engineGameScopeRef.current !== engineGameScope) return;
+        if (res.state.game_id === session.gameState?.game_id) session.setGameState(res.state);
+        setJudgeUndecided(null);
+        stopJudgeVoice();
+        setEngineOverlay(null);
+        setActiveEngineKind(null);
+        return;
+      }
+      if (!stillCurrent()) return;
       if (res.ok) {
-        if (kind === 'judge' && res.ended && res.state) {
-          if (res.state.game_id === session.gameState?.game_id) session.setGameState(res.state);
-          setJudgeUndecided(null);
-          stopJudgeVoice();
-          setEngineOverlay(null);
-          setActiveEngineKind(null);
-          return;
+        if (kind === 'area') {
+          const result = res.data as EngineTerritoryResult;
+          const visible = engineTerritoryRef.current.visible;
+          updateEngineTerritory({ generation: requestedGeneration, phase: 'result', result, visible });
+          if (!visible) return;
         }
-        if (enginePositionRef.current !== requestedPosition) return;
         if (kind === 'judge') {
           const judge = res.data as { ownership: JudgePoint[]; winner: string; delta: number };
           if (judge.winner === 'U') {
@@ -1224,17 +1358,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
           : kind === 'judge' ? { kind: 'judge', ownership: (res.data as { ownership: JudgePoint[] }).ownership }
           : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
+        if (kind !== 'area') updateEngineTerritory({ ...engineTerritoryRef.current, visible: false });
         setEngineOverlay(overlay);
-        setEngineEvaluation(kind === 'area' ? res.data as { winrate: number; delta: number } : null);
         setActiveEngineKind(kind);
       } else {
+        if (kind === 'area') {
+          const visible = engineTerritoryRef.current.visible;
+          updateEngineTerritory({ generation: requestedGeneration, phase: 'idle', visible: false });
+          if (!visible) return;
+        }
         setInsufficientKind(kind);
       }
     } catch (e) {
+      void refreshItemCounts();
+      if (!stillCurrent()) return;
       console.error(e);
-      setEngineErrorToast(true);
+      if (kind === 'area') updateEngineTerritory({ generation: requestedGeneration, phase: 'error', visible: engineTerritoryRef.current.visible });
+      else setEngineErrorToast(true);
     } finally {
-      engineAnalysisPendingRef.current = false;
+      if (engineAnalysisPendingRef.current === pending) engineAnalysisPendingRef.current = null;
     }
   };
 
@@ -1248,31 +1390,34 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
   // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
   // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
+  const countErrorText = countError ? countError.error instanceof ApiError
+    ? countErrorMessage(countError.error, t)
+    : countFailureMessage(countError.error instanceof Error ? countError.error.message : '') : null;
   const statusSlot = lobbyGame && countIdentityError ? (
     <div className="gstatus" data-testid="lobby-count-identity-error" data-tone="bad" role="alert">
-      <div><b>无法确认中央账号身份，暂不能处理数子请求</b></div>
-      <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setIdentityRetry((n) => n + 1)}>重试身份</button>
+      <div><b>{t('game:count_identity_unavailable', '无法确认中央账号身份，暂不能处理数子请求')}</b></div>
+      <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setIdentityRetry((n) => n + 1)}>{t('game:count_identity_retry', '重试身份')}</button>
     </div>
   ) : lobbyCountRetry ? (
     <div className="gstatus" data-testid="lobby-count-error" data-tone={counting ? undefined : 'bad'} role="alert">
       {counting && <CircularProgress size={14} />}
       <div>
-        <b>{counting ? '正在重新数子…' : countPending ? '等待对方确认数子' : '自动数子失败'}</b>
-        <span>{countNotice ?? '棋局已停手，数子成功后才会显示正式结果。'}</span>
+        <b>{counting ? t('game:count_recounting', '正在重新数子…') : countPending ? t('game:count_waiting_opponent', '等待对方确认数子') : t('game:count_auto_failed', '自动数子失败')}</b>
+        <span>{countNoticeText ?? t('game:count_result_pending', '棋局已停手，数子成功后才会显示正式结果。')}</span>
       </div>
       <button type="button" className="kiosk-btn kiosk-btn--pill" disabled={counting || countPending}
-        onClick={() => { void handleAction('count'); }}>重试数子</button>
+        onClick={() => { void handleAction('count'); }}>{t('game:count_retry', '重试数子')}</button>
     </div>
   ) : lobbyAutoCountPending ? (
     <div className="gstatus" data-testid="lobby-auto-count-pending" role="status">
-      <div><b>正在自动数子</b><span>双方已停手，结果尚未确定。请稍候。</span></div>
+      <div><b>{t('game:count_auto_running', '正在自动数子')}</b><span>{t('game:count_auto_pending_body', '双方已停手，结果尚未确定。请稍候。')}</span></div>
     </div>
   ) : lobbyGame && countPending ? (
     <div className="gstatus" data-testid="lobby-count-pending" role="status">
-      <div><b>等待对方确认数子</b><span>对方接受后会显示正式结果。</span></div>
+      <div><b>{t('game:count_waiting_opponent', '等待对方确认数子')}</b><span>{t('game:count_waiting_body', '对方接受后会显示正式结果。')}</span></div>
     </div>
   ) : lobbyGame && countNotice ? (
-    <div className="gstatus" data-testid="lobby-count-notice" role="status"><div><b>{countNotice}</b></div></div>
+    <div className="gstatus" data-testid="lobby-count-notice" role="status"><div><b>{countNoticeText}</b></div></div>
   ) : onlineMoveError ? (
     <div className="gstatus" data-testid="ogs-move-error" data-tone="bad" role="alert">
       <div><b>{onlineMoveError}</b></div>
@@ -1320,24 +1465,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </button>
       )}
     </div>
-  ) : activeEngineKind === 'area' && engineEvaluation ? (
-    <div className="gstatus" data-testid="engine-analysis-summary" role="status">
-      <div>
-        <b>{t('game:golaxy_ai', '星阵围棋 · 人机')} · {t('Territory', '领地')}</b>
-        <span style={{ fontSize: 14, color: 'var(--text)' }}>
-          {t('live:black_winrate', '黑棋胜率')} {Number.isFinite(engineEvaluation.winrate) && engineEvaluation.winrate >= 0 && engineEvaluation.winrate <= 1
-            ? `${(engineEvaluation.winrate * 100).toFixed(1)}%` : '—'}
-          {' · '}
-          {Number.isFinite(engineEvaluation.delta)
-            ? `${engineEvaluation.delta < 0 ? t('game:white_short', '白') : t('game:black_short', '黑')}${t('live:lead_pts', '领先')} ${Math.abs(engineEvaluation.delta).toFixed(1)} ${t('game:points_unit', '目')}`
-            : `${t('research:col_score_diff', '目差')} —`}
-        </span>
-      </div>
-    </div>
   ) : null;
 
   // Only visible content switches; the session hook, SGF and game identity remain mounted.
   if (localPhysicalGame && localRecovery.calibration) return <GeometryCalibrationScreen
+      t={t}
     backLabel={t('local:return_original_game', '返回原局')}
     onBack={() => setLocalRecovery(previous => ({ ...previous, calibration: false }))}
     title={t('local:empty_calibration_title', '空盘标定 · 原局保留')}
@@ -1464,7 +1596,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               (`GameControlPanel`),平时不占地方 —— 比三颗一直亮着的灯说得还清楚。 */}
       {localConfirmationLayout ? (
         <LocalConfirmGame key={`${sessionId}|${gameState.game_id}`}
-          gameState={gameState} input={physicalPlay ? 'physical' : 'screen'}
+          gameState={gameState} playerRanks={playerRanks} input={physicalPlay ? 'physical' : 'screen'}
           point={localConfirmation.point} busy={localConfirmation.busy} failed={localConfirmation.failed}
           physicalPreparation={physicalPlay ? physicalPreparation : undefined}
           onRetryPreparation={!session.connectionLost && !counting && visionStatus.cameraConnected ? (localPhysicalGame ? retryLocalRecovery : visionSync.retryBind) : undefined}
@@ -1472,7 +1604,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           onToggle={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
           onSelect={handleBoardMove} onConfirm={() => { void localConfirmation.confirm(); }}
           onPass={() => { void localConfirmation.pass(); }} onCount={() => { void handleAction('count'); }}
-          onResign={(color) => { void handleLocalResign(color); }} onExit={handleExit}
+          onResign={(color) => { void handleLocalResign(color); }} onAbandon={handleAbandonLocalGame} onExit={handleExit}
           onPaintedNode={session.acknowledgePaintedNode} onExpired={() => { void handleTimeExpired(); }}
           blocked={!!session.connectionLost || counting || (physicalPlay && (!visionStatus.cameraConnected || !visionStatus.poseLocked || localRecoveryBlocked))}
         />
@@ -1492,7 +1624,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onMove={handleBoardMove}
               analysisToggles={boardAnalysisToggles}
               playerColor={humanColor}
-              engineOverlay={isRanked ? rankedTerritory.overlay : engineOverlay}
+              engineOverlay={lobbyGame ? lobbyTerritory.overlay : isRanked ? rankedTerritory.overlay : engineOverlay}
               externalRulers
               suppressEndResultOverlay={!!timeoutLoserColor}
               onPaintedNode={session.acknowledgePaintedNode}
@@ -1515,8 +1647,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           </div>
         </div>
 
-        <div className="kiosk-rail">
-          <KioskPagebar
+        <div className={`kiosk-rail${lobbyGame ? ' lobby-game' : ''}`}>
+          {lobbyGame ? <LobbyGamePanel
+            gameState={gameState} sessionId={sessionId} playerRanks={playerRanks} setupLine={gameSetupLine} connected={session.connected === true && !session.connectionLost}
+            isGameOver={isGameOver} physicalPlay={physicalPlay}
+            blocked={countPending || !!opponentCountRequest} countDisabled={countIdentityError || centralUserId === null}
+            counting={counting || lobbyAutoCountPending}
+            statusSlot={opponentCountRequest ? <div className="gstatus" role="status"><div><b>{t('game:opponent_count_title', '对方请求数子')}</b><span>{t('game:opponent_count_status', '请选择是否结束这局。')}</span></div></div>
+              : countError ? <div className="gstatus" role="alert" data-tone="bad"><div><b>{countErrorText}</b></div></div>
+              : statusSlot}
+            hardwareFault={hardwareFault} analysisToggles={analysisToggles}
+            onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+            onAction={handleAction} onExit={handleExit} territory={lobbyTerritory}
+          /> : <><KioskPagebar
             testId="game-pagebar"
             backLabel={t('game:exit_game', '退出对局')}
             onBack={handleExit}
@@ -1524,6 +1667,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             sub={gameSetupLine}
           />
           <GameControlPanel
+            playerRanks={playerRanks}
             onTimeout={localGame || onlineGame ? undefined : handleClockExpired}
             onTimeExpired={localGame ? handleTimeExpired : undefined}
             gameState={gameState}
@@ -1542,11 +1686,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             territory={isRanked && !isGameOver ? {
               remaining: rankedTerritory.remaining,
               phase: rankedTerritory.phase,
-              blackArea: rankedTerritory.result?.black_area,
-              whiteArea: rankedTerritory.result?.white_area,
+              visible: rankedTerritory.visible,
               disabled: rankedTerritory.disabled,
               retrySameRequest: rankedTerritory.retrySameRequest,
-              onRequest: () => { void rankedTerritory.request(); },
+              onRequest: () => { void rankedTerritory.activate(); },
             } : undefined}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
@@ -1559,11 +1702,29 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             platformPhase={ogsGame ? onlinePhase : null}
             onlineScoringPending={onlineScoringPending}
             statusSlot={statusSlot}
-          />
+          /></>}
         </div>
       </div>
 
       }
+      <TerritoryDialog
+        source="ranked" open={isRanked && !isGameOver && rankedTerritory.visible} phase={rankedTerritory.phase}
+        lead={rankedTerritory.result?.score_lead}
+        blackArea={rankedTerritory.result?.black_area} whiteArea={rankedTerritory.result?.white_area}
+        quotaNote={t('game:territory_ranked_quota', '升降级本局剩余 {n} 次 · 同局面可免费复看').replace('{n}', String(rankedTerritory.remaining ?? '—'))}
+        error={rankedTerritory.retrySameRequest
+          ? t('game:territory_ranked_retry', '请求未返回结果。重试沿用同一次请求，请以服务端剩余次数为准。')
+          : t('game:territory_quota_error', '暂时无法查询领地额度，可以重试，对局仍可继续。')}
+        onRetry={() => { void rankedTerritory.activate(); }} onClose={rankedTerritory.dismiss}
+      />
+      <TerritoryDialog
+        source="star" open={engineMode && !isGameOver && !!engineTerritory?.visible} phase={engineTerritory?.phase ?? 'idle'}
+        lead={engineTerritory?.result?.delta} winrate={engineTerritory?.result?.winrate}
+        quotaNote={t('game:territory_star_quota', '星阵账号领地道具剩余 {n} 次 · 同局面可免费复看').replace('{n}', String(engineItemCounts?.area ?? '—'))}
+        error={t('game:territory_star_error', '请求未返回结果，请以星阵账号实际道具数为准。重新查询可能使用道具。')}
+        onRetry={() => { void handleEngineAnalysis('area', true); }} onClose={dismissEngineTerritory}
+      />
+
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
           留在棋盘 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
           game stays ended (useGameSession's handleAction has no 'resume' branch; calling it
@@ -1611,14 +1772,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Dialog>
 
       <Dialog open={!!opponentCountRequest} className="kiosk-game-side-dialog">
-        <DialogTitle>对方请求数子</DialogTitle>
+        <DialogTitle>{t('game:opponent_count_title', '对方请求数子')}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{opponentCountRequest?.requester_name}请求结束对局并数子，是否同意？</DialogContentText>
-          {countNotice === '回应数子请求失败，请重试' && <Alert severity="error">{countNotice}</Alert>}
+          <DialogContentText>{t('game:opponent_count_body', '{name}请求结束对局并数子，是否同意？').replace('{name}', () => opponentCountRequest?.requester_name ?? '')}</DialogContentText>
+          {countNotice === '回应数子请求失败，请重试' && <Alert severity="error">{countNoticeText}</Alert>}
         </DialogContent>
         <DialogActions>
-          <Button disabled={countResponding} onClick={() => void respondToLobbyCount(false)}>拒绝数子</Button>
-          <Button disabled={countResponding} variant="contained" onClick={() => void respondToLobbyCount(true)}>接受数子</Button>
+          <Button disabled={countResponding} onClick={() => void respondToLobbyCount(false)}>{t('game:count_decline', '拒绝数子')}</Button>
+          <Button disabled={countResponding} variant="contained" onClick={() => void respondToLobbyCount(true)}>{t('game:count_accept', '接受数子')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -1653,7 +1814,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                   await session.handleAction('resign');
                   setShowResignConfirm(false);
                 } catch (error) {
-                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+                  setResignError(requestFailureKind(error));
                   return;
                 }
                 // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
@@ -1700,7 +1861,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                 try {
                   await session.handleAction('resign');
                 } catch (error) {
-                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+                  setResignError(requestFailureKind(error));
                   return;
                 }
                 // Same as the resign-confirm dialog above: this is another path that
@@ -1853,12 +2014,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Count (数子) error toast */}
       <Snackbar className="kiosk-game-toast" open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
+        <Alert severity="warning" onClose={() => setCountError(null)}>{countErrorText}</Alert>
       </Snackbar>
       <Snackbar open={!!timeoutError && timeoutError.scope === timeoutScope}
         className="kiosk-game-toast"
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} onClose={() => setTimeoutError(null)}>
-        <Alert severity="error" onClose={() => setTimeoutError(null)}>{timeoutError?.message}</Alert>
+        <Alert severity="error" onClose={() => setTimeoutError(null)}>{timeoutError?.reason === 'not_delivered'
+          ? t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局')
+          : timeoutError ? failureLine(t('game:timeout_failed', '超时判定没有完成'), timeoutError.reason, t) : null}</Alert>
       </Snackbar>
       <Snackbar className="kiosk-game-toast" open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>

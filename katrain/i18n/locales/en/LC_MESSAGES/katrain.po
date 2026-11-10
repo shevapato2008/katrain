@@ -3650,7 +3650,7 @@ msgid "setup:size"
 msgstr "Board"
 
 msgid "setup:size_n"
-msgstr "{n}x{n}"
+msgstr "{n} lines"
 
 msgid "setup:size_19"
 msgstr "19x19"
@@ -3945,7 +3945,7 @@ msgid "login:box_gate_cta"
 msgstr "Go to the StellaBox home screen"
 
 msgid "vision:back_settings"
-msgstr "Settings"
+msgstr "Back to Settings"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -3956,7 +3956,7 @@ msgid "vision:calibrate_title"
 msgstr "Board calibration"
 
 msgid "vision:calibrate_sub"
-msgstr "Clear the board first · 13 points: 4 corners + 9 star points"
+msgstr "Clear the board first · 5 points: 4 corners and the center"
 
 msgid "vision:cancel_calibration"
 msgstr "Cancel calibration"
@@ -4437,7 +4437,7 @@ msgid "game:back_to_play"
 msgstr "Back to play"
 
 msgid "game:board_lines"
-msgstr "{n}x{n}"
+msgstr "{n} lines"
 
 msgid "game:handicap_n"
 msgstr "{n} handicap stones"
@@ -5874,9 +5874,7 @@ msgid "platform:challenge_send"
 msgstr "Send the challenge"
 
 msgid "platform:challenge_sent"
-msgstr ""
-"Challenge sent. If they accept, you play on {name}, not back here on this "
-"box."
+msgstr "Challenge sent. Once accepted, Continue game will appear here."
 
 msgid "platform:challenge_failed"
 msgstr "The challenge could not be sent"
@@ -7033,7 +7031,7 @@ msgstr ""
 "on once it matches"
 
 msgid "baipu:wrong_size"
-msgstr "This is a {n}×{n} record — it can't be replayed"
+msgstr "This {n}-line record cannot be replayed"
 
 msgid "baipu:wrong_size_hint"
 msgstr ""
@@ -7062,7 +7060,7 @@ msgid "kifu:service_unavailable_hint"
 msgstr "The cloud service is temporarily unavailable. Please try again shortly."
 
 msgid "kifu:wrong_size_reason"
-msgstr "This is a {n}×{n} record — the physical board only takes 19×19"
+msgstr "This is a {n}-line record; the physical board needs 19×19"
 
 msgid "engine:warmup_warming"
 msgstr ""
@@ -7305,3 +7303,6788 @@ msgstr "Physical board"
 
 msgid "report:back_report"
 msgstr "Report"
+
+msgid "kifu:history_guest"
+msgstr "This guest session only"
+
+msgid "kifu:history_local_cache"
+msgstr "Account cache on this device"
+
+msgid "kifu:history_this_node"
+msgstr "Saved on this device"
+
+msgid "kifu:history_cloud"
+msgstr "Account cloud history"
+
+msgid "kifu:history_loading"
+msgstr "Loading replay history"
+
+msgid "kifu:history_error"
+msgstr "Replay history is unavailable"
+
+msgid "kifu:history_cache_empty"
+msgstr "No account history is cached on this device"
+
+msgid "kifu:history_empty"
+msgstr "No replay history yet"
+
+msgid "kifu:history_guest_hint"
+msgstr "Guest history is cleared when the session ends."
+
+msgid "kifu:history_account_hint"
+msgstr "Starting physical replay saves progress to your current account."
+
+msgid "kifu:history_pending"
+msgstr "Saved on this device; waiting to sync"
+
+msgid "kifu:history_conflict"
+msgstr "Progress conflict; choose which copy to keep"
+
+msgid "kifu:history_refused"
+msgstr "Saved on this device; sync was refused"
+
+msgid "kifu:history_saving"
+msgstr "Saving progress"
+
+msgid "kifu:history_save_error"
+msgstr "Progress was not saved; please retry"
+
+msgid "kifu:history_saved"
+msgstr "Progress saved"
+
+msgid "kifu:history_use_cloud"
+msgstr "Use cloud progress"
+
+msgid "kifu:history_keep_local"
+msgstr "Keep device progress"
+
+msgid "kifu:history_resolve_error"
+msgstr "Could not resolve the conflict; review progress again"
+
+msgid "baipu:operator_manual"
+msgstr "Switched to manual confirmation"
+
+msgid "baipu:pre_remove_title"
+msgstr "Remove the old stone at the target first"
+
+msgid "baipu:pre_remove_hint"
+msgstr "Remove stones at the blue lights, then place the recorded colors"
+
+msgid "baipu:pre_remove_done"
+msgstr "Old stones removed"
+
+msgid "baipu:entry_confirm"
+msgstr "Board matches"
+
+msgid "baipu:manual_entry_hint"
+msgstr "Arrange the board as shown, then press “Board matches”"
+
+msgid "baipu:recheck"
+msgstr "Recheck board"
+
+msgid "baipu:switch_manual"
+msgstr "Use manual confirmation"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} steps completed · Use the top-left button to return"
+
+msgid "baipu:exit_body_neutral"
+msgstr "After exiting, you can reopen this record from the game records page."
+
+msgid "baipu:exit_anyway"
+msgstr "Exit anyway"
+
+msgid "membership:account_checking"
+msgstr "Checking your account"
+
+msgid "membership:account_entry"
+msgstr "Usage, API points and membership benefits"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"Once your account identity is confirmed, your membership benefits, Free "
+"eligibility and API points balance will appear."
+
+msgid "membership:account_retry"
+msgstr "Retry account verification"
+
+msgid "membership:account_unconfirmed"
+msgstr "Account status is not yet confirmed"
+
+msgid "membership:advanced"
+msgstr "Advanced"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "Advanced reports use about {ratio} times as much."
+
+msgid "membership:advanced_depth_rule"
+msgstr ""
+"Advanced report usage depends on the analysis depth set by the server."
+
+msgid "membership:advanced_position_cost"
+msgstr "Advanced: about {points} API points per move"
+
+msgid "membership:analysis_depth"
+msgstr "Analysis depth"
+
+msgid "membership:api_balance"
+msgstr "API points balance"
+
+msgid "membership:api_on_demand"
+msgstr "On-demand API analysis"
+
+msgid "membership:api_prices"
+msgstr "API analysis pricing"
+
+msgid "membership:api_topup"
+msgstr "Top up API points"
+
+msgid "membership:auth_after_login"
+msgstr "Sign in to use"
+
+msgid "membership:auth_box_login"
+msgstr "Sign in on the StellaBox home screen"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Sign in on the StellaBox home screen, then return to this module through the"
+" Go entry."
+
+msgid "membership:auth_checking_action"
+msgstr "Confirming"
+
+msgid "membership:auth_checking_description"
+msgstr ""
+"Please wait. You will continue automatically once confirmation is complete."
+
+msgid "membership:auth_checking_note"
+msgstr "Account content is not read during confirmation."
+
+msgid "membership:auth_checking_title"
+msgstr "Checking sign-in status"
+
+msgid "membership:auth_description"
+msgstr "Sign in to view membership usage, API points and orders."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"Your sign-in session has expired. Access to personal content in membership "
+"and usage has been paused. Sign in to continue."
+
+msgid "membership:auth_expired_title"
+msgstr "Sign in again"
+
+msgid "membership:auth_label"
+msgstr "Membership and usage"
+
+msgid "membership:auth_login_continue"
+msgstr "Sign in and continue"
+
+msgid "membership:auth_login_title"
+msgstr "Sign in to view membership and usage"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"After signing in, you will return to this page without having to find it "
+"again."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"The network or service is temporarily unavailable. Please retry. Your sign-"
+"in credentials are retained."
+
+msgid "membership:auth_unavailable_note"
+msgstr "You do not need to sign out. Retry once the connection is restored."
+
+msgid "membership:auth_unavailable_title"
+msgstr "Sign-in status cannot be confirmed right now"
+
+msgid "membership:back_to_play"
+msgstr "Back to play"
+
+msgid "membership:billing_rules"
+msgstr "Membership and API billing rules"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Membership allowance is used first. If either remaining allowance cannot "
+"cover this analysis, the entire request uses your existing API points, "
+"without splitting the charge between sources. If you lack points, top up or "
+"wait for your allowance to reset. Points are never purchased automatically, "
+"and no CNY payment is taken automatically."
+
+msgid "membership:cancel"
+msgstr "Cancel"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"This purchase starts after your existing membership expires and does not "
+"reset your current allowance. The server receipt after payment confirms the "
+"effective dates."
+
+msgid "membership:choose_topup"
+msgstr "Choose a top-up amount"
+
+msgid "membership:close"
+msgstr "Close"
+
+msgid "membership:compare_membership_api"
+msgstr "Compare membership and API"
+
+msgid "membership:compare_plans"
+msgstr "Compare membership plans"
+
+msgid "membership:compute"
+msgstr "Compute usage"
+
+msgid "membership:confirm_consumption"
+msgstr "Confirm and start"
+
+msgid "membership:confirm_position"
+msgstr "Confirm analysis of this position"
+
+msgid "membership:confirm_purchase"
+msgstr "Confirm purchase"
+
+msgid "membership:confirm_report"
+msgstr "Confirm report generation"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "Use API points, up to {points}"
+
+msgid "membership:confirming"
+msgstr "Confirming"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Membership first; if insufficient, the entire request uses API points, up to"
+" {points}."
+
+msgid "membership:countdown_days"
+msgstr "{days}d {hours}h {minutes}m"
+
+msgid "membership:countdown_hours"
+msgstr "{hours}h {minutes}m"
+
+msgid "membership:create_order"
+msgstr "Create order"
+
+msgid "membership:create_report"
+msgstr "Create game review report"
+
+msgid "membership:creating_order"
+msgstr "Creating…"
+
+msgid "membership:current_plan"
+msgstr "Current membership"
+
+msgid "membership:date_pending"
+msgstr "To be confirmed"
+
+msgid "membership:done"
+msgstr "Done"
+
+msgid "membership:entitlement_pending"
+msgstr "Account benefits awaiting confirmation"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Sign in before using analysis."
+
+msgid "membership:error_insufficient"
+msgstr ""
+"Your membership allowance and API points are insufficient. See the "
+"membership page."
+
+msgid "membership:error_operation_running"
+msgstr "Analysis is still running. Check again shortly."
+
+msgid "membership:error_position_failed"
+msgstr "Analysis did not complete. Please retry."
+
+msgid "membership:error_position_refunded"
+msgstr ""
+"Analysis did not complete. This usage has been refunded. Please retry."
+
+msgid "membership:error_position_unavailable"
+msgstr "Single-position analysis is not available on this service."
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"The quote has expired or does not match this request. Confirm the latest "
+"quote and retry."
+
+msgid "membership:error_quote_failed"
+msgstr "Could not get a quote. Please retry."
+
+msgid "membership:error_report_failed"
+msgstr "Could not create the report. Please retry."
+
+msgid "membership:error_report_login_required"
+msgstr "Sign in before creating a report."
+
+msgid "membership:error_report_missing"
+msgstr "Report not found. Refresh and retry."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"This analysis result has expired or is temporarily unavailable. Run the "
+"analysis again."
+
+msgid "membership:error_service_busy"
+msgstr "The service is busy. Please retry shortly."
+
+msgid "membership:error_service_paused"
+msgstr "Analysis is paused. Please retry shortly."
+
+msgid "membership:error_service_unavailable"
+msgstr "Analysis is temporarily unavailable. Please retry shortly."
+
+msgid "membership:error_verification_required"
+msgstr "Complete sign-in verification before retrying."
+
+msgid "membership:example_depth"
+msgstr "Example analysis depth"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Separate eligibility for {count} standard reports per calendar week. "
+"Identity verification requirements apply. This is not a general analysis "
+"allowance."
+
+msgid "membership:free_pending"
+msgstr "Free eligibility awaiting confirmation"
+
+msgid "membership:free_remaining"
+msgstr "{count} remaining this week"
+
+msgid "membership:free_reset_countdown"
+msgstr "Resets in {time} · {date} (Beijing time)"
+
+msgid "membership:free_unavailable"
+msgstr "Free eligibility is currently unavailable"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Free standard reports require a trusted, verified identity. No claimable "
+"count is currently available. Paid membership does not add Free report "
+"eligibility."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Separate weekly standard report eligibility"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · This week's standard reports"
+
+msgid "membership:fulfillment_pending"
+msgstr "Benefit confirmation is pending. Refresh usage to check."
+
+msgid "membership:full_use_days"
+msgstr "Assumes full use of the {days}-day allowance"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"Savings assume full use of this period's allowance; actual savings vary with"
+" usage. Renewal starts after your existing membership expires."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"API requires no subscription. CNY 1 = 1 API point. Confirm the server quote "
+"before analysis starts."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Choose a membership for your usage"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr ""
+"For equivalent standard analysis usage, assuming full use of this period's "
+"allowance."
+
+msgid "membership:galaxy_intro"
+msgstr "Check your analysis usage and choose API top-ups or membership."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Frequent analysis can cost less with membership"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "For occasional analysis, top up as needed"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} days"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days}-day membership"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"Estimated for 300-move games, including the initial position, and limited by"
+" the remaining allowance for this period."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "How much does a 300-move game cost?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"The weekly allowance resets every Monday at 00:00 Beijing time. Any "
+"remaining period allowance expires at the end of the period."
+
+msgid "membership:galaxy_tabs"
+msgstr "Membership page"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"Expires {date} (Beijing time). Monday's reset does not increase the period "
+"allowance."
+
+msgid "membership:galaxy_title"
+msgstr "Membership and usage"
+
+msgid "membership:history_unavailable"
+msgstr "Order history is temporarily unavailable"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Account actions"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Account, membership and top-ups"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Advanced analysis"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "Advanced: {points} API points; both include the initial position"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API balance"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API top-ups · Pay for what you use"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "Top up API points"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "Use API points when membership allowance is insufficient"
+
+msgid "membership:kiosk_back"
+msgstr "Back"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Back to settings"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "Shown after account benefits are confirmed"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Check the order amount before paying"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "Choose {plan}"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Synced with the cloud"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Compare plans"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Confirm your account first"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Confirm source and quote before analysis"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Creating order…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "Credit: {points} API points"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Current API balance"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Current benefits"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Current membership"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Estimated {start} to {end} · Beijing time"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} API points"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "Free report eligibility is verified in the cloud"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Free report eligibility awaiting verification"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Standard report eligibility only; no general analysis allowance"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "{remaining} / {limit} reports remaining"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Verify your account first. This week's eligibility will appear after "
+"verification."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "Frequent use can cost less with membership"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "Costs less than API when the allowance is fully used"
+
+msgid "membership:kiosk_history_error"
+msgstr "Order history has not synced yet. Please retry shortly."
+
+msgid "membership:kiosk_member_first"
+msgstr "Membership allowance is used first for analysis"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Membership first; API points if insufficient"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"If you already have membership, this purchase starts after your purchased "
+"periods end. Current usage is preserved. The final dates are confirmed by "
+"the payment receipt."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Buy membership"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "Valid {start} to {end} · Beijing time · This receipt is authoritative"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Membership is temporarily unavailable"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"In the test environment, the server simulates payment results. This page "
+"does not initiate payment or grant benefits itself."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Next: {plan} · Starts {date} · Beijing time"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr "Confirm source and quote before analysis. No automatic top-ups."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr ""
+"This page does not grant benefits itself. Go back to choose again if needed."
+
+msgid "membership:kiosk_no_orders"
+msgstr "No order history yet"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Standard analysis"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves}-move report · Standard: {points} API points"
+
+msgid "membership:kiosk_not_available"
+msgstr "Not yet available"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Order confirmation"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Order expired"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Order not completed"
+
+msgid "membership:kiosk_order_history"
+msgstr "Order history"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Order {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Order refunded"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Payment confirmed by server"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"Order status has not synced yet. Retrying; do not place another order."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"The order outcome is unconfirmed. Check order history before creating "
+"another order to avoid duplicates."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Order awaiting confirmation"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Order valid until {date} · Beijing time"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Waiting for server payment confirmation"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"You can view owned results repeatedly. Territory and move suggestions are "
+"included in the same result."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Confirmed {date} · Beijing time"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "Payment is not connected yet. Check order status later."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr ""
+"Until confirmation, remaining percentages are hidden and no orders are "
+"created."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Period awaiting verification"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Period allowance awaiting verification"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Prices and benefits appear after the catalog is confirmed."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Membership catalog awaiting sync"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} games"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} days"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Valid until {date} · Beijing time"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} API points"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} API points / move"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Both the period and weekly membership allowances must cover this analysis. "
+"Otherwise, the entire request uses API points, without splitting the charge."
+" No automatic CNY top-ups."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API pricing explained"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"An N-move report includes the initial position, for N+1 positions in total. "
+"The actual charge follows the game-record quote shown before analysis."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"The balance is shown to a precision of {precision} API points. Per position:"
+" standard {normal}, advanced {advanced} API points."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Sync first if offline or allowance is unknown. Owned results can be viewed "
+"repeatedly; territory and move suggestions are included in the same result."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Purchase is available after your account and allowance are confirmed"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Confirming allowance"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Membership is used only if both remaining allowances are sufficient. "
+"Otherwise, the entire request uses API points, without splitting the charge."
+" Confirm the source and quote before analysis. If points are insufficient, "
+"top up manually or wait for the allowance to reset."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Membership allowance and savings explained"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Allowance not yet confirmed"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"The estimated weekly maximum assumes {moves}-move standard reports and is "
+"limited by the remaining period allowance. Standard report reference for "
+"this period: {references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"Membership expires at the end of the purchased period. The weekly allowance "
+"resets on Monday at 00:00 Beijing time. Period and weekly remaining "
+"percentages are calculated separately. Usage for analyses in progress is "
+"already included."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Territory and move suggestions are included in the same result. Viewing it "
+"again incurs no additional charge. Advanced analysis uses {multiplier} times"
+" the allowance of standard analysis."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"Savings are compared with standard API analysis and assume full use of this "
+"period's allowance. If you use less, actual savings vary with usage. Free "
+"provides only free standard report eligibility, not a general analysis "
+"allowance."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Allowance awaiting cloud verification"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Account usage is syncing again. The cloud snapshot is authoritative for your"
+" balance and benefits."
+
+msgid "membership:kiosk_remaining"
+msgstr "Remaining"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Remaining allowance not yet confirmed"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "Renew {plan}"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"Estimated for {moves} moves, limited by the remaining period allowance. "
+"Advanced uses about {multiplier} times as much."
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Includes analyses in progress"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"One result includes territory and move suggestions. Viewing it again incurs "
+"no additional charge."
+
+msgid "membership:kiosk_resync"
+msgstr "Sync again"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Back to selection"
+
+msgid "membership:kiosk_return_usage"
+msgstr "Back to usage"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "Save about {percent} vs API"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"Savings assume full use of this period's allowance. Otherwise, actual "
+"savings vary with usage."
+
+msgid "membership:kiosk_select_topup"
+msgstr "Choose an API top-up amount"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Service temporarily unavailable"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Sync failed"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Awaiting sync"
+
+msgid "membership:kiosk_synced"
+msgstr "Synced"
+
+msgid "membership:kiosk_syncing"
+msgstr "Syncing"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Syncing orders…"
+
+msgid "membership:kiosk_term"
+msgstr "This period"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Period expires · Beijing time"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Remaining percentage for this period"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Standard reports · About {reports} games over {days} days"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Test environment"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST simulated order · No real payment"
+
+msgid "membership:kiosk_title"
+msgstr "Membership and top-ups"
+
+msgid "membership:kiosk_topup"
+msgstr "Top up"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "Top up {amount}"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Top-up catalog awaiting sync"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Use membership first when both remaining allowances are sufficient; "
+"otherwise, the entire request uses API points."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} API points"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} API points"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Not yet confirmed"
+
+msgid "membership:kiosk_understood"
+msgstr "Got it"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Both remaining allowances must cover this analysis. If insufficient, the "
+"entire request uses API points."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "Usage cannot be synced right now"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Used and in progress: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Confirm your account identity first"
+
+msgid "membership:kiosk_view_order"
+msgstr "View order {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "View membership"
+
+msgid "membership:kiosk_week"
+msgstr "This week"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Remaining percentage for this week"
+
+msgid "membership:kiosk_week_reports"
+msgstr "Up to about {reports} games per week"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Resets Monday 00:00 · Beijing time"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Free standard reports each week"
+
+msgid "membership:loading"
+msgstr "Loading membership and usage…"
+
+msgid "membership:login"
+msgstr "Sign in"
+
+msgid "membership:login_to_view"
+msgstr "Sign in to view membership and usage"
+
+msgid "membership:membership_first"
+msgstr "Use membership allowance first"
+
+msgid "membership:membership_free_pending_help"
+msgstr ""
+"Membership and Free eligibility are not yet confirmed. Reload to check."
+
+msgid "membership:membership_order"
+msgstr "Membership order"
+
+msgid "membership:next_membership"
+msgstr "Purchased: {plan} · Starts {date}"
+
+msgid "membership:no_orders"
+msgstr "No orders yet"
+
+msgid "membership:normal"
+msgstr "Standard"
+
+msgid "membership:normal_position_cost"
+msgstr "Standard: about {points} API points per move"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "Buy as needed, no subscription required"
+
+msgid "membership:open"
+msgstr "View"
+
+msgid "membership:order_actual_end"
+msgstr "Actual expiry: {date} (Beijing time)"
+
+msgid "membership:order_actual_points"
+msgstr "Actual credit: {points} API points"
+
+msgid "membership:order_actual_start"
+msgstr "Actual start: {date} (Beijing time)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Estimated start: {start}; estimated expiry: {end} (Beijing time). Final "
+"dates are confirmed by the payment receipt."
+
+msgid "membership:order_expired"
+msgstr "Order expired"
+
+msgid "membership:order_expires_at"
+msgstr "Order valid until {date} (Beijing time)."
+
+msgid "membership:order_failed"
+msgstr "Order not completed"
+
+msgid "membership:order_history"
+msgstr "Order history"
+
+msgid "membership:order_id"
+msgstr "Order ID"
+
+msgid "membership:order_paid"
+msgstr "Paid"
+
+msgid "membership:order_pending"
+msgstr "Awaiting payment"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"Payment status cannot be confirmed right now. Retrying. Do not pay again."
+
+msgid "membership:order_refunded"
+msgstr "Refunded"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"The order outcome is not yet confirmed. Check order history first to avoid "
+"creating duplicate orders."
+
+msgid "membership:order_topup"
+msgstr "API points top-up"
+
+msgid "membership:payment_account_pending"
+msgstr ""
+"Your account and usage must be confirmed before a payment order can be "
+"created."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"The payment channel is not available yet. Do not pay unknown accounts "
+"outside this page."
+
+msgid "membership:payments_disabled"
+msgstr "Payments are not yet available"
+
+msgid "membership:payments_unavailable"
+msgstr ""
+"Payments are not yet available. Payment orders cannot be created right now."
+
+msgid "membership:pending_order_notice"
+msgstr ""
+"Awaiting payment. This page will automatically check the server status."
+
+msgid "membership:plan_pending"
+msgstr "Membership benefits awaiting confirmation"
+
+msgid "membership:plan_term"
+msgstr "/ {days} days"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} is not yet available"
+
+msgid "membership:plans"
+msgstr "Membership"
+
+msgid "membership:points"
+msgstr "API points"
+
+msgid "membership:points_amount"
+msgstr "{points} API points"
+
+msgid "membership:points_exchange_rate"
+msgstr "CNY 1 = 1 API point"
+
+msgid "membership:position_cost"
+msgstr "Cost per move"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Single-position and full-game analyses use the same unit price. Full games "
+"are charged for the move count plus the initial position."
+
+msgid "membership:processing"
+msgstr "Processing…"
+
+msgid "membership:quota"
+msgstr "Membership allowance"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"The period and weekly remaining percentages each use their own allowance. "
+"Each analysis must fit within both remaining allowances. Reserved usage for "
+"analyses in progress counts as used and is returned on failure."
+
+msgid "membership:quota_expires_in"
+msgstr "Expires in {time}"
+
+msgid "membership:quota_pending"
+msgstr "Allowance awaiting confirmation"
+
+msgid "membership:quota_recovers_in"
+msgstr "Resets in {time}"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Confirming the latest allowance"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"The two remaining allowances are calculated separately, and each analysis "
+"must fit within both. Reserved usage for analyses in progress is included in"
+" the used percentage and is returned on failure."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"The server quote and charge source are shown before analysis starts. "
+"Analysis cannot start until account and usage status are confirmed. Viewing "
+"owned results again or switching between territory and move suggestions "
+"incurs no additional charge."
+
+msgid "membership:refresh"
+msgstr "Refresh"
+
+msgid "membership:reload"
+msgstr "Reload"
+
+msgid "membership:remaining_percent"
+msgstr "{percent} remaining"
+
+msgid "membership:renew_plan"
+msgstr "Renew {plan}"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"Renewal starts after your existing membership expires and does not reset "
+"current used or reserved usage. Dates shown before payment are estimates; "
+"the final effective period is confirmed by the server receipt after payment."
+" Paid membership does not add Free standard report eligibility."
+
+msgid "membership:report_estimate_limit"
+msgstr ""
+"Estimated for 300-move games, limited by the remaining period allowance."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"Includes the initial position, for 301 analysis positions in total. The "
+"actual charge follows the server quote shown before submission."
+
+msgid "membership:retry"
+msgstr "Retry"
+
+msgid "membership:savings_approx"
+msgstr "Save about {percent}"
+
+msgid "membership:savings_vs_api"
+msgstr "Save about {percent} vs API"
+
+msgid "membership:select_plan"
+msgstr "Choose {plan}"
+
+msgid "membership:server_authority"
+msgstr "Your balance and benefits are determined by server confirmation."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"This service does not currently provide membership usage. Benefits and "
+"balances are awaiting confirmation."
+
+msgid "membership:source_free"
+msgstr "Expected source: weekly free report eligibility"
+
+msgid "membership:source_membership"
+msgstr "Expected source: membership allowance"
+
+msgid "membership:source_owned"
+msgstr "You already own this result"
+
+msgid "membership:source_pending"
+msgstr "Charge source awaiting confirmation"
+
+msgid "membership:source_wallet"
+msgstr "Expected source: API points"
+
+msgid "membership:stale"
+msgstr "Awaiting update"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Showing previously loaded data. Account and charge source need "
+"reconfirmation. Purchases are temporarily unavailable."
+
+msgid "membership:synced"
+msgstr "Synced"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Temporarily unavailable"
+
+msgid "membership:term_remaining"
+msgstr "Remaining this period"
+
+msgid "membership:term_report_reference"
+msgstr "{plan}: about {reports} standard game reports per {days}-day period."
+
+msgid "membership:term_total_reports"
+msgstr "About {reports} games over {days} days"
+
+msgid "membership:test_order_warning"
+msgstr "TEST simulated order. No real payment will be taken."
+
+msgid "membership:time_pending"
+msgstr "Time awaiting confirmation"
+
+msgid "membership:topup_amount"
+msgstr "Top up {amount}"
+
+msgid "membership:topup_arrival"
+msgstr "Credit: {points} API points"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Points are credited after payment confirmation. When membership allowance is"
+" insufficient, existing API points are used. There are no automatic top-ups."
+
+msgid "membership:topup_option"
+msgstr "{amount}, credits {points} API points"
+
+msgid "membership:unavailable"
+msgstr "Not yet available"
+
+msgid "membership:unavailable_title"
+msgstr "Membership and usage temporarily unavailable"
+
+msgid "membership:unconfirmed_help"
+msgstr ""
+"Account benefits and balance are not yet confirmed. Please retry shortly."
+
+msgid "membership:usage"
+msgstr "Usage"
+
+msgid "membership:used_and_reserved"
+msgstr "Used and in progress: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Valid until {date} (Beijing time)"
+
+msgid "membership:view_api_topup"
+msgstr "View API top-ups"
+
+msgid "membership:view_plans"
+msgstr "View membership plans"
+
+msgid "membership:visits"
+msgstr "{count} search visits"
+
+msgid "membership:week_remaining"
+msgstr "Remaining this week"
+
+msgid "membership:weekly_report_reference"
+msgstr "Standard reports, up to about {reports} games per week"
+
+msgid "membership:weekly_reports"
+msgstr "Up to about {reports} games per week"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "Up to about {reports} games per week · Not yet available"
+
+msgid "membership:weekly_reset_rule"
+msgstr "The weekly allowance resets every Monday at 00:00 Beijing time."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"If membership allowance cannot cover this analysis, the entire request uses "
+"existing API points."
+
+msgid "kifu:first_page"
+msgstr "First page"
+
+msgid "kifu:last_page"
+msgstr "Last page"
+
+# Current-position territory view
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_lead_missing"
+msgstr "A lead estimate is not available yet"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_even"
+msgstr "Approximately even"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_black_lead"
+msgstr "Estimated Black lead: {n} points"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_white_lead"
+msgstr "Estimated White lead: {n} points"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_title"
+msgstr "Territory estimate"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_ranked_source"
+msgstr "Ranked · Cloud estimate"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_star_source"
+msgstr "Golaxy · Account items"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_loading"
+msgstr "Requesting a territory estimate…"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_query_note"
+msgstr "Closing only hides this view. A new query after leaving this page may use quota."
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_error"
+msgstr "Territory estimate is unavailable"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_black_region"
+msgstr "Black’s more certain region: {n} intersections"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_white_region"
+msgstr "White’s more certain region: {n} intersections"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_reference"
+msgstr "Mid-game reference; the final count determines the official result"
+
+#: katrain/web/ui/src/kiosk/components/game/TerritoryDialog.tsx
+msgid "game:territory_close"
+msgstr "Close territory and keep playing"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_ranked_quota"
+msgstr "Ranked game: {n} uses left · Review this position for free"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_ranked_retry"
+msgstr "No result was received. Retry reuses the same request; check the server’s remaining uses."
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_quota_error"
+msgstr "Territory quota is unavailable. You can retry or keep playing."
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_star_quota"
+msgstr "Golaxy account: {n} territory items left · Review this position for free"
+
+#: katrain/web/ui/src/kiosk/pages/GamePage.tsx
+msgid "game:territory_star_error"
+msgstr "No result was received. Check your actual Golaxy item balance. A new query may use an item."
+
+#: katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx
+msgid "game:territory_items"
+msgstr "Golaxy items · Queries use items"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_overexposed_title"
+msgstr "Image too bright for reliable recognition"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_underexposed_title"
+msgstr "Image too dark for reliable recognition"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_warning_body"
+msgstr ""
+"Remove any obstruction. If the warning remains, try a place with even, "
+"suitable lighting."
+
+#. Native Go kiosk UI.
+msgid "game:local_got_it"
+msgstr "Got it"
+
+#. Native Go kiosk UI.
+msgid "vision:grid_not_visible"
+msgstr "Grid not detected yet; LEDs will locate the board"
+
+#. Native Go kiosk UI.
+msgid "auth:hall_privacy_note"
+msgstr "Sign in to see players and ongoing games."
+
+#. Native Go kiosk UI.
+msgid "login:box_gate_body"
+msgstr ""
+"One StellaBox account is shared across this device. Sign in once on the home "
+"page to use the same identity in Go and the other games."
+
+#. Native Go kiosk UI.
+msgid "login:box_gate_hint"
+msgstr ""
+"If you were just playing, this device's session may have expired. Re-enter "
+"Go from the home page; your moves are saved."
+
+#. Native Go kiosk UI.
+msgid "Choose how to play"
+msgstr "Choose how to play"
+
+#. Native Go kiosk UI.
+msgid "platform:connected_enter"
+msgstr "Connected · Open platform"
+
+#. Native Go kiosk UI.
+msgid "Connected"
+msgstr "Connected"
+
+#. Native Go kiosk UI.
+msgid "ladder:box_picks_reason"
+msgstr ""
+"Choosing your opponent's strength would defeat promotion and demotion."
+
+#. Native Go kiosk UI.
+msgid "ladder:status_offline"
+msgstr ""
+"Cannot reach the cloud. Ranked play needs a connection. Check your network "
+"and retry."
+
+#. Native Go kiosk UI.
+msgid "ladder:start_offline"
+msgstr ""
+"Cannot reach the cloud. Ranked play needs a connection. No game was started "
+"and your rank is unchanged. Check your network and retry."
+
+#. Native Go kiosk UI.
+msgid "ladder:start_engine_cannot_serve"
+msgstr ""
+"This device's engine cannot currently handle this opponent level. No game "
+"was started and your rank is unchanged."
+
+#. Native Go kiosk UI.
+msgid "ladder:start_cloud_unconfirmed"
+msgstr ""
+"The cloud has not confirmed this game's status. Do not start another; return"
+" to this screen to see its status."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_undelivered"
+msgstr "Result not delivered"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_never_started"
+msgstr "Not started"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_playing"
+msgstr "Playing"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_interrupted"
+msgstr "Interrupted"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_unsettled"
+msgstr "Unsettled"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_undelivered"
+msgstr "This game is finished, but its result has not reached the cloud."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_never_started"
+msgstr ""
+"This game was registered, but no board could start. Neither side is playing."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_unfinished"
+msgstr "You have an unfinished ranked game."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_no_local_record"
+msgstr "This game is on this device, but its local record is missing."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_unknown_device"
+msgstr ""
+"This game is unsettled, and this device cannot identify which device holds "
+"it."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_other_device"
+msgstr "This game is unsettled on another of your devices."
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_current"
+msgstr "This device"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_other"
+msgstr "Other device"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_unknown"
+msgstr "Unknown device"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_current"
+msgstr "Local heartbeat"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_other"
+msgstr "Other device heartbeat"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_unknown"
+msgstr "Game device heartbeat"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_button"
+msgstr "Release it and start here"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_cost"
+msgstr "That game never started; releasing it records no result."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_title"
+msgstr "Release that game?"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_confirm"
+msgstr "Release game"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_body"
+msgstr ""
+"That game was only registered in the cloud and never started on any device. "
+"Releasing it records no result and does not affect promotion or demotion."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_button"
+msgstr "Forfeit pending result and start here"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_cost"
+msgstr "Forfeiting loses the actual result and counts as a ranked loss."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_title"
+msgstr "Forfeit this undelivered result?"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_confirm"
+msgstr "Forfeit result"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_button"
+msgstr "Resign that game and start here"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_cost_remote"
+msgstr ""
+"That game will count as a loss, replacing its actual result if it has "
+"already finished."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_cost"
+msgstr "That game will count as a ranked loss."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_title"
+msgstr "Resign that game?"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_confirm"
+msgstr "Confirm resignation"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_body"
+msgstr ""
+"That game is finished, but its result has not reached the cloud. Forfeiting "
+"settles it as a ranked loss; the actual game record and result can no longer"
+" be submitted for this game. If delivery can be retried, send the result "
+"first. If the cloud refuses it, contact maintenance. This cannot be undone."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_local"
+msgstr ""
+"You have an unfinished ranked game. To start here, you must resign that game"
+" first. It will count as a ranked loss. This cannot be undone."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_remote"
+msgstr ""
+"You have an unsettled game on another device. To start here, you must resign"
+" it first; it will count as a ranked loss. If it has already finished there "
+"but the result has not been uploaded, this loss will replace that result. "
+"This cannot be undone."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_unheld"
+msgstr ""
+"This device cannot recover that game or see its progress. To start here, you"
+" must resign it first; it will count as a ranked loss. If it has already "
+"finished but its result has not been uploaded, this loss will replace that "
+"result. This cannot be undone."
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_refused"
+msgstr ""
+"The cloud refused this result. Retrying will receive the same response."
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_exhausted"
+msgstr ""
+"Delivery failed after {max} attempts. It will resume automatically when "
+"connected."
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_waiting"
+msgstr "Retry {n}/{max} · Auto-retry in {countdown}"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_synced"
+msgstr "Result delivered; updating rank…"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_imminent"
+msgstr "Retry {n}/{max} · Retrying soon…"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_sending"
+msgstr "Sending result to the cloud…"
+
+#. Native Go kiosk UI.
+msgid "setup:help"
+msgstr "Help"
+
+#. Native Go kiosk UI.
+msgid "setup:terms_help"
+msgstr ""
+"Set board size, rules and handicap before starting. Komi follows the rules "
+"and handicap; these cannot change during play."
+
+#. Native Go kiosk UI.
+msgid "setup:note_r2"
+msgstr ""
+"These settings <b>cannot change after starting</b>; changing them means a "
+"new game. Free play <b>does not affect rank</b>."
+
+#. Native Go kiosk UI.
+msgid "ladder:analysis_help"
+msgstr ""
+"This game affects rank. Analysis is disabled throughout, and the server "
+"fixes the board settings."
+
+#. Native Go kiosk UI.
+msgid "setup:strength_help"
+msgstr "Human-like opponent: level {n} of 29, spanning 20k to 9d."
+
+#. Native Go kiosk UI.
+msgid "setup:free_unrated"
+msgstr "Free play does not affect rank."
+
+#. Native Go kiosk UI.
+msgid "setup:seat_help"
+msgstr ""
+"Physical input requires a calibrated 19×19 board. On screen, tap the board "
+"to play. Choose input, color and time before starting."
+
+#. Native Go kiosk UI.
+msgid "setup:free_sub"
+msgstr "Unrated"
+
+#. Native Go kiosk UI.
+msgid "ladder:current_rank"
+msgstr "Current rank"
+
+#. Native Go kiosk UI.
+msgid "ladder:placing"
+msgstr "Placement in progress"
+
+#. Native Go kiosk UI.
+msgid "setup:strength"
+msgstr "Strength"
+
+#. Native Go kiosk UI.
+msgid "local:board_check_not_ready"
+msgstr "Board check is not ready. Keep the position still and retry."
+
+#. Native Go kiosk UI.
+msgid "local:board_check_failed"
+msgstr "Board check failed. Check the connection and retry."
+
+#. Native Go kiosk UI.
+msgid "local:device_check_pending"
+msgstr "Reading device status. Please try again shortly."
+
+#. Native Go kiosk UI.
+msgid "local:return_setup"
+msgstr "Back to setup"
+
+#. Native Go kiosk UI.
+msgid "local:prestart_calibration"
+msgstr "Check board calibration first"
+
+#. Native Go kiosk UI.
+msgid "local:return_setup_retry"
+msgstr "Return to setup and retry"
+
+#. Native Go kiosk UI.
+msgid "local:entering_game"
+msgstr "Entering game…"
+
+#. Native Go kiosk UI.
+msgid "local:prestart_calibration_resume"
+msgstr ""
+"Play starts after calibration. Retry if it fails; going back keeps your "
+"settings."
+
+#. Native Go kiosk UI.
+msgid "local:setup_face_to_face"
+msgstr "Face to face"
+
+#. Native Go kiosk UI.
+msgid "local:checking_board"
+msgstr "Checking board…"
+
+#. Native Go kiosk UI.
+msgid "local:terms_help"
+msgstr ""
+"Agree on board size, rules, handicap and komi before starting. The first "
+"player and komi direction follow these settings and cannot change during "
+"play."
+
+#. Native Go kiosk UI.
+msgid "local:input_help"
+msgstr ""
+"Physical input requires a calibrated 19×19 board. For screen input, tap the "
+"board and confirm on your own side."
+
+#. Native Go kiosk UI.
+msgid "local:note3_line1"
+msgstr ""
+"The screen <b>offers no hints or position evaluation</b>. After both players"
+" pass, <b>stones are counted automatically</b>; the engine judges life and "
+"death."
+
+#. Native Go kiosk UI.
+msgid "local:note3_line2"
+msgstr ""
+"This game <b>is archived without affecting rank</b>. Leaving early <b>does "
+"not save a record</b>."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_short"
+msgstr "OGS scoring"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_paused_short"
+msgstr "OGS paused"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_turn"
+msgstr "Opponent's turn"
+
+#. Native Go kiosk UI.
+msgid "game:waiting_for_opponent"
+msgstr "Waiting for opponent"
+
+#. Native Go kiosk UI.
+msgid "game:waiting_for_black"
+msgstr "Waiting for Black"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_wait"
+msgstr "Waiting for OGS clock"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_paused"
+msgstr "OGS paused · Last sync"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_byo_sync"
+msgstr "Byoyomi · Last OGS sync"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_sync"
+msgstr "Last OGS sync"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_accept_no_dead"
+msgstr "Confirm no dead stones"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_no_dead"
+msgstr ""
+"OGS dead-stone marks are not synced; confirmation will report no dead "
+"stones."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_reject"
+msgstr "Continue play"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_wait"
+msgstr "Available after OGS starts scoring"
+
+#. Native Go kiosk UI.
+msgid "game:players"
+msgstr "Players"
+
+#. Native Go kiosk UI.
+msgid "game:eval_title_short"
+msgstr "Win rate · KataGo"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_paused"
+msgstr "OGS game paused"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_result_wait"
+msgstr "Waiting for OGS result sync"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_disabled"
+msgstr "OGS decides scoring after both players pass."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_first_retry"
+msgstr ""
+"Take back unconfirmed stones, then remove your hands and prepare the "
+"physical board again."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_empty"
+msgstr "Clear the board and remove your hands before placing a stone."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_existing"
+msgstr ""
+"Match the recorded position, take back unconfirmed stones, then remove your "
+"hands."
+
+#. Native Go kiosk UI.
+msgid "game:local_physical_steps"
+msgstr ""
+"Place your stone, remove captures, take your hands away, then confirm."
+
+#. Native Go kiosk UI.
+msgid "game:local_screen_steps"
+msgstr "Tap to select a point, tap again to change it, then confirm."
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_overexposed_short"
+msgstr "Image too bright"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_underexposed_short"
+msgstr "Image too dark"
+
+#. Native Go kiosk UI.
+msgid "game:local_multiple_stones"
+msgstr "Keep only this move"
+
+#. Native Go kiosk UI.
+msgid "game:local_capture_remaining"
+msgstr "Remove captured stones"
+
+#. Native Go kiosk UI.
+msgid "game:local_no_stone"
+msgstr "No new stone detected"
+
+#. Native Go kiosk UI.
+msgid "game:local_illegal_move"
+msgstr "Choose another point"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_title"
+msgstr "Prepare the physical board"
+
+#. Native Go kiosk UI.
+msgid "game:local_retry_title"
+msgstr "This move is not confirmed"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_warning_short"
+msgstr "Remove obstructions; if the warning remains, move the board."
+
+#. Native Go kiosk UI.
+msgid "game:local_multiple_steps"
+msgstr "Take back extra stones, then confirm."
+
+#. Native Go kiosk UI.
+msgid "game:local_capture_steps"
+msgstr "Remove stones marked ×, then confirm."
+
+#. Native Go kiosk UI.
+msgid "game:local_no_stone_steps"
+msgstr "Place one stone, then confirm."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_retry"
+msgstr "Arrange the board and check the camera and calibration."
+
+#. Native Go kiosk UI.
+msgid "game:local_screen_retry"
+msgstr "Change the point if needed, then confirm."
+
+#. Native Go kiosk UI.
+msgid "game:local_physical_retry"
+msgstr "Remove your hands; retry when the board is still."
+
+#. Native Go kiosk UI.
+msgid "game:local_move_number"
+msgstr "Move {n}"
+
+#. Native Go kiosk UI.
+msgid "game:local_guide"
+msgstr "How to play a move"
+
+#. Native Go kiosk UI.
+msgid "game:local_both_paused"
+msgstr "Both clocks paused"
+
+#. Native Go kiosk UI.
+msgid "game:local_change_selection"
+msgstr "Selection can be changed"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirming"
+msgstr "Confirming"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_short"
+msgstr "Please wait"
+
+#. Native Go kiosk UI.
+msgid "game:local_needs_attention"
+msgstr "Needs attention"
+
+#. Native Go kiosk UI.
+msgid "game:local_preparing_short"
+msgstr "Preparing"
+
+#. Native Go kiosk UI.
+msgid "game:local_playing"
+msgstr "Playing"
+
+#. Native Go kiosk UI.
+msgid "game:local_waiting"
+msgstr "Waiting"
+
+#. Native Go kiosk UI.
+msgid "game:local_byoyomi"
+msgstr "Byoyomi time"
+
+#. Native Go kiosk UI.
+msgid "game:local_main_left"
+msgstr "Main time left"
+
+#. Native Go kiosk UI.
+msgid "game:local_clock_running"
+msgstr "Clock running"
+
+#. Native Go kiosk UI.
+msgid "game:local_clock_paused"
+msgstr "Paused"
+
+#. Native Go kiosk UI.
+msgid "game:local_periods_left"
+msgstr "{n} periods left"
+
+#. Native Go kiosk UI.
+msgid "game:seconds"
+msgstr "sec"
+
+#. Native Go kiosk UI.
+msgid "game:times"
+msgstr "times"
+
+#. Native Go kiosk UI.
+msgid "game:local_recognizing"
+msgstr "Recognizing"
+
+#. Native Go kiosk UI.
+msgid "game:local_submitting"
+msgstr "Confirming"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait"
+msgstr "Wait"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_failed"
+msgstr "Board preparation failed"
+
+#. Native Go kiosk UI.
+msgid "game:local_preparing"
+msgstr "Preparing physical board"
+
+#. Native Go kiosk UI.
+msgid "game:local_selected"
+msgstr "Selected"
+
+#. Native Go kiosk UI.
+msgid "game:local_your_turn"
+msgstr "Your turn"
+
+#. Native Go kiosk UI.
+msgid "game:local_board_display"
+msgstr "Board display"
+
+#. Native Go kiosk UI.
+msgid "game:local_count_threshold"
+msgstr "Scoring requires {n} moves"
+
+#. Native Go kiosk UI.
+msgid "game:count_stones"
+msgstr "Score"
+
+#. Native Go kiosk UI.
+msgid "game:abandon_local"
+msgstr "Abandon"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_again"
+msgstr "Prepare board again"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_again"
+msgstr "Confirm again"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_move"
+msgstr "Confirm move"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_before_move"
+msgstr "Prepare before playing"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_switch"
+msgstr "Confirm to switch sides"
+
+#. Native Go kiosk UI.
+msgid "game:local_select_first"
+msgstr "Select a point first"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_confirm"
+msgstr "Wait for opponent's confirmation"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_confirm"
+msgstr "Confirm pass?"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_confirm"
+msgstr "Abandon this game?"
+
+#. Native Go kiosk UI.
+msgid "game:local_resign_question"
+msgstr "Resign?"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_discard"
+msgstr "Passing discards your selected point."
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_physical"
+msgstr "Check that the physical board has no unconfirmed move."
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_body"
+msgstr "After passing, it is your opponent's turn."
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_body"
+msgstr ""
+"Abandoning saves no game record, and the game will not appear in review."
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_failed"
+msgstr "Abandoning failed. Retry; the current game is still retained."
+
+#. Native Go kiosk UI.
+msgid "game:local_guide_clock"
+msgstr ""
+"Both clocks pause during confirmation. After success, your opponent's clock "
+"starts; after failure, yours continues. Wait for the confirmation sound and "
+"the opponent's area to light up before the next move."
+
+#. Native Go kiosk UI.
+msgid "game:local_play_guide"
+msgstr "Play instructions"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandoning"
+msgstr "Abandoning…"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_accept"
+msgstr "Confirm abandon"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_accept"
+msgstr "Confirm pass"
+
+#. Native Go kiosk UI.
+msgid "game:local_black_resign_accept"
+msgstr "Confirm Black resigns"
+
+#. Native Go kiosk UI.
+msgid "game:local_white_resign_accept"
+msgstr "Confirm White resigns"
+
+#. Native Go kiosk UI.
+msgid "local:recovery_failed"
+msgstr ""
+"Recognition has not recovered. Check the connection and board, then retry."
+
+#. Native Go kiosk UI.
+msgid "local:recover_physical"
+msgstr "Restore board recognition"
+
+#. Native Go kiosk UI.
+msgid "local:recover_confirmed_stones"
+msgstr ""
+"Keep confirmed stones and take back unconfirmed ones. Align the outer frame,"
+" then recheck recognition against the recorded position."
+
+#. Native Go kiosk UI.
+msgid "local:recover_empty_option"
+msgstr ""
+"Frame alignment uses no lights and needs no clearing. Empty-board "
+"calibration requires removing all stones, then restoring the recorded "
+"position."
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration"
+msgstr "Empty-board calibration"
+
+#. Native Go kiosk UI.
+msgid "local:retry_geometry"
+msgstr "Recheck"
+
+#. Native Go kiosk UI.
+msgid "local:recovering"
+msgstr "Checking…"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_check_point"
+msgstr ""
+"Check the intersection circled in purple on the left against the physical "
+"board."
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_stone"
+msgstr "Camera detects"
+
+#. Native Go kiosk UI.
+msgid "game:stone_suffix"
+msgstr "stone"
+
+#. Native Go kiosk UI.
+msgid "game:no_move_at_point"
+msgstr "No stone at this point in the recorded position"
+
+#. Native Go kiosk UI.
+msgid "game:extra_stone"
+msgstr "Extra"
+
+#. Native Go kiosk UI.
+msgid "game:missing_stone"
+msgstr "Missing"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_led"
+msgstr "The matching physical point flashes purple."
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_not_stone_hint"
+msgstr ""
+"If there is no new stone here, tap “Not a move”. If a stone was played, "
+"adjust it and wait for recognition."
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_restore_hint"
+msgstr ""
+"Adjust the physical board at the purple circles. Play resumes automatically "
+"once recognition recovers."
+
+#. Native Go kiosk UI.
+msgid "Not a move"
+msgstr "Not a move"
+
+#. Native Go kiosk UI.
+msgid "game:ranked_ai_adjudication"
+msgstr "The cloud AI estimates unfinished games using Chinese rules."
+
+#. Native Go kiosk UI.
+msgid "game:lobby_move_unconfirmed"
+msgstr "Move not confirmed. Check the position and retry."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_conflict"
+msgstr ""
+"OGS has not confirmed this move. Check the position before playing again."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_unavailable"
+msgstr "OGS is unavailable. This move is unconfirmed; check the connection."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_unconfirmed"
+msgstr "OGS did not confirm this move. Check before continuing."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_failed"
+msgstr "OGS action not delivered"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_sending"
+msgstr "Sending to OGS…"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_waiting"
+msgstr "Waiting for OGS confirmation"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_retry"
+msgstr "Check connection and retry"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_authority"
+msgstr "This device does not decide the result in advance"
+
+#. Native Go kiosk UI.
+msgid "local:return_original_game"
+msgstr "Back to game"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration_title"
+msgstr "Empty-board calibration · Game retained"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration_sub"
+msgstr ""
+"Remove all stones first; restore confirmed stones from the record after "
+"calibration, then recheck"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_confirm_title"
+msgstr "Confirm no dead stones"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_confirm_body"
+msgstr ""
+"OGS dead-stone marks are not synced. Confirming sends “no dead stones” to "
+"OGS. If stones still need removing, choose Continue play."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_cancel"
+msgstr "Cancel confirmation"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_send"
+msgstr "Send no dead stones"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_title"
+msgstr "Some points are undecided"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_body"
+msgstr "Golaxy has not decided the result. Play continues."
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_led"
+msgstr ""
+"Purple circles mark points on screen; the matching physical points flash "
+"purple."
+
+#. Native Go kiosk UI.
+msgid "growth:cal_help_label"
+msgstr "Past-year practice help"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_help"
+msgstr ""
+"Each square is one day, counting completed games and newly solved problems. "
+"Brighter means more completed. A white border marks today."
+
+#. Native Go kiosk UI.
+msgid "growth:cal_loading"
+msgstr "Reading practice records…"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_sun"
+msgstr "Sun"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_grid_aria"
+msgstr ""
+"{n} practice days in the past year. Each column is one week, Monday to "
+"Sunday; a white border marks today."
+
+#. Native Go kiosk UI.
+msgid "growth:cal_week"
+msgstr "One week per column · Mon–Sun"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_legend"
+msgstr "Practice count: low to high"
+
+#. Native Go kiosk UI.
+msgid "growth:rank_help_label"
+msgstr "Device rank help"
+
+#. Native Go kiosk UI.
+msgid "growth:rank_help"
+msgstr ""
+"Your device rank comes from ranked play. A net score of +3 promotes you one "
+"level; −3 demotes you one level."
+
+#. Native Go kiosk UI.
+msgid "growth:trend_short"
+msgstr "No line until ranked games span two days"
+
+#. Native Go kiosk UI.
+msgid "growth:trend_unplaced_short"
+msgstr "Rank trend starts after placement"
+
+#. Native Go kiosk UI.
+msgid "growth:tabs_label"
+msgstr "Growth records"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_overview"
+msgstr "Overview"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_diagnosis"
+msgstr "Skill diagnosis"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_opponents"
+msgstr "Opponents"
+
+#. Native Go kiosk UI.
+msgid "growth:local_note_short"
+msgstr "Local records · Some games may be missing"
+
+#. Native Go kiosk UI.
+msgid "growth:unknown_seat_short"
+msgstr "games excluded from win rate"
+
+#. Native Go kiosk UI.
+msgid "growth:winrate_help_label"
+msgstr "Win-rate calculation help"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_help_label"
+msgstr "Opponent-strength grouping help"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_help"
+msgstr ""
+"Only counted ranked games are shown, grouped by the opponent's rank at the "
+"time. Setup strength selects the opponent, not your rank."
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local"
+msgstr "Local records; the cloud may hold more games."
+
+#. Native Go kiosk UI.
+msgid "growth:rung_failed"
+msgstr "Could not read opponent results"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_failed_p"
+msgstr "Try again later."
+
+#. Native Go kiosk UI.
+msgid "growth:rung_loading"
+msgstr "Reading opponent results…"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local_empty_h"
+msgstr "No local results yet"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local_empty_p"
+msgstr ""
+"Only local records are available. The cloud may hold other ranked games; "
+"check again when connected."
+
+#. Native Go kiosk UI.
+msgid "growth:help_title"
+msgstr "Help"
+
+#. Native Go kiosk UI.
+msgid "growth:help_close"
+msgstr "Got it"
+
+#. Native Go kiosk UI.
+msgid "Training"
+msgstr "Training"
+
+#. Native Go kiosk UI.
+msgid "tsumego:boardPreview"
+msgstr "Position preview on the left"
+
+#. Native Go kiosk UI.
+msgid "tsumego:enterProblem"
+msgstr "Open problem"
+
+#. Native Go kiosk UI.
+msgid "tsumego:isLast"
+msgstr "This is the last problem"
+
+#. Native Go kiosk UI.
+msgid ""
+"Find the one move — judged on placement, a wrong move is taken straight "
+"back."
+msgstr ""
+"Find the move. Placement is judged immediately; a wrong move is taken back."
+
+#. Native Go kiosk UI.
+msgid "tsumego:physicalBoardShort"
+msgstr "Physical board"
+
+#. Native Go kiosk UI.
+msgid "tsumego:physRestoreInitial"
+msgstr ""
+"Keep correct stones. Remove extra or wrong-color stones marked with a red ×."
+" Add black stones at red lights and white at green lights. Starts "
+"automatically when the board matches."
+
+#. Native Go kiosk UI.
+msgid "tsumego:physRestoreCounts"
+msgstr "({extra} to remove, {missing} to add)"
+
+#. Native Go kiosk UI.
+msgid "research:new_setup_notice"
+msgstr ""
+"Editing stones created a new position and cleared the previous move history."
+
+#. Native Go kiosk UI.
+msgid "research:analysis_on_request"
+msgstr "Analyze current position on request"
+
+#. Native Go kiosk UI.
+msgid "report:physical_board_short"
+msgstr "Physical board"
+
+#. Native Go kiosk UI.
+msgid "kifu:japanese_rules_default_source"
+msgstr ""
+"SGF has no rules. Japanese rules are assumed from komi 6.5; actual event "
+"rules are unverified."
+
+#. Native Go kiosk UI.
+msgid "kifu:chinese_rules_default_source"
+msgstr ""
+"SGF has no rules. Chinese rules are assumed from komi 7.5; actual event "
+"rules are unverified."
+
+#. Native Go kiosk UI.
+msgid "report:trend_help"
+msgstr ""
+"Green is Black's win rate; orange is Black's point lead. The horizontal axis"
+" is move number. Tap to jump to a position; missing analysis is left blank."
+
+#. Native Go kiosk UI.
+msgid "report:chart_help"
+msgstr "Help"
+
+#. Native Go kiosk UI.
+msgid "live:recommend_tab"
+msgstr "Recommendations"
+
+#. Native Go kiosk UI.
+msgid "report:collapse_workspace"
+msgstr "Collapse analysis workspace"
+
+#. Native Go kiosk UI.
+msgid "report:expand_workspace"
+msgstr "Expand current chart or recommendations"
+
+#. Native Go kiosk UI.
+msgid "report:recommend_help"
+msgstr ""
+"Recommendation is the AI's preference among candidate moves, not a human "
+"move probability. Point lead and win rate are from the side to play; a "
+"positive lead favors that side. Tap a candidate to preview variations. The "
+"played move is added if outside the top five. Missing evaluations show —."
+
+#. Native Go kiosk UI.
+msgid "report:game_details"
+msgstr "Game details"
+
+#. Native Go kiosk UI.
+msgid "report:ai_recommendation"
+msgstr "AI recommendations"
+
+#. Native Go kiosk UI.
+msgid "report:to_play"
+msgstr "to play"
+
+#. Native Go kiosk UI.
+msgid "report:after_move"
+msgstr "After move {n}"
+
+#. Native Go kiosk UI.
+msgid "report:actual_move_short"
+msgstr "Played"
+
+#. Native Go kiosk UI.
+msgid "report:no_position_analysis"
+msgstr "No analysis for this position"
+
+#. Native Go kiosk UI.
+msgid "report:even_position"
+msgstr "Even position"
+
+#. Native Go kiosk UI.
+msgid "report:leads"
+msgstr "leads"
+
+#. Native Go kiosk UI.
+msgid "report:position_number"
+msgstr "Move {n}"
+
+#. Native Go kiosk UI.
+msgid "live:pause"
+msgstr "Pause"
+
+#. Native Go kiosk UI.
+msgid "live:play"
+msgstr "Play"
+
+#. Native Go kiosk UI.
+msgid "common:back"
+msgstr "Back"
+
+#. Native Go kiosk UI.
+msgid "baipu:auto_recognize"
+msgstr "Continues after recognition"
+
+#. Native Go kiosk UI.
+msgid "baipu:led_problem"
+msgstr "LED not lit"
+
+#. Native Go kiosk UI.
+msgid "baipu:hint_paused_title"
+msgstr "AI hint · Recognition paused"
+
+#. Native Go kiosk UI.
+msgid "baipu:hint_resume"
+msgstr "Press AI hint again to continue replay"
+
+#. Native Go kiosk UI.
+msgid "baipu:panel_tabs"
+msgstr "Replay information"
+
+#. Native Go kiosk UI.
+msgid "baipu:moves_tab"
+msgstr "Moves"
+
+#. Native Go kiosk UI.
+msgid "baipu:info_tab"
+msgstr "Game record"
+
+#. Native Go kiosk UI.
+msgid "game:board_size_unit"
+msgstr "lines"
+
+#. Native Go kiosk UI.
+msgid "game:komi"
+msgstr "Komi"
+
+#. Native Go kiosk UI.
+msgid "baipu:guard_sub_camera"
+msgstr ""
+"The camera must see the board clearly before recognizing replay stones"
+
+#. Native Go kiosk UI.
+msgid "settings:nav_typography"
+msgstr "Fonts and text size"
+
+#. Native Go kiosk UI.
+msgid "settings:typography_scope"
+msgstr ""
+"The Chinese font applies to Han characters in Go. Latin letters and numbers "
+"stay unchanged."
+
+#. Native Go kiosk UI.
+msgid "settings:font"
+msgstr "Font"
+
+#. Native Go kiosk UI.
+msgid "report:library_players_title"
+msgstr "{black} vs {white}"
+
+#. Native Go kiosk UI.
+msgid "report:library_game_accessible"
+msgstr "{title}, Black {black} vs White {white}"
+
+#. Native Go kiosk UI.
+msgid "review:open_replay"
+msgstr "View game record"
+
+#. Native Go kiosk UI.
+msgid "review:analysis_report"
+msgstr "Analysis report"
+
+#. Native Go kiosk UI.
+msgid "review:tier_view"
+msgstr "View"
+
+#. Native Go kiosk UI.
+msgid "review:tier_working"
+msgstr "Analyzing"
+
+#. Native Go kiosk UI.
+msgid "review:tier_generate"
+msgstr "Generate"
+
+#. Native Go kiosk UI.
+msgid "review:history_search_toggle"
+msgstr "Show or hide history search"
+
+#. Native Go kiosk UI.
+msgid "review:back_review_full"
+msgstr "Back to review"
+
+#. Native Go kiosk UI.
+msgid "report:komi"
+msgstr "Komi"
+
+#. Native Go kiosk UI.
+msgid "platform:phone_digits_only"
+msgstr "Phone number must contain digits only"
+
+#. Native Go kiosk UI.
+msgid "platform:connect_account_hint"
+msgstr "Connect with a {name} account"
+
+#. Native Go kiosk UI.
+msgid "Info"
+msgstr "Info"
+
+#. Native Go kiosk UI.
+msgid "platform:not_connected"
+msgstr "Not connected"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_play"
+msgstr "Back to play"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy"
+msgstr "Golaxy Go"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_connection"
+msgstr "Reading Golaxy connection"
+
+#. Native Go kiosk UI.
+msgid "platform:connection_check_failed"
+msgstr "Could not read Golaxy connection status"
+
+#. Native Go kiosk UI.
+msgid "platform:connect_golaxy"
+msgstr "Connect Golaxy"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy_login_expired"
+msgstr "Golaxy login expired"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy_reconnect"
+msgstr "Golaxy login expired; reconnect"
+
+#. Native Go kiosk UI.
+msgid "platform:start_game"
+msgstr "Start a game"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_match"
+msgstr "Quick match"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_setup"
+msgstr "Match players using Golaxy rules"
+
+#. Native Go kiosk UI.
+msgid "platform:rooms"
+msgstr "Rooms"
+
+#. Native Go kiosk UI.
+msgid "platform:room_setup"
+msgstr "Create or join by room number"
+
+#. Native Go kiosk UI.
+msgid "platform:engine_play"
+msgstr "Play AI"
+
+#. Native Go kiosk UI.
+msgid "platform:engine_setup"
+msgstr "Golaxy AI · Choose a level"
+
+#. Native Go kiosk UI.
+msgid "platform:lobby"
+msgstr "Game lobby"
+
+#. Native Go kiosk UI.
+msgid "platform:all_games"
+msgstr "All games"
+
+#. Native Go kiosk UI.
+msgid "platform:online_players"
+msgstr "Online players"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_rooms"
+msgstr "Reading Golaxy games"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_users"
+msgstr "Reading online players"
+
+#. Native Go kiosk UI.
+msgid "platform:rooms_failed"
+msgstr "Could not read Golaxy games"
+
+#. Native Go kiosk UI.
+msgid "platform:no_rooms"
+msgstr "No games yet"
+
+#. Native Go kiosk UI.
+msgid "platform:no_users"
+msgstr "No players online"
+
+#. Native Go kiosk UI.
+msgid "platform:room_suffix"
+msgstr "room"
+
+#. Native Go kiosk UI.
+msgid "platform:room"
+msgstr "Room"
+
+#. Native Go kiosk UI.
+msgid "platform:even_game"
+msgstr "Even game"
+
+#. Native Go kiosk UI.
+msgid "platform:handicap"
+msgstr "Handicap"
+
+#. Native Go kiosk UI.
+msgid "platform:stones"
+msgstr "stones"
+
+#. Native Go kiosk UI.
+msgid "platform:unknown_player"
+msgstr "Awaiting player information"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_pregame"
+msgstr "Choose move input and match time before starting"
+
+#. Native Go kiosk UI.
+msgid "platform:room_pregame"
+msgstr "Create, recover, or join a Golaxy room by number"
+
+#. Native Go kiosk UI.
+msgid "platform:pregame_preview"
+msgstr "19×19 · Empty-board preview"
+
+#. Native Go kiosk UI.
+msgid "platform:match_times"
+msgstr "Match times · Select one or more"
+
+#. Native Go kiosk UI.
+msgid "platform:allow_ai_match"
+msgstr "Allow AI opponents"
+
+#. Native Go kiosk UI.
+msgid "platform:ai_match_unavailable"
+msgstr "AI opponents unavailable; matching players only"
+
+#. Native Go kiosk UI.
+msgid "platform:room_mode"
+msgstr "Room mode"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room"
+msgstr "Create room"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room"
+msgstr "My room"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room"
+msgstr "Join room"
+
+#. Native Go kiosk UI.
+msgid "platform:create_golaxy_room"
+msgstr "Create Golaxy room"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room_hint"
+msgstr ""
+"After creating, set up the game inside the room and wait for another player."
+
+#. Native Go kiosk UI.
+msgid "platform:create_room_rules"
+msgstr "Confirm the game rules with your opponent after creating."
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_hint"
+msgstr "Shows the current account's room returned by Golaxy."
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_unavailable"
+msgstr "My room is not available yet"
+
+#. Native Go kiosk UI.
+msgid "platform:join_golaxy_room"
+msgstr "Join Golaxy room"
+
+#. Native Go kiosk UI.
+msgid "platform:room_number"
+msgstr "Room number"
+
+#. Native Go kiosk UI.
+msgid "platform:enter_room_number"
+msgstr "Enter Golaxy room number"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room_role"
+msgstr ""
+"Joining by number may place you as a spectator. Confirm that a playing seat "
+"is available."
+
+#. Native Go kiosk UI.
+msgid "platform:match_times_hint"
+msgstr ""
+"Select at least one time option. The game opens only after Golaxy finishes "
+"matching."
+
+#. Native Go kiosk UI.
+msgid "platform:join_room_hint"
+msgstr "After joining, confirm your role and whether the game has started."
+
+#. Native Go kiosk UI.
+msgid "platform:pvp_start_unavailable"
+msgstr "Golaxy game start is unavailable. Try again later."
+
+#. Native Go kiosk UI.
+msgid "platform:match_unavailable"
+msgstr "Start matching · Unavailable"
+
+#. Native Go kiosk UI.
+msgid "platform:create_unavailable"
+msgstr "Create room · Unavailable"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_open_unavailable"
+msgstr "Open my room · Unavailable"
+
+#. Native Go kiosk UI.
+msgid "platform:join_unavailable"
+msgstr "Join room · Unavailable"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_lobby"
+msgstr "Game lobby"
+
+#. Native Go kiosk UI.
+msgid "platform:spectate"
+msgstr "Watch game"
+
+#. Native Go kiosk UI.
+msgid "platform:spectator_board"
+msgstr "Golaxy spectator board"
+
+#. Native Go kiosk UI.
+msgid "platform:moves_suffix"
+msgstr "moves"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_golaxy"
+msgstr "Back to Golaxy"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_audio"
+msgstr "With audio"
+
+#. Native Go kiosk UI.
+msgid "auth:checking_identity"
+msgstr "Verifying identity"
+
+#. Native Go kiosk UI.
+msgid "auth:unavailable_identity"
+msgstr "Identity unconfirmed"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_lock_title"
+msgstr "Camera exposure is not locked"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_lock_body"
+msgstr "Fixed exposure could not be confirmed. Calibration has stopped."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_camera_action"
+msgstr "Check the camera connection, then restart calibration."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_bright_title"
+msgstr "Camera image too bright"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_dark_title"
+msgstr "Camera image too dark"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_lighting_body"
+msgstr "Board details are unclear, so calibration cannot continue."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_lighting_action"
+msgstr "Move to suitable lighting, then restart calibration."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_title"
+msgstr "Exposure adjustment did not finish"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_body"
+msgstr "The camera could not finish adjusting and locking exposure."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_title"
+msgstr "LED at {point} not found"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_body"
+msgstr ""
+"A stone may cover the point, the LEDs may be too dim, or the camera may have"
+" moved."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_action"
+msgstr "Clear the area around {point} and check whether the camera moved."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_title"
+msgstr "Board position differs from the last calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_body"
+msgstr "The camera or board moved; the previous geometry is no longer usable."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_action"
+msgstr "Put the board back, or recalibrate if that is not possible."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_baseline_title"
+msgstr "Stones remained while creating the baseline"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_baseline_body"
+msgstr ""
+"The empty-board baseline is used to recognize future moves. Stones left in "
+"it would cause every move to be misread."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_clear_action"
+msgstr "Clear the board, then restart calibration."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_led_title"
+msgstr "Not all LEDs turned off"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_frames_title"
+msgstr "Not enough baseline images"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_finish_body"
+msgstr ""
+"All five points were found, but the final step failed. The LED strip or "
+"camera may have just disconnected."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_wiring_action"
+msgstr "Check the LED and camera wiring, then restart calibration."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_title"
+msgstr "Calibration did not finish"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_body"
+msgstr "No usable board geometry was obtained."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_action"
+msgstr ""
+"Check that the board is empty and the camera has not moved, then restart "
+"calibration."
+
+#. Native Go kiosk UI.
+msgid "vision:step_done"
+msgstr "Done"
+
+#. Native Go kiosk UI.
+msgid "vision:step_waiting"
+msgstr "Waiting"
+
+#. Native Go kiosk UI.
+msgid "vision:step_running"
+msgstr "In progress"
+
+#. Native Go kiosk UI.
+msgid "vision:step_paused"
+msgstr "Paused"
+
+#. Native Go kiosk UI.
+msgid "vision:step_failed"
+msgstr "Failed"
+
+#. Native Go kiosk UI.
+msgid "vision:step_done_count"
+msgstr "Done · {n} / 5"
+
+#. Native Go kiosk UI.
+msgid "vision:step_cancelled"
+msgstr "Cancelled"
+
+#. Native Go kiosk UI.
+msgid "vision:step_pending"
+msgstr "Not started"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_complete"
+msgstr "5 / 5 located"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_count"
+msgstr "{n} points done"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_stopped"
+msgstr "Calibration stopped. Please restart."
+
+#. Native Go kiosk UI.
+msgid "vision:led_off"
+msgstr "LEDs off"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_continue"
+msgstr "Continue calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:caption_auto_led"
+msgstr "LEDs turn on automatically after hands are clear"
+
+#. Native Go kiosk UI.
+msgid "vision:caption_five_points"
+msgstr "Four corners + center · 5 points"
+
+#. Native Go kiosk UI.
+msgid "vision:completed"
+msgstr "Completed"
+
+#. Native Go kiosk UI.
+msgid "vision:stopped_step"
+msgstr "Stopped at step {n}"
+
+#. Native Go kiosk UI.
+msgid "vision:step_one"
+msgstr "Step 1 / 4"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibration"
+msgstr "Calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibrated"
+msgstr "Calibrated"
+
+#. Native Go kiosk UI.
+msgid "vision:status_invalid"
+msgstr "Invalid"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_hands"
+msgstr "Waiting for hands to clear"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_light"
+msgstr "Waiting for lighting"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_stable"
+msgstr "Waiting for stability"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibrating"
+msgstr "Calibrating"
+
+#. Native Go kiosk UI.
+msgid "vision:status_confirm"
+msgstr "Awaiting confirmation"
+
+#. Native Go kiosk UI.
+msgid "vision:status_uncalibrated"
+msgstr "Not calibrated"
+
+#. Native Go kiosk UI.
+msgid "vision:status_camera"
+msgstr "Camera"
+
+#. Native Go kiosk UI.
+msgid "vision:status_connected"
+msgstr "Connected"
+
+#. Native Go kiosk UI.
+msgid "vision:status_disconnected"
+msgstr "Disconnected"
+
+#. Native Go kiosk UI.
+msgid "vision:status_unknown"
+msgstr "Unconfirmed"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_running"
+msgstr "Calibration in progress"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_camera_missing"
+msgstr "Camera disconnected; cannot check the grid"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_current"
+msgstr "This game already uses this calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:recalibrate_board"
+msgstr "Recalibrate board"
+
+#. Native Go kiosk UI.
+msgid "vision:confirm_empty_recalibrate"
+msgstr "Board clear; recalibrate"
+
+#. Native Go kiosk UI.
+msgid "vision:restart_calibration"
+msgstr "Restart calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:reading_device_status"
+msgstr "Reading device status"
+
+#. Native Go kiosk UI.
+msgid "vision:device_disconnected"
+msgstr "Device disconnected"
+
+#. Native Go kiosk UI.
+msgid "vision:camera_disconnected"
+msgstr "Camera disconnected"
+
+#. Native Go kiosk UI.
+msgid "vision:led_unknown"
+msgstr "LED unconfirmed"
+
+#. Native Go kiosk UI.
+msgid "vision:led_disconnected"
+msgstr "LED disconnected"
+
+#. Native Go kiosk UI.
+msgid "vision:action_failed_title"
+msgstr "Action did not take effect"
+
+#. Native Go kiosk UI.
+msgid "vision:action_failed_help"
+msgstr "Try again. If it keeps failing, check the camera and LED wiring."
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_title"
+msgstr "Image too bright; board details may be unclear"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_title"
+msgstr "Image too dark; board details may be unclear"
+
+#. Native Go kiosk UI.
+msgid "vision:light_title"
+msgstr "Lighting may affect board recognition"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_guidance"
+msgstr "Close the curtains and keep direct sunlight off the board."
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_guidance"
+msgstr "Turn on indoor lights or move to an evenly lit place."
+
+#. Native Go kiosk UI.
+msgid "vision:light_guidance"
+msgstr "Use even, soft lighting."
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_voice"
+msgstr "Too bright. Close the curtains and avoid direct light."
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_voice"
+msgstr "Too dark. Turn on indoor lights."
+
+#. Native Go kiosk UI.
+msgid "vision:light_voice"
+msgstr "Adjust the lighting around the board."
+
+#. Native Go kiosk UI.
+msgid "vision:light_checking"
+msgstr "Checking lighting"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright"
+msgstr "Too bright"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark"
+msgstr "Too dark"
+
+#. Native Go kiosk UI.
+msgid "vision:light_pending"
+msgstr "Lighting needs adjustment"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_done"
+msgstr "Calibration complete"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_running"
+msgstr "Calibrating"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_move_hands"
+msgstr "Move your hands away from the board"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_unstable"
+msgstr "Image is unstable. Keep the board unobstructed."
+
+#. Native Go kiosk UI.
+msgid "vision:preview_obstructed"
+msgstr "Obstruction detected; calibration paused"
+
+#. Native Go kiosk UI.
+msgid "vision:light_rechecking"
+msgstr "Rechecking lighting"
+
+#. Native Go kiosk UI.
+msgid "vision:light_adjust"
+msgstr "Adjust lighting"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_paused"
+msgstr "Calibration paused"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_stable_auto"
+msgstr "Starts automatically when stable"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_retained"
+msgstr "{n} points retained"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_completed_count"
+msgstr "{n} / 5 complete"
+
+#. Native Go kiosk UI.
+msgid "vision:raw_alt"
+msgstr "Raw camera image"
+
+#. Native Go kiosk UI.
+msgid "vision:raw_overlay"
+msgstr "Board geometry overlay on raw image"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_alt"
+msgstr "Corrected top-down image"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_wait_running"
+msgstr "Calibrating; the top-down image will regenerate when done"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_wait"
+msgstr "Top-down image appears after LED calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_overlay"
+msgstr "Board geometry overlay on top-down image"
+
+#. Native Go kiosk UI.
+msgid "vision:help_title"
+msgstr "Calibration help"
+
+#. Native Go kiosk UI.
+msgid "vision:view_raw"
+msgstr "Raw image"
+
+#. Native Go kiosk UI.
+msgid "vision:view_warped"
+msgstr "Top-down"
+
+#. Native Go kiosk UI.
+msgid "vision:view_label"
+msgstr "View"
+
+#. Native Go kiosk UI.
+msgid "vision:help_body"
+msgstr ""
+". Starts only when the board is stable. LEDs turn off if obstructed; once "
+"hands are clear, calibration resumes from the unfinished point. Any failure "
+"will show a specific diagnosis."
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_title"
+msgstr "This device has no camera"
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_body"
+msgstr "Physical-board recognition, replay and puzzles are unavailable; "
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_screen_ok"
+msgstr "On-screen features still work"
+
+#. Native Go kiosk UI.
+msgid "vision:sentence_end"
+msgstr "."
+
+#. Native Go kiosk UI.
+msgid "vision:overlay_failed"
+msgstr "Could not load geometry overlay"
+
+#. Native Go kiosk UI.
+msgid "vision:led_advisory"
+msgstr ""
+"LEDs light only after you press a button; they do not turn on automatically"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_blocked"
+msgstr "Cannot reuse the last calibration now: {reason}."
+
+#. Native Go kiosk UI.
+msgid "vision:recognition_not_ready"
+msgstr "The board is calibrated, but the recognition model is not ready."
+
+#. Native Go kiosk UI.
+msgid "vision:light_paused_eyebrow"
+msgstr "Lighting alert · Calibration paused"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck_help"
+msgstr ""
+"Recheck lighting after adjusting it. Your {n} completed points will be "
+"retained."
+
+#. Native Go kiosk UI.
+msgid "vision:voice_prompt"
+msgstr "Voice prompt"
+
+#. Native Go kiosk UI.
+msgid "vision:light_check_busy"
+msgstr "Checking…"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck"
+msgstr "Recheck after adjusting"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_reconnecting"
+msgstr "Reconnecting video…"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_connecting"
+msgstr "Connecting video…"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_failed"
+msgstr "Video stream disconnected"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_title"
+msgstr "Calibrate the board first"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_play_sub"
+msgstr "The camera must see the board clearly before physical play"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_tsumego_sub"
+msgstr "The camera must see the board clearly before physical puzzles"
+
+#. Native Go kiosk UI.
+msgid "vision:step_empty"
+msgstr "Wait for board stability"
+
+#. Native Go kiosk UI.
+msgid "vision:step_exposure"
+msgstr "Confirm and lock exposure"
+
+#. Native Go kiosk UI.
+msgid "vision:step_points"
+msgstr "Locate board"
+
+#. Native Go kiosk UI.
+msgid "vision:step_baseline"
+msgstr "Create empty-board baseline"
+
+#. Native Go kiosk UI.
+msgid "vision:layout_unsynced"
+msgstr "Board geometry version not synced"
+
+#. Native Go kiosk UI.
+msgid "vision:layout_failed"
+msgstr "Cannot read board geometry"
+
+#. Native Go kiosk UI.
+msgid "vision:start_failed"
+msgstr "Could not start calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_failed"
+msgstr "Could not reuse calibration"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck_failed"
+msgstr "Lighting recheck did not start. Try again."
+
+#. Native Go kiosk UI.
+msgid "game:local_side_resigns"
+msgstr "{side} resigns?"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_retry"
+msgstr "Retry"
+
+#. Native Go kiosk UI.
+msgid "成绩未送达"
+msgstr "Result not delivered"
+
+#. Native Go kiosk UI.
+msgid "我执"
+msgstr "My colour"
+
+#. Native Go kiosk UI.
+msgid "继续对局"
+msgstr "Continue Game"
+
+#. Native Go kiosk UI.
+msgid "正在重试…"
+msgstr "Retrying…"
+
+#. Native Go kiosk UI.
+msgid "取消"
+msgstr "Cancel"
+
+#. Native Go kiosk UI.
+msgid "第"
+msgstr "Move "
+
+#. Native Go kiosk UI.
+msgid "档"
+msgstr "levels"
+
+#. Native Go kiosk UI.
+msgid "领地"
+msgstr "Territory"
+
+#. Native Go kiosk UI.
+msgid "确定"
+msgstr "OK"
+
+#. Native Go kiosk UI.
+msgid "实体盘"
+msgstr "Physical board"
+
+#. Native Go kiosk UI.
+msgid "重试"
+msgstr "Retry"
+
+#. Native Go kiosk UI.
+msgid "黑方"
+msgstr "Black"
+
+#. Native Go kiosk UI.
+msgid "白方"
+msgstr "White"
+
+#. Native Go kiosk UI.
+msgid "加载更多"
+msgstr "Load more"
+
+#. Native Go kiosk UI.
+msgid "查看棋谱"
+msgstr "View game record"
+
+#. Native Go kiosk UI.
+msgid "确认"
+msgstr "Confirm"
+
+#. Native Go kiosk UI.
+msgid "黑"
+msgstr "Black"
+
+#. Native Go kiosk UI.
+msgid "白"
+msgstr "White"
+
+#. Native Go kiosk UI.
+msgid "返回"
+msgstr "Back"
+
+#. Native Go kiosk UI.
+msgid "已结束"
+msgstr "Ended"
+
+#. Native Go kiosk UI.
+msgid "观战"
+msgstr "Watch"
+
+#. Native Go kiosk UI.
+msgid "开"
+msgstr "On"
+
+#. Native Go kiosk UI.
+msgid "关"
+msgstr "Off"
+
+#. Native Go kiosk UI.
+msgid "上一手"
+msgstr "Previous move"
+
+#. Native Go kiosk UI.
+msgid "尚未连接"
+msgstr "Not connected"
+
+#. Native Go kiosk UI.
+msgid "落子"
+msgstr "Play on"
+
+#. Native Go kiosk UI.
+msgid "屏幕"
+msgstr "Screen"
+
+#. Native Go kiosk UI.
+msgid "路数"
+msgstr "Board"
+
+#. Native Go kiosk UI.
+msgid "19 路"
+msgstr "19x19"
+
+#. Native Go kiosk UI.
+msgid "快速匹配"
+msgstr "Quick match"
+
+#. Native Go kiosk UI.
+msgid "发起挑战"
+msgstr "Send a challenge"
+
+#. Native Go kiosk UI.
+msgid "接受"
+msgstr "Accept"
+
+#. Native Go kiosk UI.
+msgid "按用户名找人"
+msgstr "Find someone by username"
+
+#. Native Go kiosk UI.
+msgid "没能从平台取回名单"
+msgstr "The player list could not be fetched from the platform"
+
+#. Native Go kiosk UI.
+msgid "正在读…"
+msgstr "Loading…"
+
+#. Native Go kiosk UI.
+msgid "那边没有这个人"
+msgstr "There is no such person over there"
+
+#. Native Go kiosk UI.
+msgid "对局中"
+msgstr "Playing"
+
+#. Native Go kiosk UI.
+msgid "空闲"
+msgstr "Free"
+
+#. Native Go kiosk UI.
+msgid "挑战"
+msgstr "Challenge"
+
+#. Native Go kiosk UI.
+msgid "发出挑战"
+msgstr "Send the challenge"
+
+#. Native Go kiosk UI.
+msgid "次"
+msgstr "times"
+
+#. Native Go kiosk UI.
+msgid "训练营"
+msgstr "Training"
+
+#. Native Go kiosk UI.
+msgid "题"
+msgstr "problems"
+
+#. Native Go kiosk UI.
+msgid "题型"
+msgstr "Categories"
+
+#. Native Go kiosk UI.
+msgid "做题记录没读到"
+msgstr "The solving record could not be read"
+
+#. Native Go kiosk UI.
+msgid "单元"
+msgstr "Units"
+
+#. Native Go kiosk UI.
+msgid "错题"
+msgstr "Wrong ones"
+
+#. Native Go kiosk UI.
+msgid "课程"
+msgstr "Courses"
+
+#. Native Go kiosk UI.
+msgid "带音频"
+msgstr "With audio"
+
+#. Native Go kiosk UI.
+msgid "退出对局"
+msgstr "Leave the game"
+
+#. Native Go kiosk UI.
+msgid "手"
+msgstr "moves"
+
+#. Native Go kiosk UI.
+msgid "不限时"
+msgstr "Untimed"
+
+#. Native Go kiosk UI.
+msgid "轮到你"
+msgstr "Your turn"
+
+#. Native Go kiosk UI.
+msgid "对方回合"
+msgstr "Opponent's turn"
+
+#. Native Go kiosk UI.
+msgid "等待中"
+msgstr "Waiting"
+
+#. Native Go kiosk UI.
+msgid "提子"
+msgstr "Captures"
+
+#. Native Go kiosk UI.
+msgid "已连接"
+msgstr "Connected"
+
+#. Native Go kiosk UI.
+msgid "未连接"
+msgstr "Disconnected"
+
+#. Native Go kiosk UI.
+msgid "棋盘显示"
+msgstr "Board display"
+
+#. Native Go kiosk UI.
+msgid "坐标"
+msgstr "Coordinates"
+
+#. Native Go kiosk UI.
+msgid "手数"
+msgstr "Moves"
+
+#. Native Go kiosk UI.
+msgid "数子"
+msgstr "Score"
+
+#. Native Go kiosk UI.
+msgid "停一手"
+msgstr "Pass"
+
+#. Native Go kiosk UI.
+msgid "认输"
+msgstr "Resign"
+
+#. Native Go kiosk UI.
+msgid "知道了"
+msgstr "Got it"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘"
+msgstr "Physical board"
+
+#. Native Go kiosk UI.
+msgid "暂不可用"
+msgstr "Temporarily unavailable"
+
+#. Native Go kiosk UI.
+msgid "在线大厅"
+msgstr "Online lobby"
+
+#. Native Go kiosk UI.
+msgid "登录后进在线大厅"
+msgstr "Sign in to enter the online lobby"
+
+#. Native Go kiosk UI.
+msgid "前往登录"
+msgstr "Go to sign-in"
+
+#. Native Go kiosk UI.
+msgid "返回对弈"
+msgstr "Back to play"
+
+#. Native Go kiosk UI.
+msgid "开一局"
+msgstr "Start a game"
+
+#. Native Go kiosk UI.
+msgid "对战大厅"
+msgstr "Game lobby"
+
+#. Native Go kiosk UI.
+msgid "在线棋友"
+msgstr "Online players"
+
+#. Native Go kiosk UI.
+msgid "当前没有进行中的对局。"
+msgstr "No active games at the moment."
+
+#. Native Go kiosk UI.
+msgid "房"
+msgstr "room"
+
+#. Native Go kiosk UI.
+msgid "分先"
+msgstr "Even game"
+
+#. Native Go kiosk UI.
+msgid "执黑"
+msgstr "plays Black"
+
+#. Native Go kiosk UI.
+msgid "执白"
+msgstr "plays White"
+
+#. Native Go kiosk UI.
+msgid "这是你"
+msgstr "This is you"
+
+#. Native Go kiosk UI.
+msgid "邀请"
+msgstr "Invite"
+
+#. Native Go kiosk UI.
+msgid "拒绝"
+msgstr "Reject"
+
+#. Native Go kiosk UI.
+msgid "接受并开局"
+msgstr "Accept and start"
+
+#. Native Go kiosk UI.
+msgid "返回大厅"
+msgstr "Back to Lobby"
+
+#. Native Go kiosk UI.
+msgid "当前段位"
+msgstr "Current rank"
+
+#. Native Go kiosk UI.
+msgid "取消匹配"
+msgstr "Cancel matchmaking"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_rejected"
+msgstr "Scoring request rejected"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_timeout"
+msgstr "Scoring request timed out"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_declined"
+msgstr "Scoring request declined"
+
+#. Native Go kiosk UI.
+msgid "game:count_response_failed"
+msgstr "Could not respond to scoring request. Retry."
+
+#. Native Go kiosk UI.
+msgid "game:count_identity_unavailable"
+msgstr ""
+"Central account identity is unconfirmed; scoring requests cannot be handled "
+"yet."
+
+#. Native Go kiosk UI.
+msgid "game:central_disconnected"
+msgstr "Central connection lost"
+
+#. Native Go kiosk UI.
+msgid "game:central_disconnected_body"
+msgstr ""
+"Game status cannot be confirmed. Reconnecting will read the latest board. Do"
+" not play another move yet."
+
+#. Native Go kiosk UI.
+msgid "game:central_reconnecting"
+msgstr "Reconnecting…"
+
+#. Native Go kiosk UI.
+msgid "game:central_reconnect"
+msgstr "Reconnect"
+
+#. Native Go kiosk UI.
+msgid "game:back_online_lobby"
+msgstr "Back to online lobby"
+
+#. Native Go kiosk UI.
+msgid "game:count_identity_retry"
+msgstr "Retry identity check"
+
+#. Native Go kiosk UI.
+msgid "game:count_recounting"
+msgstr "Recounting…"
+
+#. Native Go kiosk UI.
+msgid "game:count_waiting_opponent"
+msgstr "Waiting for opponent to confirm scoring"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_failed"
+msgstr "Automatic scoring failed"
+
+#. Native Go kiosk UI.
+msgid "game:count_result_pending"
+msgstr ""
+"Play has stopped. The official result will appear only after scoring "
+"succeeds."
+
+#. Native Go kiosk UI.
+msgid "game:count_retry"
+msgstr "Retry scoring"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_running"
+msgstr "Scoring automatically"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_pending_body"
+msgstr "Both players passed. The result is not yet decided. Please wait."
+
+#. Native Go kiosk UI.
+msgid "game:count_waiting_body"
+msgstr "The official result appears after your opponent accepts."
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_title"
+msgstr "Opponent requests scoring"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_status"
+msgstr "Choose whether to end this game."
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_body"
+msgstr "{name} requests ending the game and scoring. Accept?"
+
+#. Native Go kiosk UI.
+msgid "game:count_decline"
+msgstr "Decline scoring"
+
+#. Native Go kiosk UI.
+msgid "game:count_accept"
+msgstr "Accept scoring"
+
+#. Native Go kiosk UI.
+msgid "game:local_seat_panel"
+msgstr "{side} player panel"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_side"
+msgstr "Waiting for {side}"
+
+#. Native Go kiosk UI.
+msgid "{label} · {value2}"
+msgstr "{label} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "未完成对局"
+msgstr "Unfinished game"
+
+#. Native Go kiosk UI.
+msgid "对手档位"
+msgstr "Opponent level"
+
+#. Native Go kiosk UI.
+msgid "● 黑棋"
+msgstr "● Black"
+
+#. Native Go kiosk UI.
+msgid "○ 白棋"
+msgstr "○ White"
+
+#. Native Go kiosk UI.
+msgid "未收到过"
+msgstr "Never received"
+
+#. Native Go kiosk UI.
+msgid "成绩已压"
+msgstr "Result queued"
+
+#. Native Go kiosk UI.
+msgid "不适用"
+msgstr "Not applicable"
+
+#. Native Go kiosk UI.
+msgid "立即重试"
+msgstr "Retry now"
+
+#. Native Go kiosk UI.
+msgid "你是"
+msgstr "You are"
+
+#. Native Go kiosk UI.
+msgid ",配到"
+msgstr ", matched with"
+
+#. Native Go kiosk UI.
+msgid "领地判断：本局剩余 {value1} 次"
+msgstr "Territory estimate: {value1} queries left this game"
+
+#. Native Go kiosk UI.
+msgid "正在自动数子"
+msgstr "Scoring automatically"
+
+#. Native Go kiosk UI.
+msgid "自动数子失败，请按「数子」重试"
+msgstr "Automatic scoring failed. Press Score to retry."
+
+#. Native Go kiosk UI.
+msgid "{who}{value2}"
+msgstr "{who}{value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {point}"
+msgstr "{value1} {point}"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{value2}"
+msgstr "{value1}，{value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1}{value2}"
+msgstr "{value1}{value2}"
+
+#. Native Go kiosk UI.
+msgid "{white}{value2} {value3} {value4}"
+msgstr "{white}{value2} {value3} {value4}"
+
+#. Native Go kiosk UI.
+msgid " · {value1}"
+msgstr " · {value1}"
+
+#. Native Go kiosk UI.
+msgid "屏幕点击 + 实体落子"
+msgstr "Screen taps + physical moves"
+
+#. Native Go kiosk UI.
+msgid "棋盘检测异常"
+msgstr "Board detection error"
+
+#. Native Go kiosk UI.
+msgid "棋盘检测异常，请检查摄像头和棋盘位置"
+msgstr "Board detection error. Check the camera and board position."
+
+#. Native Go kiosk UI.
+msgid "{value1}{backLabel}"
+msgstr "{value1}{backLabel}"
+
+#. Native Go kiosk UI.
+msgid "棋友资料"
+msgstr "Player profile"
+
+#. Native Go kiosk UI.
+msgid "关闭棋友资料"
+msgstr "Close player profile"
+
+#. Native Go kiosk UI.
+msgid "星阵号"
+msgstr "Golaxy ID"
+
+#. Native Go kiosk UI.
+msgid "对弈战绩"
+msgstr "Game results"
+
+#. Native Go kiosk UI.
+msgid "邀请偏好"
+msgstr "Invitation preferences"
+
+#. Native Go kiosk UI.
+msgid "关注结果尚未确认。"
+msgstr "Follow status is not confirmed."
+
+#. Native Go kiosk UI.
+msgid "重新读取关注状态"
+msgstr "Reload follow status"
+
+#. Native Go kiosk UI.
+msgid "邀请这位棋友进行星阵人人对弈"
+msgstr "Invite this player to a Golaxy game"
+
+#. Native Go kiosk UI.
+msgid "本机落子方式"
+msgstr "Move input on this device"
+
+#. Native Go kiosk UI.
+msgid "屏幕落子"
+msgstr "Screen input"
+
+#. Native Go kiosk UI.
+msgid "邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。"
+msgstr ""
+"Game invitations are unavailable. Golaxy invitations, cancellation, and "
+"entry into playable games have not been verified."
+
+#. Native Go kiosk UI.
+msgid "的星阵人人对弈棋谱"
+msgstr "'s Golaxy games against players"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋谱…"
+msgstr "Reading game records…"
+
+#. Native Go kiosk UI.
+msgid "棋谱暂时无法读取。"
+msgstr "Game records are unavailable."
+
+#. Native Go kiosk UI.
+msgid "暂无人人对弈棋谱"
+msgstr "No player-vs-player records"
+
+#. Native Go kiosk UI.
+msgid "{board_size} 路"
+msgstr "{board_size} lines"
+
+#. Native Go kiosk UI.
+msgid "{move_number} 手"
+msgstr "{move_number} moves"
+
+#. Native Go kiosk UI.
+msgid "邀请已发送 · 等待{username}回应"
+msgstr "Invitation sent · Waiting for {username}"
+
+#. Native Go kiosk UI.
+msgid "没能发送对局邀请"
+msgstr "Could not send game invitation"
+
+#. Native Go kiosk UI.
+msgid "等待星阵确认结果。接受、拒绝、超时或取消后显示明确结果。"
+msgstr ""
+"Waiting for Golaxy confirmation. Acceptance, refusal, timeout or "
+"cancellation will show a final status."
+
+#. Native Go kiosk UI.
+msgid "对方状态可能已改变，请返回资料后重试。"
+msgstr ""
+"The player's status may have changed. Return to the profile and retry."
+
+#. Native Go kiosk UI.
+msgid "邀请对局"
+msgstr "Invite to game"
+
+#. Native Go kiosk UI.
+msgid "正在更新"
+msgstr "Updating"
+
+#. Native Go kiosk UI.
+msgid "取消关注"
+msgstr "Unfollow"
+
+#. Native Go kiosk UI.
+msgid "添加关注"
+msgstr "Follow"
+
+#. Native Go kiosk UI.
+msgid "返回资料"
+msgstr "Back to profile"
+
+#. Native Go kiosk UI.
+msgid "邀请对局暂不可用"
+msgstr "Game invitations unavailable"
+
+#. Native Go kiosk UI.
+msgid "发送邀请"
+msgstr "Send invitation"
+
+#. Native Go kiosk UI.
+msgid "取消邀请尚未接通"
+msgstr "Invitation cancellation not connected"
+
+#. Native Go kiosk UI.
+msgid "取消邀请"
+msgstr "Cancel invitation"
+
+#. Native Go kiosk UI.
+msgid "当前账号"
+msgstr "Current account"
+
+#. Native Go kiosk UI.
+msgid "昵称未获取"
+msgstr "Nickname unavailable"
+
+#. Native Go kiosk UI.
+msgid "星阵账号 ·"
+msgstr "Golaxy account ·"
+
+#. Native Go kiosk UI.
+msgid "当前账号已连接。切换账号会先断开当前星阵连接，再进入星阵登录页。"
+msgstr ""
+"This account is connected. Switching accounts disconnects Golaxy first, then"
+" opens the Golaxy login page."
+
+#. Native Go kiosk UI.
+msgid "切换账号"
+msgstr "Switch account"
+
+#. Native Go kiosk UI.
+msgid "退出星阵"
+msgstr "Sign out of Golaxy"
+
+#. Native Go kiosk UI.
+msgid "断开当前账号并切换"
+msgstr "Disconnect and switch account"
+
+#. Native Go kiosk UI.
+msgid "退出当前星阵账号"
+msgstr "Sign out current Golaxy account"
+
+#. Native Go kiosk UI.
+msgid "没能断开星阵账号，请重试。"
+msgstr "Could not disconnect Golaxy. Retry."
+
+#. Native Go kiosk UI.
+msgid "重试断开"
+msgstr "Retry disconnecting"
+
+#. Native Go kiosk UI.
+msgid "正在断开"
+msgstr "Disconnecting"
+
+#. Native Go kiosk UI.
+msgid "点选一局进入只读观战 · 按星阵状态更新"
+msgstr "Select a game to watch · Updates follow Golaxy status"
+
+#. Native Go kiosk UI.
+msgid "级别、胜负和状态以星阵返回为准"
+msgstr "Level, result and status follow Golaxy"
+
+#. Native Go kiosk UI.
+msgid "全部棋友"
+msgstr "All players"
+
+#. Native Go kiosk UI.
+msgid "同级别"
+msgstr "Same level"
+
+#. Native Go kiosk UI.
+msgid "我的关注"
+msgstr "Following"
+
+#. Native Go kiosk UI.
+msgid "胜负与状态以星阵为准"
+msgstr "Result and status follow Golaxy"
+
+#. Native Go kiosk UI.
+msgid "{room_number} {value2}"
+msgstr "{room_number} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {handicap} {value3}"
+msgstr "{value1} {handicap} {value3}"
+
+#. Native Go kiosk UI.
+msgid "人在房间"
+msgstr "players in room"
+
+#. Native Go kiosk UI.
+msgid "查看{username}的个人资料"
+msgstr "View {username}'s profile"
+
+#. Native Go kiosk UI.
+msgid "正在更新列表…"
+msgstr "Updating list…"
+
+#. Native Go kiosk UI.
+msgid "正在加载更多…"
+msgstr "Loading more…"
+
+#. Native Go kiosk UI.
+msgid "没能读取更多，请重试"
+msgstr "Could not load more. Retry."
+
+#. Native Go kiosk UI.
+msgid "重试加载更多"
+msgstr "Retry loading more"
+
+#. Native Go kiosk UI.
+msgid "没有更多了"
+msgstr "No more results"
+
+#. Native Go kiosk UI.
+msgid "加载更多对局"
+msgstr "Load more games"
+
+#. Native Go kiosk UI.
+msgid "加载更多棋友"
+msgstr "Load more players"
+
+#. Native Go kiosk UI.
+msgid "读秒 {period_seconds} 秒 · 剩余 {periods_remaining} 次"
+msgstr "Byoyomi {period_seconds}s · {periods_remaining} periods left"
+
+#. Native Go kiosk UI.
+msgid "星阵时钟快照"
+msgstr "Golaxy clock snapshot"
+
+#. Native Go kiosk UI.
+msgid "计时信息未返回"
+msgstr "Clock information not returned"
+
+#. Native Go kiosk UI.
+msgid "{room_number} 房 · "
+msgstr "Room {room_number} · "
+
+#. Native Go kiosk UI.
+msgid "· 星阵棋谱快照"
+msgstr "· Golaxy game snapshot"
+
+#. Native Go kiosk UI.
+msgid "正在同步星阵棋谱"
+msgstr "Syncing Golaxy game record"
+
+#. Native Go kiosk UI.
+msgid "正在检查星阵连接"
+msgstr "Checking Golaxy connection"
+
+#. Native Go kiosk UI.
+msgid "对局与观战信息"
+msgstr "Game and spectator information"
+
+#. Native Go kiosk UI.
+msgid "{room_number} 房"
+msgstr "Room {room_number}"
+
+#. Native Go kiosk UI.
+msgid "对局状态"
+msgstr "Game status"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {handicap}"
+msgstr "{value1} · {handicap}"
+
+#. Native Go kiosk UI.
+msgid "等待星阵棋谱"
+msgstr "Waiting for Golaxy record"
+
+#. Native Go kiosk UI.
+msgid "同步中"
+msgstr "Syncing"
+
+#. Native Go kiosk UI.
+msgid "最新：{value1} {value2} · 第 {move_number} 手"
+msgstr "Latest: {value1} {value2} · Move {move_number}"
+
+#. Native Go kiosk UI.
+msgid "第 {move_number} 手 · 暂无落子"
+msgstr "Move {move_number} · No move yet"
+
+#. Native Go kiosk UI.
+msgid "等待星阵最新落子"
+msgstr "Waiting for latest Golaxy move"
+
+#. Native Go kiosk UI.
+msgid "回看棋谱时仍接收新快照"
+msgstr "New snapshots arrive while browsing history"
+
+#. Native Go kiosk UI.
+msgid "正在同步，当前为上次快照"
+msgstr "Syncing; showing previous snapshot"
+
+#. Native Go kiosk UI.
+msgid "胜负结果尚未返回"
+msgstr "Result not returned yet"
+
+#. Native Go kiosk UI.
+msgid "星阵棋谱快照 · 每 2 秒同步"
+msgstr "Golaxy snapshot · Syncs every 2 seconds"
+
+#. Native Go kiosk UI.
+msgid "房间成员"
+msgstr "Room members"
+
+#. Native Go kiosk UI.
+msgid "对局双方与观战棋友 · {length} 人"
+msgstr "Players and spectators · {length} people"
+
+#. Native Go kiosk UI.
+msgid "成员信息未返回"
+msgstr "Member information not returned"
+
+#. Native Go kiosk UI.
+msgid "对局 · 黑"
+msgstr "Playing · Black"
+
+#. Native Go kiosk UI.
+msgid "对局 · 白"
+msgstr "Playing · White"
+
+#. Native Go kiosk UI.
+msgid "身份未返回"
+msgstr "Role not returned"
+
+#. Native Go kiosk UI.
+msgid "星阵尚未提供可展示的房间成员名单。"
+msgstr "Golaxy has not provided a displayable room member list."
+
+#. Native Go kiosk UI.
+msgid "重新连接"
+msgstr "Reconnect"
+
+#. Native Go kiosk UI.
+msgid "落子音："
+msgstr "Move sound: "
+
+#. Native Go kiosk UI.
+msgid "已经是第一手之前"
+msgstr "Already before the first move"
+
+#. Native Go kiosk UI.
+msgid "回到最新"
+msgstr "Go to latest"
+
+#. Native Go kiosk UI.
+msgid "正在看最新"
+msgstr "Showing latest"
+
+#. Native Go kiosk UI.
+msgid " · {move_number} 手"
+msgstr " · {move_number} moves"
+
+#. Native Go kiosk UI.
+msgid "{total} {value2}"
+msgstr "{total} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {value2} {value3}"
+msgstr "{value1} {value2} {value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {value2}"
+msgstr "{value1} {value2}"
+
+#. Native Go kiosk UI.
+msgid "已连接 ·"
+msgstr "Connected ·"
+
+#. Native Go kiosk UI.
+msgid "账号名未返回"
+msgstr "Account name not returned"
+
+#. Native Go kiosk UI.
+msgid "连接状态读取失败"
+msgstr "Could not read connection status"
+
+#. Native Go kiosk UI.
+msgid "正在读取账号"
+msgstr "Reading account"
+
+#. Native Go kiosk UI.
+msgid "没能读取 OGS 账号状态"
+msgstr "Could not read OGS account status"
+
+#. Native Go kiosk UI.
+msgid "OGS 尚未连接。请先连接账号。"
+msgstr "OGS is not connected. Connect an account first."
+
+#. Native Go kiosk UI.
+msgid "落子方式"
+msgstr "Move input"
+
+#. Native Go kiosk UI.
+msgid "实体盘只下 19 路"
+msgstr "Physical board: 19×19 only"
+
+#. Native Go kiosk UI.
+msgid "未接通实体盘"
+msgstr "Physical board not connected"
+
+#. Native Go kiosk UI.
+msgid "OGS 有进行中的对局"
+msgstr "OGS game in progress"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋盘…"
+msgstr "Reading board…"
+
+#. Native Go kiosk UI.
+msgid "等待 {username} 接受挑战"
+msgstr "Waiting for {username} to accept"
+
+#. Native Go kiosk UI.
+msgid "等待对方接受挑战"
+msgstr "Waiting for opponent to accept"
+
+#. Native Go kiosk UI.
+msgid "正在取消…"
+msgstr "Cancelling…"
+
+#. Native Go kiosk UI.
+msgid "取消约战"
+msgstr "Cancel challenge"
+
+#. Native Go kiosk UI.
+msgid "没能确认这局的棋盘路数，请重试进入对局"
+msgstr "Could not confirm board size. Retry entering the game."
+
+#. Native Go kiosk UI.
+msgid "没能读取进行中的 OGS 对局"
+msgstr "Could not read ongoing OGS games"
+
+#. Native Go kiosk UI.
+msgid "盒上尚未接通"
+msgstr "Not connected on this device yet"
+
+#. Native Go kiosk UI.
+msgid "找人下"
+msgstr "Find player"
+
+#. Native Go kiosk UI.
+msgid "按用户名直接约战"
+msgstr "Challenge by username"
+
+#. Native Go kiosk UI.
+msgid "棋局筛选"
+msgstr "Game filters"
+
+#. Native Go kiosk UI.
+msgid "全部实时局"
+msgstr "All live games"
+
+#. Native Go kiosk UI.
+msgid "搜索用户名"
+msgstr "Search username"
+
+#. Native Go kiosk UI.
+msgid "刷新公开挑战"
+msgstr "Refresh open challenges"
+
+#. Native Go kiosk UI.
+msgid "连接 OGS 后可查看公开挑战"
+msgstr "Connect OGS to see open challenges"
+
+#. Native Go kiosk UI.
+msgid "正在读取公开挑战…"
+msgstr "Reading open challenges…"
+
+#. Native Go kiosk UI.
+msgid "没能取回公开挑战"
+msgstr "Could not fetch open challenges"
+
+#. Native Go kiosk UI.
+msgid "没有符合条件的公开挑战"
+msgstr "No matching open challenges"
+
+#. Native Go kiosk UI.
+msgid "暂无公开挑战"
+msgstr "No open challenges"
+
+#. Native Go kiosk UI.
+msgid "路 ·"
+msgstr "lines ·"
+
+#. Native Go kiosk UI.
+msgid "计等级分"
+msgstr "Rated"
+
+#. Native Go kiosk UI.
+msgid "不计等级分"
+msgstr "Unrated"
+
+#. Native Go kiosk UI.
+msgid "输入用户名后回车"
+msgstr "Enter username and press Enter"
+
+#. Native Go kiosk UI.
+msgid "输入用户名回车找人"
+msgstr "Type username and Enter to search"
+
+#. Native Go kiosk UI.
+msgid "向"
+msgstr "Challenge "
+
+#. Native Go kiosk UI.
+msgid "发起挑战？"
+msgstr " to a game?"
+
+#. Native Go kiosk UI.
+msgid "· 19 路 · 中国规则 · 计分局。"
+msgstr "· 19×19 · Chinese rules · Rated."
+
+#. Native Go kiosk UI.
+msgid "发出后可取消；对方接受后可在本页继续对局。"
+msgstr ""
+"You can cancel after sending. Once accepted, continue the game on this page."
+
+#. Native Go kiosk UI.
+msgid "正在发送…"
+msgstr "Sending…"
+
+#. Native Go kiosk UI.
+msgid "的公开挑战？"
+msgstr "'s open challenge?"
+
+#. Native Go kiosk UI.
+msgid "。接受后将在这台盒子上进入对局。"
+msgstr ". Accepting opens the game on this device."
+
+#. Native Go kiosk UI.
+msgid "重试接受"
+msgstr "Retry accepting"
+
+#. Native Go kiosk UI.
+msgid "正在接受…"
+msgstr "Accepting…"
+
+#. Native Go kiosk UI.
+msgid "确认接受"
+msgstr "Confirm acceptance"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {value2} + {value3}"
+msgstr "{value1} · {value2} + {value3}"
+
+#. Native Go kiosk UI.
+msgid "分析报告档位"
+msgstr "Analysis report tier"
+
+#. Native Go kiosk UI.
+msgid "每手"
+msgstr "per move"
+
+#. Native Go kiosk UI.
+msgid "霞鹜楷体"
+msgstr "LXGW WenKai"
+
+#. Native Go kiosk UI.
+msgid "楷体"
+msgstr "Kai style"
+
+#. Native Go kiosk UI.
+msgid "隶书"
+msgstr "Clerical style"
+
+#. Native Go kiosk UI.
+msgid "黑体"
+msgstr "Sans serif"
+
+#. Native Go kiosk UI.
+msgid "{levelName} · {value2}"
+msgstr "{levelName} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "{totalCount} 题 · {length} 类"
+msgstr "{totalCount} problems · {length} categories"
+
+#. Native Go kiosk UI.
+msgid "{completed} / {total} 题"
+msgstr "{completed} / {total} problems"
+
+#. Native Go kiosk UI.
+msgid "{count} 题"
+msgstr "{count} problems"
+
+#. Native Go kiosk UI.
+msgid "左右滑动卡片，选择棋力"
+msgstr "Swipe cards to choose strength"
+
+#. Native Go kiosk UI.
+msgid "棋力范围"
+msgstr "Strength range"
+
+#. Native Go kiosk UI.
+msgid "15–11 级"
+msgstr "15–11 kyu"
+
+#. Native Go kiosk UI.
+msgid "10–6 级"
+msgstr "10–6 kyu"
+
+#. Native Go kiosk UI.
+msgid "5–1 级"
+msgstr "5–1 kyu"
+
+#. Native Go kiosk UI.
+msgid "1–7 段"
+msgstr "1–7 dan"
+
+#. Native Go kiosk UI.
+msgid "棋力卡片轮播"
+msgstr "Strength card carousel"
+
+#. Native Go kiosk UI.
+msgid " · 你的水平"
+msgstr " · Your level"
+
+#. Native Go kiosk UI.
+msgid "{name} {count}题"
+msgstr "{name} {count} problems"
+
+#. Native Go kiosk UI.
+msgid "题型构成暂不可用"
+msgstr "Problem type breakdown unavailable"
+
+#. Native Go kiosk UI.
+msgid "道题"
+msgstr "problems"
+
+#. Native Go kiosk UI.
+msgid "进入"
+msgstr "Open"
+
+#. Native Go kiosk UI.
+msgid "上一棋力"
+msgstr "Previous strength"
+
+#. Native Go kiosk UI.
+msgid "下一棋力"
+msgstr "Next strength"
+
+#. Native Go kiosk UI.
+msgid "手指拖动 · 松手吸附"
+msgstr "Drag · Release to snap"
+
+#. Native Go kiosk UI.
+msgid " · 19路版（原{source_size}路）"
+msgstr " · 19×19 version (original {source_size})"
+
+#. Native Go kiosk UI.
+msgid "原{source_size}路题：{reason}"
+msgstr "Original {source_size}-line problem: {reason}"
+
+#. Native Go kiosk UI.
+msgid " · {value1} {value2}"
+msgstr " · {value1} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {value2}"
+msgstr "{value1} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "{levelName} · {categoryName} · {value3}"
+msgstr "{levelName} · {categoryName} · {value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {judged}"
+msgstr "{value1} · {judged}"
+
+#. Native Go kiosk UI.
+msgid "正在读取做题记录…"
+msgstr "Reading problem history…"
+
+#. Native Go kiosk UI.
+msgid "本单元现在没有做错过的题"
+msgstr "No wrong answers in this unit yet"
+
+#. Native Go kiosk UI.
+msgid "题目筛选"
+msgstr "Problem filters"
+
+#. Native Go kiosk UI.
+msgid "错题数量待读取"
+msgstr "Wrong-answer count pending"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{state}{value3}"
+msgstr "{value1}，{state}{value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} 次"
+msgstr "{value1} times"
+
+#. Native Go kiosk UI.
+msgid "{value1} 秒"
+msgstr "{value1} seconds"
+
+#. Native Go kiosk UI.
+msgid "19路版（原{source_size}路）"
+msgstr "19×19 version (original {source_size})"
+
+#. Native Go kiosk UI.
+msgid "没有可做的错题"
+msgstr "No wrong answers to practice"
+
+#. Native Go kiosk UI.
+msgid "训练内容"
+msgstr "Training content"
+
+#. Native Go kiosk UI.
+msgid "错题簿"
+msgstr "Wrong-answer book"
+
+#. Native Go kiosk UI.
+msgid "做题记录没读到，进入后可重试"
+msgstr "History unavailable; retry after opening"
+
+#. Native Go kiosk UI.
+msgid "这一类现在有 {wrongCount} 道错题"
+msgstr "{wrongCount} wrong answers in this category"
+
+#. Native Go kiosk UI.
+msgid "其他教材"
+msgstr "Other books"
+
+#. Native Go kiosk UI.
+msgid "书"
+msgstr "Book"
+
+#. Native Go kiosk UI.
+msgid "一本书"
+msgstr "One book"
+
+#. Native Go kiosk UI.
+msgid "分若干章"
+msgstr "Split into chapters"
+
+#. Native Go kiosk UI.
+msgid "章"
+msgstr "Chapter"
+
+#. Native Go kiosk UI.
+msgid "一章讲一块"
+msgstr "One topic per chapter"
+
+#. Native Go kiosk UI.
+msgid "比如「吃子」是一章"
+msgstr "For example, “Capturing” is a chapter"
+
+#. Native Go kiosk UI.
+msgid "节"
+msgstr "Section"
+
+#. Native Go kiosk UI.
+msgid "节才是「一课」"
+msgstr "A section is one lesson"
+
+#. Native Go kiosk UI.
+msgid "翻完一节的图就算看完"
+msgstr "View all figures in a section to finish"
+
+#. Native Go kiosk UI.
+msgid "图"
+msgstr "Figure"
+
+#. Native Go kiosk UI.
+msgid "节里是一张张棋图"
+msgstr "Each section contains board diagrams"
+
+#. Native Go kiosk UI.
+msgid "每张图带一段人声旁白，还能一键摆到实体盘上"
+msgstr ""
+"Each figure has narration and can be placed on the physical board with one "
+"tap"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸视频"
+msgstr "RK3562 · 7-inch video"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸视频尚未生成"
+msgstr "RK3562 · 7-inch video not generated yet"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸"
+msgstr "RK3562 · 7-inch"
+
+#. Native Go kiosk UI.
+msgid "棋子颜色待确认"
+msgstr "Stone color unconfirmed"
+
+#. Native Go kiosk UI.
+msgid "视频加载失败"
+msgstr "Video failed to load"
+
+#. Native Go kiosk UI.
+msgid "大厅对局"
+msgstr "Lobby game"
+
+#. Native Go kiosk UI.
+msgid "{value1}方玩家"
+msgstr "{value1} player"
+
+#. Native Go kiosk UI.
+msgid "{name}{value2}"
+msgstr "{name}{value2}"
+
+#. Native Go kiosk UI.
+msgid "等待重连"
+msgstr "Waiting to reconnect"
+
+#. Native Go kiosk UI.
+msgid "等待确认"
+msgstr "Waiting for confirmation"
+
+#. Native Go kiosk UI.
+msgid "在线对局状态"
+msgstr "Online game status"
+
+#. Native Go kiosk UI.
+msgid "大厅对局说明"
+msgstr "Lobby game help"
+
+#. Native Go kiosk UI.
+msgid "本局已有正式结果"
+msgstr "This game has an official result"
+
+#. Native Go kiosk UI.
+msgid "正式结果尚未确定"
+msgstr "Official result not yet decided"
+
+#. Native Go kiosk UI.
+msgid "满 {countMin} 手可数子"
+msgstr "Scoring available after {countMin} moves"
+
+#. Native Go kiosk UI.
+msgid "仅供参考，正式胜负以数子为准"
+msgstr "For reference; scoring decides the official result"
+
+#. Native Go kiosk UI.
+msgid "大厅对局不计升降段位。满"
+msgstr "Lobby games do not affect rank. After "
+
+#. Native Go kiosk UI.
+msgid ""
+"手后可请求数子，由对方确认；停一手仅在自己的回合可用。 领地仅供本人参考，不决定正式胜负。局面变化后需重新查询。退出时可先离开，或确认认输并退出。"
+msgstr ""
+" moves, you may request scoring for your opponent to confirm. Pass only on "
+"your turn. Territory estimates are private reference and do not decide the "
+"result; query again after the position changes. When leaving, you may leave "
+"without resigning, or confirm resignation and exit."
+
+#. Native Go kiosk UI.
+msgid "识别的盘面还没接进来"
+msgstr "Recognized board not connected yet"
+
+#. Native Go kiosk UI.
+msgid "这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。"
+msgstr ""
+"This shows the physical board and device status. Until recognized positions "
+"are connected, the preview is empty. Camera, calibration and LED status come"
+" from the device."
+
+#. Native Go kiosk UI.
+msgid "请提走棋子"
+msgstr "Remove captured stones"
+
+#. Native Go kiosk UI.
+msgid "请提走"
+msgstr "Remove "
+
+#. Native Go kiosk UI.
+msgid "跳过"
+msgstr "Skip"
+
+#. Native Go kiosk UI.
+msgid "← 返回对弈"
+msgstr "← Back to play"
+
+#. Native Go kiosk UI.
+msgid "登录后，棋友可以在名单中看到你并邀请你对局。"
+msgstr "After you sign in, players can find you and invite you to a game."
+
+#. Native Go kiosk UI.
+msgid "连接中"
+msgstr "Connecting"
+
+#. Native Go kiosk UI.
+msgid "已断开"
+msgstr "Disconnected"
+
+#. Native Go kiosk UI.
+msgid "我的段位"
+msgstr "My rank"
+
+#. Native Go kiosk UI.
+msgid "段位读取失败"
+msgstr "Could not read rank"
+
+#. Native Go kiosk UI.
+msgid "尚未定级"
+msgstr "Not placed yet"
+
+#. Native Go kiosk UI.
+msgid "读取中"
+msgstr "Reading"
+
+#. Native Go kiosk UI.
+msgid "按当前段位找棋友 · 不计升降段位"
+msgstr "Match by current rank · No rank changes"
+
+#. Native Go kiosk UI.
+msgid "邀请棋友"
+msgstr "Invite player"
+
+#. Native Go kiosk UI.
+msgid "直接邀请任意段位的空闲棋友"
+msgstr "Invite any idle player, regardless of rank"
+
+#. Native Go kiosk UI.
+msgid "段位状态暂时无法读取。"
+msgstr "Rank status is currently unavailable."
+
+#. Native Go kiosk UI.
+msgid "重试段位"
+msgstr "Retry rank"
+
+#. Native Go kiosk UI.
+msgid "无法确认中央账号身份，请重试。"
+msgstr "Cannot confirm central account identity. Retry."
+
+#. Native Go kiosk UI.
+msgid "大厅数据读取失败。"
+msgstr "Could not read lobby data."
+
+#. Native Go kiosk UI.
+msgid "大厅连接已断开，请稍后重试。"
+msgstr "Lobby disconnected. Try again later."
+
+#. Native Go kiosk UI.
+msgid "大厅内容"
+msgstr "Lobby content"
+
+#. Native Go kiosk UI.
+msgid "进行中对局"
+msgstr "Games in progress"
+
+#. Native Go kiosk UI.
+msgid "点选棋局可观战 · 大厅对局不计升降段位"
+msgstr "Select a game to watch · Lobby games do not affect rank"
+
+#. Native Go kiosk UI.
+msgid "未定级也可邀请任意段位的空闲棋友"
+msgstr "Unplaced players can also invite any idle player"
+
+#. Native Go kiosk UI.
+msgid "正在读取对局…"
+msgstr "Reading games…"
+
+#. Native Go kiosk UI.
+msgid "观战人数未返回"
+msgstr "Spectator count not returned"
+
+#. Native Go kiosk UI.
+msgid "{count} 人观战"
+msgstr "{count} watching"
+
+#. Native Go kiosk UI.
+msgid "{value1} {player_b} 对 {player_w}，{viewers}"
+msgstr "{value1} {player_b} vs {player_w}, {viewers}"
+
+#. Native Go kiosk UI.
+msgid "黑棋在左，白棋在右；自己的对局可返回棋盘。"
+msgstr ""
+"Black is on the left, White on the right. Return to the board for your own "
+"games."
+
+#. Native Go kiosk UI.
+msgid "棋友筛选"
+msgstr "Player filters"
+
+#. Native Go kiosk UI.
+msgid "同段位"
+msgstr "Same rank"
+
+#. Native Go kiosk UI.
+msgid "在线"
+msgstr "Online"
+
+#. Native Go kiosk UI.
+msgid "人"
+msgstr "people"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋友…"
+msgstr "Reading players…"
+
+#. Native Go kiosk UI.
+msgid "当前筛选下没有在线棋友。"
+msgstr "No online players match this filter."
+
+#. Native Go kiosk UI.
+msgid "空闲棋友可邀请；快速匹配需先完成定级。"
+msgstr "Invite idle players; quick match requires completed placement."
+
+#. Native Go kiosk UI.
+msgid "接受后直接开局；这局不计升降段位。"
+msgstr "Accepting starts the game immediately. It does not affect rank."
+
+#. Native Go kiosk UI.
+msgid "对方空闲。未定级也可邀请任意段位棋友，本局不计升降段位。"
+msgstr ""
+"This player is idle. You can invite any rank before placement; this game "
+"does not affect rank."
+
+#. Native Go kiosk UI.
+msgid "对方段位 ·"
+msgstr "Opponent rank ·"
+
+#. Native Go kiosk UI.
+msgid "快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。你仍可直接邀请空闲棋友。"
+msgstr ""
+"Quick match uses your ranked-play rank. Complete five placement games in "
+"Ranked Play first. You can still invite idle players directly."
+
+#. Native Go kiosk UI.
+msgid "先寻找同段位真人，稍后由同段位棋手接局；匹配成功后直接进入棋盘。"
+msgstr ""
+"First seek a real player of your rank, then a same-rank opponent can take "
+"over. The board opens as soon as a match is found."
+
+#. Native Go kiosk UI.
+msgid "{label} · 不计升降段位"
+msgstr "{label} · No rank changes"
+
+#. Native Go kiosk UI.
+msgid "已等 {elapsed} 秒"
+msgstr "Waited {elapsed}s"
+
+#. Native Go kiosk UI.
+msgid "稍后再说"
+msgstr "Later"
+
+#. Native Go kiosk UI.
+msgid "去升降级对弈"
+msgstr "Go to ranked play"
+
+#. Native Go kiosk UI.
+msgid "大厅对局观战"
+msgstr "Watch lobby game"
+
+#. Native Go kiosk UI.
+msgid "大厅观战棋盘"
+msgstr "Lobby spectator board"
+
+#. Native Go kiosk UI.
+msgid "暂无可展示的对局快照"
+msgstr "No game snapshot available"
+
+#. Native Go kiosk UI.
+msgid "已暂停同步"
+msgstr "Sync paused"
+
+#. Native Go kiosk UI.
+msgid "只读观战"
+msgstr "Watch only"
+
+#. Native Go kiosk UI.
+msgid "等待棋手信息"
+msgstr "Waiting for player information"
+
+#. Native Go kiosk UI.
+msgid "轮到落子"
+msgstr "To play"
+
+#. Native Go kiosk UI.
+msgid "对局棋手"
+msgstr "Players"
+
+#. Native Go kiosk UI.
+msgid "第 {current_node_index} 手{value2}"
+msgstr "Move {current_node_index}{value2}"
+
+#. Native Go kiosk UI.
+msgid "等待最新盘面"
+msgstr "Waiting for latest position"
+
+#. Native Go kiosk UI.
+msgid "实时盘面 · 每 2 秒同步"
+msgstr "Live board · Syncs every 2 seconds"
+
+#. Native Go kiosk UI.
+msgid "当前显示上次同步盘面"
+msgstr "Showing last synced position"
+
+#. Native Go kiosk UI.
+msgid "正在连接对局"
+msgstr "Connecting to game"
+
+#. Native Go kiosk UI.
+msgid "{spectatorCount} 人观战"
+msgstr "{spectatorCount} watching"
+
+#. Native Go kiosk UI.
+msgid "观战说明"
+msgstr "Spectator help"
+
+#. Native Go kiosk UI.
+msgid "观看实时盘面，不参与对局。此画面每 2 秒从大厅同步一次。"
+msgstr ""
+"Watch the live board without participating. This view syncs from the lobby "
+"every 2 seconds."
+
+#. Native Go kiosk UI.
+msgid "Disconnected"
+msgstr "Disconnected"
+
+#. Native Go kiosk UI.
+msgid "未确认"
+msgstr "Unconfirmed"
+
+#. Native Go kiosk UI.
+msgid "已标定"
+msgstr "Calibrated"
+
+#. Native Go kiosk UI.
+msgid "异常"
+msgstr "Error"
+
+#. Native Go kiosk UI.
+msgid "需校准"
+msgstr "Needs calibration"
+
+#. Native Go kiosk UI.
+msgid "{count} 颗黑子"
+msgstr "{count} black stones"
+
+#. Native Go kiosk UI.
+msgid "{count} 颗白子"
+msgstr "{count} white stones"
+
+#. Native Go kiosk UI.
+msgid "请提走 {stones}"
+msgstr "Remove {stones}"
+
+#. Native Go kiosk UI.
+msgid "、"
+msgstr ", "
+
+#. Native Go kiosk UI.
+msgid "rank:kyu"
+msgstr "{n}k"
+
+#. Native Go kiosk UI.
+msgid "rank:pro"
+msgstr "{n}p"
+
+#. Native Go kiosk UI.
+msgid "rank:dan"
+msgstr "{n}d"
+
+#. Native Go kiosk UI.
+msgid "rank:provisional"
+msgstr "Provisional {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:amateur"
+msgstr "Amateur {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:professional_rank"
+msgstr "Pro {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:account_unrated"
+msgstr "Account not yet rated"
+
+#. Native Go kiosk UI.
+msgid "rank:professional"
+msgstr "Professional"
+
+#. Native Go kiosk UI.
+msgid "rank:top_professional"
+msgstr "Top professional"
+
+#. Native Go kiosk UI.
+msgid "rank:super_professional"
+msgstr "Superhuman"
+
+#. Native Go kiosk UI.
+msgid "rank:katago_medium"
+msgstr "KataGo medium"
+
+#. Native Go kiosk UI.
+msgid "rank:unknown"
+msgstr "Unknown rank"
+
+#. Native Go kiosk UI.
+msgid "rank:unrated"
+msgstr "Not placed yet"
+
+#. Native Go kiosk UI.
+msgid "rank:account_source"
+msgstr "Account rank"
+
+#. Native Go kiosk UI.
+msgid "rank:ai_source"
+msgstr "AI strength"
+
+#. Native Go kiosk UI.
+msgid "rank:platform_source"
+msgstr "Platform rank"
+
+#. Native Go kiosk UI.
+msgid "rank:ai_estimate"
+msgstr "Estimated AI strength"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_sfx"
+msgstr "Move sounds"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_sfx_sub"
+msgstr "Moves, captures and problem results · On by default"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_voice"
+msgstr "Voice guidance"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_voice_sub"
+msgstr "Guidance for replay and puzzles · Physical board only"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_fast"
+msgstr "Fast"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_fast_details"
+msgstr "1 min · 15s × 3"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_normal"
+msgstr "Normal"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_normal_details"
+msgstr "10 min · 30s × 3"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_slow"
+msgstr "Slow"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_slow_details"
+msgstr "30 min · 40s × 3"
+
+#. Native Go kiosk UI.
+msgid "auth:box_login"
+msgstr "Sign in on home"
+
+#. Native Go kiosk UI.
+msgid "auth:checking"
+msgstr "Checking"
+
+#. Native Go kiosk UI.
+msgid "auth:continue_browsing"
+msgstr "Keep browsing"
+
+#. Native Go kiosk UI.
+msgid "auth:login_continue"
+msgstr "Sign in and continue"
+
+#. Native Go kiosk UI.
+msgid "auth:retry"
+msgstr "Retry"
+
+#. Native Go kiosk UI.
+msgid " {value1}"
+msgstr " {value1}"
+
+#. Native Go kiosk UI.
+msgid " 返回对弈"
+msgstr " Back to play"
+
+#. Native Go kiosk UI.
+msgid "选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。"
+msgstr ""
+"Choose an idle player or match someone of your rank. All lobby games leave "
+"rank unchanged."
+
+#. Native Go kiosk UI.
+msgid "棋"
+msgstr "Go"
+
+#. Native Go kiosk UI.
+msgid "来下一局"
+msgstr "Play a game"
+
+#. Native Go kiosk UI.
+msgid "匹配同段位对手，或直接邀请棋友"
+msgstr "Match your rank or invite a player"
+
+#. Native Go kiosk UI.
+msgid "快速匹配 →"
+msgstr "Quick match →"
+
+#. Native Go kiosk UI.
+msgid "友"
+msgstr "Players"
+
+#. Native Go kiosk UI.
+msgid "进行中的对局"
+msgstr "Games in progress"
+
+#. Native Go kiosk UI.
+msgid "点击对局即可观战；自己的对局可返回棋盘。"
+msgstr "Tap a game to watch; return to the board for your own game."
+
+#. Native Go kiosk UI.
+msgid "全部棋友　同段位　我的关注"
+msgstr "All players · Same rank · Following"
+
+#. Native Go kiosk UI.
+msgid "我的棋谱"
+msgstr "My game records"
+
+#. Native Go kiosk UI.
+msgid "本局挑战"
+msgstr "This game's challenge"
+
+#. Native Go kiosk UI.
+msgid "复盘报告"
+msgstr "Review report"
+
+#. Native Go kiosk UI.
+msgid "登录后使用"
+msgstr "Sign in to use"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘说明"
+msgstr "Physical board help"
+
+#. Native Go kiosk UI.
+msgid "Got it"
+msgstr "Got it"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_lead"
+msgstr "Book"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_t"
+msgstr "One book"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_s"
+msgstr "Split into chapters"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_lead"
+msgstr "Chapter"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_t"
+msgstr "One topic per chapter"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_s"
+msgstr "For example, “Capturing” is a chapter"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_lead"
+msgstr "Section"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_t"
+msgstr "A section is one lesson"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_s"
+msgstr "View all figures in a section to finish"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_lead"
+msgstr "Figure"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_t"
+msgstr "Each section contains board diagrams"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_s"
+msgstr ""
+"Each figure has narration and can be placed on the physical board with one "
+"tap"
+
+#. Native Go kiosk UI.
+msgid "轮到你落子"
+msgstr "Your turn"
+
+#. Native Go kiosk UI.
+msgid "让先"
+msgstr "Black first, no komi"
+
+#. Native Go kiosk UI.
+msgid "连接尚未就绪"
+msgstr "Connection not ready"
+
+#. Native Go kiosk UI.
+msgid "本局已结束"
+msgstr "This game has ended"
+
+#. Native Go kiosk UI.
+msgid "正在数子"
+msgstr "Scoring"
+
+#. Native Go kiosk UI.
+msgid "等待对方落子"
+msgstr "Waiting for opponent's move"
+
+#. Native Go kiosk UI.
+msgid "请先不要继续落子，恢复后核对最新盘面。"
+msgstr "Do not play yet. Check the latest position after recovery."
+
+#. Native Go kiosk UI.
+msgid "正式结果以服务端终局为准。"
+msgstr "The server's final result is authoritative."
+
+#. Native Go kiosk UI.
+msgid "结果尚未确定，请稍候。"
+msgstr "Result not yet decided. Please wait."
+
+#. Native Go kiosk UI.
+msgid "请落{value1}子，识别确认后自动同步给对方。"
+msgstr ""
+"Place a {value1} stone; recognition will confirm and sync it to your "
+"opponent."
+
+#. Native Go kiosk UI.
+msgid "请在棋盘落{value1}子。"
+msgstr "Place a {value1} stone on the board."
+
+#. Native Go kiosk UI.
+msgid "对方落子后，棋盘和下一手提示会自动更新。"
+msgstr ""
+"The board and next-move prompt update automatically after your opponent "
+"plays."
+
+#. Native Go kiosk UI.
+msgid "正在查询领地…"
+msgstr "Querying territory…"
+
+#. Native Go kiosk UI.
+msgid "领地未取得，请重试"
+msgstr "Territory unavailable. Retry."
+
+#. Native Go kiosk UI.
+msgid "领地参考 · 黑 {value1} · 白 {value2}"
+msgstr "Territory estimate · Black {value1} · White {value2}"
+
+#. Native Go kiosk UI.
+msgid "星阵在线棋友"
+msgstr "Golaxy online players"
+
+#. Native Go kiosk UI.
+msgid "发送对局邀请"
+msgstr "Send game invitation"
+
+#. Native Go kiosk UI.
+msgid "等待对方回应"
+msgstr "Waiting for response"
+
+#. Native Go kiosk UI.
+msgid "邀请未发送"
+msgstr "Invitation not sent"
+
+#. Native Go kiosk UI.
+msgid "历史棋谱"
+msgstr "Past game records"
+
+#. Native Go kiosk UI.
+msgid "让子信息待返回"
+msgstr "Handicap information pending"
+
+#. Native Go kiosk UI.
+msgid "让 {value1} 子"
+msgstr "{value1}-stone handicap"
+
+#. Native Go kiosk UI.
+msgid "{value1}邀你下一局"
+msgstr "{value1} invites you to play"
+
+#. Native Go kiosk UI.
+msgid "邀请 {value1} 对局"
+msgstr "Invite {value1} to play"
+
+#. Native Go kiosk UI.
+msgid "需要先完成定级"
+msgstr "Complete placement first"
+
+#. Native Go kiosk UI.
+msgid "正在寻找同段位对手"
+msgstr "Finding an opponent of your rank"
+
+#. Native Go kiosk UI.
+msgid "SGF含pass、压缩点或本次不支持的坐标"
+msgstr "SGF contains pass, compressed points or unsupported coordinates"
+
+#. Native Go kiosk UI.
+msgid "初始棋子格式不受支持"
+msgstr "Unsupported initial stone format"
+
+#. Native Go kiosk UI.
+msgid "三个变体是引征、选择征吃方向或判断能否征吃，必须完整证明所有征路与引征；基础证书不覆盖。"
+msgstr ""
+"These three variants require ladder breakers, a ladder direction, or a "
+"ladder verdict. Every ladder path and breaker must be proved; the basic "
+"certificate does not cover them."
+
+#. Native Go kiosk UI.
+msgid "已核对全部记录分支解除当前打吃"
+msgstr "All recorded branches were checked to escape the current atari"
+
+#. Native Go kiosk UI.
+msgid "完整题面尚无与当前目标一致的审核证据"
+msgstr "No reviewed evidence matches the full problem's current goal"
+
+#. Native Go kiosk UI.
+msgid "两变体都声明全局终盘并数所有单官；扩盘新增大量空点，源答案不适用。"
+msgstr ""
+"Both variants declare a finished whole board and count every dame. Enlarging"
+" adds many empty points, so the source answer no longer applies."
+
+#. Native Go kiosk UI.
+msgid "来源内容已改变，需重新审核"
+msgstr "Source content changed; review required"
+
+#. Native Go kiosk UI.
+msgid "源答案行棋方不交替"
+msgstr "Source answer does not alternate turns"
+
+#. Native Go kiosk UI.
+msgid "比较气数未指定固定初始棋块"
+msgstr "Liberty comparison lacks fixed initial groups"
+
+#. Native Go kiosk UI.
+msgid "题面要求判断对杀胜负，本次未能确认该目标"
+msgstr ""
+"The problem asks who wins a capturing race; that goal could not be verified"
+
+#. Native Go kiosk UI.
+msgid "证书缺少固定初始目标"
+msgstr "Certificate lacks a fixed initial target"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了重复局面关系"
+msgstr "Board enlargement changes repeated-position relationships"
+
+#. Native Go kiosk UI.
+msgid "教程含本次不支持的结构字段"
+msgstr "Tutorial contains unsupported structural fields"
+
+#. Native Go kiosk UI.
+msgid "答案根节点格式不受支持"
+msgstr "Unsupported answer root-node format"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认局部目标，待补充该目标的专项证书"
+msgstr "Local goal unverified; a goal-specific certificate is required"
+
+#. Native Go kiosk UI.
+msgid "源SGF尺寸与题目不一致"
+msgstr "Source SGF size differs from the problem"
+
+#. Native Go kiosk UI.
+msgid "题面要求连接黑棋，本次未能确认连接目标"
+msgstr ""
+"The problem asks to connect Black; the connection goal could not be verified"
+
+#. Native Go kiosk UI.
+msgid "源初始棋子与SGF不一致"
+msgstr "Initial source stones differ from SGF"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了棋块连接或气集合"
+msgstr "Board enlargement changes group connections or liberties"
+
+#. Native Go kiosk UI.
+msgid "证书救出目标不是初始一气棋块"
+msgstr "Rescue certificate target was not an initial one-liberty group"
+
+#. Native Go kiosk UI.
+msgid "没有可认证的局部目标"
+msgstr "No certifiable local goal"
+
+#. Native Go kiosk UI.
+msgid "源答案叶未明确区分正确与失败"
+msgstr "Source answer leaves do not distinguish success from failure"
+
+#. Native Go kiosk UI.
+msgid "源树在非叶节点判终局，本次未认证"
+msgstr "Source tree ends at a non-leaf node; not certified"
+
+#. Native Go kiosk UI.
+msgid "三个连续步骤声明完整终局、清死子和黑24目白22目胜负；扩盘改变全盘终局语义。"
+msgstr ""
+"Three consecutive steps declare a complete ending, remove dead stones, and "
+"score Black 24 to White 22. Enlargement changes this whole-board ending."
+
+#. Native Go kiosk UI.
+msgid "本次没有该选择题的局部证书"
+msgstr "No local certificate for this multiple-choice problem"
+
+#. Native Go kiosk UI.
+msgid "棋盘尺寸不在本次支持范围"
+msgstr "Board size is unsupported"
+
+#. Native Go kiosk UI.
+msgid "初始棋子重叠"
+msgstr "Initial stones overlap"
+
+#. Native Go kiosk UI.
+msgid "视窗格式不受支持"
+msgstr "Unsupported viewport format"
+
+#. Native Go kiosk UI.
+msgid "解除打吃目标并非初始一气棋块"
+msgstr "Atari escape target was not an initial one-liberty group"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部解除打吃目标"
+msgstr "Problem wording and local atari-escape goal verified"
+
+#. Native Go kiosk UI.
+msgid "整盘终局教学保留原盘"
+msgstr "Whole-board ending lesson keeps its original board"
+
+#. Native Go kiosk UI.
+msgid "答案结构不受支持"
+msgstr "Unsupported answer structure"
+
+#. Native Go kiosk UI.
+msgid "选择题结构不受支持"
+msgstr "Unsupported multiple-choice structure"
+
+#. Native Go kiosk UI.
+msgid "已核对源题与全部记录分支的局部提吃目标"
+msgstr ""
+"Source problem and every recorded branch verified for the local capture goal"
+
+#. Native Go kiosk UI.
+msgid "SGF节点落子格式不受支持"
+msgstr "Unsupported move format in SGF node"
+
+#. Native Go kiosk UI.
+msgid "本次没有该目标的局部证书"
+msgstr "No local certificate for this goal"
+
+#. Native Go kiosk UI.
+msgid "SGF含本次不支持的属性或节点setup"
+msgstr "SGF contains unsupported properties or node setup"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认局部目标"
+msgstr "Could not verify the local goal"
+
+#. Native Go kiosk UI.
+msgid "本次未审核该来源的局部目标"
+msgstr "Local goals from this source have not been reviewed"
+
+#. Native Go kiosk UI.
+msgid "答案节点格式不受支持"
+msgstr "Unsupported answer-node format"
+
+#. Native Go kiosk UI.
+msgid "源初始棋块无气"
+msgstr "Initial source group has no liberties"
+
+#. Native Go kiosk UI.
+msgid "中英题面行棋方或目标颜色冲突，本次保留原题"
+msgstr ""
+"Chinese and English wording disagree on turn or target color; keeping the "
+"original problem"
+
+#. Native Go kiosk UI.
+msgid "题面未唯一指定所问连接分量"
+msgstr "Problem does not uniquely identify the requested connected group"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了落子或提子结果"
+msgstr "Board enlargement changes move or capture outcomes"
+
+#. Native Go kiosk UI.
+msgid "原树接受全部源空点；扩19后仅接受原9路子区，与任意空点落子教学冲突。"
+msgstr ""
+"The source tree accepts every empty source point. After 19×19 expansion it "
+"accepts only the original 9×9 area, conflicting with the lesson on playing "
+"at any empty point."
+
+#. Native Go kiosk UI.
+msgid "五种题面都明确征子；延长到新空白的路径与征子终点/引征要全程证明，基础有限树不足。"
+msgstr ""
+"All five wordings explicitly require ladders. Every extended path, ladder "
+"ending and breaker must be proved; a basic finite tree is insufficient."
+
+#. Native Go kiosk UI.
+msgid "源答案出现重复局面，本次未认证规则"
+msgstr "Source answer repeats a position; rules not certified"
+
+#. Native Go kiosk UI.
+msgid "标记坐标格式不受支持"
+msgstr "Unsupported mark-coordinate format"
+
+#. Native Go kiosk UI.
+msgid "未能确认源题轮到方"
+msgstr "Could not confirm the source side to play"
+
+#. Native Go kiosk UI.
+msgid "源答案没有明确正确叶"
+msgstr "Source answer has no explicit correct leaf"
+
+#. Native Go kiosk UI.
+msgid "重算答案与源选择键不符"
+msgstr "Recomputed answer differs from the source choice key"
+
+#. Native Go kiosk UI.
+msgid "全课明确对局结束后谁赢，胜负基于全盘计目而非局部题。"
+msgstr ""
+"The entire lesson asks who wins after the game ends; the result depends on "
+"whole-board scoring, not a local problem."
+
+#. Native Go kiosk UI.
+msgid "本语言尚无已审核19路版本"
+msgstr "No reviewed 19×19 version in this language"
+
+#. Native Go kiosk UI.
+msgid "源答案含未解决的劫重复"
+msgstr "Source answer contains unresolved ko repetition"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部提吃目标"
+msgstr "Problem wording and local capture goal verified"
+
+#. Native Go kiosk UI.
+msgid "全部题面要求做劫并引用既有黑1；包含劫的性质、历史和替代连接选择，当前基础证书不覆盖。"
+msgstr ""
+"Every wording requires ko and refers to existing Black 1. Ko properties, "
+"history and alternative connections are outside the basic certificate."
+
+#. Native Go kiosk UI.
+msgid "相反两边均参与，19路平移不能保持边界"
+msgstr ""
+"Both opposite edges are involved; translation to 19×19 cannot preserve the "
+"boundaries"
+
+#. Native Go kiosk UI.
+msgid "局部目标证书校验不一致"
+msgstr "Local goal certificate validation disagrees"
+
+#. Native Go kiosk UI.
+msgid "命名点的合法性不符合源题面"
+msgstr "Named point legality disagrees with source wording"
+
+#. Native Go kiosk UI.
+msgid "命名的落子点已有棋子"
+msgstr "Named move point is already occupied"
+
+#. Native Go kiosk UI.
+msgid "源答案含自杀手"
+msgstr "Source answer contains suicide moves"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了初始棋块或气集合"
+msgstr "Board enlargement changes initial groups or liberties"
+
+#. Native Go kiosk UI.
+msgid "源切断点不能连接所问两块棋"
+msgstr "Source cut point cannot connect the two requested groups"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部连接目标"
+msgstr "Problem wording and local connection goal verified"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部切断目标"
+msgstr "Problem wording and local cutting goal verified"
+
+#. Native Go kiosk UI.
+msgid "含立即禁反提、依赖劫规的提子与劫材；第3步虽仅写连接，仍是此源劫题的上下文，不以短正文绕过劫审查。"
+msgstr ""
+"Includes immediate ko recapture prohibition, rule-dependent captures and ko "
+"threats. Step 3 says only connection but remains in this ko context; short "
+"text cannot bypass ko review."
+
+#. Native Go kiosk UI.
+msgid "正文明确比较9×9/13×13/19×19，当前13路本身是教学示例，改盘宽会改变展示对象。"
+msgstr ""
+"The text explicitly compares 9×9, 13×13 and 19×19. The 13×13 board is itself"
+" a teaching example; resizing changes what is shown."
+
+#. Native Go kiosk UI.
+msgid "题面要求分断白棋，本次未能确认分断目标"
+msgstr ""
+"The problem asks to separate White; the cutting goal could not be verified"
+
+#. Native Go kiosk UI.
+msgid "源答案在已有棋子处落子"
+msgstr "Source answer plays on an occupied point"
+
+#. Native Go kiosk UI.
+msgid "正确或失败分支未满足固定局部目标证书"
+msgstr ""
+"Success or failure branches do not satisfy the fixed local-goal certificate"
+
+#. Native Go kiosk UI.
+msgid "当前语言题面内容已改变，需重新审核"
+msgstr "Problem text in this language changed; review required"
+
+#. Native Go kiosk UI.
+msgid "两种题面全部明确征吃，不能因源树可平移就假定扩盘征子结果。"
+msgstr ""
+"Both wordings explicitly require ladder capture. A translatable source tree "
+"does not prove the ladder outcome after enlargement."
+
+#. Native Go kiosk UI.
+msgid "三种题面均需重建黑1前后局面判断白立即反提，当前setup和树拓扑不包含完整前态保证。"
+msgstr ""
+"All three wordings require reconstructing positions before and after Black 1"
+" to judge White's immediate recapture. Current setup and tree topology do "
+"not guarantee the full prior state."
+
+#. Native Go kiosk UI.
+msgid "原生19路"
+msgstr "Native 19×19"
+
+#. Native Go kiosk UI.
+msgid "源题含长程或全盘目标，本次保留原盘"
+msgstr ""
+"Source problem has a long-range or whole-board goal; keeping original size"
+
+#. Native Go kiosk UI.
+msgid "正确或失败叶未证明完整提吃同一初始目标棋块"
+msgstr ""
+"Correct or failed leaves do not prove complete capture of the same initial "
+"target group"
+
+#. Native Go kiosk UI.
+msgid "打吃证书缺少唯一目标"
+msgstr "Atari certificate lacks a unique target"
+
+#. Native Go kiosk UI.
+msgid "证书目标不是指定方的固定初始棋块"
+msgstr "Certificate target is not a fixed initial group of the specified side"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部数值或打吃目标"
+msgstr "Problem wording and local numerical or atari goal verified"
+
+#. Native Go kiosk UI.
+msgid "源官子题依赖原盘边界与目数，本次保留原盘"
+msgstr ""
+"Source endgame problem depends on original edges and points; keeping "
+"original size"
+
+#. Native Go kiosk UI.
+msgid "坐标越界或格式不受支持"
+msgstr "Coordinates out of bounds or unsupported"
+
+#. Native Go kiosk UI.
+msgid "连接证书缺少固定初始棋块"
+msgstr "Connection certificate lacks fixed initial groups"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部填气目标"
+msgstr "Problem wording and local liberty-filling goal verified"
+
+#. Native Go kiosk UI.
+msgid "题面要求反击指定白棋错着，本次未能确认完整目标"
+msgstr ""
+"The problem asks to punish White's specified mistake; the full goal could "
+"not be verified"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认较长变化的局部目标"
+msgstr "Could not verify the local goal of the longer variation"
+
+#. Native Go kiosk UI.
+msgid "数气证书缺少唯一目标"
+msgstr "Liberty-count certificate lacks a unique target"
+
+#. Native Go kiosk UI.
+msgid "重算结果与源选择题答案不符"
+msgstr "Recomputed result differs from the source multiple-choice answer"
+
+#. Native Go kiosk UI.
+msgid "登录后使用引擎分析"
+msgstr "Sign in to use engine analysis"
+
+#. Native Go kiosk UI.
+msgid "登录后查看{feature}"
+msgstr "Sign in to view {feature}"
+
+#. Native Go kiosk UI.
+msgid "登录后继续{feature}"
+msgstr "Sign in to continue {feature}"
+
+#. Native Go kiosk UI.
+msgid "登录后进入{feature}"
+msgstr "Sign in to open {feature}"
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效。当前棋盘仍会保留。登录后可继续使用。"
+msgstr ""
+"Your session expired. The current board is retained. Sign in to continue."
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效。已暂停读取{feature}中的个人内容。登录后可继续使用。"
+msgstr ""
+"Your session expired. Loading personal content in {feature} is paused. Sign "
+"in to continue."
+
+#. Native Go kiosk UI.
+msgid "登录后返回当前棋谱分组，当前棋盘不会被清空。"
+msgstr ""
+"After signing in, return to this game-record group. Your current board will "
+"not be cleared."
+
+#. Native Go kiosk UI.
+msgid "登录后仍需确认原操作，当前棋盘不会被清空。"
+msgstr ""
+"After signing in, confirm the original action. Your current board will not "
+"be cleared."
+
+#. Native Go kiosk UI.
+msgid "继续浏览"
+msgstr "Keep browsing"
+
+#. Native Go kiosk UI.
+msgid "{wins} 胜 · {losses} 负"
+msgstr "{wins} wins · {losses} losses"
+
+#. Native Go kiosk UI.
+msgid "{type} · {handicap} · 19 路"
+msgstr "{type} · {handicap} · 19×19"
+
+#. Native Go kiosk UI.
+msgid "对局类型待返回"
+msgstr "Game type pending"
+
+#. Native Go kiosk UI.
+msgid "同步失败"
+msgstr "Sync failed"
+
+#. Native Go kiosk UI.
+msgid "快照同步"
+msgstr "Snapshot sync"
+
+#. Native Go kiosk UI.
+msgid "类型未返回"
+msgstr "Type not returned"
+
+#. Native Go kiosk UI.
+msgid "{n} 题"
+msgstr "{n} problems"
+
+#. Native Go kiosk UI.
+msgid "进入 {level} 题型"
+msgstr "Open {level} problem types"
+
+#. Native Go kiosk UI.
+msgid "{head} · 第 {n} 题"
+msgstr "{head} · Problem {n}"
+
+#. Native Go kiosk UI.
+msgid "{n} 手"
+msgstr "{n} moves"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_black_stone"
+msgstr "Camera detects a black stone"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_white_stone"
+msgstr "Camera detects a white stone"
+
+#. Native Go kiosk UI.
+msgid "tsumego:level_dan"
+msgstr "{n} dan"
+
+#. Native Go kiosk UI.
+msgid "tsumego:level_kyu"
+msgstr "{n} kyu"
+
+#. Native Go kiosk UI.
+msgid "盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。"
+msgstr ""
+"Your device rank comes from ranked play. A net score of +3 promotes you one "
+"level; −3 demotes you one level."
+
+#. Native Go kiosk UI.
+msgid "这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。"
+msgstr ""
+"Only counted ranked games are shown, grouped by the opponent's rank at the "
+"time. Setup strength selects the opponent, not your rank."
+
+#. Native Go kiosk UI.
+msgid "正在同步"
+msgstr "Syncing"
+
+#. Native Go kiosk UI.
+msgid "{n} 秒"
+msgstr "{n} s"
+
+#. Native Go kiosk UI.
+msgid "登录后查看会员用量、API 积分与订单。"
+msgstr "Sign in to view membership usage, API points and orders."
+
+#. Native Go kiosk UI.
+msgid "自由对弈"
+msgstr "Free Play"
+
+#. Native Go kiosk UI.
+msgid "对弈"
+msgstr "Play"
+
+#. Native Go kiosk UI.
+msgid "升降级对弈"
+msgstr "Ranked play"
+
+#. Native Go kiosk UI.
+msgid "退出"
+msgstr "Exit"
+
+#. Native Go kiosk UI.
+msgid "成长记录"
+msgstr "Growth records"
+
+#. Native Go kiosk UI.
+msgid "教程"
+msgstr "Tutorials"
+
+#. Native Go kiosk UI.
+msgid "棋谱库"
+msgstr "Record library"
+
+#. Native Go kiosk UI.
+msgid "会员与用量"
+msgstr "Membership and usage"
+
+#. Native Go kiosk UI.
+msgid "进行中"
+msgstr "In progress"
+
+#. Native Go kiosk UI.
+msgid "登录"
+msgstr "Sign in"
+
+#. Native Go kiosk UI.
+msgid "死活题"
+msgstr "Tsumego"
+
+#. Native Go kiosk UI.
+msgid "跨平台对弈"
+msgstr "Cross-platform play"
+
+#. Native Go kiosk UI.
+msgid "设置"
+msgstr "Settings"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘镜像:识别的盘面还没接进来"
+msgstr "Physical board mirror: recognized position is not connected yet"
+
+#. Native Go kiosk UI.
+msgid "面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。"
+msgstr ""
+"Face-to-face games and games without your recorded color are excluded from "
+"the past 30 days' win rate."
+
+#. Native Go kiosk UI.
+msgid "{value1} · {at} / {totalMoves} {value4}"
+msgstr "{value1} · {at} / {totalMoves} {value4}"
+
+#. Native Go kiosk UI.
+msgid "{requested_visits} visits · {move_count} {value3}"
+msgstr "{requested_visits} visits · {move_count} {value3}"
+
+#. Native Go kiosk UI.
+msgid "邀请已发送，等待对方回应。"
+msgstr "Invitation sent. Waiting for a response."
+
+#. Native Go kiosk UI.
+msgid "胜负记在 OGS 账上"
+msgstr "Results are recorded on OGS"
+
+#. Native Go kiosk UI.
+msgid "公开挑战"
+msgstr "Open challenges"
+
+#. Native Go kiosk UI.
+msgid "段位来自 OGS"
+msgstr "Rank comes from OGS"
+
+#. Native Go kiosk UI.
+msgid "国家或地区区号"
+msgstr "Country or region calling code"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{totalCount} 题，{value3}"
+msgstr "{value1}, {totalCount} problems, {value3}"
+
+#. Native Go kiosk UI.
+msgid "结算中"
+msgstr "Settling"
+
+#. Native Go kiosk UI.
+msgid "已结束{value1}"
+msgstr "Finished{value1}"
+
+#. Native Go kiosk UI.
+msgid "等待对局快照"
+msgstr "Waiting for game snapshot"
+
+#. Native Go kiosk UI.
+msgid "实时快照"
+msgstr "Live snapshot"
+
+#. Native Go kiosk UI.
+msgid "星猛虎"
+msgstr "Star Fierce Tiger"
+
+#. Native Go kiosk UI.
+msgid "星雄狮"
+msgstr "Star Mighty Lion"
+
+#. Native Go kiosk UI.
+msgid "星巨象"
+msgstr "Star Giant Elephant"
+
+#. Native Go kiosk UI.
+msgid "星壮牛"
+msgstr "Star Strong Ox"
+
+#. Native Go kiosk UI.
+msgid "星蓝鲸"
+msgstr "Star Blue Whale"
+
+#. Native Go kiosk UI.
+msgid "星美鹿"
+msgstr "Star Graceful Deer"
+
+#. Native Go kiosk UI.
+msgid "星孤狼"
+msgstr "Star Lone Wolf"
+
+#. Native Go kiosk UI.
+msgid "星奇豚"
+msgstr "Star Quirky Dolphin"
+
+#. Native Go kiosk UI.
+msgid "星萌猪"
+msgstr "Star Cute Pig"
+
+#. Native Go kiosk UI.
+msgid "星骏马"
+msgstr "Star Swift Horse"
+
+#. Native Go kiosk UI.
+msgid "星呆羊"
+msgstr "Star Silly Sheep"
+
+#. Native Go kiosk UI.
+msgid "星跳鼠"
+msgstr "Star Jumping Mouse"
+
+#. Native Go kiosk UI.
+msgid "星云鹤"
+msgstr "Star Cloud Crane"
+
+#. Native Go kiosk UI.
+msgid "星灵狐"
+msgstr "Star Clever Fox"
+
+#. Native Go kiosk UI.
+msgid "星白鹭"
+msgstr "Star White Egret"
+
+#. Native Go kiosk UI.
+msgid "星智狗"
+msgstr "Star Wise Dog"
+
+#. Native Go kiosk UI.
+msgid "星巧猫"
+msgstr "Star Skillful Cat"
+
+#. Native Go kiosk UI.
+msgid "星皮猴"
+msgstr "Star Cheeky Monkey"
+
+#. Native Go kiosk UI.
+msgid "星乖兔"
+msgstr "Star Good Rabbit"
+
+#. Native Go kiosk UI.
+msgid "星树熊"
+msgstr "Star Koala"
+
+#. Native Go kiosk UI.
+msgid "星长蛇"
+msgstr "Star Long Snake"
+
+#. Native Go kiosk UI.
+msgid "星铠虾"
+msgstr "Star Armored Shrimp"
+
+#. Native Go kiosk UI.
+msgid "星夜鹰"
+msgstr "Star Nighthawk"
+
+#. Native Go kiosk UI.
+msgid "星憨鹅"
+msgstr "Star Goofy Goose"
+
+#. Native Go kiosk UI.
+msgid "星刺头"
+msgstr "Star Spiky"
+
+#. Native Go kiosk UI.
+msgid "星黄鸭"
+msgstr "Star Yellow Duck"
+
+#. Native Go kiosk UI.
+msgid "星轻燕"
+msgstr "Star Light Swallow"
+
+#. Native Go kiosk UI.
+msgid "星绿蛙"
+msgstr "Star Green Frog"
+
+#. Native Go kiosk UI.
+msgid "星老龟"
+msgstr "Star Old Turtle"
+
+#. Native Go kiosk UI.
+msgid "星钳蟹"
+msgstr "Star Claw Crab"
+
+#. Native Go kiosk UI.
+msgid "星尾鱼"
+msgstr "Star Tailed Fish"
+
+#. Native Go kiosk UI.
+msgid "星敏螳"
+msgstr "Star Nimble Mantis"
+
+#. Native Go kiosk UI.
+msgid "星鸣蝉"
+msgstr "Star Singing Cicada"
+
+#. Native Go kiosk UI.
+msgid "星飞蜓"
+msgstr "Star Flying Dragonfly"
+
+#. Native Go kiosk UI.
+msgid "星舞蝶"
+msgstr "Star Dancing Butterfly"
+
+#. Native Go kiosk UI.
+msgid "星忙蜂"
+msgstr "Star Busy Bee"
+
+#. Native Go kiosk UI.
+msgid "星慢蜗"
+msgstr "Star Slow Snail"
+
+#. Native Go kiosk UI.
+msgid "星花虫"
+msgstr "Star Flower Bug"
+
+#. Native Go kiosk UI.
+msgid "星小蚁"
+msgstr "Star Little Ant"
+
+#. Native Go kiosk UI.
+msgid "数子失败"
+msgstr "Scoring failed"
+
+#. Native Go kiosk UI.
+msgid "本局 3 次机会已用完"
+msgstr "All 3 chances for this game used"
+
+#. Native Go kiosk UI.
+msgid "（你）"
+msgstr "(You)"
+
+#. Native Go kiosk UI.
+msgid "恭喜答对！"
+msgstr "Correct — well done!"
+
+#. Native Go kiosk UI.
+msgid "{n} 分"
+msgstr "{n} min"
+
+#. Native Go kiosk UI.
+msgid "{main} · 读秒 {seconds} 秒 × {periods}"
+msgstr "{main} · Byoyomi {seconds}s × {periods}"
+
+#. Native Go kiosk UI.
+msgid "rank:golaxy_stars"
+msgstr "Golaxy {n} stars"
+
+#. Native Go kiosk UI.
+msgid "game:realtime_rejected"
+msgstr ""
+"Live connection rejected ({reason}). The board will not update "
+"automatically. Sign in again and retry."
+
+#. Native Go kiosk UI.
+msgid "创建"
+msgstr "Create"
+
+#. Native Go kiosk UI.
+msgid "登录后查看自己的成绩、活动与成长记录。"
+msgstr "Sign in to see your results, activity and growth records."
+
+#. Native Go kiosk UI.
+msgid "个人棋谱"
+msgstr "My game records"
+
+#. Native Go kiosk UI.
+msgid "返回首页"
+msgstr "Back to home"
+
+#. Native Go kiosk UI.
+msgid "登录后浏览教程与章节内容。"
+msgstr "Sign in to browse tutorials and chapters."
+
+#. Native Go kiosk UI.
+msgid "登录后开始双人对弈，并保存自己的棋谱。"
+msgstr "Sign in to start a two-player game and save your records."
+
+#. Native Go kiosk UI.
+msgid "登录后查看自己的云端棋谱与分组。"
+msgstr "Sign in to see your cloud game records and groups."
+
+#. Native Go kiosk UI.
+msgid "个人复盘"
+msgstr "My reviews"
+
+#. Native Go kiosk UI.
+msgid "定级与升降级成绩需要记录到你的账号。"
+msgstr "Placement and promotion results must be recorded to your account."
+
+#. Native Go kiosk UI.
+msgid "做题中"
+msgstr "Solving"
+
+#. Native Go kiosk UI.
+msgid "登录后可继续当前对弈设置。"
+msgstr "Sign in to continue your current game setup."
+
+#. Native Go kiosk UI.
+msgid "答对"
+msgstr "Correct"
+
+#. Native Go kiosk UI.
+msgid "AI解题中"
+msgstr "AI solving a problem"
+
+#. Native Go kiosk UI.
+msgid "绿"
+msgstr "Green"
+
+#. Native Go kiosk UI.
+msgid "红"
+msgstr "Red"
+
+#. Native Go kiosk UI.
+msgid "自由战"
+msgstr "Free game"
+
+#. Native Go kiosk UI.
+msgid "摆放黑棋"
+msgstr "Place black stones"
+
+#. Native Go kiosk UI.
+msgid "本地双人对弈"
+msgstr "Local two-player game"
+
+#. Native Go kiosk UI.
+msgid "升降战"
+msgstr "Ranked game"
+
+#. Native Go kiosk UI.
+msgid "rank:fox_reference"
+msgstr "Fox 9D"
+
+#. Native Go kiosk UI.
+msgid "查看你的棋谱与复盘报告，继续分析对局。"
+msgstr "View your games and review reports to continue analysis."
+
+#. Native Go kiosk UI.
+msgid "登录后进入研究棋盘，继续摆谱。"
+msgstr "Sign in to open the analysis board and continue replay."
+
+#. Native Go kiosk UI.
+msgid "棋盘已重新检测到"
+msgstr "Board detected again"
+
+#. Native Go kiosk UI.
+msgid "登录后浏览棋谱，回放对局或摆到实体棋盘。"
+msgstr ""
+"Sign in to browse game records, replay games or place them on the physical "
+"board."
+
+#. Native Go kiosk UI.
+msgid "检测质量下降，请检查光线"
+msgstr "Detection quality dropped. Check the lighting."
+
+#. Native Go kiosk UI.
+msgid "登录后进入训练营，继续做题。"
+msgstr "Sign in to enter training and continue solving problems."
+
+#. Native Go kiosk UI.
+msgid "研究分析"
+msgstr "Position analysis"
+
+#. Native Go kiosk UI.
+msgid "game:session_gone"
+msgstr "This game is no longer on the server. You can leave this page."
+
+#. Native Go kiosk UI.
+msgid "蓝"
+msgstr "Blue"
+
+#. Native Go kiosk UI.
+msgid "研究棋盘"
+msgstr "Analysis board"
+
+#. Native Go kiosk UI.
+msgid "登录后进入设备视觉与棋盘标定工作台。"
+msgstr "Sign in to open device vision and board calibration."
+
+#. Native Go kiosk UI.
+msgid "先登录智星盒，再连接你的星阵或 OGS 账号。"
+msgstr "Sign in to StellaBox first, then connect Golaxy or OGS."
+
+#. Native Go kiosk UI.
+msgid "答错拿除"
+msgstr "Wrong — remove stones"
+
+#. Native Go kiosk UI.
+msgid "标定工作台"
+msgstr "Board calibration"
+
+#. Native Go kiosk UI.
+msgid "星阵返回的棋谱内容不完整"
+msgstr "Golaxy returned incomplete game data"
+
+#. Native Go kiosk UI.
+msgid "离线"
+msgstr "Offline"
+
+#. Native Go kiosk UI.
+msgid "登录后可使用引擎分析，当前棋盘与设置将保留。"
+msgstr "Sign in to use engine analysis. Your board and settings will be kept."
+
+#. Native Go kiosk UI.
+msgid "登录后查看并调整围棋设置。"
+msgstr "Sign in to view and adjust Go settings."
+
+#. Native Go kiosk UI.
+msgid "拒绝邀请"
+msgstr "Invitations declined"
+
+#. Native Go kiosk UI.
+msgid "棋谱内容与当前房间不一致"
+msgstr "Game record does not match this room"
+
+#. Native Go kiosk UI.
+msgid "状态未返回"
+msgstr "Status not returned"
+
+#. Native Go kiosk UI.
+msgid "rank:pro_fox_reference"
+msgstr "Pro / Fox 9D+"
+
+#. Native Go kiosk UI.
+msgid "研究中"
+msgstr "Analyzing"
+
+#. Native Go kiosk UI.
+msgid "查看正在进行的对局，邀请棋友或匹配对手。"
+msgstr "Watch ongoing games, invite players or find a match."
+
+#. Native Go kiosk UI.
+msgid "允许邀请"
+msgstr "Invitations allowed"
+
+#. Native Go kiosk UI.
+msgid "忙碌"
+msgstr "Busy"
+
+#. Native Go kiosk UI.
+msgid "应手"
+msgstr "Reply move"
+
+#. Native Go kiosk UI.
+msgid "当前棋盘路数暂不支持观战"
+msgstr "Spectating this board size is not supported yet"
+
+#. Native Go kiosk UI.
+msgid "星阵登录已失效"
+msgstr "Golaxy login expired"
+
+#. Native Go kiosk UI.
+msgid "common:close"
+msgstr "Close"
+
+#. Native Go kiosk UI.
+msgid "kifu:preview_failed"
+msgstr "Could not load the record preview"
+
+#. Native Go kiosk UI.
+msgid "kifu:selected_game"
+msgstr "This game"
+
+#. Native Go kiosk UI.
+msgid "kifu:open_replay"
+msgstr "View game record"
+
+#. Native Go kiosk UI.
+msgid "report:event"
+msgstr "Event"
+
+#. Native Go kiosk UI.
+msgid "report:date"
+msgstr "Date"
+
+#. Native Go kiosk UI.
+msgid "report:result"
+msgstr "Result"
+
+#. Native Go kiosk UI.
+msgid "report:rules"
+msgstr "Rules"
+
+#. Native Go kiosk UI.
+msgid "report:source"
+msgstr "Source"
+
+#. Native Go kiosk UI.
+msgid "该局型暂不支持观战"
+msgstr "Spectating is not supported for this game type"
+
+#. Native Go kiosk UI.
+msgid "没能同步星阵棋谱"
+msgstr "Could not sync Golaxy record"
+
+#. Native Go kiosk UI.
+msgid "请先连接星阵账号"
+msgstr "Connect your Golaxy account first"
+
+#. Native Go kiosk UI.
+msgid "星阵账号未连接"
+msgstr "Golaxy account not connected"
+
+#. Native Go kiosk UI.
+msgid "没能检查星阵连接"
+msgstr "Could not check Golaxy connection"
+
+#. Native Go kiosk UI.
+msgid "请重新登录后观战。"
+msgstr "Sign in again to spectate."
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效，请重新登录。"
+msgstr "Your session expired. Sign in again."
+
+#. Native Go kiosk UI.
+msgid "对局已结束，已保留最后终局。"
+msgstr "Game ended; the final position is retained."
+
+#. Native Go kiosk UI.
+msgid "对局不存在或已结束。"
+msgstr "Game not found or already ended."
+
+#. Native Go kiosk UI.
+msgid "观战同步失败，请重试。"
+msgstr "Spectator sync failed. Retry."
+
+#. Native Go kiosk UI.
+msgid "观战快照内容不完整，请重试。"
+msgstr "Spectator snapshot is incomplete. Retry."
+
+#. Native Go kiosk UI.
+msgid "中央对局连接中断"
+msgstr "Central game connection lost"
+
+#. Native Go kiosk UI.
+msgid "实时连接已断开，棋盘不会自动更新，请刷新页面"
+msgstr ""
+"Live connection lost. The board will not update automatically; refresh the "
+"page."
+
+#. Native Go kiosk UI.
+msgid "Failed to connect to game"
+msgstr "Failed to connect to game"
+
+#. Native Go kiosk UI.
+msgid "邀请已过期，请对方重新邀请。"
+msgstr "Invitation expired. Ask your opponent to send another."
+
+#. Native Go kiosk UI.
+msgid "操作失败，请重试。"
+msgstr "Action failed. Retry."
+
+#. Native Go kiosk UI.
+msgid "OGS 没有返回挑战编号"
+msgstr "OGS did not return a challenge ID"
+
+#. Native Go kiosk UI.
+msgid "约战已取消"
+msgstr "Challenge cancelled"
+
+#. Native Go kiosk UI.
+msgid "取消约战失败"
+msgstr "Could not cancel challenge"
+
+#. Native Go kiosk UI.
+msgid "OGS 没有返回对局编号"
+msgstr "OGS did not return a game ID"
+
+#. Native Go kiosk UI.
+msgid "接受挑战失败"
+msgstr "Could not accept challenge"
+
+#. Native Go kiosk UI.
+msgid "AI 引擎准备中，稍后即可开始"
+msgstr "AI engine preparing; you can start soon"
+
+#. Native Go kiosk UI.
+msgid "AI 引擎暂未就绪，请稍后重试"
+msgstr "AI engine not ready. Try again later."
+
+#. Native Go kiosk UI.
+msgid " · 最新落子 {coord}"
+msgstr " · Latest move {coord}"
+
+#. Native Go kiosk UI.
+msgid "当前不是实时态。"
+msgstr "Not currently live."
+
+#. Native Go kiosk UI.
+msgid "{n} 分钟"
+msgstr "{n} minutes"
+
+#. Native Go kiosk UI.
+msgid "{n} 小时"
+msgstr "{n} hours"
+
+#. Native Go kiosk UI.
+msgid "{duration}前"
+msgstr "{duration} ago"
+
+#. Native Go kiosk UI.
+msgid "返回对局"
+msgstr "Back to game"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：棋力服务未能正常完成对局"
+msgstr "Unranked: the engine service could not finish this game normally"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对局没有形成有效胜负"
+msgstr "Unranked: this game has no valid win or loss"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：本局对手尚未通过计分认证"
+msgstr "Unranked: this opponent has not been certified for scoring"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对手档位与开局快照不一致"
+msgstr "Unranked: the opponent level differs from the starting snapshot"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对局类型不符合升降级规则"
+msgstr "Unranked: this game type does not meet ranked-play rules"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：服务器判定本局不计入"
+msgstr "Unranked: the server excluded this game"
+
+#. Native Go kiosk UI.
+msgid "这台盒子上现在连的不是你的账号"
+msgstr "The account connected on this device is not yours"
+
+#. Native Go kiosk UI.
+msgid "扫码请求太频繁,请稍后再试"
+msgstr "Too many QR requests. Try again later."
+
+#. Native Go kiosk UI.
+msgid "扫码会话不存在或已过期"
+msgstr "QR sign-in session is missing or expired"
+
+#. Native Go kiosk UI.
+msgid "这条扫码登录不是你发起的"
+msgstr "You did not start this QR sign-in"
+
+#. Native Go kiosk UI.
+msgid "扫码会话已过期"
+msgstr "QR sign-in session expired"
+
+#. Native Go kiosk UI.
+msgid "还没在手机上确认"
+msgstr "Not yet confirmed on your phone"
+
+#. Native Go kiosk UI.
+msgid "扫码登录失败"
+msgstr "QR sign-in failed"
+
+#. Native Go kiosk UI.
+msgid "连不上星阵"
+msgstr "Cannot connect to Golaxy"
+
+#. Native Go kiosk UI.
+msgid "platform:account_busy"
+msgstr ""
+"Another user’s {platform} account is connected. Disconnect it in Settings "
+"before signing in."
+
+#. Native Go kiosk UI.
+msgid "platform:scan_unsupported"
+msgstr "{platform} does not support QR sign-in"
+
+#. Native Go kiosk UI.
+msgid "platform:scan_connection_detail"
+msgstr "Cannot connect to Golaxy: {detail}"
+
+#. Native Go kiosk UI.
+msgid "ladder:matched_rung_summary"
+msgstr "You are {rank}, matched to {rung} — {reason}"
+
+#. Native Go kiosk UI.
+msgid "ladder:rung_number"
+msgstr "level {n}"
+
+#. Native Go kiosk UI.
+msgid "report:color_leads_points"
+msgstr "{color} leads {points} pts"
+
+#. Native Go kiosk UI.
+msgid "report:color_winrate"
+msgstr "{color} win rate {percentage}"
+
+#. Native Go kiosk UI.
+msgid "Golaxy"
+msgstr "GoLaxy"
+
+#. Native Go kiosk UI.
+msgid "Fox Weiqi"
+msgstr "Fox Weiqi"
+
+msgid "membership:order_cancelled"
+msgstr "Order cancelled"
+
+msgid "membership:wechat_another_screen"
+msgstr ""
+"If you are browsing on your phone, open this page on another screen, then "
+"scan it with WeChat on your phone."
+
+msgid "membership:wechat_cancel"
+msgstr "Cancel order"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr ""
+"Confirming cancellation. If payment has already completed, the payment "
+"receipt takes precedence."
+
+msgid "membership:wechat_cancelling"
+msgstr "Cancelling…"
+
+msgid "membership:wechat_close_help"
+msgstr "Closing only hides this page. You can reopen it from order history."
+
+msgid "membership:wechat_confirming"
+msgstr "Confirming payment. Please do not create another order."
+
+msgid "membership:wechat_paid"
+msgstr "WeChat Pay payment successful. Syncing your account."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat Pay QR code"
+
+msgid "membership:wechat_qr_error"
+msgstr ""
+"The QR code cannot be displayed right now. Please retry checking this order."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "The QR code is not ready yet. Checking your order."
+
+msgid "membership:wechat_retry"
+msgstr "Retry safely"
+
+msgid "membership:wechat_scan"
+msgstr "Scan to pay"
+
+msgid "membership:wechat_scan_help"
+msgstr "Scan the QR code using Scan in WeChat on your phone."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR code valid for {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "Waiting for WeChat Pay confirmation"

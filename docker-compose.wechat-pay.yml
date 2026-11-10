@@ -1,0 +1,21 @@
+# Explicit opt-in overlay; does not enable real payments. Use only after approval,
+# together with the complete verified role-specific Compose chain, never alone.
+# Only Web receives the private directory. No secrets on Cron, Admin or devices.
+services:
+  katrain-web:
+    environment:
+      - WECHAT_PAY_APP_ID=${WECHAT_PAY_APP_ID:-}
+      - WECHAT_PAY_MCH_ID=${WECHAT_PAY_MCH_ID:-}
+      - WECHAT_PAY_MERCHANT_SERIAL=${WECHAT_PAY_MERCHANT_SERIAL:-}
+      - WECHAT_PAY_PUBLIC_KEY_ID=${WECHAT_PAY_PUBLIC_KEY_ID:-}
+      - WECHAT_PAY_NOTIFY_URL=${WECHAT_PAY_NOTIFY_URL:-}
+      - WECHAT_PAY_PRIVATE_KEY_PATH=${WECHAT_PAY_PRIVATE_KEY_PATH:-/run/secrets/wechat-pay/apiclient_key.pem}
+      - WECHAT_PAY_API_V3_KEY_PATH=${WECHAT_PAY_API_V3_KEY_PATH:-/run/secrets/wechat-pay/api_v3_key}
+      - WECHAT_PAY_PUBLIC_KEY_PATH=${WECHAT_PAY_PUBLIC_KEY_PATH:-/run/secrets/wechat-pay/wechatpay_public_key.pem}
+    volumes:
+      - type: bind
+        source: ${WECHAT_PAY_SECRET_DIR:?Set the approved private host directory}
+        target: /run/secrets/wechat-pay
+        read_only: true
+        bind:
+          create_host_path: false

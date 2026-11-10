@@ -12,7 +12,7 @@ describe('ModulePlate', () => {
     const requestNavigation = vi.fn();
     vi.mocked(useGameNavigation).mockReturnValue({ requestNavigation } as never);
 
-    render(<ModulePlate title="Live match" subtitle="Round 3" status={<span>LIVE</span>} backTo="/galaxy/live" />);
+    render(<ModulePlate title="Live match" subtitle="Round 3" status={<span>LIVE</span>} backTo="/live" />);
 
     expect(screen.getByText('Live match')).toBeInTheDocument();
     expect(screen.getByText('Round 3')).toBeInTheDocument();
@@ -20,12 +20,12 @@ describe('ModulePlate', () => {
     const back = screen.getByRole('button', { name: '返回' });
     expect(back).toHaveStyle({ width: '40px', height: '40px' });
     fireEvent.click(back);
-    expect(requestNavigation).toHaveBeenCalledWith('/galaxy/live');
+    expect(requestNavigation).toHaveBeenCalledWith('/live');
   });
 
   it('renders no back control when showBack is false', () => {
     vi.mocked(useGameNavigation).mockReturnValue({ requestNavigation: vi.fn() } as never);
-    render(<ModulePlate title="Research" backTo="/galaxy/research" showBack={false} />);
+    render(<ModulePlate title="Research" backTo="/research" showBack={false} />);
     expect(screen.queryByRole('button', { name: '返回' })).not.toBeInTheDocument();
   });
 
@@ -36,7 +36,7 @@ describe('ModulePlate', () => {
     const requestNavigation = vi.fn();
     vi.mocked(useGameNavigation).mockReturnValue({ requestNavigation } as never);
 
-    render(<ModulePlate title="升降级对弈" backLabel="升降级" backTo="/galaxy/play/ai?mode=rated" />);
+    render(<ModulePlate title="升降级对弈" backLabel="升降级" backTo="/play/ai?mode=rated" />);
 
     const plate = screen.getByTestId('module-plate');
     const heading = screen.getByRole('heading', { name: '升降级对弈' });
@@ -49,6 +49,6 @@ describe('ModulePlate', () => {
     expect(within(plate).queryByText('升降级')).not.toBeInTheDocument();
 
     fireEvent.click(back);
-    expect(requestNavigation).toHaveBeenCalledWith('/galaxy/play/ai?mode=rated');
+    expect(requestNavigation).toHaveBeenCalledWith('/play/ai?mode=rated');
   });
 });

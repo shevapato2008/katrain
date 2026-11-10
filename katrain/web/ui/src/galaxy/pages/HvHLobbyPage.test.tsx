@@ -51,7 +51,7 @@ it('returns to own room and cancels the queue', async () => {
   await screen.findByText('同段');
   await screen.findByText('已定级');
   await userEvent.click(screen.getByTestId('lobby-game'));
-  expect(navigate).toHaveBeenCalledWith('/galaxy/play/human/room/own');
+  expect(navigate).toHaveBeenCalledWith('/play/human/room/own');
   await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
   await userEvent.click(screen.getByRole('button', { name: '取消匹配' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'stop_matchmaking' });
@@ -66,7 +66,7 @@ it('opens another pair\'s ongoing game from a keyboard accessible card', async (
   expect(within(game).queryByRole('button')).not.toBeInTheDocument();
   game.focus();
   await userEvent.keyboard('{Enter}');
-  expect(navigate).toHaveBeenCalledWith('/galaxy/play/human/room/watch');
+  expect(navigate).toHaveBeenCalledWith('/play/human/room/watch');
 });
 it('shows placement dialog only for matching and allows invitation when unplaced', async () => {
   getAiLadderStatus.mockResolvedValue({ placement_state: { phase: 'placement', total_games: 5, completed_games: 2 } });

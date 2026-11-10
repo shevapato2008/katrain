@@ -160,6 +160,8 @@ class CameraManager:
         self._cap: cv2.VideoCapture | None = None
         self._connected = False
         self._last_reconnect_attempt = 0.0
+        self._arrival_pending = False
+        self._capture_identity: tuple[int, int, int] | None = None
         self._camera_name: str | None = None  # V4L2 device name for reconnection
         # Background reader thread state
         self._reader_thread: threading.Thread | None = None
@@ -176,7 +178,7 @@ class CameraManager:
         self._pending_controls_generation = 0
         self._controls_generation = 0
         self._controls_lock = threading.Lock()
-        self._controls_effective: bool | None = None  # None = never attempted
+        self._controls_effective: bool | None = None  # None = no verified control result yet
         self._initial_exposure: float | None = None  # readback at open()
         self._current_auto_exposure: float | None = None
         self._current_exposure: float | None = None
@@ -205,6 +207,9 @@ class CameraManager:
         if self._reader_thread is not None:
             # A native read may outlive the bounded join. Never overlap readers.
             return False
+        if self._configured_path_missing():
+            return False
+        self._capture_identity = self._node_identity()
         with self._controls_lock:
             self._controls_effective = None
             open_generation = self._controls_generation
@@ -326,6 +331,16 @@ class CameraManager:
                     and not self._pending_controls
                 ):
                     self._controls_effective = replay_ok
+                elif (
+                    not self._lock_exposure
+                    and open_generation == self._controls_generation
+                    and not self._pending_controls
+                ):
+                    self._controls_effective = bool(
+                        auto_write_ok
+                        and current_auto_exposure is not None
+                        and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, current_auto_exposure)
+                    )
 
             # Drain frames to let auto-focus and auto-exposure settle
             if self._warmup_seconds > 0:
@@ -371,6 +386,51 @@ class CameraManager:
             with self._frame_lock:
                 self._latest_frame = None
             logger.info("Camera %s closed", self._device_id)
+
+    def handle_device_event(self, action: str) -> None:
+        """Register a matching processed event on the existing lifecycle owner.
+
+        Arrival grants one immediate retry. Removal invalidates the old frame and
+        stops its reader, whose bounded-close guard still prevents overlap.
+        """
+        with self._lifecycle_lock:
+            if action == "remove":
+                self._arrival_pending = False
+                self._close_locked()
+            elif action == "add":
+                # The monitor coalesces duplicate adds. A distinct arrival can
+                # replace the same alias even when the preceding remove was lost.
+                if self._connected:
+                    self._close_locked()
+                self._arrival_pending = True
+
+    def reconcile_device(self) -> None:
+        """Retire a vanished/replaced Linux node even if cached frames look ready."""
+        with self._lifecycle_lock:
+            if not self._connected:
+                return
+            if self._configured_path_missing():
+                self._close_locked()
+            elif self._capture_identity is not None and self._node_identity() != self._capture_identity:
+                self._close_locked()
+                self._arrival_pending = True
+
+    def _node_identity(self) -> tuple[int, int, int] | None:
+        if sys.platform != "linux" or not isinstance(self._capture_arg, str) or not os.path.isabs(self._capture_arg):
+            return None
+        try:
+            node = os.stat(self._capture_arg)
+            return node.st_dev, node.st_ino, node.st_rdev
+        except OSError:
+            return None
+
+    def _configured_path_missing(self) -> bool:
+        return bool(
+            sys.platform == "linux"
+            and isinstance(self._capture_arg, str)
+            and os.path.isabs(self._capture_arg)
+            and not os.path.exists(self._capture_arg)
+        )
 
     def read_frame(self) -> np.ndarray | None:
         """Return the latest frame captured by the background thread.
@@ -694,10 +754,22 @@ class CameraManager:
             self._lifecycle_lock.release()
 
     def _reconnect_locked(self) -> np.ndarray | None:
+        # Cheap absence probes avoid OpenCV's warnings while the kernel has no
+        # usable node. Keep an arrival credit while an old native reader exits.
+        if self._reader_thread is not None and self._reader_thread.is_alive():
+            return None
+        numbered_device = isinstance(self._device_id, int) or (
+            isinstance(self._device_id, str)
+            and self._device_id.startswith("/dev/video")
+            and self._device_id[len("/dev/video") :].isdigit()
+        )
+        if self._configured_path_missing() and not numbered_device:
+            return None
         now = time.monotonic()
-        if now - self._last_reconnect_attempt < self.RECONNECT_COOLDOWN:
+        if not self._arrival_pending and now - self._last_reconnect_attempt < self.RECONNECT_COOLDOWN:
             return None
 
+        self._arrival_pending = False
         self._last_reconnect_attempt = now
         logger.info("Attempting to reconnect camera %s ...", self._device_id)
 
@@ -707,11 +779,6 @@ class CameraManager:
             return self.read_frame()
 
         # Original path failed — scan by device name (handles USB renumbering)
-        numbered_device = isinstance(self._device_id, int) or (
-            isinstance(self._device_id, str)
-            and self._device_id.startswith("/dev/video")
-            and self._device_id[len("/dev/video") :].isdigit()
-        )
         if self._camera_name and numbered_device:
             new_id = _find_device_by_name(self._camera_name, self._device_id)
             if new_id is not None:

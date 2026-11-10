@@ -109,6 +109,9 @@ class PlatformGameSession:
     ranked: bool
     handicap: int
     komi: float
+    # Verified current-game labels only. Missing/null is unknown. For engine
+    # play the AI seat is a difficulty label, not a human account grade.
+    player_ranks: dict[str, Optional[str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

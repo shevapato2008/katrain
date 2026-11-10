@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 import json
 from hashlib import sha256
 
@@ -76,6 +77,136 @@ def test_two_distinct_requests_produce_catalog_decision_and_hash():
     assert result["producer"]["request_attempts"] == 1
 
 
+@pytest.mark.parametrize("key,japanese", [("菲特拉·R·S", "フィトラ・R・S"), ("菲特拉", "フィトラ")])
+def test_fresh_raw_player_retention_mismatch_repairs_before_reviewer(key, japanese):
+    wrong = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "jp": japanese},
+        "original_language": "und",
+        "methods": {lang: "retain_original" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    with pytest.raises(NameRejected, match="retain_original differs from parsed name"):
+        QwenNameService._candidate(wrong, "raw_player", key, [])
+    corrected = {**wrong, "methods": {**wrong["methods"], "jp": "transliteration"}}
+    service, client, calls = mock_service([wrong, corrected, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", key, [ITEM])
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(prompts) == 3
+    assert "candidate" not in prompts[0] and "candidate" not in prompts[1]
+    assert "retain_original differs from parsed name" in prompts[1]["repair_reason"]
+    assert prompts[2]["candidate"] == corrected
+    assert decision["displays"] == wrong["displays"]
+    assert decision["methods"]["jp"] == "transliteration"
+
+
+def test_repeated_fresh_raw_player_retention_mismatch_rejects_without_reviewer():
+    wrong = {
+        **CANDIDATE,
+        "displays": {lang: "柯洁" if lang != "jp" else "柯潔" for lang in CANDIDATE["displays"]},
+        "methods": {lang: "retain_original" for lang in CANDIDATE["displays"]},
+    }
+    service, client, calls = mock_service([wrong, wrong, wrong, wrong])
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected, match="retain_original differs from parsed name"):
+                await service.translate_and_review("raw_player", "柯洁", [ITEM])
+
+    run(check())
+    assert len(calls) == 2
+    assert all("candidate" not in json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls)
+
+
+def test_fresh_raw_player_can_retain_native_parsed_name_without_embedded_rank():
+    candidate = {
+        **CANDIDATE,
+        "displays": {lang: "菲特拉" for lang in CANDIDATE["displays"]},
+        "methods": {lang: "retain_original" for lang in CANDIDATE["displays"]},
+    }
+    service, client, calls = mock_service([candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", "菲特拉九段", [ITEM])
+
+    decision = run(check())
+    assert decision["displays"] == candidate["displays"]
+    assert len(calls) == 2
+
+
+def test_qualified_raw_player_template_keeps_original_generation_provenance():
+    context = {
+        "verified_reuse_displays": CANDIDATE["displays"],
+        "verified_reuse_original_language": CANDIDATE["original_language"],
+        "verified_reuse_methods": CANDIDATE["methods"],
+    }
+    service, client, calls = mock_service([CANDIDATE, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", "柯洁", [ITEM], context=context)
+
+    decision = run(check())
+    assert decision["displays"] == CANDIDATE["displays"]
+    assert decision["methods"] == CANDIDATE["methods"]
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize("field", ("displays", "original_language", "methods"))
+def test_qualified_raw_player_template_mismatch_repairs_before_reviewer(field):
+    candidate = {
+        "displays": {"cn": "姜勋", "tw": "姜勳", "jp": "姜勲", "ko": "강훈", "en": "Kang Hun"},
+        "original_language": "und",
+        "methods": {**CANDIDATE["methods"], "jp": "transliteration"},
+        "source_urls": [],
+    }
+    context = {f"verified_reuse_{key}": candidate[key] for key in ("displays", "original_language", "methods")}
+    wrong = deepcopy(candidate)
+    if field == "original_language":
+        wrong[field] = "ko"
+    else:
+        wrong[field]["jp"] = "姜勳" if field == "displays" else "orthographic_conversion"
+    with pytest.raises(NameRejected, match="qualified raw player template"):
+        QwenNameService._candidate(wrong, "raw_player", "姜勋", [], context=context)
+    service, client, calls = mock_service([wrong, candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_player", "姜勋", [ITEM], context=context)
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(prompts) == 3
+    assert "candidate" not in prompts[1]
+    assert "qualified raw player template" in prompts[1]["repair_reason"]
+    assert prompts[2]["candidate"] == candidate
+    assert all(decision[key] == candidate[key] for key in ("displays", "original_language", "methods"))
+
+
+def test_repeated_qualified_raw_player_method_mismatch_rejects_without_reviewer():
+    context = {
+        "verified_reuse_displays": CANDIDATE["displays"],
+        "verified_reuse_original_language": "und",
+        "verified_reuse_methods": {**CANDIDATE["methods"], "jp": "transliteration"},
+    }
+    wrong = {**CANDIDATE, "original_language": "und"}
+    service, client, calls = mock_service([wrong, wrong, wrong, wrong])
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected, match="qualified raw player template"):
+                await service.translate_and_review("raw_player", "柯洁", [ITEM], context=context)
+
+    run(check())
+    assert len(calls) == 2
+    assert all("candidate" not in json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls)
+
+
 def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
     key = "第12届国手山脉杯世界赛8强赛"
     candidate = {
@@ -102,13 +233,108 @@ def test_event_producer_prompt_lists_exact_digit_tokens_for_every_language():
     assert prompt["required_cn_literal"] == key
     assert "character for character" in prompt["cn_literal_rule"]
     assert prompt["output_shape"]["displays"] == {
-        "cn": "string", "tw": "string", "jp": "string", "ko": "string", "en": "string"
+        "cn": "string",
+        "tw": "string",
+        "jp": "string",
+        "ko": "string",
+        "en": "string",
     }
     assert set(prompt["output_shape"]["methods"]) == {"cn", "tw", "jp", "ko", "en"}
     assert set(prompt["allowed_methods"]) == {
-        "retain_original", "orthographic_conversion", "transliteration", "translation"
+        "retain_original",
+        "orthographic_conversion",
+        "transliteration",
+        "translation",
     }
     assert "required_digit_tokens literally" in body["messages"][0]["content"]
+
+
+@pytest.mark.parametrize(
+    "key,wrong_english,correct_english,reason",
+    [
+        (
+            "第51期日本棋圣战循环圈AB组加赛",
+            "51st Honinbo Tournament Meijin League AB Group Playoff",
+            "51st Japanese Kisei League AB Group Playoff",
+            "Japanese Kisei",
+        ),
+        (
+            "第51期日本棋圣战循环圈AB组加赛",
+            "51st Kisei Honinbo League AB Group Playoff",
+            "51st Japanese Kisei League AB Group Playoff",
+            "Japanese Kisei",
+        ),
+        (
+            "第51期日本棋圣战循环圈AB组加赛",
+            "51st Kisei Meijin League AB Group Playoff",
+            "51st Japanese Kisei League AB Group Playoff",
+            "Japanese Kisei",
+        ),
+        (
+            "第12届国手山脉杯世界赛8强赛",
+            "12th Guoshou Mountain Range Cup World Tournament Round of 16 (Top 8)",
+            "12th Guoshou Mountain Range Cup World Tournament Quarterfinal (Top 8)",
+            "8-player stage",
+        ),
+        (
+            "2026青白江城厢古城杯世界女子联赛巅峰决战季军战首尔-扇兴",
+            "2026 Qingshuijiang Chengxiang Ancient Town Cup Women's League Third-Place Match Seoul-Senko",
+            "2026 Qingbaijiang Chengxiang Ancient Town Cup Women's League Third-Place Match Seoul-Senko",
+            "Qingbaijiang",
+        ),
+        (
+            "第11届衢州烂柯杯中国冠军战8强赛",
+            "11th Quzhou Langke Cup Chinese Championship Quarterfinal (Top 8)",
+            "11th Quzhou Lanke Cup Chinese Championship Quarterfinal (Top 8)",
+            "Lanke",
+        ),
+    ],
+    ids=["wrong-title", "added-honinbo", "added-meijin", "wrong-round", "wrong-place", "wrong-lanke"],
+)
+def test_known_event_english_mistranslation_repairs_before_reviewer(key, wrong_english, correct_english, reason):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "en": correct_english},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    wrong = {**candidate, "displays": {**candidate["displays"], "en": wrong_english}}
+    with pytest.raises(NameRejected, match=reason):
+        QwenNameService._candidate(wrong, "raw_event", key, [])
+    service, client, calls = mock_service([wrong, candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_event", key, [{**ITEM, "slot": "event"}])
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(calls) == 3
+    assert reason in prompts[1]["repair_reason"]
+    assert "candidate" not in prompts[1]
+    assert prompts[2]["candidate"] == candidate
+    assert decision["displays"]["en"] == correct_english
+    assert all(reason in " ".join(prompt["english_event_rules"]) for prompt in prompts)
+
+
+@pytest.mark.parametrize(
+    "key,english",
+    [
+        ("第51期中国棋圣战", "51st Chinese Qisheng Tournament"),
+        ("第51期日本本因坊战", "51st Japanese Honinbo Tournament"),
+        ("第51期日本棋圣战与名人战交流赛", "51st Japanese Kisei and Meijin Exhibition"),
+        ("第12届国手山脉杯世界赛16强赛", "12th World Tournament Round of 16"),
+        ("第12届国手山脉杯世界赛16强至8强", "12th World Tournament Round of 16 to Top 8"),
+    ],
+)
+def test_known_event_english_rules_keep_other_titles_and_multiple_stages_for_review(key, english):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "en": english},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    assert QwenNameService._candidate(candidate, "raw_event", key, []) == candidate
 
 
 def test_token_budget_stops_before_another_paid_request():
@@ -265,7 +491,8 @@ def test_invalid_producer_fails_closed(candidate):
 
 
 def test_rejected_review_fails_closed_after_at_most_one_repair():
-    service, client, calls = mock_service([CANDIDATE, {"decision": "reject"}, CANDIDATE, {"decision": "reject"}])
+    rejected = {"decision": "reject", "reason": "English name is not supported by the supplied evidence"}
+    service, client, calls = mock_service([CANDIDATE, rejected, CANDIDATE, rejected])
 
     async def check():
         async with client:
@@ -276,6 +503,254 @@ def test_rejected_review_fails_closed_after_at_most_one_repair():
     assert len(calls) == 4
     repaired_prompt = json.loads(calls[2].content)["messages"][1]["content"]
     assert "independent review rejected" in repaired_prompt
+
+
+def test_rejection_survives_repair_approval_and_service_recreation(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    stage = Stage(tmp_path)
+    paid, reserved, settled = [], [], []
+    service, client, calls = mock_service(
+        [
+            CANDIDATE,
+            {"decision": "reject", "reason": "English name lacks identity evidence"},
+            CANDIDATE,
+            {"decision": "approve"},
+        ],
+        rejection_audit=stage.save_name_rejection,
+        audit_call=paid.append,
+        reserve_call=lambda amount: reserved.append(amount) or len(reserved),
+        settle_call=lambda reservation, tokens: settled.append((reservation, tokens)) or len(settled) * tokens,
+    )
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("player", "柯洁", [ITEM])
+
+    decision = run(check())
+    recreated = Stage(tmp_path)
+    paths = list((recreated.root / "name-rejections").glob("*.json"))
+    assert len(paths) == 1
+    record = json.loads(paths[0].read_text())
+    assert record["reason_code"] == "semantic_rejection"
+    assert record["reason"] == "English name lacks identity evidence"
+    assert record["source_items"]["value"] == [ITEM]
+    assert (record["kind"], record["key"], record["phase"], record["attempt"]) == ("player", "柯洁", "reviewer", 1)
+    assert record["candidate"]["value"] == CANDIDATE
+    assert record["review"]["value"]["decision"] == "reject"
+    assert record["calls"]["producer"]["request_id"] == "response-1"
+    assert record["calls"]["reviewer"]["request_id"] == "response-2"
+    assert all(len(record["calls"]["reviewer"][field]) == 64 for field in ("prompt_sha256", "output_sha256"))
+    assert record["at"] and record["calls"]["reviewer"]["model"] == "qwen-plus"
+    assert len(calls) == len(paid) == len(reserved) == len(settled) == 4
+    assert all(entry["entity"] == {"kind": "player", "key": "柯洁", "source_items": [ITEM]} for entry in paid)
+    assert "reason" not in decision["review"] and "prompt_sha256" not in decision["producer"]
+    review_prompt = json.loads(json.loads(calls[1].content)["messages"][1]["content"])
+    assert "reason" in review_prompt["review_instructions"]
+    assert "test-secret" not in paths[0].read_text()
+
+
+@pytest.mark.parametrize(
+    "reply, role, code, reason",
+    [
+        ({"decision": "reject"}, "reviewer", "review_reason_missing", "reason"),
+        ({"decision": "reject", "reason": " "}, "reviewer", "review_reason_invalid", "reason"),
+        ({"decision": "reject", "reason": "x" * 501}, "reviewer", "review_reason_invalid", "reason"),
+        ({"decision": "unknown"}, "reviewer", "review_protocol_invalid", "decision"),
+        ({"decision": "approve", "extra": True}, "reviewer", "review_protocol_invalid", "fields"),
+        ({**CANDIDATE, "displays": {}}, "producer", "candidate_validation", "displays"),
+        (
+            {**CANDIDATE, "methods": {lang: [] for lang in CANDIDATE["methods"]}},
+            "producer",
+            "candidate_validation",
+            "methods",
+        ),
+        ({**CANDIDATE, "source_urls": [{}]}, "producer", "candidate_validation", "source URL"),
+        (qwen_reply("{broken", "broken"), "producer", "provider_output_malformed", "invalid"),
+        (
+            httpx.Response(
+                200,
+                json={
+                    "id": "nonfinite",
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+                    "choices": [{"message": {"content": '{"displays": NaN}'}}],
+                },
+            ),
+            "producer",
+            "provider_output_malformed",
+            "invalid",
+        ),
+        (
+            httpx.Response(
+                200,
+                json={
+                    "id": "cut",
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+                    "choices": [{"finish_reason": "length", "message": {"content": "{}"}}],
+                },
+            ),
+            "producer",
+            "provider_output_truncated",
+            "incomplete",
+        ),
+    ],
+)
+def test_rejected_attempts_have_distinct_durable_classification(tmp_path, reply, role, code, reason):
+    from katrain.kifu_ingest.staging import Stage
+
+    responses = [CANDIDATE, reply, CANDIDATE, reply] if role == "reviewer" else [reply, reply]
+    service, client, _ = mock_service(responses, rejection_audit=Stage(tmp_path).save_name_rejection)
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected, match=reason) as caught:
+                await service.translate_and_review("player", "柯洁", [ITEM])
+            return caught.value
+
+    error = run(check())
+    records = [json.loads(path.read_text()) for path in (tmp_path / "name-rejections").glob("*.json")]
+    assert len(records) == 2 and {record["attempt"] for record in records} == {1, 2}
+    assert all(record["reason_code"] == code and record["phase"] == role for record in records)
+    assert error.reason_code == code
+    assert (tmp_path / error.diagnostic_ref).exists()
+
+
+def test_overflowing_json_number_is_diagnosed_before_candidate_validation(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    content = '{"unexpected":1e999}'
+    paid = []
+    service, client, calls = mock_service(
+        [
+            httpx.Response(
+                200,
+                json={
+                    "id": "overflowing-number",
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+                    "choices": [{"message": {"content": content}}],
+                },
+            )
+        ],
+        # Permit the first call, then stop repair before another paid request.
+        max_total_tokens=1024,
+        audit_call=paid.append,
+        rejection_audit=Stage(tmp_path).save_name_rejection,
+    )
+
+    async def check():
+        async with client:
+            with pytest.raises(NameServiceError, match="token budget exhausted"):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    assert len(calls) == len(paid) == 1
+    paths = list((tmp_path / "name-rejections").glob("*.json"))
+    assert len(paths) == 1
+    record = json.loads(paths[0].read_text())
+    assert record["reason_code"] == "provider_output_malformed" and record["phase"] == "producer"
+    assert record["candidate"]["available"] is False
+    assert record["calls"]["producer"]["output"]["value"] == content
+    assert record["calls"]["producer"]["output_sha256"] == sha256(content.encode()).hexdigest()
+
+
+@pytest.mark.parametrize(
+    "review, code, reason",
+    [
+        ({"decision": "reject", "reason": "Narrow scope lacks evidence"}, "semantic_rejection", "Narrow scope"),
+        ({"decision": "reject"}, "review_reason_missing", "reason missing"),
+        ({"decision": "approve", "extra": True}, "review_protocol_invalid", "fields invalid"),
+        (qwen_reply("{broken", "malformed-review"), "provider_output_malformed", "response is invalid"),
+    ],
+)
+def test_narrowed_review_rejection_keeps_reason_and_finite_scope(tmp_path, review, code, reason):
+    from katrain.kifu_ingest.staging import Stage
+
+    second = {**ITEM, "source_item_id": "124"}
+    service, client, calls = mock_service(
+        [CANDIDATE, {"decision": "approve"}, review],
+        rejection_audit=Stage(tmp_path).save_name_rejection,
+    )
+
+    async def check():
+        async with client:
+            decision = await service.translate_and_review("player", "柯洁", [ITEM, second])
+            with pytest.raises(NameRejected, match=reason) as caught:
+                await service.review_existing_decision(decision, [ITEM])
+            return caught.value
+
+    error = run(check())
+    record = json.loads((tmp_path / error.diagnostic_ref).read_text())
+    assert record["reason_code"] == code and record["scope"] == "narrowed"
+    assert record["source_items"]["value"] == [ITEM]
+    assert len(calls) == 3
+
+
+def test_rejection_storage_failure_stops_before_repair_but_keeps_paid_accounting(tmp_path, monkeypatch):
+    from katrain.kifu_ingest.staging import Stage
+
+    stage = Stage(tmp_path)
+    paid, settled = [], []
+
+    def fail_write(path, data):
+        raise OSError("disk unavailable")
+
+    monkeypatch.setattr(stage, "_atomic", fail_write)
+    service, client, calls = mock_service(
+        [CANDIDATE, {"decision": "reject", "reason": "Unverified identity"}],
+        rejection_audit=stage.save_name_rejection,
+        audit_call=paid.append,
+        reserve_call=lambda amount: "reservation",
+        settle_call=lambda reservation, tokens: settled.append(tokens) or sum(settled),
+    )
+
+    async def check():
+        async with client:
+            with pytest.raises(NameServiceError, match="diagnostic storage failed.*Unverified identity"):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    assert len(calls) == len(paid) == len(settled) == 2
+    assert list((tmp_path / "name-rejections").iterdir()) == []
+
+
+def test_malformed_envelope_keeps_available_request_id_without_provider_headers(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    malformed = httpx.Response(200, content="{bad", headers={"x-request-id": "actual-id", "private": "test-secret"})
+    service, client, _ = mock_service([malformed, malformed], rejection_audit=Stage(tmp_path).save_name_rejection)
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    for path in (tmp_path / "name-rejections").glob("*.json"):
+        record = json.loads(path.read_text())
+        assert record["calls"]["producer"]["request_id"] == "actual-id"
+        assert record["calls"]["producer"]["output"]["available"] is False
+        assert record["calls"]["producer"]["output_hash_scope"] == "provider_response"
+        assert "private" not in path.read_text() and "test-secret" not in path.read_text()
+
+
+def test_diagnostic_json_and_final_output_are_bounded_and_mark_truncation(tmp_path):
+    from katrain.kifu_ingest.staging import Stage
+
+    candidate = {**CANDIDATE, "extra": "x" * 20000}
+    service, client, _ = mock_service([candidate, candidate], rejection_audit=Stage(tmp_path).save_name_rejection)
+
+    async def check():
+        async with client:
+            with pytest.raises(NameRejected):
+                await service.translate_and_review("player", "柯洁", [ITEM])
+
+    run(check())
+    for path in (tmp_path / "name-rejections").glob("*.json"):
+        assert path.stat().st_size <= 65536
+        record = json.loads(path.read_text())
+        assert record["candidate"]["truncated"] is True and record["candidate"]["value"] is None
+        assert len(record["candidate"]["sha256"]) == 64
+        assert record["calls"]["producer"]["output"]["truncated"] is True
 
 
 @pytest.mark.parametrize("status", [401, 402])
@@ -406,3 +881,173 @@ def test_invalid_source_binding_spends_no_model_requests():
 
     run(check())
     assert not calls
+
+
+@pytest.mark.parametrize(
+    "key,language,wrong_display,correct_display,reason",
+    [
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "jp",
+            "第74期王座戦挑戦者決定戦5番勝負第1局",
+            "第74期王座戦挑戦手合5番勝負第1局",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "ko",
+            "제74기 왕좌전 도전자 결정전 5번기 제1국",
+            "제74기 왕좌전 도전5번기 제1국",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "en",
+            "74th Oza Challenger Determination, Best-of-5 Game 1",
+            "74th Oza Title Match, Best-of-5 Game 1",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "en",
+            "74th Oza Challenger Decider, Best-of-5 Game 1",
+            "74th Oza Title Match, Best-of-5 Game 1",
+            "Title match series",
+        ),
+        (
+            "第74期王座战挑战赛5番棋1局",
+            "ko",
+            "제74기 왕좌전 도전 5선승부 제1국",
+            "제74기 왕좌전 도전5번기 제1국",
+            "Korean best-of series",
+        ),
+        (
+            "第9届吴清源杯世界女子赛预选赛",
+            "ko",
+            "제9회 우청원배 세계여자바둑대회 예선",
+            "제9회 오청원배 세계여자바둑대회 예선",
+            "Korean Wu Qingyuan Cup",
+        ),
+        (
+            "第9屆吳清源盃世界女子賽預選賽",
+            "ko",
+            "제9회 우청원배 세계여자바둑대회 예선",
+            "제9회 오청원배 세계여자바둑대회 예선",
+            "Korean Wu Qingyuan Cup",
+        ),
+        (
+            "第12届国手山脉杯世界赛决赛 申真谞 VS 李维清",
+            "ko",
+            "제12회 국수산맥배 결승 신진서 VS 이유청",
+            "제12회 국수산맥배 결승 신진서 VS 리웨이칭",
+            "Korean Li Weiqing",
+        ),
+        (
+            "第12屆國手山脈杯世界賽決賽 申真諝 VS 李維清",
+            "ko",
+            "제12회 국수산맥배 결승 신진서 VS 이유청",
+            "제12회 국수산맥배 결승 신진서 VS 리웨이칭",
+            "Korean Li Weiqing",
+        ),
+    ],
+)
+def test_confirmed_event_semantic_errors_repair_before_reviewer(key, language, wrong_display, correct_display, reason):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, language: correct_display},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    wrong = {**candidate, "displays": {**candidate["displays"], language: wrong_display}}
+    with pytest.raises(NameRejected, match=reason):
+        QwenNameService._candidate(wrong, "raw_event", key, [])
+    service, client, calls = mock_service([wrong, candidate, {"decision": "approve"}])
+
+    async def check():
+        async with client:
+            return await service.translate_and_review("raw_event", key, [{**ITEM, "slot": "event"}])
+
+    decision = run(check())
+    prompts = [json.loads(json.loads(call.content)["messages"][1]["content"]) for call in calls]
+    assert len(calls) == 3
+    assert reason in prompts[1]["repair_reason"]
+    assert "candidate" not in prompts[1]  # The rejected first candidate never reaches a reviewer.
+    assert prompts[2]["candidate"] == candidate
+    assert decision["displays"][language] == correct_display
+    assert all(reason in " ".join(prompt["event_semantic_rules"]) for prompt in prompts)
+
+
+@pytest.mark.parametrize("series", [3, 5, 7])
+def test_unqualified_title_series_rejects_decider_for_each_supported_length(series):
+    key = f"第74期王座战挑战赛{series}番棋1局"
+    candidate = {
+        "displays": {
+            **{lang: key for lang in CANDIDATE["displays"]},
+            "jp": f"第74期王座戦挑戦者決定戦{series}番勝負第1局",
+        },
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    with pytest.raises(NameRejected, match="Title match series"):
+        QwenNameService._candidate(candidate, "raw_event", key, [])
+
+
+@pytest.mark.parametrize(
+    "key,displays",
+    [
+        (
+            "第74期王座战挑战赛5番棋1局",
+            {
+                "jp": "第74期王座戦挑戦手合5番勝負第1局",
+                "ko": "제74기 왕좌전 도전5번기 제1국",
+                "en": "74th Oza Title Match, Best-of-5 Game 1",
+            },
+        ),
+        ("第74期王座战挑战赛5番棋1局", {"ko": "제74기 왕좌전 도전 3선승제(5번기) 제1국"}),
+        (
+            "第74期王座战挑战者决定赛5番棋1局",
+            {
+                "jp": "第74期王座戦挑戦者決定戦5番勝負第1局",
+                "ko": "제74기 왕좌전 도전자 결정전 5번기 제1국",
+                "en": "74th Oza Challenger Determination, Best-of-5 Game 1",
+            },
+        ),
+        ("第74期王座战决定赛挑战赛5番棋1局", {"jp": "第74期王座戦挑戦者決定戦5番勝負第1局"}),
+        ("第9届吴清源杯世界女子赛预选赛", {"ko": "제9회 오청원 배 세계여자바둑대회 예선"}),
+        ("第12届国手山脉杯世界赛决赛 甲 VS 乙", {"ko": "제12회 국수산맥배 결승 홍길동 VS 이유청"}),
+    ],
+)
+def test_finite_event_semantic_guards_allow_correct_variants_and_explicit_qualifiers(key, displays):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, **displays},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    assert QwenNameService._candidate(candidate, "raw_event", key, []) == candidate
+
+
+@pytest.mark.parametrize(
+    "key,korean",
+    [
+        ("第9届杯赛半决赛3番棋 决赛5番棋", "제9회 대회 준결승 3번기 결승 3선승제(5번기)"),
+        ("第9届杯赛决赛1番棋", "제9회 대회 결승 1선승제"),
+        ("第12届国手山脉杯世界赛决赛 李维清 VS 另一棋手", "제12회 국수산맥배 결승 리웨이칭 VS 이유청"),
+        ("第12届国手山脉杯世界赛决赛 李维清 VS 이유청", "제12회 국수산맥배 결승 Li Weiqing VS 이유청"),
+    ],
+    ids=[
+        "distinct-stage-lengths",
+        "single-game-first-to-one",
+        "li-retained-with-other-player",
+        "explicit-other-korean-name",
+    ],
+)
+def test_event_semantic_guards_defer_ambiguous_stages_and_other_players_to_reviewer(key, korean):
+    candidate = {
+        "displays": {**{lang: key for lang in CANDIDATE["displays"]}, "ko": korean},
+        "original_language": "cn",
+        "methods": {lang: "translation" for lang in CANDIDATE["displays"]},
+        "source_urls": [],
+    }
+    assert QwenNameService._candidate(candidate, "raw_event", key, []) == candidate

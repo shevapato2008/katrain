@@ -2,10 +2,11 @@ import { useRef, useEffect, useState, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Mesh } from 'three';
 import StoneMesh from './StoneMesh';
-import { gridToWorld, DROP_HEIGHT, STONE_HEIGHT } from './constants';
+import { stoneMeshScale } from './stoneScale';
+import { gridToWorld, DROP_HEIGHT } from './constants';
 import type { GameState } from '../../api';
 import type { RecordingStoneSprites } from './tutorialStoneTextures';
-import { stoneVariant, TUTORIAL_STONE_DIAMETER_RATIO } from '../tutorials/tutorialStoneSprites';
+import { stoneRotationDegrees, stoneVariant } from '../board/stoneAppearance';
 
 export interface RecordingStonePlacement { point: [number, number]; lift: number; scale: number }
 
@@ -20,6 +21,7 @@ interface StoneGroupProps {
 }
 
 interface DropAnim {
+  color: 'B' | 'W';
   yOffset: number;
   velocity: number;
   scaleFactor: number;
@@ -64,6 +66,7 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, 
         const targetPos = gridToWorld(currLastMove[0], currLastMove[1], boardSize);
         animInitialPosRef.current = [targetPos[0], targetPos[1] + DROP_HEIGHT, targetPos[2]];
         animRef.current = {
+          color: (gameState.stones.find(([, coords]) => coords?.[0] === currLastMove[0] && coords?.[1] === currLastMove[1])?.[0] ?? 'B') as 'B' | 'W',
           yOffset: DROP_HEIGHT,
           velocity: 0,
           scaleFactor: 0.5,
@@ -98,7 +101,7 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, 
       anim.done = true;
       if (mesh) {
         mesh.position.set(anim.targetX, anim.targetY, anim.targetZ);
-        mesh.scale.set(1, STONE_HEIGHT / 0.42, 1);
+        mesh.scale.set(...stoneMeshScale(anim.color));
       }
       setAnimTick(n => n + 1);
       return;
@@ -121,8 +124,7 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, 
 
     // Directly mutate mesh transform (bypasses React render — correct for useFrame)
     mesh.position.set(anim.targetX, anim.targetY + anim.yOffset, anim.targetZ);
-    const scaleY = (STONE_HEIGHT / 0.42) * anim.scaleFactor; // 0.42 = STONE_RADIUS
-    mesh.scale.set(anim.scaleFactor, scaleY, anim.scaleFactor);
+    mesh.scale.set(...stoneMeshScale(anim.color, anim.scaleFactor));
   });
 
   // Find the animating stone's coords (if any)
@@ -150,11 +152,13 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, 
             key={`stone-${x}-${y}-${index}`}
             color={player as 'B' | 'W'}
             position={basePos}
+            variant={stoneVariant(boardSize, x, boardSize - 1 - y)}
+            angle={stoneRotationDegrees(boardSize, x, boardSize - 1 - y) * Math.PI / 180}
             satinFinish={satinFinish}
             scale={placement?.scale ?? 1}
             contactOpacity={placement ? 1 - .45 * (placement.lift / .25) : 1}
             spriteTexture={spriteTexture}
-            diameterRatio={recordingStoneSprites ? TUTORIAL_STONE_DIAMETER_RATIO[player as 'B' | 'W'] : 1}
+            diameterRatio={recordingStoneSprites ? (recordingStoneSprites.diameterRatio?.[player as 'B' | 'W'] ?? 1) : 1}
           />
         );
       })}
@@ -171,6 +175,8 @@ const StoneGroup = ({ gameState, enableDropEffect = false, satinFinish = false, 
             ref={animMeshRef}
             color={animStone[0] as 'B' | 'W'}
             position={animInitialPosRef.current!}
+            variant={stoneVariant(boardSize, animCoords[0], boardSize - 1 - animCoords[1])}
+            angle={stoneRotationDegrees(boardSize, animCoords[0], boardSize - 1 - animCoords[1]) * Math.PI / 180}
             scale={0.5}
             satinFinish={satinFinish}
           />

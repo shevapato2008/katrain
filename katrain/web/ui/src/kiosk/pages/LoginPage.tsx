@@ -1,3 +1,4 @@
+import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import { Box, TextField, Button, Typography, Alert, CircularProgress, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
@@ -7,7 +8,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { KIOSK_SERIF } from '../theme';
 import { LAUNCHER_LOGIN_URL } from '../shell/boxUrls';
 
-// Brand lockup matches the Header (智星盒 / StellaBox) — Newsreader serif, jade console palette.
+// Brand lockup matches the Header (智星盒 / StellaBox).
 const BRAND_SERIF = KIOSK_SERIF;
 
 // Decision B (logout-then-register): in a strict box kiosk there is no local
@@ -22,7 +23,7 @@ const LoginPage = () => {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<UiMessage | string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ const LoginPage = () => {
       await login(username, password);
       navigate('/kiosk/play', { replace: true });
     } catch {
-      setError(t('Login failed', '登录失败'));
+      setError(uiMessage('Login failed', '登录失败'));
     } finally {
       setLoading(false);
     }
@@ -166,7 +167,7 @@ const LoginPage = () => {
             </Box>
             <Typography
               component="span"
-              sx={{ fontFamily: BRAND_SERIF, fontStyle: 'italic', fontWeight: 500, fontSize: 19, color: 'text.secondary' }}
+              sx={{ fontFamily: '"SmartBox Fondamento", serif', fontStyle: 'normal', fontWeight: 400, fontSynthesis: 'none', fontSize: 27, letterSpacing: '0.005em', color: 'text.secondary', position: 'relative', top: 2 }}
             >
               StellaBox
             </Typography>
@@ -236,7 +237,7 @@ const LoginPage = () => {
             </>
           ) : (
           <>
-          {error && <Alert severity="error">{error}</Alert>}
+          {error && <Alert severity="error">{renderUiMessage(error, t)}</Alert>}
           <TextField
             fullWidth
             label={t('Username', '用户名')}

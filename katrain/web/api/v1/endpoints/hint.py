@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from katrain.web.core.hint_gate import DefaultHintGate
+from katrain.web.core.paid_analysis import require_legacy_analysis, session_position_sgf
 from katrain.web.core.physical_play import PhysicalPlayConfig
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game, temporary_analysis_lease
@@ -50,6 +51,7 @@ def _build_payload_from_game(game, max_visits: int) -> dict:
 
 @router.post("")
 async def request_hint(request: Request, body: HintRequest, current_user: User = Depends(get_current_user)):
+    require_legacy_analysis(user=current_user, app=request.app)
     guard_user_has_no_pending_ranked_game(request.app, current_user, "hint")
     manager = request.app.state.session_manager
     try:
@@ -57,6 +59,7 @@ async def request_hint(request: Request, body: HintRequest, current_user: User =
     except KeyError:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    session_position_sgf(session, current_user)
     katrain = session.katrain
     game_type = getattr(katrain, "game_type", "free")
     # D3 double gate: analysis_allowed (anti-cheat chokepoint semantics) AND free-only scene.

@@ -6,7 +6,11 @@ import {
   type ReportTaskSummary,
   type ReportType,
 } from '../../api/reportApi';
-import { useTranslation } from '../../hooks/useTranslation';
+import { membershipApi } from '../../api/membershipApi';
+import { notifyMembershipChanged } from '../membership/useMembership';
+import type { BillingQuote, MembershipCatalog } from '../membership/types';
+import { useMembershipI18n } from '../membership/useMembershipI18n';
+import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../membership/presentation';
 import {
   buildReportStatesByGame,
   createOptimisticReportTask,
@@ -26,30 +30,43 @@ export interface CreateReportParams {
   force?: boolean;
 }
 
+interface PendingReportQuote { quote: BillingQuote; params: CreateReportParams; taskId?: number; idempotencyKey: string; scope: string }
+
 export interface UseReportTasksResult {
   tasks: ReportTaskSummary[];
   queueSummary: ReportQueueSummary | null;
   reportStatesByGame: ReportStatesByGame;
   loading: boolean;
   error: string | null;
+  billingError?: boolean;
   /**
    * 这条错属于哪一类(`utils/requestFailure.ts`)。**屏上说什么由调用方按它定** ——
-   * `error` 是原文(列表 / 创建 / 重试任一处失败),盒上断网时是 `Request failed 503: {…}`。
+   * 旧列表/导入错误沿用原有分类；会员消耗错误已映射为安全的本地化文案。
    */
   errorKind: RequestFailureKind | null;
   clearError: () => void;
   refresh: () => Promise<void>;
-  createReport: (params: CreateReportParams) => Promise<ReportTaskSummary>;
-  retryReport: (taskId: number) => Promise<ReportTaskSummary>;
+  createReport: (params: CreateReportParams) => Promise<ReportTaskSummary | null>;
+  retryReport: (taskId: number) => Promise<ReportTaskSummary | null>;
+  pendingQuote: PendingReportQuote | null;
+  quoteBusy: boolean;
+  confirmQuote: () => Promise<ReportTaskSummary | null>;
+  cancelQuote: () => void;
 }
 
 interface Failure {
   message: string;
   kind: RequestFailureKind;
+  membershipCode?: MembershipErrorCode;
 }
 
-function failureOf(error: unknown, fallback: string): Failure {
-  return { message: error instanceof Error ? error.message : fallback, kind: requestFailureKind(error) };
+function failureOf(error: unknown, fallback: string, billingFallback?: MembershipErrorCode): Failure {
+  const carrier = (error && typeof error === 'object' ? error : {}) as { detail?: unknown; body?: unknown; message?: unknown };
+  // Legacy list/import failures keep their historical presentation unless a billing code is explicit.
+  const code = membershipErrorCode(billingFallback ? error : { detail: carrier.detail, body: carrier.body, message: carrier.message }, billingFallback ?? 'report_failed');
+  const membershipCode = billingFallback || code !== 'report_failed' ? code : undefined;
+  return { message: membershipCode ? '' : error instanceof Error ? error.message : fallback, membershipCode,
+    kind: membershipCode === 'insufficient' ? 'no_credits' : requestFailureKind(error) };
 }
 
 export function useReportTasks(
@@ -60,15 +77,27 @@ export function useReportTasks(
    * (凭据在 HttpOnly cookie 里，JS 看不见)，所以拿 `!token` 当「未登录」用，
    * 会让盒子上所有报告请求一个都发不出去 —— 2026-09-13 板上实测：复盘列表恒显示
    * 「本机 0 局」，而同一时刻接口自己回 200、云端有 21 局。
-   * `token` 在本文件里只剩一个用途：**身份键**(换人/换登录要作废在途请求)。
+   * 调用页面同时传入 AuthContext 的 identityKey/status；Cookie 身份切换同样作废在途请求。
    */
-  enabled: boolean,
+  isAuthenticated: boolean,
+  identityKey: string | null | undefined = token ?? 'cookie-session',
+  authStatus: string = isAuthenticated ? 'authenticated' : 'anonymous',
 ): UseReportTasksResult {
-  const { t } = useTranslation();
+  const enabled = isAuthenticated && authStatus === 'authenticated' && identityKey != null;
+  const { t } = useMembershipI18n();
   const translationRef = useRef(t);
   translationRef.current = t;
-  const currentTokenRef = useRef(token);
-  currentTokenRef.current = token;
+  const scope = JSON.stringify([identityKey, authStatus, enabled, token]);
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const [dataScope, setDataScope] = useState(scope);
+  const catalogRef = useRef<{ scope: string; catalog: MembershipCatalog } | null>(null);
+  const [pendingQuote, setPendingQuote] = useState<PendingReportQuote | null>(null);
+  const pendingRef = useRef<PendingReportQuote | null>(null);
+  const [quoteBusy, setQuoteBusy] = useState(false);
+  const confirmRef = useRef<{ scope: string; promise: Promise<ReportTaskSummary | null> } | null>(null);
+  const updatePending = useCallback((next: PendingReportQuote | null) => { pendingRef.current = next; setPendingQuote(next); }, []);
+  const cancelQuote = useCallback(() => { if (!confirmRef.current) updatePending(null); }, [updatePending]);
 
   const [serverTasks, setServerTasks] = useState<ReportTaskSummary[]>([]);
   const [optimisticTasks, setOptimisticTasks] = useState<OptimisticReportTask[]>([]);
@@ -91,7 +120,7 @@ export function useReportTasks(
   const reportStatesByGame = useMemo(() => buildReportStatesByGame(tasks), [tasks]);
 
   const refresh = useCallback(async () => {
-    if (!enabled || currentTokenRef.current !== token) return;
+    if (!enabled || scopeRef.current !== scope) return;
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const activeRefresh = activeRefreshRef.current;
     if (
@@ -109,7 +138,7 @@ export function useReportTasks(
         ]);
         if (
           lifecycleGeneration !== lifecycleGenerationRef.current
-          || currentTokenRef.current !== token
+          || scopeRef.current !== scope
         ) return;
 
         setServerTasks(nextTasks);
@@ -118,7 +147,7 @@ export function useReportTasks(
       } catch (refreshError) {
         if (
           lifecycleGeneration !== lifecycleGenerationRef.current
-          || currentTokenRef.current !== token
+          || scopeRef.current !== scope
         ) return;
         setFailure(failureOf(
           refreshError,
@@ -127,7 +156,7 @@ export function useReportTasks(
       } finally {
         if (
           lifecycleGeneration === lifecycleGenerationRef.current
-          && currentTokenRef.current === token
+          && scopeRef.current === scope
         ) setLoading(false);
       }
     })();
@@ -138,10 +167,10 @@ export function useReportTasks(
     activeEntry.promise = trackedRequest;
     activeRefreshRef.current = activeEntry;
     return trackedRequest;
-  }, [enabled, token]);
+  }, [enabled, token, scope]);
 
   const refreshAfterActiveSnapshot = useCallback(async () => {
-    if (!enabled || currentTokenRef.current !== token) return;
+    if (!enabled || scopeRef.current !== scope) return;
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const activeRefresh = activeRefreshRef.current;
     if (
@@ -152,14 +181,25 @@ export function useReportTasks(
     ) await activeRefresh.promise;
     if (
       lifecycleGeneration !== lifecycleGenerationRef.current
-      || currentTokenRef.current !== token
+      || scopeRef.current !== scope
     ) return;
     await refresh();
-  }, [enabled, refresh, token]);
+  }, [enabled, refresh, token, scope]);
 
   useEffect(() => {
     const lifecycleGeneration = lifecycleGenerationRef;
     ++lifecycleGenerationRef.current;
+    const catalogGeneration = lifecycleGenerationRef.current;
+    setDataScope(scope);
+    catalogRef.current = null;
+    updatePending(null);
+    confirmRef.current = null;
+    setQuoteBusy(false);
+    if (enabled) {
+      void membershipApi.getCatalog(token).then((catalog) => {
+        if (scopeRef.current === scope && lifecycleGenerationRef.current === catalogGeneration) catalogRef.current = { scope, catalog };
+      }).catch(() => { /* Consumption remains blocked until a fresh catalog succeeds. */ });
+    }
     setServerTasks([]);
     setOptimisticTasks([]);
     setQueueSummary(null);
@@ -170,7 +210,7 @@ export function useReportTasks(
     return () => {
       ++lifecycleGeneration.current;
     };
-  }, [enabled, refresh, token]);
+  }, [enabled, refresh, token, scope]);
 
   const hasActiveTasks = useMemo(() => tasks.some(isActiveReportTask), [tasks]);
   useEffect(() => {
@@ -189,15 +229,15 @@ export function useReportTasks(
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [enabled, hasActiveTasks, refresh, token]);
+  }, [enabled, hasActiveTasks, refresh, token, scope]);
 
-  const createReport = useCallback(async ({
+  const executeCreate = useCallback(async ({
     userGameId,
     reportType = 'normal',
     totalMoves,
     force,
-  }: CreateReportParams) => {
-    if (!enabled || currentTokenRef.current !== token) throw new Error('Report task token changed');
+  }: CreateReportParams, authorization?: { quote_token: string; idempotency_key: string }) => {
+    if (!enabled || scopeRef.current !== scope) throw new Error('Report task token changed');
 
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const optimisticId = --nextOptimisticIdRef.current;
@@ -217,10 +257,11 @@ export function useReportTasks(
         user_game_id: userGameId,
         report_type: reportType,
         ...(force === undefined ? {} : { force }),
+        ...authorization,
       });
       if (
         lifecycleGeneration !== lifecycleGenerationRef.current
-        || currentTokenRef.current !== token
+        || scopeRef.current !== scope
       ) return created;
       const activeRefresh = activeRefreshRef.current;
       if (
@@ -231,7 +272,7 @@ export function useReportTasks(
       ) await activeRefresh.promise;
       if (
         lifecycleGeneration !== lifecycleGenerationRef.current
-        || currentTokenRef.current !== token
+        || scopeRef.current !== scope
       ) return created;
       setServerTasks((current) => [created, ...current.filter((task) => task.id !== created.id)]);
       setOptimisticTasks((current) => current
@@ -251,17 +292,18 @@ export function useReportTasks(
       setFailure(failureOf(
         createError,
         translationRef.current('report:create_task_failed', 'Failed to create report task'),
+        authorization ? 'report_failed' : undefined,
       ));
       throw createError;
     }
-  }, [enabled, serverTasks, token]);
+  }, [enabled, serverTasks, token, scope]);
 
-  const retryReport = useCallback(async (taskId: number) => {
-    if (!enabled || currentTokenRef.current !== token) throw new Error('Report task token changed');
+  const executeRetry = useCallback(async (taskId: number, authorization?: { quote_token: string; idempotency_key: string }) => {
+    if (!enabled || scopeRef.current !== scope) throw new Error('Report task token changed');
     const lifecycleGeneration = lifecycleGenerationRef.current;
     setFailure(null);
     try {
-      const retried = await ReportsAPI.retry(token, taskId);
+      const retried = await (authorization ? ReportsAPI.retry(token, taskId, authorization) : ReportsAPI.retry(token, taskId));
       if (lifecycleGeneration !== lifecycleGenerationRef.current) return retried;
       await refreshAfterActiveSnapshot();
       return retried;
@@ -270,21 +312,89 @@ export function useReportTasks(
       setFailure(failureOf(
         retryError,
         translationRef.current('report:retry_failed', 'Failed to retry report'),
+        authorization ? 'report_failed' : undefined,
       ));
       throw retryError;
     }
-  }, [enabled, refreshAfterActiveSnapshot, token]);
+  }, [enabled, refreshAfterActiveSnapshot, token, scope]);
+
+  const prepareQuote = useCallback(async (params: CreateReportParams, taskId?: number) => {
+    if (!enabled || scopeRef.current !== scope) throw new Error('Report identity changed');
+    const generation = lifecycleGenerationRef.current;
+    setFailure(null);
+    try {
+      const catalog = catalogRef.current?.scope === scope ? catalogRef.current.catalog : await membershipApi.getCatalog(token);
+      if (scopeRef.current !== scope || lifecycleGenerationRef.current !== generation) return null;
+      catalogRef.current = { scope, catalog };
+      if (catalog.membership_mode === 'legacy') return taskId === undefined ? executeCreate(params) : executeRetry(taskId);
+      if (catalog.membership_mode !== 'enabled' || !catalog.capabilities.quotes) throw new Error(catalog.membership_mode === 'paused' ? 'membership_paused' : 'membership_disabled');
+      const quote = await membershipApi.createQuote({ kind: 'report', profile: params.reportType === 'deep' ? 'advanced' : 'normal', game_id: params.userGameId }, token);
+      if (scopeRef.current !== scope || lifecycleGenerationRef.current !== generation) return null;
+      updatePending({ quote, params, taskId, idempotencyKey: crypto.randomUUID(), scope });
+      return null;
+    } catch (error) {
+      if (scopeRef.current === scope && lifecycleGenerationRef.current === generation) setFailure(failureOf(error, '', 'quote_failed'));
+      throw error;
+    }
+  }, [enabled, executeCreate, executeRetry, scope, token, updatePending]);
+
+  const createReport = useCallback((params: CreateReportParams) => {
+    // Keep the historical immediate optimistic feedback only when the server explicitly says legacy.
+    if (catalogRef.current?.scope === scope && catalogRef.current.catalog.membership_mode === 'legacy') return executeCreate(params);
+    return prepareQuote(params);
+  }, [executeCreate, prepareQuote, scope]);
+  const retryReport = useCallback((taskId: number) => {
+    if (catalogRef.current?.scope === scope && catalogRef.current.catalog.membership_mode === 'legacy') return executeRetry(taskId);
+    const task = serverTasks.find((entry) => entry.id === taskId);
+    if (!task) {
+      setFailure({ message: '', kind: 'not_found', membershipCode: 'report_missing' });
+      return Promise.reject(new Error('report_not_found'));
+    }
+    return prepareQuote({ userGameId: task.user_game_id, reportType: task.report_type, totalMoves: task.total_moves }, taskId);
+  }, [executeRetry, prepareQuote, scope, serverTasks]);
+  const confirmQuote = useCallback((): Promise<ReportTaskSummary | null> => {
+    if (confirmRef.current?.scope === scope) return confirmRef.current.promise;
+    const pending = pendingRef.current;
+    if (!enabled || !pending || pending.scope !== scope || scopeRef.current !== scope) return Promise.resolve(null);
+    setQuoteBusy(true);
+    const authorization = { quote_token: pending.quote.token, idempotency_key: pending.idempotencyKey };
+    const execute = () => pending.taskId === undefined ? executeCreate(pending.params, authorization) : executeRetry(pending.taskId, authorization);
+    const promise = (async () => {
+      try {
+        let result: ReportTaskSummary;
+        try { result = await execute(); } catch (error) {
+          // A lost HTTP response may be replayed once, with exactly the same authorization.
+          if (error instanceof TypeError && scopeRef.current === scope) result = await execute();
+          else throw error;
+        }
+        if (scopeRef.current === scope) { updatePending(null); notifyMembershipChanged(); }
+        return result;
+      } catch (error) {
+        if (scopeRef.current === scope && /quote/.test(String((error as { body?: unknown })?.body ?? error))) {
+          await prepareQuote(pending.params, pending.taskId);
+        }
+        throw error;
+      } finally {
+        if (scopeRef.current === scope) { setQuoteBusy(false); confirmRef.current = null; }
+      }
+    })();
+    confirmRef.current = { scope, promise };
+    return promise;
+  }, [enabled, executeCreate, executeRetry, prepareQuote, scope, updatePending]);
 
   return {
-    tasks,
-    queueSummary,
-    reportStatesByGame,
+    tasks: dataScope === scope ? tasks : [],
+    queueSummary: dataScope === scope ? queueSummary : null,
+    reportStatesByGame: dataScope === scope ? reportStatesByGame : {},
     loading,
-    error: failure?.message ?? null,
-    errorKind: failure?.kind ?? null,
+    error: dataScope === scope && failure ? failure.membershipCode ? membershipErrorText(failure.membershipCode, t) : failure.message : null,
+    billingError: dataScope === scope && !!failure?.membershipCode,
+    errorKind: dataScope === scope ? failure?.kind ?? null : null,
     clearError,
     refresh,
     createReport,
     retryReport,
+    pendingQuote: pendingQuote?.scope === scope ? pendingQuote : null,
+    quoteBusy: dataScope === scope && quoteBusy, confirmQuote, cancelQuote,
   };
 }

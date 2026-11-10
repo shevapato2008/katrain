@@ -1,77 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { backToState } from '../hooks/useBackTo';
+import { interpolate } from '../utils/interpolate';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
-import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
-import { replayBaipuSteps } from '../../utils/baipuReplay';
+import { buildReplayPosition } from '../../utils/goReplay';
+import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
-import { formatRank } from '../../utils/rank';
-import { interpolate } from '../utils/interpolate';
+import { formatKifuRank } from '../../utils/rank';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { KioskPagebar } from '../shell/KioskPagebar';
-import { KioskActions, type KioskAction } from '../shell/KioskActions';
-import { KioskFold } from '../shell/KioskFold';
+import PhysicalBoardButton from '../components/PhysicalBoardButton';
+import './kifuLibrary.css';
 import { Icon } from '../shell/icons';
 import type { KifuAlbumDetail } from '../../types/kifu';
 
-/**
- * 屏 16 · 棋谱详情 `/kiosk/kifu/:kifuId` —— L2 布局 A(盘 516 + 16 + 右栏 460)。
- *
- * 稿子 `sample-go/go-kiosk.tmpl.html` 的 `data-screen="kifu-detail"`。**它在计划书里没有
- * 对应的 Task**(计划的 Task 15 只到屏 15),和屏 13 一样是稿子后来长出来的一屏 ——
- * 记成 Task 15b。做它的直接理由:屏 15 那张列表点下去总得有个落点,而这一屏的三件事
- * (逐手回放 / 摆到实体盘 / 去研究)原来散在 `KifuPage` 的预览栏和 `BaipuListPage`(2026-09-14 已删)里。
- *
- * ## 盘为什么不复用 `LiveBoard`
- *
- * `LiveBoard` 会算提子,但它的 `calculateBoardLayout` 写死 **1.5 格**边距,而刻度带要求
- * **0.5 格**(`goBoard.ts` 里那段推导:两式相等当且仅当 margin = 0.5)。对局屏是靠给共享
- * `Board` 加一个默认 false 的 `externalRulers` 解决的 —— 那条路对 `LiveBoard` 也走得通,
- * 但要连 `boardUtils.calculateBoardLayout` 一起改,而**这一屏的盘根本不需要能点**。
- * ⇒ 用 `GoBoardSvg`(边距 0.5 由构造保证)+ **后端给的提子结果**。
- *
- * ## 提子不在前端算
- *
- * `/api/v1/baipu/load` 每一步都带 `removed[]` —— `baipuApi.ts` 开头那段决策 ② 写得很直白:
- * 「前端是 `steps[]` 的**笨播放器**,永远不自己重算提子」。这里逐字照办:本页只做
- * 「放一颗 → 按给定名单删几颗」,一条围棋规则都不实现。**多写一份气/提子的实现,
- * 就是本轮反复吃过的「两份并行实现」。**
- *
- * ## 和稿子的三处出入(都在四图的标签带里写明)
- *
- * ① 稿子右上角那枚 `界面未接` 蓝标是**说给读稿人听的**(它说的正是这一屏当时没接),
- *    接上了就不成立,不搬。
- * ② 稿子画了三个动作键,第三个是 `送去复盘` —— **不搬,但理由不是「做不到」**(2026-08-22 更正:
- *    上一版这段写的是「这条路不存在」,不准确)。准确的说法是:
- *    `POST /api/v1/reports/` 收的是 `user_game_id`,服务端 `reports.py:133` 拿它去 `UserGame`
- *    表里查这一局是不是你下的 —— 名局棋谱**在那张表里没有行**,所以要先复制一份进去。
- *    而**那件事已经有地方做了**:复盘屏的「从棋谱库导入」(`ReportLibraryImportDialog`
- *    + `toLibraryUserGameParams`)就是干这个的。在这儿再开一个入口 = 同一条路两个口。
- *    galaxy 那边的棋谱库(`galaxy/pages/KifuLibraryPage.tsx`)也只有「在研究中打开」一个出口。
- *    ⇒ 这里两个键;要把名局送去复盘,走复盘屏那个导入。
- * ③ 稿子 `.khero` 那行只有名字,实现里补了段位 —— 段位是库里真有的列
- *    (`black_rank` / `white_rank`),现有的 `KifuPage` 列表也一直在显示。
- *
- * ## 三个 key 是另起的,不是复用
- *
- * `kifu:library` / `kifu:loading` / `kifu:handicap` 在 cn PO 里分别是「棋谱库」「加载中...」
- * 「让子」——**PO 赢默认值**,复用它们屏上出来的会是另外三句话(返回键写「棋谱库」而
- * Dock 上那一格叫「棋谱」;一个标题位置塞进「加载中...」;「让子 2 子」)。
- * 这正是闸四(`kiosk-shell-contract.spec.ts`)守的那条,新 key 是它逼出来的。
- */
-
-/** 一手棋在列表里的样子。`n` 是第几手(从 1 数,setup 不算)。 */
 interface MoveEntry {
   n: number;
-  coord: string | null;   // null = 虚手
+  coord: string | null;
   color: 'B' | 'W';
-  stepIndex: number;
 }
 
+/** Professional SGF replay keeps the recorded moves separate from AI analysis. */
 const rulesLabel = (rules: string | null, t: (k: string, d: string) => string): string | null => {
   if (!rules) return t('kifu:rules_unresolved', '规则待核验');
   const r = rules.trim().toLowerCase();
@@ -86,106 +38,83 @@ const rulesLabel = (rules: string | null, t: (k: string, d: string) => string): 
 const KifuDetailPage = () => {
   const { kifuId } = useParams<{ kifuId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { t, lang } = useTranslation();
 
-  const [loadedAlbum, setLoadedAlbum] = useState<KifuAlbumDetail | null>(null);
-  const [loadedLang, setLoadedLang] = useState<string | null>(null);
-  const [steps, setSteps] = useState<BaipuStep[] | null>(null);
-  const [boardSize, setBoardSize] = useState(19);
-  const [error, setError] = useState<string | null>(null);
-  const [failure, setFailure] = useState<'unreachable' | 'service' | 'other'>('other');
+  const [loadedGame, setLoadedGame] = useState<{
+    album: KifuAlbumDetail; parsed: ReturnType<typeof sgfToMoves>; lang: string;
+  } | null>(null);
+  const [loadError, setLoadError] = useState<{
+    id: number; lang: string; message: string; failure: 'unreachable' | 'service' | 'other';
+  } | null>(null);
   const [reload, setReload] = useState(0);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
-  const nowRef = useRef<HTMLSpanElement | null>(null);
   const loadedIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!kifuId) return;
     let cancelled = false;
     // ⚠️ 清空只能发生在异步回调里(`react-hooks/set-state-in-effect`) —— 效应体里同步
-    // setState 会连锁重渲染。重试时那句 `setError(null)` 挂在按钮的点击处理里,那是事件不是效应。
+    // setState 会连锁重渲染。重试时那句 `setLoadError(null)` 挂在按钮的点击处理里,那是事件不是效应。
     KifuAPI.getAlbum(Number(kifuId), lang)
-      .then(async (detail) => {
+      .then((detail) => {
         if (cancelled) return;
-        if (!detail.sgf_content) throw new Error('empty sgf');
-        const loaded = await BaipuAPI.load({ sgf: detail.sgf_content });
-        if (cancelled) return;
-        setError(null);
-        setLoadedAlbum(detail);
-        setLoadedLang(lang);
-        setSteps(loaded.steps);
-        setBoardSize(loaded.board_size || detail.board_size || 19);
-        if (loadedIdRef.current !== detail.id) setCursor(0);
+        if (!detail.sgf_content?.trim()) throw new Error('empty sgf');
+        const parsed = sgfToMoves(detail.sgf_content);
+        if (!parsed.moves.length) throw new Error('empty sgf');
+        setLoadError(null);
+        setLoadedGame({ album: detail, parsed, lang });
+        if (loadedIdRef.current !== detail.id) setCursor(parsed.moves.length - parsed.setupCount);
         loadedIdRef.current = detail.id;
       })
       .catch((e: Error) => {
         if (!cancelled) {
-          setError(e.message);
           const detail = e instanceof ApiError ? e.detail : null;
           const unreachable = e instanceof ApiError && e.status === 503
             && typeof detail === 'object' && detail !== null
             && 'code' in detail && detail.code === 'kifu_cloud_unreachable';
-          setFailure(unreachable ? 'unreachable' : e instanceof ApiError && e.status >= 500 ? 'service' : 'other');
+          setLoadError({ id: Number(kifuId), lang, message: e.message,
+            failure: unreachable ? 'unreachable' : e instanceof ApiError && e.status >= 500 ? 'service' : 'other' });
         }
       });
     return () => { cancelled = true; };
   }, [kifuId, reload, lang]);
 
-  const album = loadedLang === lang ? loadedAlbum : null;
+  const visibleError = loadError?.id === Number(kifuId) && loadError.lang === lang ? loadError : null;
+  const error = visibleError?.message;
+  const failure = visibleError?.failure;
+  const game = loadedGame?.lang === lang && loadedGame.album.id === Number(kifuId) && !visibleError ? loadedGame : null;
+  const album = game?.album ?? null;
+  const parsed = game?.parsed ?? null;
+  const boardSize = parsed?.metadata.boardSize || album?.board_size || 19;
 
-  // 手数表:只有 `move` / `pass` 算一手,让子的 setup 不算。
+  // 初始摆子保留在盘上,从逐手列表和游标里排除。
   const entries = useMemo<MoveEntry[]>(() => {
-    if (!steps) return [];
-    const out: MoveEntry[] = [];
-    steps.forEach((s, i) => {
-      if (s.kind !== 'move' && s.kind !== 'pass') return;
-      const color = s.color ?? (out.length % 2 === 0 ? 'B' : 'W');
-      out.push({
-        n: out.length + 1,
-        coord: s.row != null && s.col != null ? canonToGtp(s.row, s.col, boardSize) : null,
-        color,
-        stepIndex: i,
-      });
-    });
-    return out;
-  }, [steps, boardSize]);
+    if (!parsed) return [];
+    return parsed.moves.slice(parsed.setupCount).map((move, i) => ({
+      n: i + 1,
+      coord: move.toLowerCase() === 'pass' ? null : move,
+      color: parsed.stoneColors[parsed.setupCount + i],
+    }));
+  }, [parsed]);
 
   const total = entries.length;
   const at = Math.min(cursor, total);
   useReplayStoneSound({ identity: album?.id ?? null, cursor: at, move: entries[at - 1]?.coord ?? undefined,
-    ready: !!album && album.id === Number(kifuId) && steps !== null, selected: true, boardSize });
-  // 走到第 `at` 手 = 播到那一手所在的 step(含),开局则只播它前面的 setup。
-  const stepCount = at === 0
-    ? (entries[0]?.stepIndex ?? steps?.length ?? 0)
-    : entries[at - 1].stepIndex + 1;
+    ready: !!parsed, selected: true, boardSize });
   const board = useMemo(
-    () => (steps ? replayBaipuSteps(steps, stepCount, boardSize) : { black: [], white: [] }),
-    [steps, stepCount, boardSize],
+    () => (parsed ? buildReplayPosition(parsed.moves, parsed.setupCount + at, boardSize, parsed.stoneColors, parsed.setupCount)
+      : { black: [], white: [] }),
+    [parsed, at, boardSize],
   );
-
-  // 当前那一手要留在可视区里 —— 241 手的谱,不跟着滚等于翻不到。
-  useEffect(() => {
-    nowRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [at]);
-
-  const goBaipu = useCallback(() => {
-    if (!album?.sgf_content) return;
-    const id = `kifu_${album.id}`;
-    const name = [album.display_event, album.display_round_name].filter(Boolean).join(' · ')
-      || `${album.display_player_black ?? t('game:black_side', '黑方')} vs ${album.display_player_white ?? t('game:white_side', '白方')}`;
-    cacheSgf(id, name, album.sgf_content);
-    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, {
-      // 带上来处:摆谱会话的返回键回这一局的详情页,不是摆谱列表
-      state: { ...backToState(location), sgf: album.sgf_content, name },
-    });
-  }, [album, navigate, location, t]);
 
   const cols = colsFor(boardSize);
   const rows = rowsFor(boardSize);
   const title = album
-    ? [album.display_event, album.display_round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
+    ? [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
     : t('kifu:back_kifu', '棋谱');
+  const blackRank = formatKifuRank(album?.display_black_rank, album?.black_rank, t, lang);
+  const whiteRank = formatKifuRank(album?.display_white_rank, album?.white_rank, t, lang);
 
   const meta = album
     ? [
@@ -199,40 +128,10 @@ const KifuDetailPage = () => {
     ].filter(Boolean).join(' · ')
     : '';
 
-  const actions: KioskAction[] = [
-    {
-      key: 'baipu',
-      icon: 'grid-nine',
-      label: t('kifu:place_on_board', '摆到实体盘'),
-      onClick: goBaipu,
-      // 实体盘和灯阵只有 19 路。摆谱屏自己也会拦(它是所有入口的汇合点),这里先灰掉,别让人白跳一趟。
-      disabled: !album?.sgf_content || boardSize !== 19,
-      reason: album?.sgf_content && boardSize !== 19
-        ? interpolate(t('kifu:wrong_size_reason', '这是 {n} 路的谱 —— 实体盘只摆得了 19 路'), { n: boardSize })
-        : t('kifu:need_sgf', '这一局还没读到谱'),
-    },
-    {
-      key: 'research',
-      icon: 'magnifying-glass',
-      label: t('kifu:to_research', '去研究'),
-      onClick: () => navigate(`/kiosk/research?kifu_id=${album?.id}&analyze=1&from=kifu`),
-      disabled: !album,
-      reason: t('kifu:need_sgf', '这一局还没读到谱'),
-    },
-  ];
-
-  // 一行两手:黑一格白一格。**不按下标奇偶分列** —— 让子局第一手是白,
-  // 按奇偶排会把整份谱错开一格。
-  const rowsOfMoves: (MoveEntry | null)[][] = [];
-  for (const e of entries) {
-    const tail = rowsOfMoves[rowsOfMoves.length - 1];
-    if (e.color === 'B' || !tail || tail[1] !== null) rowsOfMoves.push([null, null]);
-    const cur = rowsOfMoves[rowsOfMoves.length - 1];
-    cur[e.color === 'B' ? 0 : 1] = e;
-  }
+  const recentEntries = entries.slice(Math.max(0, at - 6), at);
 
   return (
-    <div className="kiosk-layout-a">
+    <div className="kiosk-layout-a kifu-replay-reviewed">
       <div className="kiosk-board" data-testid="kifu-detail-board">
         <div className="kiosk-board__ruler kiosk-board__ruler--top">
           {cols.map((c) => <span key={`t${c}`}>{c}</span>)}
@@ -257,13 +156,19 @@ const KifuDetailPage = () => {
         </div>
       </div>
 
+      {infoOpen && album && <div className="kifu-replay-info" role="dialog" aria-modal="true" aria-label={t('kifu:game_details', '棋局详情')}>
+        <div className="kifu-replay-info__panel"><h2>{t('kifu:game_details', '棋局详情')}</h2><p>{title}</p><p>{meta}</p>
+          <button type="button" onClick={() => setInfoOpen(false)}>{t('common:close', '关闭')}</button>
+        </div>
+      </div>}
       <div className="kiosk-rail">
         <KioskPagebar
           testId="kifu-detail-pagebar"
           backLabel={t('kifu:back_kifu', '棋谱')}
           onBack={() => navigate('/kiosk/kifu')}
-          title={title}
-          sub={album ? `${t('kifu:replay', '逐手回放')} · ${t('kifu:move_ordinal', '第')} ${at} / ${total} ${t('kifu:moves_unit', '手')}` : undefined}
+          title={t('kifu:professional_library', '职业棋谱')}
+          sub={undefined}
+          action={{ icon: 'info', label: t('kifu:game_details', '棋局详情'), onClick: () => setInfoOpen(true) }}
         />
 
         {error ? (
@@ -281,7 +186,7 @@ const KifuDetailPage = () => {
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill pill"
-              onClick={() => { setError(null); setReload((v) => v + 1); }}
+              onClick={() => { setLoadError(null); setReload((v) => v + 1); }}
             >
               {t('kifu:retry', '重试')}
             </button>
@@ -293,91 +198,42 @@ const KifuDetailPage = () => {
           </div>
         ) : (
           <>
-            <div className="khero" data-testid="kifu-detail-hero">
-              <b>
-                {album.display_player_black ?? t('game:black_side', '黑方')}
-                {album.display_black_rank && <em>{formatRank(album.display_black_rank, t)}</em>}
-                <i>{t('kifu:versus', '对')}</i>
-                {album.display_player_white ?? t('game:white_side', '白方')}
-                {album.display_white_rank && <em>{formatRank(album.display_white_rank, t)}</em>}
-              </b>
-              <p>{meta}</p>
+            <section className="kifu-replay-match" data-testid="kifu-detail-hero" title={meta}>
+              <strong>{title}</strong>
+              <div className="kifu-replay-players">
+                <span><i className="kifu-record__stone kifu-record__stone--black" />{album.display_player_black ?? album.player_black ?? t('game:black_side', '黑方')}{blackRank && <small>{blackRank}</small>}</span>
+                <em>{t('kifu:versus', '对')}</em>
+                <span>{album.display_player_white ?? album.player_white ?? t('game:white_side', '白方')}{whiteRank && <small>{whiteRank}</small>}<i className="kifu-record__stone kifu-record__stone--white" /></span>
+              </div>
+              <small>{[album.date_played, interpolate(t("{total} {value2}", "{total} {value2}"), { total: total, value2: t('kifu:moves_unit', '手') }), translateResult(album.result, t, album.rules)].filter(Boolean).join(' · ')}</small>
+            </section>
+            <section className="kifu-replay-pending" role="status">
+              <strong>{album.has_analysis ? t('kifu:replay_only', '棋谱回放') : t('kifu:not_analyzed_yet', '尚未分析')}</strong>
+              <span>{album.has_analysis ? t('kifu:replay_available_analysis_hint', '当前显示原始棋谱。分析数据可从棋谱列表的「查看分析」进入。') : t('kifu:replay_analysis_hint', '这局的棋谱已经收录，可以逐手查看。胜率、推荐和失误需要分析后才会显示。')}</span>
+            </section>
+            <section className="kifu-replay-recent" data-testid="kifu-detail-moves">
+              <div><strong>{t('kifu:recent_moves', '最近落子')}</strong><span>{t('kifu:move_ordinal', '第')} {at} / {total} {t('kifu:moves_unit', '手')}</span></div>
+              <div className="kifu-replay-move-grid">
+                {recentEntries.length ? recentEntries.map(entry => <button key={entry.n} type="button" aria-pressed={entry.n === at} onClick={() => setCursor(entry.n)}>
+                  <b>{entry.n}</b><i className={`kifu-record__stone kifu-record__stone--${entry.color === 'B' ? 'black' : 'white'}`} />{entry.coord ?? t('kifu:pass', '虚手')}
+                </button>) : <span>{t('kifu:opening_position', '开局盘面')}</span>}
+              </div>
+            </section>
+            <div className="kifu-replay-actions" data-testid="kifu-detail-actions">
+              <PhysicalBoardButton source={`kifu_${album.id}`} name={title} sgf={album.sgf_content} boardSize={boardSize} />
             </div>
-
-            <KioskFold
-              fold="moves"
-              grow
-              testId="kifu-detail-moves"
-              title={t('kifu:moves_title', '棋谱 · 交叉点坐标')}
-              value={`${t('kifu:move_ordinal', '第')} ${at} ${t('kifu:moves_unit', '手')}`}
-              bodyClassName="mvrows"
-            >
-              {rowsOfMoves.length === 0 ? (
-                <span className="n">{t('kifu:no_moves', '这份谱里没有着法')}</span>
-              ) : rowsOfMoves.map((pair, i) => (
-                <RowOfMoves key={`r${i}`} index={i} pair={pair} at={at} nowRef={nowRef} onPick={setCursor} passLabel={t('kifu:pass', '虚手')} />
-              ))}
-            </KioskFold>
-
-            <div className="kiosk-movenav" data-testid="kifu-detail-movenav">
-              <button type="button" aria-label={t('kifu:to_start', '回到开局')} disabled={at === 0} onClick={() => setCursor(0)}>
-                <Icon name="caret-double-left" />
-              </button>
-              <button type="button" aria-label={t('kifu:prev_move', '上一手')} disabled={at === 0} onClick={() => setCursor((v) => Math.max(0, Math.min(v, total) - 1))}>
-                <Icon name="caret-left" />
-              </button>
-              <button type="button" aria-label={t('kifu:next_move', '下一手')} disabled={at >= total} onClick={() => setCursor((v) => Math.min(total, v + 1))}>
-                <Icon name="caret-right" />
-              </button>
-              <button type="button" aria-label={t('kifu:to_end', '跳到最后')} disabled={at >= total} onClick={() => setCursor(total)}>
-                <Icon name="caret-double-right" />
-              </button>
+            <div className="kifu-replay-playback" data-testid="kifu-detail-movenav">
+              <button type="button" aria-label={t('kifu:to_start', '回到开局')} disabled={at === 0} onClick={() => setCursor(0)}><Icon name="caret-double-left" /></button>
+              <button type="button" aria-label={t('kifu:prev_move', '上一手')} disabled={at === 0} onClick={() => setCursor(value => Math.max(0, value - 1))}><Icon name="caret-left" /></button>
+              <input type="range" min="0" max={total} value={at} aria-label={t('kifu:move_slider', '棋谱手数')} onChange={event => setCursor(Number(event.target.value))} />
+              <button type="button" aria-label={t('kifu:next_move', '下一手')} disabled={at >= total} onClick={() => setCursor(value => Math.min(total, value + 1))}><Icon name="caret-right" /></button>
+              <button type="button" aria-label={t('kifu:to_end', '跳到最后')} disabled={at >= total} onClick={() => setCursor(total)}><Icon name="caret-double-right" /></button>
             </div>
-
-            <KioskActions
-              testId="kifu-detail-actions"
-              ariaLabel={t('kifu:detail_actions', '这一局能做什么')}
-              actions={actions}
-            />
           </>
         )}
       </div>
     </div>
   );
 };
-
-/** 一行两手。点一格 = 跳到那一手 —— 241 手的谱靠四个键一手手按太慢。 */
-function RowOfMoves({ index, pair, at, nowRef, onPick, passLabel }: {
-  index: number;
-  pair: (MoveEntry | null)[];
-  at: number;
-  nowRef: MutableRefObject<HTMLSpanElement | null>;
-  onPick: (n: number) => void;
-  passLabel: string;
-}) {
-  return (
-    <>
-      <span className="n">{index + 1}</span>
-      {[0, 1].map((slot) => {
-        const e = pair[slot];
-        if (!e) return <span className="mv" key={slot} />;
-        const isNow = e.n === at;
-        return (
-          <span
-            key={slot}
-            ref={isNow ? nowRef : undefined}
-            className={isNow ? 'mv now' : 'mv'}
-            role="button"
-            tabIndex={0}
-            onClick={() => onPick(e.n)}
-            onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onPick(e.n); } }}
-          >
-            {e.coord ?? passLabel}
-          </span>
-        );
-      })}
-    </>
-  );
-}
 
 export default KifuDetailPage;

@@ -53,7 +53,7 @@ const TsumegoCategoriesPage = () => {
       <ContentPageHeader
         title={level?.toUpperCase() ?? ''}
         parentLabel={t('Tsumego')}
-        parentTo="/galaxy/tsumego"
+        parentTo="/tsumego"
       />
       <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
         {t('tsumego:selectCategory')} · {t('tsumego:categoryDesc')}
@@ -75,7 +75,7 @@ const TsumegoCategoriesPage = () => {
               }
             }}
           >
-            <CardActionArea onClick={() => navigate(`/galaxy/tsumego/${level}/${cat.category}`)}>
+            <CardActionArea onClick={() => navigate(`/tsumego/${level}/${cat.category}`)}>
               <Box
                 sx={{
                   display: 'flex',

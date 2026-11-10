@@ -38,7 +38,7 @@ export default function TutorialBooksPage() {
     <Box p={3}>
       {/* 原来是标题上方一个「← 返回」文字键（半个箭头 + 硬编码中文，英文界面下也读中文）。
           spec §2.4：返回键是左上角的箭头图标键，与标题同行；简称只进无障碍名。 */}
-      <ContentPageHeader title={category ?? ''} parentLabel="教程" parentTo="/galaxy/tutorials" />
+      <ContentPageHeader title={category ?? ''} parentLabel="教程" parentTo="/tutorials" />
       {books.length === 0 ? (
         <Typography color="text.secondary">该分类暂无书籍</Typography>
       ) : (
@@ -46,7 +46,7 @@ export default function TutorialBooksPage() {
           {books.map(book => (
             <Box key={book.id} sx={{ flex: '0 0 280px', maxWidth: 280 }}>
               <Card>
-                <CardActionArea onClick={() => navigate(`/galaxy/tutorials/book/${book.id}`)}>
+                <CardActionArea onClick={() => navigate(`/tutorials/book/${book.id}`)}>
                   <CardContent>
                     <Typography variant="h6">{book.title}</Typography>
                     {book.author && <Typography variant="body2" color="text.secondary">{book.author}</Typography>}

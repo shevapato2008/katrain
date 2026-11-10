@@ -1,0 +1,1 @@
+{"undo_receipt": {"batch_id": 880, "status": "undone", "batch_ids": [880, 881, 882], "reverted": 461}, "before_counts": {"total": 176621, "public": 176362}, "after_counts": {"total": 176549, "public": 176290}, "queue_untouched": true, "other_jobs_untouched": true}

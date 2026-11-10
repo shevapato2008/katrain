@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { KioskStatusCells, type StatusCell } from './KioskStatusCells';
+import { Icon } from './icons';
 
 /**
  * §5 L1 左栏。**四个模块几何完全一样,装的东西不同** —— 所以互切不跳:
@@ -16,22 +17,41 @@ import { KioskStatusCells, type StatusCell } from './KioskStatusCells';
  * 这串**曾经算错过 2px**(横向算了描边、纵向漏了),而标题行和状态格当时都没写 `flex:none`,
  * 被 flex 各压了 1px —— 肉眼看不出来。现在每块都 `flex:none`,再算错会顶破外框、当场看得见。
  */
-export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statuses }: {
+export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statuses, help, helpLabel = '实体棋盘说明', closeLabel = '知道了' }: {
   title: string;
   sub: string;
   board: ReactNode;
   syncLeft: string;
   syncRight: string;
   statuses: readonly StatusCell[];
+  help?: string;
+  helpLabel?: string;
+  closeLabel?: string;
 }) {
+  const [helpOpen, setHelpOpen] = useState(false);
   return (
     <aside className="kiosk-console">
-      <div className="kiosk-console__title"><b>{title}</b><em>{sub}</em></div>
+      <div className="kiosk-console__title">
+        <b>{title}</b>
+        {help ? (
+          <button type="button" className="kiosk-console__help" aria-label={helpLabel}
+            onClick={() => setHelpOpen(true)}><Icon name="info" /></button>
+        ) : <em>{sub}</em>}
+      </div>
       <div className="kiosk-console__frame">
         <div className="kiosk-mini-board">{board}</div>
       </div>
       <div className="kiosk-console__sync"><span>{syncLeft}</span><b>{syncRight}</b></div>
       <KioskStatusCells cells={statuses} />
+      {helpOpen && (
+        <div className="kiosk-console__help-scrim" role="presentation" onClick={() => setHelpOpen(false)}>
+          <div className="kiosk-console__help-dialog" role="dialog" aria-modal="true" aria-label={helpLabel}
+            onClick={(event) => event.stopPropagation()}>
+            <p>{help}</p>
+            <button type="button" className="kiosk-btn" onClick={() => setHelpOpen(false)}>{closeLabel}</button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

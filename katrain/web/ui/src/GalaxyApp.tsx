@@ -1,11 +1,12 @@
 import { lazy, Suspense, useMemo } from 'react';
 import { Box, ThemeProvider } from '@mui/material';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
 import { useSettings } from './context/SettingsContext';
-import { createGalaxyTheme } from './galaxy/theme';
+import { createGalaxyTheme, getChineseFontStack } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
 import './kiosk-shell/fonts.css';
+import './kiosk-shell/brand-font.css';
 import { AuthGuard } from './galaxy/components/guards/AuthGuard';
 import MainLayout from './galaxy/components/layout/MainLayout';
 const Dashboard = lazy(() => import('./galaxy/pages/Dashboard'));
@@ -28,12 +29,14 @@ const TutorialLandingPage = lazy(() => import('./galaxy/pages/tutorials/Tutorial
 const TutorialBooksPage = lazy(() => import('./galaxy/pages/tutorials/TutorialBooksPage'));
 const TutorialBookDetailPage = lazy(() => import('./galaxy/pages/tutorials/TutorialBookDetailPage'));
 const TutorialFigurePage = lazy(() => import('./galaxy/pages/tutorials/TutorialFigurePage'));
+const MembershipPage = lazy(() => import('./galaxy/pages/membership/MembershipPage'));
 const ReportsPage = lazy(() => import('./galaxy/pages/report/ReportsPage'));
 const ReportDetailPage = lazy(() => import('./galaxy/pages/report/ReportDetailPage'));
 
 const GalaxyApp = () => {
-  const { language } = useSettings();
-  const galaxyTheme = useMemo(() => createGalaxyTheme(language), [language]);
+  const { language, chineseFont = 'wenkai' } = useSettings();
+  const galaxyTheme = useMemo(() => createGalaxyTheme(language, chineseFont), [language, chineseFont]);
+  const chineseFontStack = useMemo(() => getChineseFontStack(chineseFont), [chineseFont]);
 
   console.log("GalaxyApp rendering");
   return (
@@ -41,6 +44,8 @@ const GalaxyApp = () => {
       <Box
         className="galaxy-root"
         data-language={language}
+        data-chinese-font={chineseFont}
+        style={{ '--galaxy-chinese-font': chineseFontStack } as React.CSSProperties}
         sx={{
           width: '100vw',
           height: '100dvh',
@@ -69,6 +74,7 @@ const GalaxyApp = () => {
             <Route path="play/human" element={<AuthGuard feature="hall"><HvHLobbyPage /></AuthGuard>} />
             <Route path="play/human/room/:sessionId" element={<AuthGuard feature="hall"><GameRoomPage /></AuthGuard>} />
             <Route path="research" element={<ResearchPage />} />
+            <Route path="membership" element={<MembershipPage />} />
             <Route path="report" element={<AuthGuard feature="reports"><ReportsPage /></AuthGuard>} />
             <Route path="report/:taskId" element={<AuthGuard feature="reports"><ReportDetailPage /></AuthGuard>} />
             <Route path="kifu" element={<KifuLibraryPage />} />
@@ -85,7 +91,7 @@ const GalaxyApp = () => {
             <Route path="tutorials/:category" element={<TutorialBooksPage />} />
             <Route path="tutorials/book/:bookId" element={<TutorialBookDetailPage />} />
             <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
-            <Route path="*" element={<Navigate to="/galaxy" replace />} />
+            <Route path="*" element={<Box component="h1" sx={{ p: 3 }}>404</Box>} />
           </Route>
           </Routes></Suspense>
         </TsumegoProgressProvider>

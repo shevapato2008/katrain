@@ -5,6 +5,7 @@ import { TutorialReadAPI } from '../../api/tutorialApi';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { TutorialCategory } from '../../types/tutorial';
 import { KioskCard } from '../shell/KioskCard';
+import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { interpolate } from '../utils/interpolate';
@@ -80,7 +81,9 @@ const TutorialCategoriesPage = () => {
   const books = sorted?.reduce((n, c) => n + (c.book_count || 0), 0) ?? 0;
 
   return (
-    <KioskScrollZone resetKey={reload}>
+    <div className="kiosk-layout-b" data-testid="tutorial-library-page">
+      <KioskPagebar backLabel={t("课程", "课程")} onBack={() => navigate('/kiosk/tutorial')} title={t("其他教材", "其他教材")} />
+      <KioskScrollZone resetKey={reload}>
       <div className="kiosk-greet">
         <b>{t('tutorial:title_cn', '课程')}<i>{t('tutorial:synced', '随云端同步')}</i></b>
         <span>{t('tutorial:greet_sub', '后端是五层结构，内容不在这台盒子上生成')}</span>
@@ -152,10 +155,10 @@ const TutorialCategoriesPage = () => {
         <KioskSecLabel zh={t('tutorial:anatomy_cn', '一课长什么样')} en="Anatomy" />
         <div className="kiosk-rows" data-testid="tutorial-anatomy">
           {([
-            ['book', '书', '一本书', '分若干章', 'Book', false],
-            ['chapter', '章', '一章讲一块', '比如「吃子」是一章', 'Chapter', false],
-            ['section', '节', '节才是「一课」', '翻完一节的图就算看完', 'Section', false],
-            ['figure', '图', '节里是一张张棋图', '每张图带一段人声旁白，还能一键摆到实体盘上', '带音频', true],
+            ['book', t("书", "书"), t("一本书", "一本书"), t("分若干章", "分若干章"), 'Book', false],
+            ['chapter', t("章", "章"), t("一章讲一块", "一章讲一块"), t("比如「吃子」是一章", "比如「吃子」是一章"), 'Chapter', false],
+            ['section', t("节", "节"), t("节才是「一课」", "节才是「一课」"), t("翻完一节的图就算看完", "翻完一节的图就算看完"), 'Section', false],
+            ['figure', t("图", "图"), t("节里是一张张棋图", "节里是一张张棋图"), t("每张图带一段人声旁白，还能一键摆到实体盘上", "每张图带一段人声旁白，还能一键摆到实体盘上"), t("带音频", "带音频"), true],
           ] as const).map(([key, lead, title, sub, tag, good]) => (
             <div className="kiosk-row" key={key}>
               <span className="kiosk-row__lead">{t(`tutorial:layer_${key}_lead`, lead)}</span>
@@ -194,7 +197,8 @@ const TutorialCategoriesPage = () => {
           </div>
         </section>
       )}
-    </KioskScrollZone>
+      </KioskScrollZone>
+    </div>
   );
 };
 

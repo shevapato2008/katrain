@@ -244,6 +244,30 @@ def test_scheduler_routes_first_run_through_recorder():
     assert kwargs["next_run_time"] is not None
 
 
+def test_failed_interval_stays_scheduled_and_its_next_invocation_can_succeed(session_factory):
+    from katrain.cron.scheduler import CronScheduler
+
+    scheduler = CronScheduler()
+    scheduler._recorder = recorder(session_factory, ("fetch_list", 60))
+    attempts = 0
+
+    async def retrying():
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("temporary upstream failure")
+
+    scheduler._schedule(Job("fetch_list", retrying), 60)
+    scheduled = scheduler._scheduler.get_job("fetch_list")
+    with pytest.raises(RuntimeError, match="temporary upstream failure"):
+        asyncio.run(scheduled.func(*scheduled.args))
+    assert scheduler._scheduler.get_job("fetch_list") is scheduled
+    assert scheduled.trigger.interval == timedelta(seconds=60)
+    asyncio.run(scheduled.func(*scheduled.args))
+    assert attempts == 2
+    assert [run.status for run in runs(session_factory, "fetch_list")] == ["failed", "success"]
+
+
 def test_loop_jobs_expose_heartbeat_stats():
     from katrain.cron import config
     from katrain.cron.jobs.analyze import AnalyzeJob

@@ -199,7 +199,7 @@ for (const testCase of CASES) {
 
     // ① 参考图:galaxy 那块屏,在它自己的 viewport 下。
     await page.setViewportSize(GALAXY_VIEWPORT);
-    await page.goto('/galaxy/play/ai?mode=rated');
+    await page.goto('/play/ai?mode=rated');
     await expect(page.getByText('未完成对局')).toBeVisible();
     await page.evaluate(GALAXY_PANEL_INIT);
     const galaxy = await readPanelSemantics(page, 'galaxy-ladder-blocking-panel');

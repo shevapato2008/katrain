@@ -1,0 +1,296 @@
+{
+  "kifu:report_title": {
+    "cn": "职业棋局报告",
+    "tw": "職業棋局報告",
+    "en": "Professional game report",
+    "jp": "プロ棋譜レポート",
+    "ko": "프로 대국 보고서"
+  },
+  "kifu:back_kifu_full": {
+    "cn": "返回棋谱",
+    "tw": "返回棋譜",
+    "en": "Back to library",
+    "jp": "棋譜へ戻る",
+    "ko": "기보로 돌아가기"
+  },
+  "kifu:report_load_failed": {
+    "cn": "职业棋局暂时无法读取",
+    "tw": "職業棋局暫時無法讀取",
+    "en": "Professional game unavailable",
+    "jp": "プロ棋譜を読み込めません",
+    "ko": "프로 대국을 불러올 수 없습니다"
+  },
+  "kifu:report_loading": {
+    "cn": "正在读取职业棋局报告",
+    "tw": "正在讀取職業棋局報告",
+    "en": "Loading professional game report",
+    "jp": "プロ棋譜レポートを読み込み中",
+    "ko": "프로 대국 보고서 불러오는 중"
+  },
+  "report:event": {
+    "cn": "赛事",
+    "tw": "賽事",
+    "en": "Event",
+    "jp": "棋戦",
+    "ko": "대회"
+  },
+  "report:date": {
+    "cn": "日期",
+    "tw": "日期",
+    "en": "Date",
+    "jp": "日付",
+    "ko": "날짜"
+  },
+  "report:result": {
+    "cn": "结果",
+    "tw": "結果",
+    "en": "Result",
+    "jp": "結果",
+    "ko": "결과"
+  },
+  "report:rules": {
+    "cn": "规则",
+    "tw": "規則",
+    "en": "Rules",
+    "jp": "ルール",
+    "ko": "규칙"
+  },
+  "report:sgf_rules": {
+    "cn": "SGF 规则",
+    "tw": "SGF 規則",
+    "en": "SGF rules",
+    "jp": "SGF のルール",
+    "ko": "SGF 규칙"
+  },
+  "report:sgf_komi": {
+    "cn": "SGF 贴目",
+    "tw": "SGF 貼目",
+    "en": "SGF komi",
+    "jp": "SGF のコミ",
+    "ko": "SGF 덤"
+  },
+  "report:analysis_rules": {
+    "cn": "分析规则（已核验）",
+    "tw": "分析規則（已核驗）",
+    "en": "Analysis rules (verified)",
+    "jp": "解析ルール（確認済み）",
+    "ko": "분석 규칙 (검증됨)"
+  },
+  "report:analysis_rules_unverified": {
+    "cn": "分析规则",
+    "tw": "分析規則",
+    "en": "Analysis rules",
+    "jp": "解析ルール",
+    "ko": "분석 규칙"
+  },
+  "kifu:rules_source": {
+    "cn": "规则来源",
+    "tw": "規則來源",
+    "en": "Rules source",
+    "jp": "ルールの出典",
+    "ko": "규칙 출처"
+  },
+  "report:status": {
+    "cn": "状态",
+    "tw": "狀態",
+    "en": "Status",
+    "jp": "状態",
+    "ko": "상태"
+  },
+  "report:source": {
+    "cn": "来源",
+    "tw": "來源",
+    "en": "Source",
+    "jp": "出典",
+    "ko": "출처"
+  },
+  "kifu:view_kifu": {
+    "cn": "查看棋谱",
+    "tw": "檢視棋譜",
+    "en": "View game record",
+    "jp": "棋譜を見る",
+    "ko": "기보 보기"
+  },
+  "kifu:analysis_read_error": {
+    "cn": "分析状态暂时无法读取",
+    "tw": "分析狀態暫時無法讀取",
+    "en": "Analysis status unavailable",
+    "jp": "解析の状態を読み込めません",
+    "ko": "분석 상태를 불러올 수 없습니다"
+  },
+  "kifu:rules_unresolved": {
+    "cn": "规则待核验",
+    "tw": "規則待核驗",
+    "en": "Rules unverified",
+    "jp": "ルール未確認",
+    "ko": "규칙 확인 대기"
+  },
+  "kifu:game_details": {
+    "cn": "棋局详情",
+    "tw": "棋局詳情",
+    "en": "Game details",
+    "jp": "対局の詳細",
+    "ko": "대국 정보"
+  },
+  "common:close": {
+    "cn": "关闭",
+    "tw": "關閉",
+    "en": "Close",
+    "jp": "閉じる",
+    "ko": "닫기"
+  },
+  "kifu:professional_library": {
+    "cn": "职业棋谱",
+    "tw": "職業棋譜",
+    "en": "Professional game library",
+    "jp": "プロ棋譜",
+    "ko": "프로 기보"
+  },
+  "kifu:replay_only": {
+    "cn": "棋谱回放",
+    "tw": "棋譜回放",
+    "en": "Game replay",
+    "jp": "棋譜の再生",
+    "ko": "기보 재생"
+  },
+  "kifu:not_analyzed_yet": {
+    "cn": "尚未分析",
+    "tw": "尚未分析",
+    "en": "Not analyzed yet",
+    "jp": "未解析",
+    "ko": "아직 분석되지 않음"
+  },
+  "kifu:replay_available_analysis_hint": {
+    "cn": "当前显示原始棋谱。分析数据可从棋谱列表的「查看分析」进入。",
+    "tw": "目前顯示原始棋譜。分析資料可從棋譜清單的「檢視分析」開啟。",
+    "en": "This is the original game record. Open “View analysis” in the library for analysis data.",
+    "jp": "元の棋譜を表示しています。解析データは棋譜一覧の「解析を見る」から開けます。",
+    "ko": "원본 기보입니다. 분석 데이터는 기보 목록의 ‘분석 보기’에서 확인하세요."
+  },
+  "kifu:replay_analysis_hint": {
+    "cn": "这局的棋谱已经收录，可以逐手查看。胜率、推荐和失误需要分析后才会显示。",
+    "tw": "這局棋譜已收錄，可逐手檢視。勝率、建議與失誤需分析後才會顯示。",
+    "en": "Step through the recorded moves. Win rates, suggestions and mistakes appear after analysis.",
+    "jp": "収録された棋譜を一手ずつ確認できます。勝率、推奨手、ミスは解析後に表示されます。",
+    "ko": "저장된 기보를 한 수씩 볼 수 있습니다. 승률, 추천 수, 실수는 분석 후에 표시됩니다."
+  },
+  "kifu:recent_moves": {
+    "cn": "最近落子",
+    "tw": "最近落子",
+    "en": "Recent moves",
+    "jp": "最近の着手",
+    "ko": "최근 착수"
+  },
+  "kifu:opening_position": {
+    "cn": "开局盘面",
+    "tw": "開局盤面",
+    "en": "Starting position",
+    "jp": "開始局面",
+    "ko": "시작 형세"
+  },
+  "kifu:move_slider": {
+    "cn": "棋谱手数",
+    "tw": "棋譜手數",
+    "en": "Replay move number",
+    "jp": "棋譜の手数",
+    "ko": "기보 수순"
+  },
+  "kifu:preview_failed": {
+    "cn": "棋谱预览加载失败",
+    "tw": "棋譜預覽載入失敗",
+    "en": "Game preview unavailable",
+    "jp": "棋譜プレビューを読み込めません",
+    "ko": "기보 미리보기를 불러올 수 없습니다"
+  },
+  "kifu:selected_game": {
+    "cn": "选中这一局",
+    "tw": "選中這一局",
+    "en": "Selected game",
+    "jp": "選択した対局",
+    "ko": "선택한 대국"
+  },
+  "kifu:final_board": {
+    "cn": "选中棋谱的终局盘",
+    "tw": "選中棋譜的終局盤",
+    "en": "Final position of the selected game",
+    "jp": "選択した棋譜の最終局面",
+    "ko": "선택한 기보의 최종 형세"
+  },
+  "kifu:select_game": {
+    "cn": "请选择棋谱",
+    "tw": "請選擇棋譜",
+    "en": "Select a game record",
+    "jp": "棋譜を選んでください",
+    "ko": "기보를 선택하세요"
+  },
+  "kifu:preview_loading": {
+    "cn": "正在加载棋谱",
+    "tw": "正在載入棋譜",
+    "en": "Loading game record",
+    "jp": "棋譜を読み込み中",
+    "ko": "기보 불러오는 중"
+  },
+  "kifu:final_position": {
+    "cn": "终局棋谱",
+    "tw": "終局棋譜",
+    "en": "Final position",
+    "jp": "最終局面",
+    "ko": "최종 형세"
+  },
+  "kifu:open_replay": {
+    "cn": "查看棋谱",
+    "tw": "檢視棋譜",
+    "en": "View game record",
+    "jp": "棋譜を見る",
+    "ko": "기보 보기"
+  },
+  "kifu:open_analysis": {
+    "cn": "查看分析",
+    "tw": "檢視分析",
+    "en": "View analysis",
+    "jp": "解析を見る",
+    "ko": "분석 보기"
+  },
+  "kifu:library_views": {
+    "cn": "棋谱分类",
+    "tw": "棋譜分類",
+    "en": "Library categories",
+    "jp": "棋譜の分類",
+    "ko": "기보 분류"
+  },
+  "kifu:view_analysis_report": {
+    "cn": "查看分析报告",
+    "tw": "檢視分析報告",
+    "en": "View analysis report",
+    "jp": "解析レポートを見る",
+    "ko": "분석 보고서 보기"
+  },
+  "kifu:page_range": {
+    "cn": "请输入 1 到 {max} 之间的整数页码",
+    "tw": "請輸入 1 到 {max} 之間的整數頁碼",
+    "en": "Enter a whole page number from 1 to {max}",
+    "jp": "1 から {max} までの整数のページ番号を入力してください",
+    "ko": "1부터 {max} 사이의 정수 페이지 번호를 입력하세요"
+  },
+  "kifu:pagination": {
+    "cn": "棋谱分页",
+    "tw": "棋譜分頁",
+    "en": "Game library pages",
+    "jp": "棋譜のページ",
+    "ko": "기보 페이지"
+  },
+  "kifu:jump": {
+    "cn": "跳转",
+    "tw": "跳轉",
+    "en": "Go",
+    "jp": "移動",
+    "ko": "이동"
+  },
+  "kifu:jump_page": {
+    "cn": "跳转页码",
+    "tw": "跳轉頁碼",
+    "en": "Jump to page",
+    "jp": "移動先のページ番号",
+    "ko": "이동할 페이지 번호"
+  }
+}

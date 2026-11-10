@@ -7,6 +7,9 @@ import { kioskTheme } from '../theme';
 import type { PlatformChallenge } from '../../api';
 import PlatformLobbyPage from './PlatformLobbyPage';
 
+const translate = vi.hoisted(() => vi.fn((key: string, fallback?: string) => fallback ?? key));
+vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: translate, lang: 'en' }) }));
+
 const { platformStatus, platformUsers, platformSendChallenge, platformDeclineChallenge, platformChallenges, platformAcceptChallenge, platformActiveGame, getState, writeActiveSession } = vi.hoisted(() => ({
   platformStatus: vi.fn(), platformUsers: vi.fn(), platformSendChallenge: vi.fn(), platformChallenges: vi.fn(),
   platformDeclineChallenge: vi.fn(), platformAcceptChallenge: vi.fn(), platformActiveGame: vi.fn(), getState: vi.fn(), writeActiveSession: vi.fn(),
@@ -36,6 +39,7 @@ const renderPage = () => render(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  translate.mockImplementation((key, fallback) => fallback ?? key);
   platformStatus.mockResolvedValue({ platforms: [{ platform: 'ogs', connected: true, saved_username: 'my_ogs_account', supports_automatch: true }] });
   platformUsers.mockResolvedValue({ users: [{ user_id: '1', username: 'stone_walker', rank: '4d', status: 'idle' }] });
   platformSendChallenge.mockResolvedValue({ challenge_id: 'direct-4' });
@@ -255,4 +259,24 @@ describe('OGS 专属页', () => {
     await waitFor(() => expect(screen.queryByText('等待对方接受挑战')).not.toBeInTheDocument());
     expect(screen.queryByRole('button', { name: '取消约战' })).not.toBeInTheDocument();
   });
+});
+
+
+it('refreshes an open OGS challenge dialog without replaying network or accepting it', async () => {
+  const en: Record<string, string> = { '接受': 'Accept', '确认接受': 'Confirm acceptance', '取消': 'Cancel', '{n} 分': '{n} min', '{main} · 读秒 {seconds} 秒 × {periods}': '{main} · {seconds} sec × {periods}' };
+  const ko: Record<string, string> = { '接受': '수락', '确认接受': '수락 확인', '取消': '취소', '{n} 分': '{n}분', '{main} · 读秒 {seconds} 秒 × {periods}': '{main} · {seconds}초 × {periods}' };
+  translate.mockImplementation((key, fallback) => en[key] ?? fallback ?? key);
+  platformChallenges.mockResolvedValue({ challenges: [platformHomeChallenges[0]] });
+  const view = renderPage();
+  await userEvent.click(await screen.findByRole('button', { name: 'Accept' }));
+  expect(screen.getByRole('button', { name: 'Confirm acceptance' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog')).toHaveTextContent('stone_walker');
+  expect(screen.getByRole('dialog')).toHaveTextContent('10 min · 30 sec × 5');
+  const reads = platformChallenges.mock.calls.length;
+  translate.mockImplementation((key, fallback) => ko[key] ?? fallback ?? key);
+  view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/play/cross-platform/ogs']}><PlatformLobbyPage /></MemoryRouter></ThemeProvider>);
+  expect(screen.getByRole('button', { name: '수락 확인' })).toBeInTheDocument();
+  expect(screen.getByRole('dialog')).toHaveTextContent('10분 · 30초 × 5');
+  expect(platformChallenges).toHaveBeenCalledTimes(reads);
+  expect(platformAcceptChallenge).not.toHaveBeenCalled();
 });

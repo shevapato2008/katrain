@@ -124,9 +124,9 @@ export function isDanLevel(level: string): boolean {
 }
 
 /** Chinese label for a level string, e.g. '15k' → '15 级', '3d' → '3 段'. */
-export function levelChinese(level: string): string {
+export function levelChinese(level: string, t: (key: string, fallback?: string) => string = (key, fallback) => fallback ?? key): string {
   const n = level.replace(/[^0-9]/g, '');
-  return isDanLevel(level) ? `${n} 段` : `${n} 级`;
+  return (isDanLevel(level) ? t('tsumego:level_dan', '{n} 段') : t('tsumego:level_kyu', '{n} 级')).replace('{n}', n);
 }
 
 /**

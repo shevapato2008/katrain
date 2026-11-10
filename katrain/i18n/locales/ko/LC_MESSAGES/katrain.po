@@ -986,9 +986,9 @@ msgstr "Pass Alert"
 msgid "Game End Sound"
 msgstr "Game End Sound"
 
-#. TODO
+#. Native Go kiosk UI.
 msgid "Pass"
-msgstr "Pass"
+msgstr "한 수 쉼"
 
 msgid "Close"
 msgstr "닫기"
@@ -3797,7 +3797,7 @@ msgid "login:box_gate_cta"
 msgstr "StellaBox 홈으로"
 
 msgid "vision:back_settings"
-msgstr "설정"
+msgstr "설정으로 돌아가기"
 
 msgid "vision:board_lost_hint"
 msgstr "카메라가 가려졌는지, 바둑판이 움직였는지 확인하세요. 움직였다면 다시 보정해야 합니다"
@@ -3806,7 +3806,7 @@ msgid "vision:calibrate_title"
 msgstr "바둑판 보정"
 
 msgid "vision:calibrate_sub"
-msgstr "먼저 판을 비우세요 · 네 귀 + 화점 9개, 모두 13개 지점"
+msgstr "먼저 판을 비우세요 · 네 귀와 천원, 모두 5개 지점"
 
 msgid "vision:cancel_calibration"
 msgstr "보정 취소"
@@ -5631,7 +5631,7 @@ msgid "platform:challenge_send"
 msgstr "도전 보내기"
 
 msgid "platform:challenge_sent"
-msgstr "도전을 보냈습니다. 상대가 수락하면 {name}에서 두게 되며 이 기기로 돌아오지 않습니다."
+msgstr "도전을 보냈습니다. 상대가 수락하면 여기에 계속 대국이 표시됩니다."
 
 msgid "platform:challenge_failed"
 msgstr "도전을 보내지 못했습니다"
@@ -6918,3 +6918,6509 @@ msgstr "돌이 아닙니다"
 
 msgid "report:score_difference"
 msgstr "집 차이"
+
+msgid "kifu:history_guest"
+msgstr "이번 게스트 세션에서만 유지"
+
+msgid "kifu:history_local_cache"
+msgstr "이 기기의 계정 캐시"
+
+msgid "kifu:history_this_node"
+msgstr "이 기기에 저장됨"
+
+msgid "kifu:history_cloud"
+msgstr "계정 클라우드 기록"
+
+msgid "kifu:history_loading"
+msgstr "기보 놓기 기록을 불러오는 중"
+
+msgid "kifu:history_error"
+msgstr "기보 놓기 기록을 사용할 수 없습니다"
+
+msgid "kifu:history_cache_empty"
+msgstr "이 기기에 캐시된 계정 기록이 없습니다"
+
+msgid "kifu:history_empty"
+msgstr "아직 기보 놓기 기록이 없습니다"
+
+msgid "kifu:history_guest_hint"
+msgstr "게스트 기록은 세션이 끝나면 삭제됩니다."
+
+msgid "kifu:history_account_hint"
+msgstr "실물 바둑판에서 기보 놓기를 시작하면 현재 계정에 진행 상황이 저장됩니다."
+
+msgid "kifu:history_pending"
+msgstr "이 기기에 저장됨 · 동기화 대기 중"
+
+msgid "kifu:history_conflict"
+msgstr "진행 상황이 충돌했습니다. 유지할 기록을 선택하세요"
+
+msgid "kifu:history_refused"
+msgstr "이 기기에 저장됨 · 동기화가 거부됨"
+
+msgid "kifu:history_saving"
+msgstr "진행 상황을 저장하는 중"
+
+msgid "kifu:history_save_error"
+msgstr "진행 상황을 저장하지 못했습니다. 다시 시도하세요"
+
+msgid "kifu:history_saved"
+msgstr "진행 상황이 저장됨"
+
+msgid "kifu:history_use_cloud"
+msgstr "클라우드 진행 상황 사용"
+
+msgid "kifu:history_keep_local"
+msgstr "기기의 진행 상황 유지"
+
+msgid "kifu:history_resolve_error"
+msgstr "충돌을 해결하지 못했습니다. 진행 상황을 다시 확인하세요"
+
+msgid "baipu:operator_manual"
+msgstr "수동 확인으로 전환했습니다"
+
+msgid "baipu:pre_remove_title"
+msgstr "먼저 놓을 위치에 있는 기존 돌을 제거하세요"
+
+msgid "baipu:pre_remove_hint"
+msgstr "파란 불 위치의 돌을 제거한 뒤 기보에 나온 색의 돌을 놓으세요"
+
+msgid "baipu:pre_remove_done"
+msgstr "기존 돌을 제거했습니다"
+
+msgid "baipu:entry_confirm"
+msgstr "판면을 맞췄습니다"
+
+msgid "baipu:manual_entry_hint"
+msgstr "화면과 똑같이 돌을 놓은 뒤 「판면을 맞췄습니다」를 누르세요"
+
+msgid "baipu:recheck"
+msgstr "판면 다시 인식"
+
+msgid "baipu:switch_manual"
+msgstr "수동 확인으로 전환"
+
+msgid "baipu:done_hint_saved"
+msgstr "총 {n}수 · 왼쪽 위 버튼으로 돌아가세요"
+
+msgid "baipu:exit_body_neutral"
+msgstr "나간 뒤 기보 페이지에서 이 기보를 다시 열 수 있습니다."
+
+msgid "baipu:exit_anyway"
+msgstr "그래도 나가기"
+
+msgid "membership:account_checking"
+msgstr "계정 확인 중"
+
+msgid "membership:account_entry"
+msgstr "사용량, API 포인트 및 멤버십 혜택"
+
+msgid "membership:account_identity_help"
+msgstr "계정 본인 확인 후 멤버십 혜택, Free 이용 자격 및 API 포인트 잔액이 표시됩니다."
+
+msgid "membership:account_retry"
+msgstr "계정 확인 다시 시도"
+
+msgid "membership:account_unconfirmed"
+msgstr "계정 상태가 아직 확인되지 않았습니다"
+
+msgid "membership:advanced"
+msgstr "고급"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "고급 보고서는 약 {ratio}배를 사용합니다."
+
+msgid "membership:advanced_depth_rule"
+msgstr "고급 보고서의 사용량은 서버에서 설정한 분석 깊이에 따라 달라집니다."
+
+msgid "membership:advanced_position_cost"
+msgstr "고급: 한 수당 약 {points} API 포인트"
+
+msgid "membership:analysis_depth"
+msgstr "분석 깊이"
+
+msgid "membership:api_balance"
+msgstr "API 포인트 잔액"
+
+msgid "membership:api_on_demand"
+msgstr "필요할 때 이용하는 API 분석"
+
+msgid "membership:api_prices"
+msgstr "API 분석 요금"
+
+msgid "membership:api_topup"
+msgstr "API 포인트 충전"
+
+msgid "membership:auth_after_login"
+msgstr "로그인 후 이용"
+
+msgid "membership:auth_box_login"
+msgstr "StellaBox 홈에서 로그인"
+
+msgid "membership:auth_box_note"
+msgstr "StellaBox 홈 화면에서 로그인한 후 바둑 메뉴를 통해 이 화면으로 돌아오세요."
+
+msgid "membership:auth_checking_action"
+msgstr "확인 중"
+
+msgid "membership:auth_checking_description"
+msgstr "잠시만 기다려 주세요. 확인이 완료되면 자동으로 계속 진행됩니다."
+
+msgid "membership:auth_checking_note"
+msgstr "확인 중에는 계정 내 정보를 읽지 않습니다."
+
+msgid "membership:auth_checking_title"
+msgstr "로그인 상태 확인 중"
+
+msgid "membership:auth_description"
+msgstr "로그인 후 멤버십 사용량, API 포인트 및 주문을 확인할 수 있습니다."
+
+msgid "membership:auth_expired_description"
+msgstr "로그인 세션이 만료되어 멤버십 및 사용량의 개인 정보 읽기를 일시 중지했습니다. 로그인 후 계속 이용할 수 있습니다."
+
+msgid "membership:auth_expired_title"
+msgstr "다시 로그인하세요"
+
+msgid "membership:auth_label"
+msgstr "멤버십 및 사용량"
+
+msgid "membership:auth_login_continue"
+msgstr "로그인 후 계속"
+
+msgid "membership:auth_login_title"
+msgstr "로그인 후 멤버십 및 사용량 확인"
+
+msgid "membership:auth_return_note"
+msgstr "로그인이 완료되면 현재 페이지로 돌아오므로 메뉴를 다시 찾을 필요가 없습니다."
+
+msgid "membership:auth_unavailable_description"
+msgstr "네트워크 또는 서비스를 일시적으로 이용할 수 없습니다. 다시 시도하세요. 로그인 인증 정보는 유지됩니다."
+
+msgid "membership:auth_unavailable_note"
+msgstr "로그아웃할 필요가 없습니다. 연결이 복구되면 다시 시도하세요."
+
+msgid "membership:auth_unavailable_title"
+msgstr "현재 로그인 상태를 확인할 수 없습니다"
+
+msgid "membership:back_to_play"
+msgstr "대국으로 돌아가기"
+
+msgid "membership:billing_rules"
+msgstr "멤버십 및 API 요금 규칙"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"멤버십 한도를 먼저 사용합니다. 두 잔여 한도 중 하나라도 이번 분석에 부족하면 요청 전체에 보유 API 포인트를 사용하며, 결제 수단을"
+" 나누지 않습니다. 포인트가 부족하면 직접 충전하거나 한도 초기화를 기다려야 합니다. 포인트를 자동 구매하거나 위안화를 자동 결제하지 "
+"않습니다."
+
+msgid "membership:cancel"
+msgstr "취소"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"기존 멤버십이 만료된 후 이어서 적용되며 현재 한도는 초기화되지 않습니다. 적용일은 결제 후 서버에서 발급한 확인 내역을 기준으로 "
+"합니다."
+
+msgid "membership:choose_topup"
+msgstr "충전 금액 선택"
+
+msgid "membership:close"
+msgstr "닫기"
+
+msgid "membership:compare_membership_api"
+msgstr "멤버십과 API 비교"
+
+msgid "membership:compare_plans"
+msgstr "멤버십 플랜 비교"
+
+msgid "membership:compute"
+msgstr "연산 사용량"
+
+msgid "membership:confirm_consumption"
+msgstr "확인 후 시작"
+
+msgid "membership:confirm_position"
+msgstr "현재 국면 분석 확인"
+
+msgid "membership:confirm_purchase"
+msgstr "구매 확인"
+
+msgid "membership:confirm_report"
+msgstr "보고서 생성 확인"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "API 포인트 사용, 최대 {points}"
+
+msgid "membership:confirming"
+msgstr "확인 중"
+
+msgid "membership:consumption_policy"
+msgstr "멤버십을 우선 사용하며, 부족하면 요청 전체에 최대 {points} API 포인트를 사용합니다."
+
+msgid "membership:countdown_days"
+msgstr "{days}일 {hours}시간 {minutes}분"
+
+msgid "membership:countdown_hours"
+msgstr "{hours}시간 {minutes}분"
+
+msgid "membership:create_order"
+msgstr "주문 생성"
+
+msgid "membership:create_report"
+msgstr "복기 보고서 생성"
+
+msgid "membership:creating_order"
+msgstr "생성 중…"
+
+msgid "membership:current_plan"
+msgstr "현재 멤버십"
+
+msgid "membership:date_pending"
+msgstr "확인 대기"
+
+msgid "membership:done"
+msgstr "완료"
+
+msgid "membership:entitlement_pending"
+msgstr "계정 혜택 확인 대기"
+
+msgid "membership:error_analysis_login_required"
+msgstr "분석을 이용하려면 먼저 로그인하세요."
+
+msgid "membership:error_insufficient"
+msgstr "멤버십 한도와 API 포인트가 부족합니다. 멤버십 페이지에서 확인하세요."
+
+msgid "membership:error_operation_running"
+msgstr "분석이 아직 진행 중입니다. 잠시 후 다시 확인하세요."
+
+msgid "membership:error_position_failed"
+msgstr "분석이 완료되지 않았습니다. 다시 시도하세요."
+
+msgid "membership:error_position_refunded"
+msgstr "분석이 완료되지 않아 이번 사용분을 돌려드렸습니다. 다시 시도하세요."
+
+msgid "membership:error_position_unavailable"
+msgstr "현재 서비스에서는 단일 국면 분석을 이용할 수 없습니다."
+
+msgid "membership:error_quote_expired"
+msgstr "견적이 만료되었거나 현재 요청과 일치하지 않습니다. 최신 견적을 확인한 후 다시 시도하세요."
+
+msgid "membership:error_quote_failed"
+msgstr "견적을 가져오지 못했습니다. 다시 시도하세요."
+
+msgid "membership:error_report_failed"
+msgstr "보고서를 생성하지 못했습니다. 다시 시도하세요."
+
+msgid "membership:error_report_login_required"
+msgstr "보고서를 생성하려면 먼저 로그인하세요."
+
+msgid "membership:error_report_missing"
+msgstr "보고서를 찾을 수 없습니다. 새로고침 후 다시 시도하세요."
+
+msgid "membership:error_result_expired"
+msgstr "분석 결과가 만료되었거나 일시적으로 사용할 수 없습니다. 다시 분석하세요."
+
+msgid "membership:error_service_busy"
+msgstr "요청이 많습니다. 잠시 후 다시 시도하세요."
+
+msgid "membership:error_service_paused"
+msgstr "분석 서비스가 일시 중지되었습니다. 잠시 후 다시 시도하세요."
+
+msgid "membership:error_service_unavailable"
+msgstr "분석 서비스를 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도하세요."
+
+msgid "membership:error_verification_required"
+msgstr "로그인 인증을 완료한 후 다시 시도하세요."
+
+msgid "membership:example_depth"
+msgstr "예시 분석 깊이"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"매주 별도로 표준 보고서 {count}개를 이용할 수 있는 자격입니다. 본인 확인 조건을 충족해야 하며, 일반 분석 한도로 사용할 수 "
+"없습니다."
+
+msgid "membership:free_pending"
+msgstr "Free 이용 자격 확인 대기"
+
+msgid "membership:free_remaining"
+msgstr "이번 주 {count}개 남음"
+
+msgid "membership:free_reset_countdown"
+msgstr "{time} 후 초기화 · {date}(베이징 시간)"
+
+msgid "membership:free_unavailable"
+msgstr "현재 Free 이용 자격을 사용할 수 없습니다"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Free 표준 보고서를 이용하려면 신뢰할 수 있는 본인 확인 조건을 충족해야 합니다. 현재 이용 가능 수량을 제공할 수 없으며, 유료 "
+"멤버십에는 Free 보고서 이용 자격이 추가되지 않습니다."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "매주 별도로 제공되는 표준 보고서 이용 자격"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · 이번 주 표준 보고서 이용 자격"
+
+msgid "membership:fulfillment_pending"
+msgstr "혜택 적용 내역을 확인 중입니다. 사용량을 새로고침해 확인하세요."
+
+msgid "membership:full_use_days"
+msgstr "{days}일 한도를 모두 사용하는 경우"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"절감액은 이번 기간의 한도를 모두 사용했을 때를 기준으로 하며, 실제 절감액은 사용량에 따라 달라집니다. 갱신분은 기존 멤버십이 만료된 "
+"후 적용됩니다."
+
+msgid "membership:galaxy_api_help"
+msgstr "API는 구독 없이 이용할 수 있습니다. 1위안 = 1 API 포인트입니다. 분석 시작 전에 서버 견적을 확인하세요."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "사용량에 맞는 멤버십 선택"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr "동일한 표준 분석량으로 이번 기간의 한도를 모두 사용하는 경우입니다."
+
+msgid "membership:galaxy_intro"
+msgstr "분석 사용량을 확인하고 필요에 따른 충전 또는 멤버십을 선택하세요."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "자주 분석한다면 멤버십으로 절약"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "가끔 분석할 때는 필요한 만큼 충전"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days}일"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days}일 멤버십"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr "초기 국면를 포함한 300수 대국을 기준으로 추산하며, 이번 기간의 잔여 한도에 따라 제한됩니다."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "300수 대국의 비용은 얼마일까요?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr "주간 한도는 매주 월요일 00:00(베이징 시간)에 초기화됩니다. 기간 잔여 한도는 해당 기간이 끝나면 만료됩니다."
+
+msgid "membership:galaxy_tabs"
+msgstr "멤버십 페이지"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr "{date}(베이징 시간)에 만료됩니다. 월요일 초기화로 기간 한도가 늘어나지는 않습니다."
+
+msgid "membership:galaxy_title"
+msgstr "멤버십 및 사용량"
+
+msgid "membership:history_unavailable"
+msgstr "주문 내역을 일시적으로 이용할 수 없습니다"
+
+msgid "membership:kiosk_account_actions"
+msgstr "계정 관리"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "계정, 멤버십 및 충전"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "고급 분석"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "고급 {points} API 포인트, 모두 초기 국면 포함"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API 잔액"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API 충전 · 사용한 만큼 결제"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "API 포인트 충전"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "멤버십 한도가 부족하면 API 포인트 사용"
+
+msgid "membership:kiosk_back"
+msgstr "뒤로"
+
+msgid "membership:kiosk_back_settings"
+msgstr "설정으로 돌아가기"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "계정 혜택 확인 후 표시"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "결제 전 주문 금액 확인"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "{plan} 선택"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "클라우드 동기화 완료"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "멤버십 비교"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "먼저 계정을 확인하세요"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "분석 전 결제 수단과 견적 확인"
+
+msgid "membership:kiosk_creating_order"
+msgstr "주문 생성 중…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "지급: {points} API 포인트"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "현재 API 잔액"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "현재 혜택"
+
+msgid "membership:kiosk_current_plan"
+msgstr "현재 멤버십"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "예상 기간 {start}~{end} · 베이징 시간"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} API 포인트"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "무료 보고서 이용 자격은 클라우드 확인 결과를 따릅니다"
+
+msgid "membership:kiosk_free_pending"
+msgstr "무료 보고서 이용 자격 확인 대기"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "표준 보고서 이용 자격만 제공하며 일반 분석 한도는 제공하지 않습니다"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "잔여 {remaining} / {limit}개"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr "먼저 계정 인증을 완료하세요. 확인이 완료되면 이번 주 이용 자격이 표시됩니다."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "자주 이용하면 멤버십으로 절약"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "한도를 모두 사용하면 API보다 저렴"
+
+msgid "membership:kiosk_history_error"
+msgstr "주문 내역이 아직 동기화되지 않았습니다. 잠시 후 다시 시도하세요."
+
+msgid "membership:kiosk_member_first"
+msgstr "분석 시 멤버십 한도 우선 사용"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "멤버십 우선, 부족하면 API 포인트"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"기존 멤버십이 있으면 구매한 기간이 모두 끝난 후 적용됩니다. 현재 사용량은 유지되며 최종 일정은 결제 확인 내역을 기준으로 합니다."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "멤버십 구매"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "적용 기간 {start}~{end} · 베이징 시간 · 이 확인 내역이 기준입니다"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "멤버십 서비스를 일시적으로 이용할 수 없습니다"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr "테스트 환경에서는 서버가 결제 결과를 모의 처리합니다. 이 페이지에서 결제를 시작하거나 자체적으로 혜택을 지급하지 않습니다."
+
+msgid "membership:kiosk_next_plan"
+msgstr "다음 기간 {plan} · {date} 시작 · 베이징 시간"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr "분석 전에 결제 수단과 견적을 확인합니다. 자동으로 충전하지 않습니다."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr "이 페이지에서 자체적으로 혜택을 지급하지 않습니다. 필요하면 돌아가서 다시 선택하세요."
+
+msgid "membership:kiosk_no_orders"
+msgstr "아직 주문 내역이 없습니다"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "표준 분석"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves}수 보고서 · 표준 {points} API 포인트"
+
+msgid "membership:kiosk_not_available"
+msgstr "아직 제공되지 않음"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "주문 확인"
+
+msgid "membership:kiosk_order_expired"
+msgstr "주문 만료"
+
+msgid "membership:kiosk_order_failed"
+msgstr "주문 미완료"
+
+msgid "membership:kiosk_order_history"
+msgstr "주문 내역"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "주문 {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "주문 환불 완료"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "서버에서 결제 확인 완료"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr "주문 상태가 아직 동기화되지 않았습니다. 다시 시도 중이니 중복 주문하지 마세요."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr "주문 결과가 확인되지 않았습니다. 중복 주문을 방지하려면 먼저 주문 내역을 확인하세요."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "주문 확인 대기"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "주문 유효 기한 {date} · 베이징 시간"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "서버 결제 확인 대기"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr "이미 보유한 결과는 반복해서 볼 수 있습니다. 집 분석과 추천 수가 같은 결과에 포함됩니다."
+
+msgid "membership:kiosk_paid_time"
+msgstr "확인 시각 {date} · 베이징 시간"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr "결제 기능이 아직 연결되지 않았습니다. 나중에 주문 상태를 확인하세요."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr "확인 전에는 잔여 비율을 표시하거나 주문을 생성하지 않습니다."
+
+msgid "membership:kiosk_period_pending"
+msgstr "기간 확인 대기"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "기간 한도 확인 대기"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "목록 확인 후 가격과 혜택이 표시됩니다."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "멤버십 목록 동기화 대기"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan} {reports}국"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days}일"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "유효 기한 {date} · 베이징 시간"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} API 포인트"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "한 수당 {points} API 포인트"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"기간 및 주간 멤버십 잔여 한도가 모두 이번 분석에 충분해야 합니다. 그렇지 않으면 요청 전체에 API 포인트를 사용하며 결제를 나누지 "
+"않습니다. 위안화로 자동 충전하지 않습니다."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API 요금 안내"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr "N수 보고서는 초기 국면를 포함하여 총 N+1개 국면로 구성됩니다. 실제 요금은 분석 전 기보 견적을 기준으로 합니다."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"잔액은 {precision} API 포인트 단위의 정밀도로 표시됩니다. 국면 하나당 표준 {normal}, 고급 {advanced} "
+"API 포인트입니다."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"오프라인이거나 한도가 확인되지 않으면 먼저 동기화하세요. 보유한 결과는 반복해서 볼 수 있으며, 집 분석과 추천 수가 같은 결과에 "
+"포함됩니다."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "계정과 한도가 확인된 후 구매할 수 있습니다"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "한도 확인 중"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"두 잔여 한도가 모두 충분할 때만 멤버십을 사용합니다. 그렇지 않으면 요청 전체에 API 포인트를 사용하며 결제를 나누지 않습니다. 분석"
+" 전에 결제 수단과 견적을 확인하세요. 포인트가 부족하면 직접 충전하거나 한도 초기화를 기다려야 합니다."
+
+msgid "membership:kiosk_quota_help"
+msgstr "멤버십 한도 및 절감 안내"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "한도가 아직 확인되지 않았습니다"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"주간 최대 대국 수는 {moves}수 표준 보고서를 기준으로 추산하며 기간 잔여 한도에 따라 제한됩니다. 이번 기간의 표준 보고서 참고 "
+"수량: {references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"멤버십은 구매한 기간이 끝나면 만료되며, 주간 한도는 매주 월요일 00:00(베이징 시간)에 초기화됩니다. 기간 및 주간 잔여 비율은 "
+"각각 계산하며, 진행 중인 분석 사용량도 이미 포함되어 있습니다."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"집 분석과 추천 수는 같은 결과에 포함되며 다시 조회해도 추가 요금이 없습니다. 고급 분석은 표준 분석의 {multiplier}배 한도를"
+" 사용합니다."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"절감액은 API 표준 분석 대비 이번 기간의 한도를 모두 사용하는 경우를 기준으로 합니다. 한도를 모두 쓰지 않으면 실제 절감액은 "
+"사용량에 따라 달라집니다. Free는 무료 표준 보고서 이용 자격만 제공하며 일반 분석 한도는 제공하지 않습니다."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "클라우드 한도 확인 대기"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr "계정 사용량을 다시 동기화하고 있습니다. 잔액과 혜택은 클라우드에 기록된 정보를 기준으로 합니다."
+
+msgid "membership:kiosk_remaining"
+msgstr "잔여"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "잔여 한도가 아직 확인되지 않았습니다"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "{plan} 갱신"
+
+msgid "membership:kiosk_report_estimate"
+msgstr "{moves}수 기준 추산이며 기간 잔여 한도에 따라 제한됩니다. 고급은 약 {multiplier}배를 사용합니다."
+
+msgid "membership:kiosk_reserved_included"
+msgstr "진행 중인 분석 사용량 포함"
+
+msgid "membership:kiosk_result_reuse"
+msgstr "하나의 결과에 집 분석과 추천 수가 포함되며, 다시 조회해도 추가 요금이 없습니다."
+
+msgid "membership:kiosk_resync"
+msgstr "다시 동기화"
+
+msgid "membership:kiosk_return_selection"
+msgstr "선택으로 돌아가기"
+
+msgid "membership:kiosk_return_usage"
+msgstr "사용량으로 돌아가기"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "API 대비 약 {percent} 절약"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"절감액은 이번 기간의 한도를 모두 사용했을 때를 기준으로 합니다. 한도를 모두 쓰지 않으면 실제 절감액은 사용량에 따라 달라집니다."
+
+msgid "membership:kiosk_select_topup"
+msgstr "API 충전 금액 선택"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "서비스를 일시적으로 이용할 수 없습니다"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "동기화 실패"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "동기화 대기"
+
+msgid "membership:kiosk_synced"
+msgstr "동기화 완료"
+
+msgid "membership:kiosk_syncing"
+msgstr "동기화 중"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "주문 동기화 중…"
+
+msgid "membership:kiosk_term"
+msgstr "이번 기간"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "기간 만료 · 베이징 시간"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "이번 기간 잔여 비율"
+
+msgid "membership:kiosk_term_reports"
+msgstr "표준 보고서 · {days}일 동안 약 {reports}국"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · 테스트 환경"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST 모의 주문 · 실제 결제 없음"
+
+msgid "membership:kiosk_title"
+msgstr "멤버십 및 충전"
+
+msgid "membership:kiosk_topup"
+msgstr "충전"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "{amount} 충전"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "충전 목록 동기화 대기"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr "두 멤버십 잔여 한도가 모두 충분하면 멤버십을 먼저 사용하며, 그렇지 않으면 요청 전체에 API 포인트를 사용합니다."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} API 포인트"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} API 포인트"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "아직 확인되지 않음"
+
+msgid "membership:kiosk_understood"
+msgstr "확인"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr "두 잔여 한도가 모두 이번 분석에 충분해야 합니다. 부족하면 요청 전체에 API 포인트를 사용합니다."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "현재 사용량을 동기화할 수 없습니다"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "사용 및 분석 중 {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "먼저 계정 본인 확인을 완료하세요"
+
+msgid "membership:kiosk_view_order"
+msgstr "주문 {id} 보기"
+
+msgid "membership:kiosk_view_plans"
+msgstr "멤버십 보기"
+
+msgid "membership:kiosk_week"
+msgstr "이번 주"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "이번 주 잔여 비율"
+
+msgid "membership:kiosk_week_reports"
+msgstr "주당 최대 약 {reports}국"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "월요일 00:00 초기화 · 베이징 시간"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "매주 무료 표준 보고서"
+
+msgid "membership:loading"
+msgstr "멤버십 및 사용량 불러오는 중…"
+
+msgid "membership:login"
+msgstr "로그인"
+
+msgid "membership:login_to_view"
+msgstr "로그인 후 멤버십 및 사용량 확인"
+
+msgid "membership:membership_first"
+msgstr "멤버십 한도 우선 사용"
+
+msgid "membership:membership_free_pending_help"
+msgstr "멤버십 및 Free 이용 자격이 아직 확인되지 않았습니다. 다시 불러와서 확인하세요."
+
+msgid "membership:membership_order"
+msgstr "멤버십 주문"
+
+msgid "membership:next_membership"
+msgstr "구매 완료 {plan} · {date} 시작"
+
+msgid "membership:no_orders"
+msgstr "아직 주문이 없습니다"
+
+msgid "membership:normal"
+msgstr "표준"
+
+msgid "membership:normal_position_cost"
+msgstr "표준: 한 수당 약 {points} API 포인트"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "필요한 만큼 구매, 구독 불필요"
+
+msgid "membership:open"
+msgstr "보기"
+
+msgid "membership:order_actual_end"
+msgstr "실제 만료 {date}(베이징 시간)"
+
+msgid "membership:order_actual_points"
+msgstr "실제 지급 {points} API 포인트"
+
+msgid "membership:order_actual_start"
+msgstr "실제 시작 {date}(베이징 시간)"
+
+msgid "membership:order_estimated_dates"
+msgstr "예상 시작 {start}, 예상 만료 {end}(베이징 시간). 최종 일정은 결제 확인 내역을 기준으로 합니다."
+
+msgid "membership:order_expired"
+msgstr "주문 만료"
+
+msgid "membership:order_expires_at"
+msgstr "주문 유효 기한은 {date}(베이징 시간)입니다."
+
+msgid "membership:order_failed"
+msgstr "주문 미완료"
+
+msgid "membership:order_history"
+msgstr "주문 내역"
+
+msgid "membership:order_id"
+msgstr "주문 번호"
+
+msgid "membership:order_paid"
+msgstr "결제 완료"
+
+msgid "membership:order_pending"
+msgstr "결제 대기"
+
+msgid "membership:order_poll_error"
+msgstr "현재 결제 상태를 확인할 수 없습니다. 다시 시도 중입니다. 중복 결제하지 마세요."
+
+msgid "membership:order_refunded"
+msgstr "환불 완료"
+
+msgid "membership:order_result_unknown"
+msgstr "주문 결과가 아직 확인되지 않았습니다. 중복 주문을 방지하려면 먼저 주문 내역을 확인하세요."
+
+msgid "membership:order_topup"
+msgstr "API 포인트 충전"
+
+msgid "membership:payment_account_pending"
+msgstr "계정과 사용량이 확인된 후 결제 주문을 생성할 수 있습니다."
+
+msgid "membership:payment_channel_unavailable"
+msgstr "결제 수단이 아직 제공되지 않습니다. 이 페이지 외부에서 알 수 없는 계좌로 결제하지 마세요."
+
+msgid "membership:payments_disabled"
+msgstr "아직 결제를 이용할 수 없습니다"
+
+msgid "membership:payments_unavailable"
+msgstr "아직 결제를 이용할 수 없어 현재 결제 주문을 생성할 수 없습니다."
+
+msgid "membership:pending_order_notice"
+msgstr "결제 대기 중입니다. 이 페이지에서 서버 상태를 자동으로 확인합니다."
+
+msgid "membership:plan_pending"
+msgstr "멤버십 혜택 확인 대기"
+
+msgid "membership:plan_term"
+msgstr "/ {days}일"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan}은 아직 제공되지 않습니다"
+
+msgid "membership:plans"
+msgstr "멤버십"
+
+msgid "membership:points"
+msgstr "API 포인트"
+
+msgid "membership:points_amount"
+msgstr "{points} API 포인트"
+
+msgid "membership:points_exchange_rate"
+msgstr "1위안 = 1 API 포인트"
+
+msgid "membership:position_cost"
+msgstr "한 수당 비용"
+
+msgid "membership:position_pricing_rule"
+msgstr "단일 국면와 전체 대국 분석의 단가는 같습니다. 전체 대국은 수순 수에 초기 국면를 더해 요금을 계산합니다."
+
+msgid "membership:processing"
+msgstr "처리 중…"
+
+msgid "membership:quota"
+msgstr "멤버십 한도"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"기간 및 주간 잔여 비율은 각각의 한도를 기준으로 표시합니다. 한 번의 분석에 두 잔여 한도가 모두 충분해야 합니다. 진행 중인 분석의 "
+"예약 사용량은 사용분에 포함되며 실패하면 돌려드립니다."
+
+msgid "membership:quota_expires_in"
+msgstr "{time} 후 만료"
+
+msgid "membership:quota_pending"
+msgstr "한도 확인 대기"
+
+msgid "membership:quota_recovers_in"
+msgstr "{time} 후 초기화"
+
+msgid "membership:quota_refresh_pending"
+msgstr "최신 한도 확인 중"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"두 잔여 한도는 각각 계산하며 한 번의 분석에 모두 충분해야 합니다. 진행 중인 분석의 예약 사용량은 사용 비율에 포함되며 실패하면 "
+"돌려드립니다."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"분석 시작 전에 서버 견적과 결제 수단을 표시합니다. 계정과 사용량 상태가 확인되기 전에는 분석을 시작할 수 없습니다. 보유한 결과를 "
+"다시 보거나 집 분석과 추천 수를 전환해도 추가 요금이 없습니다."
+
+msgid "membership:refresh"
+msgstr "새로고침"
+
+msgid "membership:reload"
+msgstr "다시 불러오기"
+
+msgid "membership:remaining_percent"
+msgstr "잔여 {percent}"
+
+msgid "membership:renew_plan"
+msgstr "{plan} 갱신"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"갱신분은 기존 멤버십이 만료된 후 적용되며 현재 사용량 및 예약 사용량은 초기화되지 않습니다. 결제 전 날짜는 예상 일정이며 최종 적용 "
+"기간은 결제 후 서버 확인 내역을 기준으로 합니다. 유료 멤버십에는 Free 표준 보고서 이용 자격이 추가되지 않습니다."
+
+msgid "membership:report_estimate_limit"
+msgstr "300수 대국을 기준으로 추산하며 기간 잔여 한도에 따라 제한됩니다."
+
+msgid "membership:report_example_rule"
+msgstr "초기 국면를 포함해 총 301개 국면를 분석합니다. 실제 요금은 제출 전 서버 견적을 기준으로 합니다."
+
+msgid "membership:retry"
+msgstr "다시 시도"
+
+msgid "membership:savings_approx"
+msgstr "약 {percent} 절약"
+
+msgid "membership:savings_vs_api"
+msgstr "API 대비 약 {percent} 절약"
+
+msgid "membership:select_plan"
+msgstr "{plan} 선택"
+
+msgid "membership:server_authority"
+msgstr "잔액과 혜택은 서버 확인 결과를 기준으로 합니다."
+
+msgid "membership:service_unavailable"
+msgstr "현재 서비스에서는 멤버십 사용량을 제공하지 않습니다. 혜택과 잔액은 확인 대기 중입니다."
+
+msgid "membership:source_free"
+msgstr "예상 사용 수단: 주간 무료 보고서 이용 자격"
+
+msgid "membership:source_membership"
+msgstr "예상 사용 수단: 멤버십 한도"
+
+msgid "membership:source_owned"
+msgstr "이미 보유한 결과입니다"
+
+msgid "membership:source_pending"
+msgstr "결제 수단 확인 대기"
+
+msgid "membership:source_wallet"
+msgstr "예상 사용 수단: API 포인트"
+
+msgid "membership:stale"
+msgstr "업데이트 대기"
+
+msgid "membership:stale_warning"
+msgstr "이전에 불러온 데이터를 표시하고 있습니다. 계정과 결제 수단을 다시 확인해야 하며 현재 구매할 수 없습니다."
+
+msgid "membership:synced"
+msgstr "동기화 완료"
+
+msgid "membership:temporarily_unavailable"
+msgstr "일시적으로 이용 불가"
+
+msgid "membership:term_remaining"
+msgstr "이번 기간 잔여"
+
+msgid "membership:term_report_reference"
+msgstr "{plan}: {days}일 기간당 표준 대국 보고서 약 {reports}개 기준입니다."
+
+msgid "membership:term_total_reports"
+msgstr "{days}일 동안 약 {reports}국"
+
+msgid "membership:test_order_warning"
+msgstr "TEST 모의 주문이며 실제로 결제되지 않습니다."
+
+msgid "membership:time_pending"
+msgstr "시간 확인 대기"
+
+msgid "membership:topup_amount"
+msgstr "{amount} 충전"
+
+msgid "membership:topup_arrival"
+msgstr "지급: {points} API 포인트"
+
+msgid "membership:topup_arrival_rule"
+msgstr "결제 확인 후 포인트가 지급됩니다. 멤버십 한도가 부족하면 보유 API 포인트를 사용하며, 자동으로 충전하지 않습니다."
+
+msgid "membership:topup_option"
+msgstr "{amount}, {points} API 포인트 지급"
+
+msgid "membership:unavailable"
+msgstr "아직 제공되지 않음"
+
+msgid "membership:unavailable_title"
+msgstr "멤버십 및 사용량을 일시적으로 이용할 수 없습니다"
+
+msgid "membership:unconfirmed_help"
+msgstr "계정 혜택과 잔액이 아직 확인되지 않았습니다. 잠시 후 다시 시도하세요."
+
+msgid "membership:usage"
+msgstr "사용량"
+
+msgid "membership:used_and_reserved"
+msgstr "사용 및 분석 중 {percent}"
+
+msgid "membership:valid_until"
+msgstr "유효 기한 {date}(베이징 시간)"
+
+msgid "membership:view_api_topup"
+msgstr "API 충전 보기"
+
+msgid "membership:view_plans"
+msgstr "멤버십 플랜 보기"
+
+msgid "membership:visits"
+msgstr "탐색 {count}회"
+
+msgid "membership:week_remaining"
+msgstr "이번 주 잔여"
+
+msgid "membership:weekly_report_reference"
+msgstr "표준 보고서, 주당 최대 약 {reports}국"
+
+msgid "membership:weekly_reports"
+msgstr "주당 최대 약 {reports}국"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "주당 최대 약 {reports}국 · 아직 제공되지 않음"
+
+msgid "membership:weekly_reset_rule"
+msgstr "주간 한도는 매주 월요일 00:00(베이징 시간)에 초기화됩니다."
+
+msgid "membership:whole_request_fallback"
+msgstr "멤버십 한도가 이번 분석에 부족하면 요청 전체에 보유 API 포인트를 사용합니다."
+
+msgid "kifu:first_page"
+msgstr "첫 페이지"
+
+msgid "kifu:last_page"
+msgstr "마지막 페이지"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_overexposed_title"
+msgstr "화면이 너무 밝아 정확히 인식할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_underexposed_title"
+msgstr "화면이 너무 어두워 정확히 인식할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_warning_body"
+msgstr "가리는 물체를 치우세요. 경고가 계속되면 밝기가 적절하고 고른 곳에서 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_got_it"
+msgstr "확인"
+
+#. Native Go kiosk UI.
+msgid "vision:grid_not_visible"
+msgstr "격자가 아직 인식되지 않아 LED로 바둑판 위치를 찾습니다"
+
+#. Native Go kiosk UI.
+msgid "auth:hall_privacy_note"
+msgstr "로그인하면 사용자 목록과 진행 중인 대국을 볼 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "login:box_gate_body"
+msgstr "StellaBox 계정은 기기 전체에서 공유됩니다. 홈에서 한 번 로그인하면 바둑과 다른 게임에서 같은 계정을 사용합니다."
+
+#. Native Go kiosk UI.
+msgid "login:box_gate_hint"
+msgstr "방금까지 대국 중이었다면 기기 세션이 만료되었을 수 있습니다. 홈에서 바둑으로 다시 들어오세요. 두었던 수는 유지됩니다."
+
+#. Native Go kiosk UI.
+msgid "Choose how to play"
+msgstr "대국 방식 선택"
+
+#. Native Go kiosk UI.
+msgid "platform:connected_enter"
+msgstr "연결됨 · 플랫폼 열기"
+
+#. Native Go kiosk UI.
+msgid "Connected"
+msgstr "연결됨"
+
+#. Native Go kiosk UI.
+msgid "ladder:box_picks_reason"
+msgstr "상대 실력을 고를 수 있다면 승강급의 의미가 없어집니다"
+
+#. Native Go kiosk UI.
+msgid "ladder:status_offline"
+msgstr "클라우드에 연결할 수 없습니다. 승강급 대국에는 인터넷이 필요합니다. 네트워크를 확인하고 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "ladder:start_offline"
+msgstr ""
+"클라우드에 연결할 수 없습니다. 승강급 대국에는 인터넷이 필요합니다. 대국은 시작되지 않았고 급단위도 바뀌지 않았습니다. 네트워크를 "
+"확인하고 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "ladder:start_engine_cannot_serve"
+msgstr "현재 기기 엔진으로는 이 단계의 상대를 실행할 수 없습니다. 대국은 시작되지 않았고 급단위도 바뀌지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:start_cloud_unconfirmed"
+msgstr "클라우드가 아직 대국 상태를 확인하지 못했습니다. 중복으로 시작하지 마세요. 이 화면으로 돌아오면 상태가 표시됩니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_undelivered"
+msgstr "결과 미전송"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_never_started"
+msgstr "시작 전"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_playing"
+msgstr "대국 중"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_interrupted"
+msgstr "중단됨"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_chip_unsettled"
+msgstr "미결 상태"
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_undelivered"
+msgstr "대국은 끝났지만 결과가 아직 클라우드에 전달되지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_never_started"
+msgstr "대국은 등록되었지만 바둑판을 열지 못해 양쪽 모두 두고 있지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_unfinished"
+msgstr "아직 끝나지 않은 공식 대국이 있습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_no_local_record"
+msgstr "이 대국은 이 기기에 있지만 로컬 기록이 없습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_unknown_device"
+msgstr "이 대국은 미결 상태이며 어느 기기에 있는지 확인할 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:blocking_body_other_device"
+msgstr "다른 기기에 아직 정리되지 않은 대국이 있습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_current"
+msgstr "현재 기기"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_other"
+msgstr "다른 기기"
+
+#. Native Go kiosk UI.
+msgid "ladder:ownership_unknown"
+msgstr "기기 알 수 없음"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_current"
+msgstr "현재 기기 응답"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_other"
+msgstr "다른 기기 응답"
+
+#. Native Go kiosk UI.
+msgid "ladder:heartbeat_label_unknown"
+msgstr "대국 기기 응답"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_button"
+msgstr "해제 후 여기서 시작"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_cost"
+msgstr "시작되지 않은 대국이므로 해제해도 전적에 반영되지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_title"
+msgstr "해당 대국을 해제할까요?"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_confirm"
+msgstr "해제 확인"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_release_body"
+msgstr "이 대국은 클라우드에 등록만 되었고 어느 기기에서도 시작되지 않았습니다. 해제해도 전적이나 승강급에 영향을 주지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_button"
+msgstr "미전송 결과 포기 후 시작"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_cost"
+msgstr "실제 결과를 잃고 승강급에서 1패로 처리됩니다"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_title"
+msgstr "미전송 결과를 포기할까요?"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_confirm"
+msgstr "결과 포기 확인"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_button"
+msgstr "해당 대국 기권 후 시작"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_cost_remote"
+msgstr "해당 대국은 패배로 기록됩니다. 이미 끝났다면 실제 결과를 덮어씁니다"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_cost"
+msgstr "해당 대국은 승강급에서 1패로 처리됩니다"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_title"
+msgstr "해당 대국을 기권할까요?"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_confirm"
+msgstr "기권 확인"
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_undelivered_body"
+msgstr ""
+"대국은 끝났지만 결과가 클라우드에 전달되지 않았습니다. 포기하면 승강급에서 1패로 정리되며 실제 기보와 결과를 이 대국의 전적으로 다시 "
+"제출할 수 없습니다. 재시도가 가능하면 먼저 결과를 전송하세요. 클라우드가 거부하면 유지보수 담당자에게 문의하세요. 되돌릴 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_local"
+msgstr ""
+"아직 끝나지 않은 공식 대국이 있습니다. 여기서 시작하려면 먼저 해당 대국을 기권해야 하며 승강급에서 1패로 처리됩니다. 되돌릴 수 "
+"없습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_remote"
+msgstr ""
+"다른 기기에 미결 대국이 있습니다. 여기서 시작하려면 먼저 기권해야 하며 승강급에서 1패로 처리됩니다. 다른 기기에서 이미 끝났지만 "
+"결과가 아직 업로드되지 않았다면 그 결과를 이 패배로 덮어씁니다. 되돌릴 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:displace_resign_body_active_unheld"
+msgstr ""
+"이 기기는 해당 대국을 복구하거나 진행 상황을 볼 수 없습니다. 여기서 시작하려면 먼저 기권해야 하며 승강급에서 1패로 처리됩니다. 이미"
+" 끝났지만 결과가 아직 업로드되지 않았다면 그 결과를 이 패배로 덮어씁니다. 되돌릴 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_refused"
+msgstr "클라우드가 결과를 거부했습니다. 다시 시도해도 같은 응답을 받습니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_exhausted"
+msgstr "{max}회 시도했지만 전달하지 못했습니다. 연결이 복구되면 자동으로 전송을 재개합니다."
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_waiting"
+msgstr "재시도 {n}/{max} · {countdown} 후 자동 재시도"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_synced"
+msgstr "결과 전송 완료, 급단위 갱신 중…"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_imminent"
+msgstr "재시도 {n}/{max} · 곧 다시 시도…"
+
+#. Native Go kiosk UI.
+msgid "ladder:sync_sending"
+msgstr "클라우드로 결과 전송 중…"
+
+#. Native Go kiosk UI.
+msgid "setup:help"
+msgstr "설명"
+
+#. Native Go kiosk UI.
+msgid "setup:terms_help"
+msgstr "줄 수, 규칙, 접바둑은 시작 전에 정합니다. 덤은 규칙과 접바둑에 따라 정해지며 대국 중에는 바꿀 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "setup:note_r2"
+msgstr ""
+"이 설정은 <b>시작 후 변경할 수 없습니다</b>. 바꾸면 새로운 대국이 됩니다. 자유 대국은 <b>급단위에 반영되지 않습니다</b>."
+
+#. Native Go kiosk UI.
+msgid "ladder:analysis_help"
+msgstr "급단위에 반영되는 대국입니다. 대국 내내 분석이 차단되며 판 조건은 서버가 고정합니다."
+
+#. Native Go kiosk UI.
+msgid "setup:strength_help"
+msgstr "인간형 상대는 총 29단계 중 {n}단계이며 20급에서 9단까지입니다."
+
+#. Native Go kiosk UI.
+msgid "setup:free_unrated"
+msgstr "자유 대국은 급단위에 반영되지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "setup:seat_help"
+msgstr ""
+"실물 입력은 보정된 19줄 바둑판만 지원합니다. 화면에서는 바둑판을 눌러 둡니다. 입력 방식, 색, 시간을 정한 뒤 시작하세요."
+
+#. Native Go kiosk UI.
+msgid "setup:free_sub"
+msgstr "급단위 미반영"
+
+#. Native Go kiosk UI.
+msgid "ladder:current_rank"
+msgstr "현재 급단위"
+
+#. Native Go kiosk UI.
+msgid "ladder:placing"
+msgstr "배치 진행 중"
+
+#. Native Go kiosk UI.
+msgid "setup:strength"
+msgstr "기력"
+
+#. Native Go kiosk UI.
+msgid "local:board_check_not_ready"
+msgstr "바둑판 확인이 준비되지 않았습니다. 판을 안정시킨 뒤 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "local:board_check_failed"
+msgstr "바둑판 확인에 실패했습니다. 연결을 확인하고 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "local:device_check_pending"
+msgstr "기기 상태를 읽는 중입니다. 잠시 후 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "local:return_setup"
+msgstr "설정으로"
+
+#. Native Go kiosk UI.
+msgid "local:prestart_calibration"
+msgstr "먼저 바둑판 보정 확인"
+
+#. Native Go kiosk UI.
+msgid "local:return_setup_retry"
+msgstr "설정으로 돌아가 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "local:entering_game"
+msgstr "대국 진입 중…"
+
+#. Native Go kiosk UI.
+msgid "local:prestart_calibration_resume"
+msgstr "보정 후 자동으로 대국에 들어갑니다. 실패하면 다시 시도할 수 있고 설정으로 돌아가도 선택은 유지됩니다"
+
+#. Native Go kiosk UI.
+msgid "local:setup_face_to_face"
+msgstr "마주 앉아 두기"
+
+#. Native Go kiosk UI.
+msgid "local:checking_board"
+msgstr "바둑판 확인 중…"
+
+#. Native Go kiosk UI.
+msgid "local:terms_help"
+msgstr "시작 전에 줄 수, 규칙, 접바둑, 덤을 합의하세요. 선공과 덤 방향은 현재 설정을 따르며 시작 후에는 바꿀 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "local:input_help"
+msgstr "실물 입력은 보정된 19줄 바둑판만 지원합니다. 화면 입력은 바둑판을 누르고 각자 자기 쪽에서 확인합니다."
+
+#. Native Go kiosk UI.
+msgid "local:note3_line1"
+msgstr ""
+"화면에는 <b>힌트와 형세 판단이 없습니다</b>. 양쪽이 한 수씩 쉬면 <b>자동 계가</b>하며 사활은 엔진이 판단합니다."
+
+#. Native Go kiosk UI.
+msgid "local:note3_line2"
+msgstr "이 대국은 <b>급단위 변경 없이 기록만 남깁니다</b>. 도중에 나가면 <b>기보를 저장하지 않습니다</b>."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_short"
+msgstr "OGS 계가 중"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_paused_short"
+msgstr "OGS 일시정지"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_turn"
+msgstr "상대 차례"
+
+#. Native Go kiosk UI.
+msgid "game:waiting_for_opponent"
+msgstr "상대 대기 중"
+
+#. Native Go kiosk UI.
+msgid "game:waiting_for_black"
+msgstr "흑 대기 중"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_wait"
+msgstr "OGS 시계 대기 중"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_paused"
+msgstr "OGS 일시정지 · 마지막 동기화"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_byo_sync"
+msgstr "초읽기 · 마지막 OGS 동기화"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_clock_sync"
+msgstr "마지막 OGS 동기화"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_accept_no_dead"
+msgstr "사석 없음 확인"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_no_dead"
+msgstr "OGS 사석 표시가 동기화되지 않아 사석 없음으로 확인합니다"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_score_reject"
+msgstr "계속 두기"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_wait"
+msgstr "OGS가 계가를 시작하면 조작할 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "game:players"
+msgstr "대국자"
+
+#. Native Go kiosk UI.
+msgid "game:eval_title_short"
+msgstr "승률 · KataGo"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_paused"
+msgstr "OGS 대국 일시정지"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_result_wait"
+msgstr "OGS 결과 동기화 대기"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_disabled"
+msgstr "양쪽이 한 수씩 쉬면 OGS가 계가를 판정합니다"
+
+#. Native Go kiosk UI.
+msgid "game:territory_items"
+msgstr "Golaxy 아이템 · 조회 시 소모"
+
+#. Native Go kiosk UI.
+msgid "game:territory_lead_missing"
+msgstr "우세 추정값 없음"
+
+#. Native Go kiosk UI.
+msgid "game:territory_even"
+msgstr "거의 호각"
+
+#. Native Go kiosk UI.
+msgid "game:territory_black_lead"
+msgstr "흑 약 {n}집 우세"
+
+#. Native Go kiosk UI.
+msgid "game:territory_white_lead"
+msgstr "백 약 {n}집 우세"
+
+#. Native Go kiosk UI.
+msgid "game:territory_title"
+msgstr "집 형세 판단"
+
+#. Native Go kiosk UI.
+msgid "game:territory_ranked_source"
+msgstr "승강급 · 클라우드 참고값"
+
+#. Native Go kiosk UI.
+msgid "game:territory_star_source"
+msgstr "Golaxy · 계정 아이템"
+
+#. Native Go kiosk UI.
+msgid "game:territory_loading"
+msgstr "집 형세 판단 요청 중…"
+
+#. Native Go kiosk UI.
+msgid "game:territory_query_note"
+msgstr "닫으면 표시만 숨깁니다. 페이지를 나간 뒤 다시 조회하면 사용 횟수가 차감될 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "game:territory_error"
+msgstr "집 형세 판단을 가져올 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "game:territory_black_region"
+msgstr "흑의 유력한 영역 {n}곳"
+
+#. Native Go kiosk UI.
+msgid "game:territory_white_region"
+msgstr "백의 유력한 영역 {n}곳"
+
+#. Native Go kiosk UI.
+msgid "game:territory_reference"
+msgstr "대국 중 참고값이며 공식 승패는 종국 계가로 정합니다"
+
+#. Native Go kiosk UI.
+msgid "game:territory_close"
+msgstr "닫고 계속 두기"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_first_retry"
+msgstr "확인되지 않은 돌을 거두고 손을 뗀 뒤 실물 바둑판을 다시 준비하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_empty"
+msgstr "바둑판을 비우고 손을 뗀 뒤 준비되면 돌을 놓으세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_existing"
+msgstr "전자 기보와 판을 맞추고 확인되지 않은 돌을 거둔 뒤 손을 떼세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_physical_steps"
+msgstr "돌을 놓고 잡은 돌을 거둔 뒤 손을 떼고 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_screen_steps"
+msgstr "바둑판을 눌러 위치를 선택하고 다시 눌러 바꾼 뒤 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_overexposed_short"
+msgstr "화면이 너무 밝음"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_underexposed_short"
+msgstr "화면이 너무 어두움"
+
+#. Native Go kiosk UI.
+msgid "game:local_multiple_stones"
+msgstr "이번 수만 남기세요"
+
+#. Native Go kiosk UI.
+msgid "game:local_capture_remaining"
+msgstr "잡은 돌을 거두세요"
+
+#. Native Go kiosk UI.
+msgid "game:local_no_stone"
+msgstr "새 돌이 보이지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "game:local_illegal_move"
+msgstr "착점을 다시 선택하세요"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_title"
+msgstr "실물 바둑판을 준비하세요"
+
+#. Native Go kiosk UI.
+msgid "game:local_retry_title"
+msgstr "아직 확인되지 않은 수입니다"
+
+#. Native Go kiosk UI.
+msgid "vision:lighting_warning_short"
+msgstr "가리는 물체를 치우고 경고가 계속되면 위치를 옮기세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_multiple_steps"
+msgstr "더 놓은 돌을 거둔 뒤 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_capture_steps"
+msgstr "× 표시된 돌을 거둔 뒤 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_no_stone_steps"
+msgstr "돌 하나를 놓고 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_retry"
+msgstr "판을 정리하고 카메라와 보정을 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_screen_retry"
+msgstr "위치를 바꾼 뒤 다시 확인할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "game:local_physical_retry"
+msgstr "손을 떼고 판이 안정되면 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_move_number"
+msgstr "{n}수"
+
+#. Native Go kiosk UI.
+msgid "game:local_guide"
+msgstr "착수 안내"
+
+#. Native Go kiosk UI.
+msgid "game:local_both_paused"
+msgstr "양쪽 시계 일시정지"
+
+#. Native Go kiosk UI.
+msgid "game:local_change_selection"
+msgstr "선택 변경 가능"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirming"
+msgstr "확인 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_short"
+msgstr "잠시 기다리세요"
+
+#. Native Go kiosk UI.
+msgid "game:local_needs_attention"
+msgstr "확인 필요"
+
+#. Native Go kiosk UI.
+msgid "game:local_preparing_short"
+msgstr "준비 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_playing"
+msgstr "착수 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_waiting"
+msgstr "대기 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_byoyomi"
+msgstr "초읽기 시간"
+
+#. Native Go kiosk UI.
+msgid "game:local_main_left"
+msgstr "남은 기본 시간"
+
+#. Native Go kiosk UI.
+msgid "game:local_clock_running"
+msgstr "시간 진행 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_clock_paused"
+msgstr "일시정지"
+
+#. Native Go kiosk UI.
+msgid "game:local_periods_left"
+msgstr "{n}회 남음"
+
+#. Native Go kiosk UI.
+msgid "game:seconds"
+msgstr "초"
+
+#. Native Go kiosk UI.
+msgid "game:times"
+msgstr "회"
+
+#. Native Go kiosk UI.
+msgid "game:local_recognizing"
+msgstr "인식 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_submitting"
+msgstr "확인 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait"
+msgstr "대기"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_failed"
+msgstr "실물 바둑판 준비 실패"
+
+#. Native Go kiosk UI.
+msgid "game:local_preparing"
+msgstr "실물 바둑판 준비 중"
+
+#. Native Go kiosk UI.
+msgid "game:local_selected"
+msgstr "선택됨"
+
+#. Native Go kiosk UI.
+msgid "game:local_your_turn"
+msgstr "둘 차례입니다"
+
+#. Native Go kiosk UI.
+msgid "game:local_board_display"
+msgstr "바둑판 표시"
+
+#. Native Go kiosk UI.
+msgid "game:local_count_threshold"
+msgstr "계가는 {n}수부터"
+
+#. Native Go kiosk UI.
+msgid "game:count_stones"
+msgstr "계가"
+
+#. Native Go kiosk UI.
+msgid "game:abandon_local"
+msgstr "대국 포기"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_again"
+msgstr "바둑판 다시 준비"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_again"
+msgstr "다시 확인"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_move"
+msgstr "착수 확인"
+
+#. Native Go kiosk UI.
+msgid "game:local_prepare_before_move"
+msgstr "준비 후 착수"
+
+#. Native Go kiosk UI.
+msgid "game:local_confirm_switch"
+msgstr "확인 후 교대"
+
+#. Native Go kiosk UI.
+msgid "game:local_select_first"
+msgstr "먼저 착점 선택"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_confirm"
+msgstr "상대 확인 후 착수"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_confirm"
+msgstr "한 수 쉴까요?"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_confirm"
+msgstr "대국을 포기할까요?"
+
+#. Native Go kiosk UI.
+msgid "game:local_resign_question"
+msgstr "기권할까요?"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_discard"
+msgstr "한 수 쉬면 현재 선택한 위치가 취소됩니다."
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_physical"
+msgstr "실물 바둑판에 아직 확인되지 않은 수가 없는지 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_body"
+msgstr "한 수 쉬면 상대 차례가 됩니다."
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_body"
+msgstr "포기하면 대국 기록을 남기지 않으며 복기 화면에도 나타나지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_failed"
+msgstr "대국 포기에 실패했습니다. 다시 시도하세요. 현재 대국은 유지됩니다."
+
+#. Native Go kiosk UI.
+msgid "game:local_guide_clock"
+msgstr ""
+"확인 중에는 양쪽 시계가 멈춥니다. 성공하면 상대 시간이 흐르고 실패하면 내 시간이 흐릅니다. 확인 소리와 상대 영역의 불빛을 확인한 뒤"
+" 다음 수를 두세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_play_guide"
+msgstr "안내 재생"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandoning"
+msgstr "대국 포기 중…"
+
+#. Native Go kiosk UI.
+msgid "game:local_abandon_accept"
+msgstr "대국 포기 확인"
+
+#. Native Go kiosk UI.
+msgid "game:local_pass_accept"
+msgstr "한 수 쉼 확인"
+
+#. Native Go kiosk UI.
+msgid "game:local_black_resign_accept"
+msgstr "흑 기권 확인"
+
+#. Native Go kiosk UI.
+msgid "game:local_white_resign_accept"
+msgstr "백 기권 확인"
+
+#. Native Go kiosk UI.
+msgid "local:recovery_failed"
+msgstr "인식이 아직 복구되지 않았습니다. 연결과 판을 확인한 뒤 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "local:recover_physical"
+msgstr "실물 바둑판 인식 복구"
+
+#. Native Go kiosk UI.
+msgid "local:recover_confirmed_stones"
+msgstr "확인된 돌은 두고 확인되지 않은 돌은 거두세요. 외곽선을 맞춘 뒤 원래 기보를 기준으로 인식을 다시 확인합니다."
+
+#. Native Go kiosk UI.
+msgid "local:recover_empty_option"
+msgstr ""
+"외곽선 맞추기는 불빛을 켜지 않고 판을 비울 필요도 없습니다. 빈 판 보정은 모든 돌을 거둔 뒤 완료 후 기보대로 다시 놓아야 합니다."
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration"
+msgstr "빈 판 보정"
+
+#. Native Go kiosk UI.
+msgid "local:retry_geometry"
+msgstr "다시 확인"
+
+#. Native Go kiosk UI.
+msgid "local:recovering"
+msgstr "확인 중…"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_check_point"
+msgstr "왼쪽 보라색 원으로 표시된 교차점을 실물 바둑판과 비교하세요."
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_stone"
+msgstr "카메라 인식"
+
+#. Native Go kiosk UI.
+msgid "game:stone_suffix"
+msgstr "돌"
+
+#. Native Go kiosk UI.
+msgid "game:no_move_at_point"
+msgstr "현재 기보에는 이 위치에 돌이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "game:extra_stone"
+msgstr "추가됨"
+
+#. Native Go kiosk UI.
+msgid "game:missing_stone"
+msgstr "누락됨"
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_led"
+msgstr "실물 바둑판의 같은 위치에서 보라색 불빛이 깜박입니다."
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_not_stone_hint"
+msgstr "새 돌이 없다면 '착수 아님'을 누르세요. 실제로 두었다면 돌을 조정하고 자동 인식을 기다리세요."
+
+#. Native Go kiosk UI.
+msgid "game:mismatch_restore_hint"
+msgstr "보라색 원 위치에 맞춰 실물 바둑판을 조정하세요. 인식이 복구되면 자동으로 계속합니다."
+
+#. Native Go kiosk UI.
+msgid "Not a move"
+msgstr "착수 아님"
+
+#. Native Go kiosk UI.
+msgid "game:ranked_ai_adjudication"
+msgstr "미완료 대국은 클라우드 AI가 중국 규칙으로 추정 판정합니다"
+
+#. Native Go kiosk UI.
+msgid "game:lobby_move_unconfirmed"
+msgstr "아직 확인되지 않은 수입니다. 판을 확인하고 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_conflict"
+msgstr "OGS가 이 수를 확인하지 않았습니다. 중복으로 두지 말고 판을 확인하세요"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_unavailable"
+msgstr "현재 OGS를 사용할 수 없습니다. 아직 확인되지 않은 수이니 연결을 확인하세요"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_move_unconfirmed"
+msgstr "OGS가 이 수를 확인하지 않았습니다. 확인 후 조작하세요"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_failed"
+msgstr "OGS 조작 미전송"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_sending"
+msgstr "OGS로 전송 중…"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_waiting"
+msgstr "OGS 확인 대기"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_retry"
+msgstr "연결 확인 후 재시도"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_scoring_authority"
+msgstr "이 기기는 승패를 미리 판정하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "local:return_original_game"
+msgstr "원래 대국으로"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration_title"
+msgstr "빈 판 보정 · 기존 대국 유지"
+
+#. Native Go kiosk UI.
+msgid "local:empty_calibration_sub"
+msgstr "먼저 돌을 거두세요. 보정 후 기보대로 확인된 돌을 놓고 다시 확인하세요"
+
+#. Native Go kiosk UI.
+msgid "game:territory_ranked_quota"
+msgstr "승강급 이번 대국 {n}회 남음 · 같은 형세 재보기 무료"
+
+#. Native Go kiosk UI.
+msgid "game:territory_ranked_retry"
+msgstr "결과가 반환되지 않았습니다. 재시도는 같은 요청을 사용합니다. 남은 횟수는 서버 기준을 따릅니다."
+
+#. Native Go kiosk UI.
+msgid "game:territory_quota_error"
+msgstr "집 형세 판단 잔여 횟수를 조회할 수 없습니다. 다시 시도할 수 있으며 대국은 계속할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "game:territory_star_quota"
+msgstr "Golaxy 집 형세 아이템 {n}개 남음 · 같은 형세 재보기 무료"
+
+#. Native Go kiosk UI.
+msgid "game:territory_star_error"
+msgstr "결과가 반환되지 않았습니다. Golaxy 계정의 실제 아이템 수를 확인하세요. 다시 조회하면 아이템을 사용할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_confirm_title"
+msgstr "사석 없음 확인"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_confirm_body"
+msgstr "OGS 사석 표시가 동기화되지 않았습니다. 확인하면 사석 없음으로 전송합니다. 거둘 돌이 있다면 계속 두기를 누르세요"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_cancel"
+msgstr "사석 없음 취소"
+
+#. Native Go kiosk UI.
+msgid "game:ogs_no_dead_send"
+msgstr "사석 없음 전송"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_title"
+msgstr "소속 미정인 위치가 있습니다"
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_body"
+msgstr "Golaxy가 아직 승패를 판정하지 않았습니다. 대국을 계속합니다."
+
+#. Native Go kiosk UI.
+msgid "game:golaxy_undecided_led"
+msgstr "전자 바둑판은 보라색 원으로 표시하고 실물 바둑판의 같은 위치에서는 보라색 불빛이 깜박입니다."
+
+#. Native Go kiosk UI.
+msgid "growth:cal_help_label"
+msgstr "최근 1년 연습 안내"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_help"
+msgstr "한 칸은 하루이며 그날 끝낸 대국과 새로 푼 문제를 셉니다. 밝을수록 완료 수가 많고 흰 테두리는 오늘입니다."
+
+#. Native Go kiosk UI.
+msgid "growth:cal_loading"
+msgstr "연습 기록 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_sun"
+msgstr "일"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_grid_aria"
+msgstr "최근 1년 중 {n}일의 연습 기록이 있습니다. 한 열은 월요일부터 일요일까지 한 주이며 흰 테두리는 오늘입니다"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_week"
+msgstr "한 열에 한 주 · 월~일"
+
+#. Native Go kiosk UI.
+msgid "growth:cal_legend"
+msgstr "연습 횟수: 적음~많음"
+
+#. Native Go kiosk UI.
+msgid "growth:rank_help_label"
+msgstr "기기 내 급단위 안내"
+
+#. Native Go kiosk UI.
+msgid "growth:rank_help"
+msgstr "기기 내 급단위는 승강급 대국으로 정합니다. 순승점 +3이면 한 단계 승급하고 −3이면 한 단계 강급합니다."
+
+#. Native Go kiosk UI.
+msgid "growth:trend_short"
+msgstr "승강급 대국 기록이 이틀 미만이라 선을 연결하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "growth:trend_unplaced_short"
+msgstr "배치를 마친 후 단계 추이를 기록합니다"
+
+#. Native Go kiosk UI.
+msgid "growth:tabs_label"
+msgstr "성장 기록"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_overview"
+msgstr "개요"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_diagnosis"
+msgstr "기력 진단"
+
+#. Native Go kiosk UI.
+msgid "growth:tab_opponents"
+msgstr "상대"
+
+#. Native Go kiosk UI.
+msgid "growth:local_note_short"
+msgstr "기기 기록 · 일부 대국 누락 가능"
+
+#. Native Go kiosk UI.
+msgid "growth:unknown_seat_short"
+msgstr "국은 승률에서 제외"
+
+#. Native Go kiosk UI.
+msgid "growth:winrate_help_label"
+msgstr "승률 산정 안내"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_help_label"
+msgstr "상대 실력별 안내"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_help"
+msgstr "반영된 승강급 대국만 당시 상대 급단위별로 표시합니다. 시작 설정의 실력은 상대를 고르는 것이며 내 급단위가 아닙니다."
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local"
+msgstr "기기 기록입니다. 클라우드에 다른 대국이 있을 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "growth:rung_failed"
+msgstr "상대 전적을 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_failed_p"
+msgstr "잠시 후 다시 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "growth:rung_loading"
+msgstr "상대 전적 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local_empty_h"
+msgstr "기기에 전적이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "growth:rung_local_empty_p"
+msgstr "기기 기록만 읽었습니다. 클라우드에 다른 승강급 대국이 있을 수 있으니 연결 후 다시 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "growth:help_title"
+msgstr "설명"
+
+#. Native Go kiosk UI.
+msgid "growth:help_close"
+msgstr "확인"
+
+#. Native Go kiosk UI.
+msgid "Training"
+msgstr "훈련"
+
+#. Native Go kiosk UI.
+msgid "tsumego:boardPreview"
+msgstr "왼쪽은 형세 미리보기입니다"
+
+#. Native Go kiosk UI.
+msgid "tsumego:enterProblem"
+msgstr "문제 풀이 화면으로"
+
+#. Native Go kiosk UI.
+msgid "tsumego:isLast"
+msgstr "마지막 문제입니다"
+
+#. Native Go kiosk UI.
+msgid ""
+"Find the one move — judged on placement, a wrong move is taken straight "
+"back."
+msgstr "정답 한 수를 찾으세요. 놓는 즉시 판정하며 틀린 수는 바로 되돌립니다."
+
+#. Native Go kiosk UI.
+msgid "tsumego:physicalBoardShort"
+msgstr "실물 바둑판"
+
+#. Native Go kiosk UI.
+msgid "tsumego:physRestoreInitial"
+msgstr ""
+"올바른 돌은 두고 빨간 ×의 불필요하거나 색이 틀린 돌은 거두세요. 빨간 불빛에는 흑돌, 초록 불빛에는 백돌을 놓으세요. 판이 일치하면 "
+"자동으로 시작합니다."
+
+#. Native Go kiosk UI.
+msgid "tsumego:physRestoreCounts"
+msgstr "(거둘 돌 {extra}개, 놓을 돌 {missing}개)"
+
+#. Native Go kiosk UI.
+msgid "research:new_setup_notice"
+msgstr "돌 편집으로 새 형세가 만들어져 기존 수순 기록이 지워졌습니다."
+
+#. Native Go kiosk UI.
+msgid "research:analysis_on_request"
+msgstr "필요할 때 현재 형세 분석"
+
+#. Native Go kiosk UI.
+msgid "report:back_report"
+msgstr "보고서"
+
+#. Native Go kiosk UI.
+msgid "report:physical_board_short"
+msgstr "실물 바둑판"
+
+#. Native Go kiosk UI.
+msgid "kifu:analysis_loading"
+msgstr "분석 읽는 중"
+
+#. Native Go kiosk UI.
+msgid "kifu:analysis_unavailable"
+msgstr "분석 예약 없음"
+
+#. Native Go kiosk UI.
+msgid "kifu:analysis_pending"
+msgstr "분석 대기"
+
+#. Native Go kiosk UI.
+msgid "kifu:analysis_running"
+msgstr "분석 중"
+
+#. Native Go kiosk UI.
+msgid "kifu:analysis_failed"
+msgstr "분석 미완료"
+
+#. Native Go kiosk UI.
+msgid "kifu:analysis_completed"
+msgstr "분석 완료"
+
+#. Native Go kiosk UI.
+msgid "kifu:japanese_rules_default_source"
+msgstr "SGF에 규칙이 없어 덤 6.5를 기준으로 일본 규칙을 적용했습니다. 대회의 실제 규칙은 확인하지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "kifu:chinese_rules_default_source"
+msgstr "SGF에 규칙이 없어 덤 7.5를 기준으로 중국 규칙을 적용했습니다. 대회의 실제 규칙은 확인하지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "report:trend_help"
+msgstr ""
+"초록은 흑 승률, 주황은 흑 우세 집수입니다. 가로축은 수순이며 차트를 누르면 해당 형세로 이동합니다. 분석이 없는 형세는 값을 채우지 "
+"않습니다."
+
+#. Native Go kiosk UI.
+msgid "report:chart_help"
+msgstr "설명"
+
+#. Native Go kiosk UI.
+msgid "live:recommend_tab"
+msgstr "추천"
+
+#. Native Go kiosk UI.
+msgid "report:collapse_workspace"
+msgstr "분석 작업 영역 접기"
+
+#. Native Go kiosk UI.
+msgid "report:expand_workspace"
+msgstr "현재 분석 차트 또는 추천 목록 확대"
+
+#. Native Go kiosk UI.
+msgid "report:recommend_help"
+msgstr ""
+"추천도는 후보 수에 대한 AI의 선택 성향이며 사람의 착수 확률이 아닙니다. 집수 차와 승률은 둘 차례인 쪽 기준이며 양수는 그쪽의 "
+"우세입니다. 후보를 누르면 변화를 미리 봅니다. 실전 수가 상위 5개 밖이면 추가 표시하며 평가가 없으면 —로 표시합니다."
+
+#. Native Go kiosk UI.
+msgid "report:game_details"
+msgstr "대국 상세"
+
+#. Native Go kiosk UI.
+msgid "report:ai_recommendation"
+msgstr "AI 추천"
+
+#. Native Go kiosk UI.
+msgid "report:to_play"
+msgstr "둘 차례"
+
+#. Native Go kiosk UI.
+msgid "report:after_move"
+msgstr "{n}수 후"
+
+#. Native Go kiosk UI.
+msgid "report:actual_move_short"
+msgstr "실전"
+
+#. Native Go kiosk UI.
+msgid "report:no_position_analysis"
+msgstr "현재 형세의 분석이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "report:even_position"
+msgstr "호각"
+
+#. Native Go kiosk UI.
+msgid "report:leads"
+msgstr "우세"
+
+#. Native Go kiosk UI.
+msgid "report:position_number"
+msgstr "{n}수"
+
+#. Native Go kiosk UI.
+msgid "live:pause"
+msgstr "일시정지"
+
+#. Native Go kiosk UI.
+msgid "live:play"
+msgstr "재생"
+
+#. Native Go kiosk UI.
+msgid "common:back"
+msgstr "뒤로"
+
+#. Native Go kiosk UI.
+msgid "baipu:auto_recognize"
+msgstr "인식 후 자동으로 계속"
+
+#. Native Go kiosk UI.
+msgid "baipu:led_problem"
+msgstr "불빛이 켜지지 않음"
+
+#. Native Go kiosk UI.
+msgid "baipu:hint_paused_title"
+msgstr "AI 도움 · 인식 일시정지"
+
+#. Native Go kiosk UI.
+msgid "baipu:hint_resume"
+msgstr "AI 도움을 다시 누르면 기보 놓기 계속"
+
+#. Native Go kiosk UI.
+msgid "baipu:panel_tabs"
+msgstr "기보 놓기 정보"
+
+#. Native Go kiosk UI.
+msgid "baipu:moves_tab"
+msgstr "수순"
+
+#. Native Go kiosk UI.
+msgid "baipu:info_tab"
+msgstr "기보"
+
+#. Native Go kiosk UI.
+msgid "game:board_size_unit"
+msgstr "줄"
+
+#. Native Go kiosk UI.
+msgid "game:komi"
+msgstr "덤"
+
+#. Native Go kiosk UI.
+msgid "baipu:guard_sub_camera"
+msgstr "기보 놓기 돌을 인식하려면 먼저 카메라가 판을 선명하게 볼 수 있어야 합니다"
+
+#. Native Go kiosk UI.
+msgid "settings:nav_typography"
+msgstr "글꼴과 글자 크기"
+
+#. Native Go kiosk UI.
+msgid "settings:typography_scope"
+msgstr "중국어 글꼴은 바둑 화면의 한자에 적용됩니다. 영문자와 숫자는 유지됩니다."
+
+#. Native Go kiosk UI.
+msgid "settings:font"
+msgstr "글꼴"
+
+#. Native Go kiosk UI.
+msgid "report:library_players_title"
+msgstr "{black} 대 {white}"
+
+#. Native Go kiosk UI.
+msgid "report:library_game_accessible"
+msgstr "{title}, 흑 {black} 대 백 {white}"
+
+#. Native Go kiosk UI.
+msgid "review:open_replay"
+msgstr "기보 보기"
+
+#. Native Go kiosk UI.
+msgid "review:analysis_report"
+msgstr "분석 보고서"
+
+#. Native Go kiosk UI.
+msgid "review:tier_view"
+msgstr "보기"
+
+#. Native Go kiosk UI.
+msgid "review:tier_working"
+msgstr "분석 중"
+
+#. Native Go kiosk UI.
+msgid "review:tier_generate"
+msgstr "생성"
+
+#. Native Go kiosk UI.
+msgid "review:history_search_toggle"
+msgstr "기록 검색 표시 또는 숨기기"
+
+#. Native Go kiosk UI.
+msgid "review:back_review_full"
+msgstr "복기로 돌아가기"
+
+#. Native Go kiosk UI.
+msgid "report:komi"
+msgstr "덤"
+
+#. Native Go kiosk UI.
+msgid "platform:phone_digits_only"
+msgstr "전화번호에는 숫자만 입력하세요"
+
+#. Native Go kiosk UI.
+msgid "platform:connect_account_hint"
+msgstr "{name} 계정으로 연결"
+
+#. Native Go kiosk UI.
+msgid "Info"
+msgstr "안내"
+
+#. Native Go kiosk UI.
+msgid "platform:not_connected"
+msgstr "연결 전"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_play"
+msgstr "대국 선택으로"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy"
+msgstr "Golaxy 바둑"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_connection"
+msgstr "Golaxy 연결 읽는 중"
+
+#. Native Go kiosk UI.
+msgid "platform:connection_check_failed"
+msgstr "Golaxy 연결 상태를 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "platform:connect_golaxy"
+msgstr "Golaxy 연결"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy_login_expired"
+msgstr "Golaxy 로그인 만료"
+
+#. Native Go kiosk UI.
+msgid "platform:golaxy_reconnect"
+msgstr "Golaxy 로그인이 만료되었습니다. 다시 연결하세요"
+
+#. Native Go kiosk UI.
+msgid "platform:start_game"
+msgstr "대국 시작"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_match"
+msgstr "빠른 매칭"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_setup"
+msgstr "Golaxy 규칙으로 상대 찾기"
+
+#. Native Go kiosk UI.
+msgid "platform:rooms"
+msgstr "대국실"
+
+#. Native Go kiosk UI.
+msgid "platform:room_setup"
+msgstr "만들기 또는 번호로 입장"
+
+#. Native Go kiosk UI.
+msgid "platform:engine_play"
+msgstr "AI 대국"
+
+#. Native Go kiosk UI.
+msgid "platform:engine_setup"
+msgstr "Golaxy AI · 단계 선택 후 시작"
+
+#. Native Go kiosk UI.
+msgid "platform:lobby"
+msgstr "대국 로비"
+
+#. Native Go kiosk UI.
+msgid "platform:all_games"
+msgstr "전체 대국"
+
+#. Native Go kiosk UI.
+msgid "platform:online_players"
+msgstr "접속 중인 사용자"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_rooms"
+msgstr "Golaxy 대국 읽는 중"
+
+#. Native Go kiosk UI.
+msgid "platform:loading_users"
+msgstr "접속 중인 사용자 읽는 중"
+
+#. Native Go kiosk UI.
+msgid "platform:rooms_failed"
+msgstr "Golaxy 대국을 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "platform:no_rooms"
+msgstr "대국 없음"
+
+#. Native Go kiosk UI.
+msgid "platform:no_users"
+msgstr "접속 중인 사용자 없음"
+
+#. Native Go kiosk UI.
+msgid "platform:room_suffix"
+msgstr "실"
+
+#. Native Go kiosk UI.
+msgid "platform:room"
+msgstr "대국실"
+
+#. Native Go kiosk UI.
+msgid "platform:even_game"
+msgstr "호선"
+
+#. Native Go kiosk UI.
+msgid "platform:handicap"
+msgstr "접바둑"
+
+#. Native Go kiosk UI.
+msgid "platform:stones"
+msgstr "점"
+
+#. Native Go kiosk UI.
+msgid "platform:unknown_player"
+msgstr "대국자 정보 대기"
+
+#. Native Go kiosk UI.
+msgid "platform:quick_pregame"
+msgstr "시작 전에 착수 방식과 매칭 시간 설정"
+
+#. Native Go kiosk UI.
+msgid "platform:room_pregame"
+msgstr "Golaxy 대국실 만들기, 찾기 또는 번호로 입장"
+
+#. Native Go kiosk UI.
+msgid "platform:pregame_preview"
+msgstr "19줄 · 빈 판 미리보기"
+
+#. Native Go kiosk UI.
+msgid "platform:match_times"
+msgstr "매칭 시간 · 복수 선택 가능"
+
+#. Native Go kiosk UI.
+msgid "platform:allow_ai_match"
+msgstr "AI 상대 허용"
+
+#. Native Go kiosk UI.
+msgid "platform:ai_match_unavailable"
+msgstr "AI 상대를 사용할 수 없어 사용자만 찾습니다"
+
+#. Native Go kiosk UI.
+msgid "platform:room_mode"
+msgstr "대국실 방식"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room"
+msgstr "대국실 만들기"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room"
+msgstr "내 대국실"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room"
+msgstr "대국실 입장"
+
+#. Native Go kiosk UI.
+msgid "platform:create_golaxy_room"
+msgstr "Golaxy 대국실 만들기"
+
+#. Native Go kiosk UI.
+msgid "platform:create_room_hint"
+msgstr "만든 뒤 대국실에서 대국을 설정하고 다른 대국자의 입장을 기다립니다."
+
+#. Native Go kiosk UI.
+msgid "platform:create_room_rules"
+msgstr "만든 뒤 상대와 대국 규칙을 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_hint"
+msgstr "Golaxy가 반환한 현재 계정의 대국실을 표시합니다."
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_unavailable"
+msgstr "내 대국실에 아직 연결되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "platform:join_golaxy_room"
+msgstr "Golaxy 대국실 입장"
+
+#. Native Go kiosk UI.
+msgid "platform:room_number"
+msgstr "대국실 번호"
+
+#. Native Go kiosk UI.
+msgid "platform:enter_room_number"
+msgstr "Golaxy 대국실 번호 입력"
+
+#. Native Go kiosk UI.
+msgid "platform:join_room_role"
+msgstr "번호로 입장하면 관전자일 수 있으니 대국 가능한 자리를 확인해야 합니다."
+
+#. Native Go kiosk UI.
+msgid "platform:match_times_hint"
+msgstr "시간을 하나 이상 선택하세요. 복수 선택이 가능하며 Golaxy가 매칭을 마친 후 대국에 들어갑니다."
+
+#. Native Go kiosk UI.
+msgid "platform:join_room_hint"
+msgstr "입장 후에도 대국 역할과 시작 상태를 확인해야 합니다."
+
+#. Native Go kiosk UI.
+msgid "platform:pvp_start_unavailable"
+msgstr "Golaxy 대국 시작을 현재 사용할 수 없습니다. 잠시 후 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "platform:match_unavailable"
+msgstr "매칭 시작 · 사용 불가"
+
+#. Native Go kiosk UI.
+msgid "platform:create_unavailable"
+msgstr "대국실 만들기 · 사용 불가"
+
+#. Native Go kiosk UI.
+msgid "platform:my_room_open_unavailable"
+msgstr "내 대국실 열기 · 사용 불가"
+
+#. Native Go kiosk UI.
+msgid "platform:join_unavailable"
+msgstr "대국실 입장 · 사용 불가"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_lobby"
+msgstr "대국 로비"
+
+#. Native Go kiosk UI.
+msgid "platform:spectate"
+msgstr "대국 관전"
+
+#. Native Go kiosk UI.
+msgid "platform:spectator_board"
+msgstr "Golaxy 관전 바둑판"
+
+#. Native Go kiosk UI.
+msgid "platform:moves_suffix"
+msgstr "수"
+
+#. Native Go kiosk UI.
+msgid "platform:back_to_golaxy"
+msgstr "Golaxy로 돌아가기"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_audio"
+msgstr "음성 포함"
+
+#. Native Go kiosk UI.
+msgid "auth:checking_identity"
+msgstr "신원 확인 중"
+
+#. Native Go kiosk UI.
+msgid "auth:unavailable_identity"
+msgstr "신원 확인 전"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_lock_title"
+msgstr "카메라 노출이 고정되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_lock_body"
+msgstr "노출 고정을 확인하지 못해 보정을 중지했습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_camera_action"
+msgstr "카메라 연결을 확인한 뒤 보정을 다시 시작하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_bright_title"
+msgstr "카메라 화면이 너무 밝습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_dark_title"
+msgstr "카메라 화면이 너무 어둡습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_lighting_body"
+msgstr "판의 세부가 보이지 않아 보정을 계속할 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_lighting_action"
+msgstr "빛이 적절한 곳으로 옮긴 뒤 보정을 다시 시작하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_title"
+msgstr "노출 조정이 완료되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_exposure_body"
+msgstr "카메라의 노출 조정과 고정이 완료되지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_title"
+msgstr "{point} 위치의 LED를 찾지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_body"
+msgstr "해당 위치를 돌이 덮었거나 주변 LED가 어둡거나 카메라가 움직였을 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_anchor_action"
+msgstr "{point} 주변을 비우고 카메라가 움직였는지 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_title"
+msgstr "이전 보정과 바둑판 위치가 다릅니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_body"
+msgstr "카메라나 바둑판이 움직여 이전 위치 정보를 사용할 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_moved_action"
+msgstr "바둑판을 원래 위치로 돌리세요. 어렵다면 다시 보정하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_baseline_title"
+msgstr "기준 영상 생성 시 돌이 남아 있었습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_baseline_body"
+msgstr "빈 판 기준 영상은 이후 돌 인식에 사용됩니다. 돌이 남으면 이후 수를 잘못 인식하게 됩니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_clear_action"
+msgstr "바둑판을 비운 뒤 보정을 다시 시작하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_led_title"
+msgstr "일부 LED가 꺼지지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_frames_title"
+msgstr "기준 영상 사진이 부족합니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_finish_body"
+msgstr "다섯 점은 모두 찾았지만 마지막 단계에서 멈췄습니다. LED 스트립이나 카메라 연결이 끊겼을 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_wiring_action"
+msgstr "LED 스트립과 카메라 배선을 확인한 뒤 보정을 다시 시작하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_title"
+msgstr "보정이 완료되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_body"
+msgstr "사용 가능한 바둑판 위치 정보를 얻지 못했습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:diagnostic_failed_action"
+msgstr "바둑판이 비어 있고 카메라가 움직이지 않았는지 확인한 뒤 보정을 다시 시작하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:step_done"
+msgstr "완료"
+
+#. Native Go kiosk UI.
+msgid "vision:step_waiting"
+msgstr "대기 중"
+
+#. Native Go kiosk UI.
+msgid "vision:step_running"
+msgstr "진행 중"
+
+#. Native Go kiosk UI.
+msgid "vision:step_paused"
+msgstr "일시정지"
+
+#. Native Go kiosk UI.
+msgid "vision:step_failed"
+msgstr "실패"
+
+#. Native Go kiosk UI.
+msgid "vision:step_done_count"
+msgstr "완료 · {n} / 5"
+
+#. Native Go kiosk UI.
+msgid "vision:step_cancelled"
+msgstr "취소됨"
+
+#. Native Go kiosk UI.
+msgid "vision:step_pending"
+msgstr "시작 전"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_complete"
+msgstr "5 / 5 위치 확인"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_count"
+msgstr "{n}개 점 완료"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_stopped"
+msgstr "보정이 중지되었습니다. 다시 시작하세요"
+
+#. Native Go kiosk UI.
+msgid "vision:led_off"
+msgstr "불빛 꺼짐"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_continue"
+msgstr "보정 계속"
+
+#. Native Go kiosk UI.
+msgid "vision:caption_auto_led"
+msgstr "손을 떼면 자동 점등"
+
+#. Native Go kiosk UI.
+msgid "vision:caption_five_points"
+msgstr "네 모서리와 중앙 · 총 5개 점"
+
+#. Native Go kiosk UI.
+msgid "vision:completed"
+msgstr "완료됨"
+
+#. Native Go kiosk UI.
+msgid "vision:stopped_step"
+msgstr "{n}단계에서 중지"
+
+#. Native Go kiosk UI.
+msgid "vision:step_one"
+msgstr "1 / 4단계"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibration"
+msgstr "보정"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibrated"
+msgstr "보정됨"
+
+#. Native Go kiosk UI.
+msgid "vision:status_invalid"
+msgstr "만료됨"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_hands"
+msgstr "손 떼기 대기"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_light"
+msgstr "조명 조정 대기"
+
+#. Native Go kiosk UI.
+msgid "vision:status_wait_stable"
+msgstr "안정 대기"
+
+#. Native Go kiosk UI.
+msgid "vision:status_calibrating"
+msgstr "보정 중"
+
+#. Native Go kiosk UI.
+msgid "vision:status_confirm"
+msgstr "확인 대기"
+
+#. Native Go kiosk UI.
+msgid "vision:status_uncalibrated"
+msgstr "보정 전"
+
+#. Native Go kiosk UI.
+msgid "vision:status_camera"
+msgstr "카메라"
+
+#. Native Go kiosk UI.
+msgid "vision:status_connected"
+msgstr "연결됨"
+
+#. Native Go kiosk UI.
+msgid "vision:status_disconnected"
+msgstr "연결 안 됨"
+
+#. Native Go kiosk UI.
+msgid "vision:status_unknown"
+msgstr "확인 전"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_running"
+msgstr "보정 진행 중"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_camera_missing"
+msgstr "카메라가 연결되지 않아 격자를 확인할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_current"
+msgstr "현재 대국에서 이미 사용하는 보정입니다"
+
+#. Native Go kiosk UI.
+msgid "vision:recalibrate_board"
+msgstr "바둑판 재보정"
+
+#. Native Go kiosk UI.
+msgid "vision:confirm_empty_recalibrate"
+msgstr "빈 판 확인, 재보정"
+
+#. Native Go kiosk UI.
+msgid "vision:restart_calibration"
+msgstr "보정 다시 시작"
+
+#. Native Go kiosk UI.
+msgid "vision:reading_device_status"
+msgstr "기기 상태 읽는 중"
+
+#. Native Go kiosk UI.
+msgid "vision:device_disconnected"
+msgstr "기기 연결 안 됨"
+
+#. Native Go kiosk UI.
+msgid "vision:camera_disconnected"
+msgstr "카메라 연결 안 됨"
+
+#. Native Go kiosk UI.
+msgid "vision:led_unknown"
+msgstr "LED 확인 전"
+
+#. Native Go kiosk UI.
+msgid "vision:led_disconnected"
+msgstr "LED 연결 안 됨"
+
+#. Native Go kiosk UI.
+msgid "vision:action_failed_title"
+msgstr "조작이 적용되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:action_failed_help"
+msgstr "다시 시도하세요. 계속 실패하면 카메라와 LED 스트립 배선을 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_title"
+msgstr "화면이 너무 밝아 판의 세부가 안 보일 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_title"
+msgstr "화면이 너무 어두워 판의 세부가 안 보일 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:light_title"
+msgstr "현재 조명이 바둑판 인식에 영향을 줄 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_guidance"
+msgstr "커튼을 닫아 바둑판에 직사광선이 닿지 않게 하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_guidance"
+msgstr "실내등을 켜거나 밝기가 고른 곳으로 옮기세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_guidance"
+msgstr "고르고 부드러운 빛으로 조정하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright_voice"
+msgstr "빛이 너무 밝습니다. 커튼을 닫고 직사광선을 피하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark_voice"
+msgstr "빛이 너무 어둡습니다. 실내등을 켜세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_voice"
+msgstr "바둑판 주변 조명을 조정하세요."
+
+#. Native Go kiosk UI.
+msgid "vision:light_checking"
+msgstr "조명 확인 중"
+
+#. Native Go kiosk UI.
+msgid "vision:light_bright"
+msgstr "너무 밝음"
+
+#. Native Go kiosk UI.
+msgid "vision:light_dark"
+msgstr "너무 어두움"
+
+#. Native Go kiosk UI.
+msgid "vision:light_pending"
+msgstr "조명 조정 필요"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_done"
+msgstr "보정 완료"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_running"
+msgstr "보정 중"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_move_hands"
+msgstr "바둑판 위에서 손을 떼세요"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_unstable"
+msgstr "화면이 불안정합니다. 바둑판 위를 가리지 마세요"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_obstructed"
+msgstr "가림이 감지되어 보정이 일시정지되었습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:light_rechecking"
+msgstr "조명 재확인 중"
+
+#. Native Go kiosk UI.
+msgid "vision:light_adjust"
+msgstr "조명 조정 필요"
+
+#. Native Go kiosk UI.
+msgid "vision:calibration_paused"
+msgstr "보정 일시정지"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_stable_auto"
+msgstr "안정되면 자동 시작"
+
+#. Native Go kiosk UI.
+msgid "vision:anchors_retained"
+msgstr "{n}개 점 유지"
+
+#. Native Go kiosk UI.
+msgid "vision:preview_completed_count"
+msgstr "{n} / 5 완료"
+
+#. Native Go kiosk UI.
+msgid "vision:raw_alt"
+msgstr "카메라 원본 화면"
+
+#. Native Go kiosk UI.
+msgid "vision:raw_overlay"
+msgstr "원본 화면 바둑판 위치 오버레이"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_alt"
+msgstr "위에서 본 보정 화면"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_wait_running"
+msgstr "보정 중입니다. 완료 후 위에서 본 화면을 다시 생성합니다"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_wait"
+msgstr "LED 보정 후 위에서 본 화면이 생성됩니다"
+
+#. Native Go kiosk UI.
+msgid "vision:warped_overlay"
+msgstr "위에서 본 화면 바둑판 위치 오버레이"
+
+#. Native Go kiosk UI.
+msgid "vision:help_title"
+msgstr "보정 안내"
+
+#. Native Go kiosk UI.
+msgid "vision:view_raw"
+msgstr "원본 화면"
+
+#. Native Go kiosk UI.
+msgid "vision:view_warped"
+msgstr "위에서 보기"
+
+#. Native Go kiosk UI.
+msgid "vision:view_label"
+msgstr "화면"
+
+#. Native Go kiosk UI.
+msgid "vision:help_body"
+msgstr ""
+". 바둑판이 안정된 후 시작합니다. 가려지면 불빛이 꺼지고 손을 떼면 미완료 지점부터 계속합니다. 실패하면 구체적인 진단을 표시합니다."
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_title"
+msgstr "이 기기에는 카메라가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_body"
+msgstr "실물 바둑판 인식, 기보 놓기, 문제 풀기를 사용할 수 없습니다. "
+
+#. Native Go kiosk UI.
+msgid "vision:no_camera_screen_ok"
+msgstr "화면 기능은 그대로 사용할 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:sentence_end"
+msgstr "."
+
+#. Native Go kiosk UI.
+msgid "vision:overlay_failed"
+msgstr "위치 오버레이를 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:led_advisory"
+msgstr "LED는 버튼을 누른 후에만 켜지며 자동으로 켜지지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_blocked"
+msgstr "지금은 이전 보정을 사용할 수 없습니다: {reason}."
+
+#. Native Go kiosk UI.
+msgid "vision:recognition_not_ready"
+msgstr "바둑판은 보정되었지만 인식 모델이 아직 준비되지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "vision:light_paused_eyebrow"
+msgstr "조명 알림 · 보정 일시정지"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck_help"
+msgstr "조정 후 조명을 다시 확인하세요. 완료된 {n}개 점은 유지됩니다."
+
+#. Native Go kiosk UI.
+msgid "vision:voice_prompt"
+msgstr "음성 안내"
+
+#. Native Go kiosk UI.
+msgid "vision:light_check_busy"
+msgstr "확인 중…"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck"
+msgstr "조정 후 재확인"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_reconnecting"
+msgstr "화면 다시 연결 중…"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_connecting"
+msgstr "화면 연결 중…"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_failed"
+msgstr "영상 스트림 연결이 끊겼습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_title"
+msgstr "먼저 바둑판 보정"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_play_sub"
+msgstr "실물 바둑판으로 대국하려면 카메라가 판을 선명하게 볼 수 있어야 합니다"
+
+#. Native Go kiosk UI.
+msgid "vision:guard_tsumego_sub"
+msgstr "실물 바둑판으로 문제를 풀려면 카메라가 판을 선명하게 볼 수 있어야 합니다"
+
+#. Native Go kiosk UI.
+msgid "vision:step_empty"
+msgstr "바둑판 안정 대기"
+
+#. Native Go kiosk UI.
+msgid "vision:step_exposure"
+msgstr "노출 확인 및 고정"
+
+#. Native Go kiosk UI.
+msgid "vision:step_points"
+msgstr "바둑판 위치 확인"
+
+#. Native Go kiosk UI.
+msgid "vision:step_baseline"
+msgstr "빈 판 기준 영상 생성"
+
+#. Native Go kiosk UI.
+msgid "vision:layout_unsynced"
+msgstr "바둑판 위치 정보 버전이 동기화되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:layout_failed"
+msgstr "바둑판 위치 정보를 읽을 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:start_failed"
+msgstr "보정을 시작하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:reuse_failed"
+msgstr "이전 보정을 사용하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "vision:light_recheck_failed"
+msgstr "조명 재확인을 시작하지 못했습니다. 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "game:local_side_resigns"
+msgstr "{side} 기권할까요?"
+
+#. Native Go kiosk UI.
+msgid "vision:stream_retry"
+msgstr "다시 시도"
+
+#. Native Go kiosk UI.
+msgid "成绩未送达"
+msgstr "결과 미전송"
+
+#. Native Go kiosk UI.
+msgid "我执"
+msgstr "내 돌"
+
+#. Native Go kiosk UI.
+msgid "继续对局"
+msgstr "계속하기"
+
+#. Native Go kiosk UI.
+msgid "正在重试…"
+msgstr "다시 시도 중…"
+
+#. Native Go kiosk UI.
+msgid "取消"
+msgstr "취소"
+
+#. Native Go kiosk UI.
+msgid "第"
+msgstr "제 "
+
+#. Native Go kiosk UI.
+msgid "档"
+msgstr "단계"
+
+#. Native Go kiosk UI.
+msgid "领地"
+msgstr "집"
+
+#. Native Go kiosk UI.
+msgid "确定"
+msgstr "확인"
+
+#. Native Go kiosk UI.
+msgid "实体盘"
+msgstr "실물 바둑판"
+
+#. Native Go kiosk UI.
+msgid "重试"
+msgstr "다시 시도"
+
+#. Native Go kiosk UI.
+msgid "黑方"
+msgstr "흑"
+
+#. Native Go kiosk UI.
+msgid "白方"
+msgstr "백"
+
+#. Native Go kiosk UI.
+msgid "加载更多"
+msgstr "더 불러오기"
+
+#. Native Go kiosk UI.
+msgid "查看棋谱"
+msgstr "기보 보기"
+
+#. Native Go kiosk UI.
+msgid "确认"
+msgstr "확인"
+
+#. Native Go kiosk UI.
+msgid "黑"
+msgstr "흑"
+
+#. Native Go kiosk UI.
+msgid "白"
+msgstr "백"
+
+#. Native Go kiosk UI.
+msgid "返回"
+msgstr "뒤로"
+
+#. Native Go kiosk UI.
+msgid "已结束"
+msgstr "종료됨"
+
+#. Native Go kiosk UI.
+msgid "观战"
+msgstr "관전"
+
+#. Native Go kiosk UI.
+msgid "开"
+msgstr "켬"
+
+#. Native Go kiosk UI.
+msgid "关"
+msgstr "끔"
+
+#. Native Go kiosk UI.
+msgid "上一手"
+msgstr "이전 수"
+
+#. Native Go kiosk UI.
+msgid "尚未连接"
+msgstr "연결 전"
+
+#. Native Go kiosk UI.
+msgid "落子"
+msgstr "두는 곳"
+
+#. Native Go kiosk UI.
+msgid "屏幕"
+msgstr "화면"
+
+#. Native Go kiosk UI.
+msgid "路数"
+msgstr "판 크기"
+
+#. Native Go kiosk UI.
+msgid "19 路"
+msgstr "19줄"
+
+#. Native Go kiosk UI.
+msgid "快速匹配"
+msgstr "빠른 매칭"
+
+#. Native Go kiosk UI.
+msgid "发起挑战"
+msgstr "도전 보내기"
+
+#. Native Go kiosk UI.
+msgid "接受"
+msgstr "수락"
+
+#. Native Go kiosk UI.
+msgid "按用户名找人"
+msgstr "사용자 이름으로 찾기"
+
+#. Native Go kiosk UI.
+msgid "没能从平台取回名单"
+msgstr "플랫폼에서 목록을 가져오지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "正在读…"
+msgstr "불러오는 중…"
+
+#. Native Go kiosk UI.
+msgid "那边没有这个人"
+msgstr "그쪽에는 그런 사람이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "对局中"
+msgstr "대국 중"
+
+#. Native Go kiosk UI.
+msgid "空闲"
+msgstr "대기 중"
+
+#. Native Go kiosk UI.
+msgid "挑战"
+msgstr "도전"
+
+#. Native Go kiosk UI.
+msgid "发出挑战"
+msgstr "도전 보내기"
+
+#. Native Go kiosk UI.
+msgid "次"
+msgstr "회"
+
+#. Native Go kiosk UI.
+msgid "训练营"
+msgstr "훈련"
+
+#. Native Go kiosk UI.
+msgid "题"
+msgstr "문제"
+
+#. Native Go kiosk UI.
+msgid "题型"
+msgstr "문제 유형"
+
+#. Native Go kiosk UI.
+msgid "做题记录没读到"
+msgstr "풀이 기록을 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "单元"
+msgstr "단원"
+
+#. Native Go kiosk UI.
+msgid "错题"
+msgstr "틀린 문제"
+
+#. Native Go kiosk UI.
+msgid "课程"
+msgstr "강좌"
+
+#. Native Go kiosk UI.
+msgid "带音频"
+msgstr "음성 포함"
+
+#. Native Go kiosk UI.
+msgid "退出对局"
+msgstr "대국 나가기"
+
+#. Native Go kiosk UI.
+msgid "手"
+msgstr "수"
+
+#. Native Go kiosk UI.
+msgid "不限时"
+msgstr "시간 제한 없음"
+
+#. Native Go kiosk UI.
+msgid "轮到你"
+msgstr "당신 차례"
+
+#. Native Go kiosk UI.
+msgid "对方回合"
+msgstr "상대 차례"
+
+#. Native Go kiosk UI.
+msgid "等待中"
+msgstr "대기 중"
+
+#. Native Go kiosk UI.
+msgid "提子"
+msgstr "따낸 돌"
+
+#. Native Go kiosk UI.
+msgid "已连接"
+msgstr "연결됨"
+
+#. Native Go kiosk UI.
+msgid "未连接"
+msgstr "연결 안 됨"
+
+#. Native Go kiosk UI.
+msgid "棋盘显示"
+msgstr "바둑판 표시"
+
+#. Native Go kiosk UI.
+msgid "坐标"
+msgstr "좌표"
+
+#. Native Go kiosk UI.
+msgid "手数"
+msgstr "수순"
+
+#. Native Go kiosk UI.
+msgid "数子"
+msgstr "계가"
+
+#. Native Go kiosk UI.
+msgid "停一手"
+msgstr "패스"
+
+#. Native Go kiosk UI.
+msgid "认输"
+msgstr "불계"
+
+#. Native Go kiosk UI.
+msgid "知道了"
+msgstr "확인"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘"
+msgstr "실물 바둑판"
+
+#. Native Go kiosk UI.
+msgid "暂不可用"
+msgstr "일시적으로 이용 불가"
+
+#. Native Go kiosk UI.
+msgid "在线大厅"
+msgstr "온라인 로비"
+
+#. Native Go kiosk UI.
+msgid "登录后进在线大厅"
+msgstr "로그인하면 온라인 로비에 들어갑니다"
+
+#. Native Go kiosk UI.
+msgid "前往登录"
+msgstr "로그인하러 가기"
+
+#. Native Go kiosk UI.
+msgid "返回对弈"
+msgstr "대국 선택으로"
+
+#. Native Go kiosk UI.
+msgid "开一局"
+msgstr "대국 시작"
+
+#. Native Go kiosk UI.
+msgid "对战大厅"
+msgstr "대국 로비"
+
+#. Native Go kiosk UI.
+msgid "在线棋友"
+msgstr "접속 중인 사용자"
+
+#. Native Go kiosk UI.
+msgid "当前没有进行中的对局。"
+msgstr "현재 진행 중인 대국이 없습니다."
+
+#. Native Go kiosk UI.
+msgid "房"
+msgstr "실"
+
+#. Native Go kiosk UI.
+msgid "分先"
+msgstr "호선"
+
+#. Native Go kiosk UI.
+msgid "执黑"
+msgstr "흑"
+
+#. Native Go kiosk UI.
+msgid "执白"
+msgstr "백"
+
+#. Native Go kiosk UI.
+msgid "这是你"
+msgstr "이게 당신입니다"
+
+#. Native Go kiosk UI.
+msgid "邀请"
+msgstr "초대"
+
+#. Native Go kiosk UI.
+msgid "拒绝"
+msgstr "거절"
+
+#. Native Go kiosk UI.
+msgid "接受并开局"
+msgstr "수락하고 시작"
+
+#. Native Go kiosk UI.
+msgid "返回大厅"
+msgstr "로비로 돌아가기"
+
+#. Native Go kiosk UI.
+msgid "当前段位"
+msgstr "현재 급단위"
+
+#. Native Go kiosk UI.
+msgid "取消匹配"
+msgstr "매칭 취소"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_rejected"
+msgstr "계가 요청이 거절되었습니다"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_timeout"
+msgstr "계가 요청 시간이 초과되었습니다"
+
+#. Native Go kiosk UI.
+msgid "game:count_request_declined"
+msgstr "계가 요청을 거절했습니다"
+
+#. Native Go kiosk UI.
+msgid "game:count_response_failed"
+msgstr "계가 요청에 응답하지 못했습니다. 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "game:count_identity_unavailable"
+msgstr "중앙 계정 신원을 확인할 수 없어 계가 요청을 처리할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "game:central_disconnected"
+msgstr "중앙 연결 끊김"
+
+#. Native Go kiosk UI.
+msgid "game:central_disconnected_body"
+msgstr "대국 상태를 확인할 수 없습니다. 다시 연결하면 최신 판을 읽습니다. 아직 다음 수를 두지 마세요."
+
+#. Native Go kiosk UI.
+msgid "game:central_reconnecting"
+msgstr "다시 연결 중…"
+
+#. Native Go kiosk UI.
+msgid "game:central_reconnect"
+msgstr "다시 연결"
+
+#. Native Go kiosk UI.
+msgid "game:back_online_lobby"
+msgstr "온라인 로비로"
+
+#. Native Go kiosk UI.
+msgid "game:count_identity_retry"
+msgstr "신원 다시 확인"
+
+#. Native Go kiosk UI.
+msgid "game:count_recounting"
+msgstr "다시 계가 중…"
+
+#. Native Go kiosk UI.
+msgid "game:count_waiting_opponent"
+msgstr "상대 계가 확인 대기"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_failed"
+msgstr "자동 계가 실패"
+
+#. Native Go kiosk UI.
+msgid "game:count_result_pending"
+msgstr "착수가 중지되었습니다. 계가에 성공해야 공식 결과가 표시됩니다."
+
+#. Native Go kiosk UI.
+msgid "game:count_retry"
+msgstr "계가 재시도"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_running"
+msgstr "자동 계가 중"
+
+#. Native Go kiosk UI.
+msgid "game:count_auto_pending_body"
+msgstr "양쪽이 한 수씩 쉬었습니다. 결과는 아직 미정입니다. 잠시 기다리세요."
+
+#. Native Go kiosk UI.
+msgid "game:count_waiting_body"
+msgstr "상대가 동의하면 공식 결과가 표시됩니다."
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_title"
+msgstr "상대의 계가 요청"
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_status"
+msgstr "이 대국을 끝낼지 선택하세요."
+
+#. Native Go kiosk UI.
+msgid "game:opponent_count_body"
+msgstr "{name}님이 대국 종료와 계가를 요청했습니다. 동의할까요?"
+
+#. Native Go kiosk UI.
+msgid "game:count_decline"
+msgstr "계가 거절"
+
+#. Native Go kiosk UI.
+msgid "game:count_accept"
+msgstr "계가 동의"
+
+#. Native Go kiosk UI.
+msgid "game:local_seat_panel"
+msgstr "{side} 대국자 패널"
+
+#. Native Go kiosk UI.
+msgid "game:local_wait_side"
+msgstr "{side} 대기 중"
+
+#. Native Go kiosk UI.
+msgid "{label} · {value2}"
+msgstr "{label} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "未完成对局"
+msgstr "미완료 대국"
+
+#. Native Go kiosk UI.
+msgid "对手档位"
+msgstr "상대 단계"
+
+#. Native Go kiosk UI.
+msgid "● 黑棋"
+msgstr "● 흑돌"
+
+#. Native Go kiosk UI.
+msgid "○ 白棋"
+msgstr "○ 백돌"
+
+#. Native Go kiosk UI.
+msgid "未收到过"
+msgstr "수신 이력 없음"
+
+#. Native Go kiosk UI.
+msgid "成绩已压"
+msgstr "결과 대기열 저장"
+
+#. Native Go kiosk UI.
+msgid "不适用"
+msgstr "해당 없음"
+
+#. Native Go kiosk UI.
+msgid "立即重试"
+msgstr "지금 재시도"
+
+#. Native Go kiosk UI.
+msgid "你是"
+msgstr "내 급단위"
+
+#. Native Go kiosk UI.
+msgid ",配到"
+msgstr ", 매칭 상대"
+
+#. Native Go kiosk UI.
+msgid "领地判断：本局剩余 {value1} 次"
+msgstr "집 형세 판단: 이번 대국 {value1}회 남음"
+
+#. Native Go kiosk UI.
+msgid "正在自动数子"
+msgstr "자동 계가 중"
+
+#. Native Go kiosk UI.
+msgid "自动数子失败，请按「数子」重试"
+msgstr "자동 계가에 실패했습니다. '계가'를 눌러 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "{who}{value2}"
+msgstr "{who}{value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {point}"
+msgstr "{value1} {point}"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{value2}"
+msgstr "{value1}，{value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1}{value2}"
+msgstr "{value1}{value2}"
+
+#. Native Go kiosk UI.
+msgid "{white}{value2} {value3} {value4}"
+msgstr "{white}{value2} {value3} {value4}"
+
+#. Native Go kiosk UI.
+msgid " · {value1}"
+msgstr " · {value1}"
+
+#. Native Go kiosk UI.
+msgid "屏幕点击 + 实体落子"
+msgstr "화면 터치 + 실물 착수"
+
+#. Native Go kiosk UI.
+msgid "棋盘检测异常"
+msgstr "바둑판 감지 오류"
+
+#. Native Go kiosk UI.
+msgid "棋盘检测异常，请检查摄像头和棋盘位置"
+msgstr "바둑판 감지 오류입니다. 카메라와 바둑판 위치를 확인하세요"
+
+#. Native Go kiosk UI.
+msgid "{value1}{backLabel}"
+msgstr "{value1}{backLabel}"
+
+#. Native Go kiosk UI.
+msgid "棋友资料"
+msgstr "사용자 프로필"
+
+#. Native Go kiosk UI.
+msgid "关闭棋友资料"
+msgstr "프로필 닫기"
+
+#. Native Go kiosk UI.
+msgid "星阵号"
+msgstr "Golaxy ID"
+
+#. Native Go kiosk UI.
+msgid "对弈战绩"
+msgstr "대국 전적"
+
+#. Native Go kiosk UI.
+msgid "邀请偏好"
+msgstr "초대 환경설정"
+
+#. Native Go kiosk UI.
+msgid "关注结果尚未确认。"
+msgstr "팔로우 결과가 아직 확인되지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "重新读取关注状态"
+msgstr "팔로우 상태 다시 읽기"
+
+#. Native Go kiosk UI.
+msgid "邀请这位棋友进行星阵人人对弈"
+msgstr "이 사용자를 Golaxy 대인 대국에 초대"
+
+#. Native Go kiosk UI.
+msgid "本机落子方式"
+msgstr "현재 기기 착수 방식"
+
+#. Native Go kiosk UI.
+msgid "屏幕落子"
+msgstr "화면 착수"
+
+#. Native Go kiosk UI.
+msgid "邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。"
+msgstr "대국 초대를 사용할 수 없습니다. Golaxy 초대, 취소, 착수 가능한 대국 진입이 아직 검증되지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "的星阵人人对弈棋谱"
+msgstr "님의 Golaxy 대인 대국 기보"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋谱…"
+msgstr "기보 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "棋谱暂时无法读取。"
+msgstr "기보를 읽을 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "暂无人人对弈棋谱"
+msgstr "대인 대국 기보 없음"
+
+#. Native Go kiosk UI.
+msgid "{board_size} 路"
+msgstr "{board_size}줄"
+
+#. Native Go kiosk UI.
+msgid "{move_number} 手"
+msgstr "{move_number}수"
+
+#. Native Go kiosk UI.
+msgid "邀请已发送 · 等待{username}回应"
+msgstr "초대 전송됨 · {username} 응답 대기"
+
+#. Native Go kiosk UI.
+msgid "没能发送对局邀请"
+msgstr "대국 초대를 보내지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "等待星阵确认结果。接受、拒绝、超时或取消后显示明确结果。"
+msgstr "Golaxy 확인을 기다립니다. 수락, 거절, 시간 초과 또는 취소 후 명확한 결과가 표시됩니다."
+
+#. Native Go kiosk UI.
+msgid "对方状态可能已改变，请返回资料后重试。"
+msgstr "상대 상태가 바뀌었을 수 있습니다. 프로필로 돌아가 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "邀请对局"
+msgstr "대국 초대"
+
+#. Native Go kiosk UI.
+msgid "正在更新"
+msgstr "갱신 중"
+
+#. Native Go kiosk UI.
+msgid "取消关注"
+msgstr "팔로우 취소"
+
+#. Native Go kiosk UI.
+msgid "添加关注"
+msgstr "팔로우"
+
+#. Native Go kiosk UI.
+msgid "返回资料"
+msgstr "프로필로 돌아가기"
+
+#. Native Go kiosk UI.
+msgid "邀请对局暂不可用"
+msgstr "대국 초대 사용 불가"
+
+#. Native Go kiosk UI.
+msgid "发送邀请"
+msgstr "초대 보내기"
+
+#. Native Go kiosk UI.
+msgid "取消邀请尚未接通"
+msgstr "초대 취소 미연결"
+
+#. Native Go kiosk UI.
+msgid "取消邀请"
+msgstr "초대 취소"
+
+#. Native Go kiosk UI.
+msgid "当前账号"
+msgstr "현재 계정"
+
+#. Native Go kiosk UI.
+msgid "昵称未获取"
+msgstr "별명 미수신"
+
+#. Native Go kiosk UI.
+msgid "星阵账号 ·"
+msgstr "Golaxy 계정 ·"
+
+#. Native Go kiosk UI.
+msgid "当前账号已连接。切换账号会先断开当前星阵连接，再进入星阵登录页。"
+msgstr "현재 계정이 연결되어 있습니다. 계정을 전환하면 먼저 Golaxy 연결을 끊고 로그인 페이지로 이동합니다."
+
+#. Native Go kiosk UI.
+msgid "切换账号"
+msgstr "계정 전환"
+
+#. Native Go kiosk UI.
+msgid "退出星阵"
+msgstr "Golaxy 로그아웃"
+
+#. Native Go kiosk UI.
+msgid "断开当前账号并切换"
+msgstr "연결 해제 후 계정 전환"
+
+#. Native Go kiosk UI.
+msgid "退出当前星阵账号"
+msgstr "현재 Golaxy 계정 로그아웃"
+
+#. Native Go kiosk UI.
+msgid "没能断开星阵账号，请重试。"
+msgstr "Golaxy 연결을 끊지 못했습니다. 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "重试断开"
+msgstr "연결 해제 재시도"
+
+#. Native Go kiosk UI.
+msgid "正在断开"
+msgstr "연결 해제 중"
+
+#. Native Go kiosk UI.
+msgid "点选一局进入只读观战 · 按星阵状态更新"
+msgstr "대국을 선택해 관전 · Golaxy 상태로 갱신"
+
+#. Native Go kiosk UI.
+msgid "级别、胜负和状态以星阵返回为准"
+msgstr "급단위, 승패, 상태는 Golaxy 기준"
+
+#. Native Go kiosk UI.
+msgid "全部棋友"
+msgstr "전체 사용자"
+
+#. Native Go kiosk UI.
+msgid "同级别"
+msgstr "같은 급단위"
+
+#. Native Go kiosk UI.
+msgid "我的关注"
+msgstr "팔로우한 사용자"
+
+#. Native Go kiosk UI.
+msgid "胜负与状态以星阵为准"
+msgstr "승패와 상태는 Golaxy 기준"
+
+#. Native Go kiosk UI.
+msgid "{room_number} {value2}"
+msgstr "{room_number} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {handicap} {value3}"
+msgstr "{value1} {handicap} {value3}"
+
+#. Native Go kiosk UI.
+msgid "人在房间"
+msgstr "명 입장 중"
+
+#. Native Go kiosk UI.
+msgid "查看{username}的个人资料"
+msgstr "{username}님의 프로필 보기"
+
+#. Native Go kiosk UI.
+msgid "正在更新列表…"
+msgstr "목록 갱신 중…"
+
+#. Native Go kiosk UI.
+msgid "正在加载更多…"
+msgstr "더 불러오는 중…"
+
+#. Native Go kiosk UI.
+msgid "没能读取更多，请重试"
+msgstr "더 읽지 못했습니다. 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "重试加载更多"
+msgstr "추가 불러오기 재시도"
+
+#. Native Go kiosk UI.
+msgid "没有更多了"
+msgstr "더 이상 없음"
+
+#. Native Go kiosk UI.
+msgid "加载更多对局"
+msgstr "대국 더 불러오기"
+
+#. Native Go kiosk UI.
+msgid "加载更多棋友"
+msgstr "사용자 더 불러오기"
+
+#. Native Go kiosk UI.
+msgid "读秒 {period_seconds} 秒 · 剩余 {periods_remaining} 次"
+msgstr "초읽기 {period_seconds}초 · {periods_remaining}회 남음"
+
+#. Native Go kiosk UI.
+msgid "星阵时钟快照"
+msgstr "Golaxy 시계 스냅샷"
+
+#. Native Go kiosk UI.
+msgid "计时信息未返回"
+msgstr "시간 정보 미수신"
+
+#. Native Go kiosk UI.
+msgid "{room_number} 房 · "
+msgstr "{room_number}번 방 · "
+
+#. Native Go kiosk UI.
+msgid "· 星阵棋谱快照"
+msgstr "· Golaxy 기보 스냅샷"
+
+#. Native Go kiosk UI.
+msgid "正在同步星阵棋谱"
+msgstr "Golaxy 기보 동기화 중"
+
+#. Native Go kiosk UI.
+msgid "正在检查星阵连接"
+msgstr "Golaxy 연결 확인 중"
+
+#. Native Go kiosk UI.
+msgid "对局与观战信息"
+msgstr "대국 및 관전 정보"
+
+#. Native Go kiosk UI.
+msgid "{room_number} 房"
+msgstr "{room_number}번 방"
+
+#. Native Go kiosk UI.
+msgid "对局状态"
+msgstr "대국 상태"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {handicap}"
+msgstr "{value1} · {handicap}"
+
+#. Native Go kiosk UI.
+msgid "等待星阵棋谱"
+msgstr "Golaxy 기보 대기"
+
+#. Native Go kiosk UI.
+msgid "同步中"
+msgstr "동기화 중"
+
+#. Native Go kiosk UI.
+msgid "最新：{value1} {value2} · 第 {move_number} 手"
+msgstr "최신: {value1} {value2} · {move_number}수"
+
+#. Native Go kiosk UI.
+msgid "第 {move_number} 手 · 暂无落子"
+msgstr "{move_number}수 · 아직 착수 없음"
+
+#. Native Go kiosk UI.
+msgid "等待星阵最新落子"
+msgstr "Golaxy 최신 착수 대기"
+
+#. Native Go kiosk UI.
+msgid "回看棋谱时仍接收新快照"
+msgstr "기보를 되짚는 중에도 새 스냅샷을 받습니다"
+
+#. Native Go kiosk UI.
+msgid "正在同步，当前为上次快照"
+msgstr "동기화 중, 이전 스냅샷 표시"
+
+#. Native Go kiosk UI.
+msgid "胜负结果尚未返回"
+msgstr "승패 결과 미수신"
+
+#. Native Go kiosk UI.
+msgid "星阵棋谱快照 · 每 2 秒同步"
+msgstr "Golaxy 기보 스냅샷 · 2초마다 동기화"
+
+#. Native Go kiosk UI.
+msgid "房间成员"
+msgstr "대국실 구성원"
+
+#. Native Go kiosk UI.
+msgid "对局双方与观战棋友 · {length} 人"
+msgstr "대국자와 관전자 · {length}명"
+
+#. Native Go kiosk UI.
+msgid "成员信息未返回"
+msgstr "구성원 정보 미수신"
+
+#. Native Go kiosk UI.
+msgid "对局 · 黑"
+msgstr "대국 · 흑"
+
+#. Native Go kiosk UI.
+msgid "对局 · 白"
+msgstr "대국 · 백"
+
+#. Native Go kiosk UI.
+msgid "身份未返回"
+msgstr "역할 미수신"
+
+#. Native Go kiosk UI.
+msgid "星阵尚未提供可展示的房间成员名单。"
+msgstr "Golaxy가 표시 가능한 대국실 구성원 목록을 아직 제공하지 않았습니다."
+
+#. Native Go kiosk UI.
+msgid "重新连接"
+msgstr "다시 연결"
+
+#. Native Go kiosk UI.
+msgid "落子音："
+msgstr "착수 소리: "
+
+#. Native Go kiosk UI.
+msgid "已经是第一手之前"
+msgstr "이미 첫 수 이전입니다"
+
+#. Native Go kiosk UI.
+msgid "回到最新"
+msgstr "최신으로"
+
+#. Native Go kiosk UI.
+msgid "正在看最新"
+msgstr "최신 표시 중"
+
+#. Native Go kiosk UI.
+msgid " · {move_number} 手"
+msgstr " · {move_number}수"
+
+#. Native Go kiosk UI.
+msgid "{total} {value2}"
+msgstr "{total} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {value2} {value3}"
+msgstr "{value1} {value2} {value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} {value2}"
+msgstr "{value1} {value2}"
+
+#. Native Go kiosk UI.
+msgid "已连接 ·"
+msgstr "연결됨 ·"
+
+#. Native Go kiosk UI.
+msgid "账号名未返回"
+msgstr "계정 이름 미수신"
+
+#. Native Go kiosk UI.
+msgid "连接状态读取失败"
+msgstr "연결 상태 읽기 실패"
+
+#. Native Go kiosk UI.
+msgid "正在读取账号"
+msgstr "계정 읽는 중"
+
+#. Native Go kiosk UI.
+msgid "没能读取 OGS 账号状态"
+msgstr "OGS 계정 상태를 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "OGS 尚未连接。请先连接账号。"
+msgstr "OGS가 연결되지 않았습니다. 먼저 계정을 연결하세요."
+
+#. Native Go kiosk UI.
+msgid "落子方式"
+msgstr "착수 방식"
+
+#. Native Go kiosk UI.
+msgid "实体盘只下 19 路"
+msgstr "실물 바둑판은 19줄만"
+
+#. Native Go kiosk UI.
+msgid "未接通实体盘"
+msgstr "실물 바둑판 미연결"
+
+#. Native Go kiosk UI.
+msgid "OGS 有进行中的对局"
+msgstr "진행 중인 OGS 대국 있음"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋盘…"
+msgstr "바둑판 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "等待 {username} 接受挑战"
+msgstr "{username} 수락 대기"
+
+#. Native Go kiosk UI.
+msgid "等待对方接受挑战"
+msgstr "상대 수락 대기"
+
+#. Native Go kiosk UI.
+msgid "正在取消…"
+msgstr "취소 중…"
+
+#. Native Go kiosk UI.
+msgid "取消约战"
+msgstr "도전 취소"
+
+#. Native Go kiosk UI.
+msgid "没能确认这局的棋盘路数，请重试进入对局"
+msgstr "바둑판 줄 수를 확인하지 못했습니다. 대국 진입을 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "没能读取进行中的 OGS 对局"
+msgstr "진행 중인 OGS 대국을 읽지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "盒上尚未接通"
+msgstr "이 기기에서는 아직 미연결"
+
+#. Native Go kiosk UI.
+msgid "找人下"
+msgstr "상대 찾기"
+
+#. Native Go kiosk UI.
+msgid "按用户名直接约战"
+msgstr "사용자 이름으로 직접 도전"
+
+#. Native Go kiosk UI.
+msgid "棋局筛选"
+msgstr "대국 필터"
+
+#. Native Go kiosk UI.
+msgid "全部实时局"
+msgstr "전체 실시간 대국"
+
+#. Native Go kiosk UI.
+msgid "搜索用户名"
+msgstr "사용자 이름 검색"
+
+#. Native Go kiosk UI.
+msgid "刷新公开挑战"
+msgstr "공개 도전 새로고침"
+
+#. Native Go kiosk UI.
+msgid "连接 OGS 后可查看公开挑战"
+msgstr "OGS 연결 후 공개 도전 보기"
+
+#. Native Go kiosk UI.
+msgid "正在读取公开挑战…"
+msgstr "공개 도전 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "没能取回公开挑战"
+msgstr "공개 도전을 가져오지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "没有符合条件的公开挑战"
+msgstr "조건에 맞는 공개 도전 없음"
+
+#. Native Go kiosk UI.
+msgid "暂无公开挑战"
+msgstr "공개 도전 없음"
+
+#. Native Go kiosk UI.
+msgid "路 ·"
+msgstr "줄 ·"
+
+#. Native Go kiosk UI.
+msgid "计等级分"
+msgstr "등급점수 반영"
+
+#. Native Go kiosk UI.
+msgid "不计等级分"
+msgstr "등급점수 미반영"
+
+#. Native Go kiosk UI.
+msgid "输入用户名后回车"
+msgstr "사용자 이름 입력 후 Enter"
+
+#. Native Go kiosk UI.
+msgid "输入用户名回车找人"
+msgstr "사용자 이름을 입력하고 Enter로 검색"
+
+#. Native Go kiosk UI.
+msgid "向"
+msgstr "도전 상대: "
+
+#. Native Go kiosk UI.
+msgid "发起挑战？"
+msgstr "에게 도전할까요?"
+
+#. Native Go kiosk UI.
+msgid "· 19 路 · 中国规则 · 计分局。"
+msgstr "· 19줄 · 중국 규칙 · 등급점수 반영."
+
+#. Native Go kiosk UI.
+msgid "发出后可取消；对方接受后可在本页继续对局。"
+msgstr "전송 후 취소할 수 있습니다. 상대가 수락하면 이 페이지에서 대국을 계속합니다."
+
+#. Native Go kiosk UI.
+msgid "正在发送…"
+msgstr "전송 중…"
+
+#. Native Go kiosk UI.
+msgid "的公开挑战？"
+msgstr "님의 공개 도전을 수락할까요?"
+
+#. Native Go kiosk UI.
+msgid "。接受后将在这台盒子上进入对局。"
+msgstr ". 수락하면 이 기기에서 대국에 들어갑니다."
+
+#. Native Go kiosk UI.
+msgid "重试接受"
+msgstr "수락 재시도"
+
+#. Native Go kiosk UI.
+msgid "正在接受…"
+msgstr "수락 중…"
+
+#. Native Go kiosk UI.
+msgid "确认接受"
+msgstr "수락 확인"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {value2} + {value3}"
+msgstr "{value1} · {value2} + {value3}"
+
+#. Native Go kiosk UI.
+msgid "分析报告档位"
+msgstr "분석 보고서 등급"
+
+#. Native Go kiosk UI.
+msgid "每手"
+msgstr "매 수"
+
+#. Native Go kiosk UI.
+msgid "霞鹜楷体"
+msgstr "LXGW WenKai"
+
+#. Native Go kiosk UI.
+msgid "楷体"
+msgstr "해서체"
+
+#. Native Go kiosk UI.
+msgid "隶书"
+msgstr "예서체"
+
+#. Native Go kiosk UI.
+msgid "黑体"
+msgstr "고딕체"
+
+#. Native Go kiosk UI.
+msgid "{levelName} · {value2}"
+msgstr "{levelName} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "{totalCount} 题 · {length} 类"
+msgstr "{totalCount}문제 · {length}유형"
+
+#. Native Go kiosk UI.
+msgid "{completed} / {total} 题"
+msgstr "{completed} / {total}문제"
+
+#. Native Go kiosk UI.
+msgid "{count} 题"
+msgstr "{count}문제"
+
+#. Native Go kiosk UI.
+msgid "左右滑动卡片，选择棋力"
+msgstr "카드를 좌우로 밀어 기력 선택"
+
+#. Native Go kiosk UI.
+msgid "棋力范围"
+msgstr "기력 범위"
+
+#. Native Go kiosk UI.
+msgid "15–11 级"
+msgstr "15~11급"
+
+#. Native Go kiosk UI.
+msgid "10–6 级"
+msgstr "10~6급"
+
+#. Native Go kiosk UI.
+msgid "5–1 级"
+msgstr "5~1급"
+
+#. Native Go kiosk UI.
+msgid "1–7 段"
+msgstr "1~7단"
+
+#. Native Go kiosk UI.
+msgid "棋力卡片轮播"
+msgstr "기력 카드 캐러셀"
+
+#. Native Go kiosk UI.
+msgid " · 你的水平"
+msgstr " · 내 수준"
+
+#. Native Go kiosk UI.
+msgid "{name} {count}题"
+msgstr "{name} {count}문제"
+
+#. Native Go kiosk UI.
+msgid "题型构成暂不可用"
+msgstr "문제 유형 구성 사용 불가"
+
+#. Native Go kiosk UI.
+msgid "道题"
+msgstr "문제"
+
+#. Native Go kiosk UI.
+msgid "进入"
+msgstr "입장"
+
+#. Native Go kiosk UI.
+msgid "上一棋力"
+msgstr "이전 기력"
+
+#. Native Go kiosk UI.
+msgid "下一棋力"
+msgstr "다음 기력"
+
+#. Native Go kiosk UI.
+msgid "手指拖动 · 松手吸附"
+msgstr "손가락으로 끌기 · 놓으면 고정"
+
+#. Native Go kiosk UI.
+msgid " · 19路版（原{source_size}路）"
+msgstr " · 19줄 버전(원본 {source_size}줄)"
+
+#. Native Go kiosk UI.
+msgid "原{source_size}路题：{reason}"
+msgstr "원본 {source_size}줄 문제: {reason}"
+
+#. Native Go kiosk UI.
+msgid " · {value1} {value2}"
+msgstr " · {value1} {value2}"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {value2}"
+msgstr "{value1} · {value2}"
+
+#. Native Go kiosk UI.
+msgid "{levelName} · {categoryName} · {value3}"
+msgstr "{levelName} · {categoryName} · {value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} · {judged}"
+msgstr "{value1} · {judged}"
+
+#. Native Go kiosk UI.
+msgid "正在读取做题记录…"
+msgstr "문제 풀이 기록 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "本单元现在没有做错过的题"
+msgstr "이 단원에는 틀린 문제가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "题目筛选"
+msgstr "문제 필터"
+
+#. Native Go kiosk UI.
+msgid "错题数量待读取"
+msgstr "오답 수 읽기 대기"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{state}{value3}"
+msgstr "{value1}，{state}{value3}"
+
+#. Native Go kiosk UI.
+msgid "{value1} 次"
+msgstr "{value1}회"
+
+#. Native Go kiosk UI.
+msgid "{value1} 秒"
+msgstr "{value1}초"
+
+#. Native Go kiosk UI.
+msgid "19路版（原{source_size}路）"
+msgstr "19줄 버전(원본 {source_size}줄)"
+
+#. Native Go kiosk UI.
+msgid "没有可做的错题"
+msgstr "풀 오답 문제가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "训练内容"
+msgstr "훈련 내용"
+
+#. Native Go kiosk UI.
+msgid "错题簿"
+msgstr "오답 노트"
+
+#. Native Go kiosk UI.
+msgid "做题记录没读到，进入后可重试"
+msgstr "풀이 기록을 읽지 못했습니다. 입장 후 재시도할 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "这一类现在有 {wrongCount} 道错题"
+msgstr "이 유형에 오답이 {wrongCount}개 있습니다"
+
+#. Native Go kiosk UI.
+msgid "其他教材"
+msgstr "다른 교재"
+
+#. Native Go kiosk UI.
+msgid "书"
+msgstr "책"
+
+#. Native Go kiosk UI.
+msgid "一本书"
+msgstr "한 권의 책"
+
+#. Native Go kiosk UI.
+msgid "分若干章"
+msgstr "여러 장으로 구성"
+
+#. Native Go kiosk UI.
+msgid "章"
+msgstr "장"
+
+#. Native Go kiosk UI.
+msgid "一章讲一块"
+msgstr "한 장에 한 주제"
+
+#. Native Go kiosk UI.
+msgid "比如「吃子」是一章"
+msgstr "예: '돌 잡기'가 한 장"
+
+#. Native Go kiosk UI.
+msgid "节"
+msgstr "절"
+
+#. Native Go kiosk UI.
+msgid "节才是「一课」"
+msgstr "한 절이 '한 수업'"
+
+#. Native Go kiosk UI.
+msgid "翻完一节的图就算看完"
+msgstr "한 절의 모든 그림을 보면 완료"
+
+#. Native Go kiosk UI.
+msgid "图"
+msgstr "그림"
+
+#. Native Go kiosk UI.
+msgid "节里是一张张棋图"
+msgstr "한 절은 여러 바둑 그림으로 구성"
+
+#. Native Go kiosk UI.
+msgid "每张图带一段人声旁白，还能一键摆到实体盘上"
+msgstr "각 그림에 음성 해설이 있으며 한 번 눌러 실물 바둑판에 놓을 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸视频"
+msgstr "RK3562 · 7인치 영상"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸视频尚未生成"
+msgstr "RK3562 · 7인치 영상 미생성"
+
+#. Native Go kiosk UI.
+msgid "RK3562 · 7英寸"
+msgstr "RK3562 · 7인치"
+
+#. Native Go kiosk UI.
+msgid "棋子颜色待确认"
+msgstr "돌 색 확인 전"
+
+#. Native Go kiosk UI.
+msgid "视频加载失败"
+msgstr "영상 불러오기 실패"
+
+#. Native Go kiosk UI.
+msgid "大厅对局"
+msgstr "로비 대국"
+
+#. Native Go kiosk UI.
+msgid "{value1}方玩家"
+msgstr "{value1} 대국자"
+
+#. Native Go kiosk UI.
+msgid "{name}{value2}"
+msgstr "{name}{value2}"
+
+#. Native Go kiosk UI.
+msgid "等待重连"
+msgstr "재연결 대기"
+
+#. Native Go kiosk UI.
+msgid "等待确认"
+msgstr "확인 대기"
+
+#. Native Go kiosk UI.
+msgid "在线对局状态"
+msgstr "온라인 대국 상태"
+
+#. Native Go kiosk UI.
+msgid "大厅对局说明"
+msgstr "로비 대국 안내"
+
+#. Native Go kiosk UI.
+msgid "本局已有正式结果"
+msgstr "공식 결과가 있는 대국입니다"
+
+#. Native Go kiosk UI.
+msgid "正式结果尚未确定"
+msgstr "공식 결과 미정"
+
+#. Native Go kiosk UI.
+msgid "满 {countMin} 手可数子"
+msgstr "{countMin}수부터 계가 가능"
+
+#. Native Go kiosk UI.
+msgid "仅供参考，正式胜负以数子为准"
+msgstr "참고용이며 공식 승패는 계가로 정합니다"
+
+#. Native Go kiosk UI.
+msgid "大厅对局不计升降段位。满"
+msgstr "로비 대국은 급단위에 반영되지 않습니다. "
+
+#. Native Go kiosk UI.
+msgid ""
+"手后可请求数子，由对方确认；停一手仅在自己的回合可用。 领地仅供本人参考，不决定正式胜负。局面变化后需重新查询。退出时可先离开，或确认认输并退出。"
+msgstr ""
+"수부터 계가를 요청하고 상대가 확인합니다. 한 수 쉬기는 내 차례에만 가능합니다. 집 형세는 개인 참고용으로 공식 승패를 정하지 않으며 "
+"형세가 바뀌면 다시 조회해야 합니다. 나갈 때는 기권 없이 나가거나 기권을 확인하고 나갈 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "识别的盘面还没接进来"
+msgstr "인식된 판이 아직 연결되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "这里展示实体棋盘与设备状态。识别盘面尚未接入时，预览显示空盘；摄像头、标定和 LED 的状态来自设备。"
+msgstr ""
+"실물 바둑판과 기기 상태를 표시합니다. 인식된 판이 연결되기 전에는 빈 판을 미리 보여 줍니다. 카메라, 보정, LED 상태는 기기에서 "
+"가져옵니다."
+
+#. Native Go kiosk UI.
+msgid "请提走棋子"
+msgstr "잡은 돌을 거두세요"
+
+#. Native Go kiosk UI.
+msgid "请提走"
+msgstr "거둘 돌: "
+
+#. Native Go kiosk UI.
+msgid "跳过"
+msgstr "건너뛰기"
+
+#. Native Go kiosk UI.
+msgid "← 返回对弈"
+msgstr "← 대국 선택으로"
+
+#. Native Go kiosk UI.
+msgid "登录后，棋友可以在名单中看到你并邀请你对局。"
+msgstr "로그인하면 사용자들이 목록에서 나를 보고 대국에 초대할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "连接中"
+msgstr "연결 중"
+
+#. Native Go kiosk UI.
+msgid "已断开"
+msgstr "연결 끊김"
+
+#. Native Go kiosk UI.
+msgid "我的段位"
+msgstr "내 급단위"
+
+#. Native Go kiosk UI.
+msgid "段位读取失败"
+msgstr "급단위 읽기 실패"
+
+#. Native Go kiosk UI.
+msgid "尚未定级"
+msgstr "배치 전"
+
+#. Native Go kiosk UI.
+msgid "读取中"
+msgstr "읽는 중"
+
+#. Native Go kiosk UI.
+msgid "按当前段位找棋友 · 不计升降段位"
+msgstr "현재 급단위로 상대 찾기 · 승강급 미반영"
+
+#. Native Go kiosk UI.
+msgid "邀请棋友"
+msgstr "사용자 초대"
+
+#. Native Go kiosk UI.
+msgid "直接邀请任意段位的空闲棋友"
+msgstr "급단위에 관계없이 한가한 사용자 초대"
+
+#. Native Go kiosk UI.
+msgid "段位状态暂时无法读取。"
+msgstr "급단위 상태를 읽을 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "重试段位"
+msgstr "급단위 재시도"
+
+#. Native Go kiosk UI.
+msgid "无法确认中央账号身份，请重试。"
+msgstr "중앙 계정 신원을 확인할 수 없습니다. 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "大厅数据读取失败。"
+msgstr "로비 정보를 읽지 못했습니다."
+
+#. Native Go kiosk UI.
+msgid "大厅连接已断开，请稍后重试。"
+msgstr "로비 연결이 끊겼습니다. 잠시 후 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "大厅内容"
+msgstr "로비 내용"
+
+#. Native Go kiosk UI.
+msgid "进行中对局"
+msgstr "진행 중인 대국"
+
+#. Native Go kiosk UI.
+msgid "点选棋局可观战 · 大厅对局不计升降段位"
+msgstr "대국 선택 시 관전 · 로비 대국은 승강급 미반영"
+
+#. Native Go kiosk UI.
+msgid "未定级也可邀请任意段位的空闲棋友"
+msgstr "배치 전에도 급단위에 관계없이 한가한 사용자를 초대할 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "正在读取对局…"
+msgstr "대국 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "观战人数未返回"
+msgstr "관전자 수 미수신"
+
+#. Native Go kiosk UI.
+msgid "{count} 人观战"
+msgstr "{count}명 관전"
+
+#. Native Go kiosk UI.
+msgid "{value1} {player_b} 对 {player_w}，{viewers}"
+msgstr "{value1} {player_b} 대 {player_w}, {viewers}"
+
+#. Native Go kiosk UI.
+msgid "黑棋在左，白棋在右；自己的对局可返回棋盘。"
+msgstr "흑은 왼쪽, 백은 오른쪽입니다. 내 대국은 바둑판으로 돌아갈 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "棋友筛选"
+msgstr "사용자 필터"
+
+#. Native Go kiosk UI.
+msgid "同段位"
+msgstr "같은 급단위"
+
+#. Native Go kiosk UI.
+msgid "在线"
+msgstr "접속 중"
+
+#. Native Go kiosk UI.
+msgid "人"
+msgstr "명"
+
+#. Native Go kiosk UI.
+msgid "正在读取棋友…"
+msgstr "사용자 읽는 중…"
+
+#. Native Go kiosk UI.
+msgid "当前筛选下没有在线棋友。"
+msgstr "현재 필터에 맞는 접속 중인 사용자가 없습니다."
+
+#. Native Go kiosk UI.
+msgid "空闲棋友可邀请；快速匹配需先完成定级。"
+msgstr "한가한 사용자는 초대할 수 있으며 빠른 매칭은 배치를 마쳐야 합니다."
+
+#. Native Go kiosk UI.
+msgid "接受后直接开局；这局不计升降段位。"
+msgstr "수락하면 바로 시작하며 승강급에는 반영되지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "对方空闲。未定级也可邀请任意段位棋友，本局不计升降段位。"
+msgstr "상대가 한가합니다. 배치 전에도 모든 급단위의 사용자를 초대할 수 있으며 승강급에는 반영되지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "对方段位 ·"
+msgstr "상대 급단위 ·"
+
+#. Native Go kiosk UI.
+msgid "快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。你仍可直接邀请空闲棋友。"
+msgstr ""
+"빠른 매칭은 승강급 급단위로 비슷한 상대를 찾습니다. 먼저 승강급 대국에서 배치 5국을 마치세요. 한가한 사용자는 직접 초대할 수 "
+"있습니다."
+
+#. Native Go kiosk UI.
+msgid "先寻找同段位真人，稍后由同段位棋手接局；匹配成功后直接进入棋盘。"
+msgstr "먼저 같은 급단위의 실제 사용자를 찾고 이후 같은 급단위의 대국자가 이어받습니다. 매칭되면 바로 바둑판으로 이동합니다."
+
+#. Native Go kiosk UI.
+msgid "{label} · 不计升降段位"
+msgstr "{label} · 승강급 미반영"
+
+#. Native Go kiosk UI.
+msgid "已等 {elapsed} 秒"
+msgstr "{elapsed}초 대기"
+
+#. Native Go kiosk UI.
+msgid "稍后再说"
+msgstr "나중에"
+
+#. Native Go kiosk UI.
+msgid "去升降级对弈"
+msgstr "승강급 대국으로"
+
+#. Native Go kiosk UI.
+msgid "大厅对局观战"
+msgstr "로비 대국 관전"
+
+#. Native Go kiosk UI.
+msgid "大厅观战棋盘"
+msgstr "로비 관전 바둑판"
+
+#. Native Go kiosk UI.
+msgid "暂无可展示的对局快照"
+msgstr "표시할 대국 스냅샷 없음"
+
+#. Native Go kiosk UI.
+msgid "已暂停同步"
+msgstr "동기화 일시정지"
+
+#. Native Go kiosk UI.
+msgid "只读观战"
+msgstr "관전 전용"
+
+#. Native Go kiosk UI.
+msgid "等待棋手信息"
+msgstr "대국자 정보 대기"
+
+#. Native Go kiosk UI.
+msgid "轮到落子"
+msgstr "둘 차례"
+
+#. Native Go kiosk UI.
+msgid "对局棋手"
+msgstr "대국자"
+
+#. Native Go kiosk UI.
+msgid "第 {current_node_index} 手{value2}"
+msgstr "{current_node_index}수{value2}"
+
+#. Native Go kiosk UI.
+msgid "等待最新盘面"
+msgstr "최신 판 대기"
+
+#. Native Go kiosk UI.
+msgid "实时盘面 · 每 2 秒同步"
+msgstr "실시간 판 · 2초마다 동기화"
+
+#. Native Go kiosk UI.
+msgid "当前显示上次同步盘面"
+msgstr "마지막 동기화 판 표시"
+
+#. Native Go kiosk UI.
+msgid "正在连接对局"
+msgstr "대국 연결 중"
+
+#. Native Go kiosk UI.
+msgid "{spectatorCount} 人观战"
+msgstr "{spectatorCount}명 관전"
+
+#. Native Go kiosk UI.
+msgid "观战说明"
+msgstr "관전 안내"
+
+#. Native Go kiosk UI.
+msgid "观看实时盘面，不参与对局。此画面每 2 秒从大厅同步一次。"
+msgstr "대국에 참여하지 않고 실시간 판을 봅니다. 이 화면은 2초마다 로비에서 동기화합니다."
+
+#. Native Go kiosk UI.
+msgid "Disconnected"
+msgstr "연결 안 됨"
+
+#. Native Go kiosk UI.
+msgid "未确认"
+msgstr "확인 전"
+
+#. Native Go kiosk UI.
+msgid "已标定"
+msgstr "보정됨"
+
+#. Native Go kiosk UI.
+msgid "异常"
+msgstr "오류"
+
+#. Native Go kiosk UI.
+msgid "需校准"
+msgstr "보정 필요"
+
+#. Native Go kiosk UI.
+msgid "{count} 颗黑子"
+msgstr "흑돌 {count}개"
+
+#. Native Go kiosk UI.
+msgid "{count} 颗白子"
+msgstr "백돌 {count}개"
+
+#. Native Go kiosk UI.
+msgid "请提走 {stones}"
+msgstr "{stones}을(를) 거두세요"
+
+#. Native Go kiosk UI.
+msgid "、"
+msgstr ", "
+
+#. Native Go kiosk UI.
+msgid "rank:kyu"
+msgstr "{n}급"
+
+#. Native Go kiosk UI.
+msgid "rank:pro"
+msgstr "프로 {n}단"
+
+#. Native Go kiosk UI.
+msgid "rank:dan"
+msgstr "{n}단"
+
+#. Native Go kiosk UI.
+msgid "rank:provisional"
+msgstr "잠정 {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:amateur"
+msgstr "아마추어 {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:professional_rank"
+msgstr "프로 {rank}"
+
+#. Native Go kiosk UI.
+msgid "rank:account_unrated"
+msgstr "계정 배치 전"
+
+#. Native Go kiosk UI.
+msgid "rank:professional"
+msgstr "프로"
+
+#. Native Go kiosk UI.
+msgid "rank:top_professional"
+msgstr "최정상 프로"
+
+#. Native Go kiosk UI.
+msgid "rank:super_professional"
+msgstr "프로 초월"
+
+#. Native Go kiosk UI.
+msgid "rank:katago_medium"
+msgstr "KataGo 중급"
+
+#. Native Go kiosk UI.
+msgid "rank:unknown"
+msgstr "급단위 알 수 없음"
+
+#. Native Go kiosk UI.
+msgid "rank:unrated"
+msgstr "배치 전"
+
+#. Native Go kiosk UI.
+msgid "rank:account_source"
+msgstr "계정 급단위"
+
+#. Native Go kiosk UI.
+msgid "rank:ai_source"
+msgstr "AI 난이도"
+
+#. Native Go kiosk UI.
+msgid "rank:platform_source"
+msgstr "플랫폼 급단위"
+
+#. Native Go kiosk UI.
+msgid "rank:ai_estimate"
+msgstr "AI 추정 난이도"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_sfx"
+msgstr "착수 효과음"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_sfx_sub"
+msgstr "착수, 돌 잡기, 문제 정오답 · 기본 켜짐"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_voice"
+msgstr "음성 안내"
+
+#. Native Go kiosk UI.
+msgid "settings:sound_voice_sub"
+msgstr "기보 놓기와 문제 풀이 안내 · 실물 바둑판에서만 재생"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_fast"
+msgstr "속기"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_fast_details"
+msgstr "1분 · 15초 × 3"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_normal"
+msgstr "보통"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_normal_details"
+msgstr "10분 · 30초 × 3"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_slow"
+msgstr "장고"
+
+#. Native Go kiosk UI.
+msgid "platform:match_time_slow_details"
+msgstr "30분 · 40초 × 3"
+
+#. Native Go kiosk UI.
+msgid "auth:box_login"
+msgstr "홈에서 로그인"
+
+#. Native Go kiosk UI.
+msgid "auth:checking"
+msgstr "확인 중"
+
+#. Native Go kiosk UI.
+msgid "auth:continue_browsing"
+msgstr "계속 둘러보기"
+
+#. Native Go kiosk UI.
+msgid "auth:login_continue"
+msgstr "로그인 후 계속"
+
+#. Native Go kiosk UI.
+msgid "auth:retry"
+msgstr "재시도"
+
+#. Native Go kiosk UI.
+msgid " {value1}"
+msgstr " {value1}"
+
+#. Native Go kiosk UI.
+msgid " 返回对弈"
+msgstr " 대국 선택으로"
+
+#. Native Go kiosk UI.
+msgid "选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。"
+msgstr "한가한 사용자를 고르거나 같은 급단위의 상대를 찾으세요. 모든 로비 대국은 승강급에 반영되지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "棋"
+msgstr "바둑"
+
+#. Native Go kiosk UI.
+msgid "来下一局"
+msgstr "한 판 두기"
+
+#. Native Go kiosk UI.
+msgid "匹配同段位对手，或直接邀请棋友"
+msgstr "같은 급단위 상대 찾기 또는 사용자 직접 초대"
+
+#. Native Go kiosk UI.
+msgid "快速匹配 →"
+msgstr "빠른 매칭 →"
+
+#. Native Go kiosk UI.
+msgid "友"
+msgstr "친구"
+
+#. Native Go kiosk UI.
+msgid "进行中的对局"
+msgstr "진행 중인 대국"
+
+#. Native Go kiosk UI.
+msgid "点击对局即可观战；自己的对局可返回棋盘。"
+msgstr "대국을 누르면 관전하며 내 대국은 바둑판으로 돌아갑니다."
+
+#. Native Go kiosk UI.
+msgid "全部棋友　同段位　我的关注"
+msgstr "전체 사용자 · 같은 급단위 · 팔로우"
+
+#. Native Go kiosk UI.
+msgid "我的棋谱"
+msgstr "내 기보"
+
+#. Native Go kiosk UI.
+msgid "本局挑战"
+msgstr "이번 대국 도전"
+
+#. Native Go kiosk UI.
+msgid "复盘报告"
+msgstr "복기 보고서"
+
+#. Native Go kiosk UI.
+msgid "登录后使用"
+msgstr "로그인 후 사용"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘说明"
+msgstr "실물 바둑판 안내"
+
+#. Native Go kiosk UI.
+msgid "Got it"
+msgstr "확인"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_lead"
+msgstr "책"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_t"
+msgstr "한 권의 책"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_book_s"
+msgstr "여러 장으로 구성"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_lead"
+msgstr "장"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_t"
+msgstr "한 장에 한 주제"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_chapter_s"
+msgstr "예: '돌 잡기'가 한 장"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_lead"
+msgstr "절"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_t"
+msgstr "한 절이 '한 수업'"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_section_s"
+msgstr "한 절의 모든 그림을 보면 완료"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_lead"
+msgstr "그림"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_t"
+msgstr "한 절은 여러 바둑 그림으로 구성"
+
+#. Native Go kiosk UI.
+msgid "tutorial:layer_figure_s"
+msgstr "각 그림에 음성 해설이 있으며 한 번 눌러 실물 바둑판에 놓을 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "轮到你落子"
+msgstr "둘 차례입니다"
+
+#. Native Go kiosk UI.
+msgid "让先"
+msgstr "정선"
+
+#. Native Go kiosk UI.
+msgid "连接尚未就绪"
+msgstr "연결 준비 전"
+
+#. Native Go kiosk UI.
+msgid "本局已结束"
+msgstr "대국이 끝났습니다"
+
+#. Native Go kiosk UI.
+msgid "正在数子"
+msgstr "계가 중"
+
+#. Native Go kiosk UI.
+msgid "等待对方落子"
+msgstr "상대 착수 대기"
+
+#. Native Go kiosk UI.
+msgid "请先不要继续落子，恢复后核对最新盘面。"
+msgstr "아직 두지 마세요. 복구 후 최신 판을 확인하세요."
+
+#. Native Go kiosk UI.
+msgid "正式结果以服务端终局为准。"
+msgstr "공식 결과는 서버의 종국 판정을 따릅니다."
+
+#. Native Go kiosk UI.
+msgid "结果尚未确定，请稍候。"
+msgstr "결과는 아직 미정입니다. 잠시 기다리세요."
+
+#. Native Go kiosk UI.
+msgid "请落{value1}子，识别确认后自动同步给对方。"
+msgstr "{value1}돌을 놓으면 인식 확인 후 상대에게 자동 동기화됩니다."
+
+#. Native Go kiosk UI.
+msgid "请在棋盘落{value1}子。"
+msgstr "바둑판에 {value1}돌을 놓으세요."
+
+#. Native Go kiosk UI.
+msgid "对方落子后，棋盘和下一手提示会自动更新。"
+msgstr "상대가 두면 바둑판과 다음 수 안내가 자동 갱신됩니다."
+
+#. Native Go kiosk UI.
+msgid "正在查询领地…"
+msgstr "집 형세 조회 중…"
+
+#. Native Go kiosk UI.
+msgid "领地未取得，请重试"
+msgstr "집 형세를 가져오지 못했습니다. 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "领地参考 · 黑 {value1} · 白 {value2}"
+msgstr "집 형세 참고 · 흑 {value1} · 백 {value2}"
+
+#. Native Go kiosk UI.
+msgid "星阵在线棋友"
+msgstr "Golaxy 접속 중인 사용자"
+
+#. Native Go kiosk UI.
+msgid "发送对局邀请"
+msgstr "대국 초대 보내기"
+
+#. Native Go kiosk UI.
+msgid "等待对方回应"
+msgstr "상대 응답 대기"
+
+#. Native Go kiosk UI.
+msgid "邀请未发送"
+msgstr "초대 미전송"
+
+#. Native Go kiosk UI.
+msgid "历史棋谱"
+msgstr "지난 기보"
+
+#. Native Go kiosk UI.
+msgid "让子信息待返回"
+msgstr "접바둑 정보 대기"
+
+#. Native Go kiosk UI.
+msgid "让 {value1} 子"
+msgstr "{value1}점 접바둑"
+
+#. Native Go kiosk UI.
+msgid "{value1}邀你下一局"
+msgstr "{value1}님의 대국 초대"
+
+#. Native Go kiosk UI.
+msgid "邀请 {value1} 对局"
+msgstr "{value1}님을 대국에 초대"
+
+#. Native Go kiosk UI.
+msgid "需要先完成定级"
+msgstr "먼저 배치를 마치세요"
+
+#. Native Go kiosk UI.
+msgid "正在寻找同段位对手"
+msgstr "같은 급단위 상대 찾는 중"
+
+#. Native Go kiosk UI.
+msgid "SGF含pass、压缩点或本次不支持的坐标"
+msgstr "SGF에 pass, 압축 좌표 또는 미지원 좌표가 있습니다"
+
+#. Native Go kiosk UI.
+msgid "初始棋子格式不受支持"
+msgstr "초기 돌 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "三个变体是引征、选择征吃方向或判断能否征吃，必须完整证明所有征路与引征；基础证书不覆盖。"
+msgstr ""
+"세 변형은 축머리, 축 방향 또는 축 성립 여부를 묻습니다. 모든 축 경로와 축머리를 증명해야 하며 기본 인증서는 이를 보장하지 "
+"않습니다."
+
+#. Native Go kiosk UI.
+msgid "已核对全部记录分支解除当前打吃"
+msgstr "모든 기록 분기에서 현재 단수 해소를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "完整题面尚无与当前目标一致的审核证据"
+msgstr "전체 문제의 현재 목표와 일치하는 검토 증거가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "两变体都声明全局终盘并数所有单官；扩盘新增大量空点，源答案不适用。"
+msgstr "두 변형은 전체 판의 종국과 모든 공배 계가를 전제합니다. 판 확장으로 빈 점이 많이 늘어 원본 답을 적용할 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "来源内容已改变，需重新审核"
+msgstr "원본 내용이 바뀌어 재검토가 필요합니다"
+
+#. Native Go kiosk UI.
+msgid "源答案行棋方不交替"
+msgstr "원본 답의 차례가 교대하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "比较气数未指定固定初始棋块"
+msgstr "활로 비교의 고정된 초기 돌무리가 지정되지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "题面要求判断对杀胜负，本次未能确认该目标"
+msgstr "수상전 승패를 묻는 문제이나 해당 목표를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "证书缺少固定初始目标"
+msgstr "인증서에 고정된 초기 대상이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了重复局面关系"
+msgstr "판 확장으로 반복 형세 관계가 바뀝니다"
+
+#. Native Go kiosk UI.
+msgid "教程含本次不支持的结构字段"
+msgstr "교재에 미지원 구조 필드가 있습니다"
+
+#. Native Go kiosk UI.
+msgid "答案根节点格式不受支持"
+msgstr "답의 루트 노드 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认局部目标，待补充该目标的专项证书"
+msgstr "국소 목표를 확인하지 못했습니다. 해당 목표의 전용 인증서가 필요합니다"
+
+#. Native Go kiosk UI.
+msgid "源SGF尺寸与题目不一致"
+msgstr "원본 SGF 크기가 문제와 다릅니다"
+
+#. Native Go kiosk UI.
+msgid "题面要求连接黑棋，本次未能确认连接目标"
+msgstr "흑 연결을 묻는 문제이나 연결 목표를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "源初始棋子与SGF不一致"
+msgstr "원본 초기 돌이 SGF와 다릅니다"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了棋块连接或气集合"
+msgstr "판 확장으로 돌무리 연결 또는 활로 집합이 바뀝니다"
+
+#. Native Go kiosk UI.
+msgid "证书救出目标不是初始一气棋块"
+msgstr "구출 인증 대상이 초기 한 활로 돌무리가 아닙니다"
+
+#. Native Go kiosk UI.
+msgid "没有可认证的局部目标"
+msgstr "인증 가능한 국소 목표가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "源答案叶未明确区分正确与失败"
+msgstr "원본 답의 말단 노드가 성공과 실패를 구분하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "源树在非叶节点判终局，本次未认证"
+msgstr "원본 트리가 말단이 아닌 노드에서 종국을 판정하여 인증하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "三个连续步骤声明完整终局、清死子和黑24目白22目胜负；扩盘改变全盘终局语义。"
+msgstr "연속 세 단계가 전체 종국, 사석 제거, 흑 24집 백 22집의 승패를 제시합니다. 판 확장은 전체 종국 의미를 바꿉니다."
+
+#. Native Go kiosk UI.
+msgid "本次没有该选择题的局部证书"
+msgstr "이 선택형 문제의 국소 인증서가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "棋盘尺寸不在本次支持范围"
+msgstr "바둑판 크기 미지원"
+
+#. Native Go kiosk UI.
+msgid "初始棋子重叠"
+msgstr "초기 돌이 겹칩니다"
+
+#. Native Go kiosk UI.
+msgid "视窗格式不受支持"
+msgstr "보기 영역 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "解除打吃目标并非初始一气棋块"
+msgstr "단수 해소 대상이 초기 한 활로 돌무리가 아닙니다"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部解除打吃目标"
+msgstr "문제 내용과 국소 단수 해소 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "整盘终局教学保留原盘"
+msgstr "전체 종국 교재는 원래 판을 유지합니다"
+
+#. Native Go kiosk UI.
+msgid "答案结构不受支持"
+msgstr "답 구조 미지원"
+
+#. Native Go kiosk UI.
+msgid "选择题结构不受支持"
+msgstr "선택형 문제 구조 미지원"
+
+#. Native Go kiosk UI.
+msgid "已核对源题与全部记录分支的局部提吃目标"
+msgstr "원본 문제와 모든 기록 분기의 국소 포획 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "SGF节点落子格式不受支持"
+msgstr "SGF 노드의 착수 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "本次没有该目标的局部证书"
+msgstr "이 목표의 국소 인증서가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "SGF含本次不支持的属性或节点setup"
+msgstr "SGF에 미지원 속성 또는 노드 setup이 있습니다"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认局部目标"
+msgstr "국소 목표를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "本次未审核该来源的局部目标"
+msgstr "이 출처의 국소 목표는 검토하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "答案节点格式不受支持"
+msgstr "답 노드 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "源初始棋块无气"
+msgstr "원본 초기 돌무리에 활로가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "中英题面行棋方或目标颜色冲突，本次保留原题"
+msgstr "중국어와 영어 문제의 차례 또는 대상 색이 달라 원본 문제를 유지합니다"
+
+#. Native Go kiosk UI.
+msgid "题面未唯一指定所问连接分量"
+msgstr "문제가 대상 연결 성분을 유일하게 지정하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了落子或提子结果"
+msgstr "판 확장으로 착수 또는 포획 결과가 바뀝니다"
+
+#. Native Go kiosk UI.
+msgid "原树接受全部源空点；扩19后仅接受原9路子区，与任意空点落子教学冲突。"
+msgstr ""
+"원본 트리는 모든 원본 빈 점을 허용합니다. 19줄 확장 후에는 원래 9줄 영역만 허용하여 임의의 빈 점에 두는 교재와 충돌합니다."
+
+#. Native Go kiosk UI.
+msgid "五种题面都明确征子；延长到新空白的路径与征子终点/引征要全程证明，基础有限树不足。"
+msgstr ""
+"다섯 문제 내용은 모두 축을 명시합니다. 늘어난 경로, 축 끝점, 축머리 전체를 증명해야 하며 기본 유한 트리만으로는 부족합니다."
+
+#. Native Go kiosk UI.
+msgid "源答案出现重复局面，本次未认证规则"
+msgstr "원본 답에 반복 형세가 있어 규칙을 인증하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "标记坐标格式不受支持"
+msgstr "표시 좌표 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "未能确认源题轮到方"
+msgstr "원본 문제의 둘 차례를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "源答案没有明确正确叶"
+msgstr "원본 답에 명시적인 정답 말단이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "重算答案与源选择键不符"
+msgstr "다시 계산한 답이 원본 선택 키와 다릅니다"
+
+#. Native Go kiosk UI.
+msgid "全课明确对局结束后谁赢，胜负基于全盘计目而非局部题。"
+msgstr "전체 수업이 종국 후 승자를 물으며 승패는 국소 문제가 아닌 전체 판 계가에 달려 있습니다."
+
+#. Native Go kiosk UI.
+msgid "本语言尚无已审核19路版本"
+msgstr "이 언어의 검토된 19줄 버전이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "源答案含未解决的劫重复"
+msgstr "원본 답에 해결되지 않은 패 반복이 있습니다"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部提吃目标"
+msgstr "문제 내용과 국소 포획 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "全部题面要求做劫并引用既有黑1；包含劫的性质、历史和替代连接选择，当前基础证书不覆盖。"
+msgstr "모든 문제 내용이 패를 요구하고 기존 흑1을 참조합니다. 패의 성질, 이력, 대체 연결 선택은 기본 인증서의 범위 밖입니다."
+
+#. Native Go kiosk UI.
+msgid "相反两边均参与，19路平移不能保持边界"
+msgstr "서로 마주 보는 두 변이 모두 관여하여 19줄 평행 이동으로 경계를 유지할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "局部目标证书校验不一致"
+msgstr "국소 목표 인증서 검증이 일치하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "命名点的合法性不符合源题面"
+msgstr "지정된 점의 합법성이 원본 문제와 맞지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "命名的落子点已有棋子"
+msgstr "지정된 착점에 이미 돌이 있습니다"
+
+#. Native Go kiosk UI.
+msgid "源答案含自杀手"
+msgstr "원본 답에 자살수가 있습니다"
+
+#. Native Go kiosk UI.
+msgid "扩盘改变了初始棋块或气集合"
+msgstr "판 확장으로 초기 돌무리 또는 활로 집합이 바뀝니다"
+
+#. Native Go kiosk UI.
+msgid "源切断点不能连接所问两块棋"
+msgstr "원본 절단점이 대상 두 돌무리를 연결할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部连接目标"
+msgstr "문제 내용과 국소 연결 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部切断目标"
+msgstr "문제 내용과 국소 절단 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "含立即禁反提、依赖劫规的提子与劫材；第3步虽仅写连接，仍是此源劫题的上下文，不以短正文绕过劫审查。"
+msgstr ""
+"즉시 되따기 금지, 패 규칙에 따른 포획과 팻감을 포함합니다. 3단계는 연결만 적혀 있어도 원본 패 문제의 맥락이므로 짧은 본문으로 패 "
+"검토를 건너뛰지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "正文明确比较9×9/13×13/19×19，当前13路本身是教学示例，改盘宽会改变展示对象。"
+msgstr ""
+"본문이 9×9, 13×13, 19×19를 명시적으로 비교합니다. 현재 13줄 판 자체가 교재 예시이므로 판 너비를 바꾸면 제시 대상이 "
+"바뀝니다."
+
+#. Native Go kiosk UI.
+msgid "题面要求分断白棋，本次未能确认分断目标"
+msgstr "백 분단을 묻는 문제이나 분단 목표를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "源答案在已有棋子处落子"
+msgstr "원본 답이 이미 돌이 있는 곳에 둡니다"
+
+#. Native Go kiosk UI.
+msgid "正确或失败分支未满足固定局部目标证书"
+msgstr "성공 또는 실패 분기가 고정된 국소 목표 인증서를 충족하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "当前语言题面内容已改变，需重新审核"
+msgstr "현재 언어의 문제 내용이 바뀌어 재검토가 필요합니다"
+
+#. Native Go kiosk UI.
+msgid "两种题面全部明确征吃，不能因源树可平移就假定扩盘征子结果。"
+msgstr "두 문제 내용이 모두 축 포획을 명시합니다. 원본 트리를 평행 이동할 수 있어도 판 확장 후 축 결과를 가정할 수 없습니다."
+
+#. Native Go kiosk UI.
+msgid "三种题面均需重建黑1前后局面判断白立即反提，当前setup和树拓扑不包含完整前态保证。"
+msgstr ""
+"세 문제 내용은 모두 흑1 전후 형세를 재구성해 백의 즉시 되따기를 판단해야 합니다. 현재 setup과 트리 구조는 완전한 이전 상태를 "
+"보장하지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "原生19路"
+msgstr "원래 19줄"
+
+#. Native Go kiosk UI.
+msgid "源题含长程或全盘目标，本次保留原盘"
+msgstr "원본 문제에 장거리 또는 전체 판 목표가 있어 원래 판을 유지합니다"
+
+#. Native Go kiosk UI.
+msgid "正确或失败叶未证明完整提吃同一初始目标棋块"
+msgstr "성공 또는 실패 말단이 동일한 초기 대상 돌무리의 완전한 포획을 증명하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "打吃证书缺少唯一目标"
+msgstr "단수 인증서에 유일한 대상이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "证书目标不是指定方的固定初始棋块"
+msgstr "인증 대상이 지정된 쪽의 고정된 초기 돌무리가 아닙니다"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部数值或打吃目标"
+msgstr "문제 내용과 국소 수치 또는 단수 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "源官子题依赖原盘边界与目数，本次保留原盘"
+msgstr "원본 끝내기 문제가 원래 경계와 집수에 의존하여 원래 판을 유지합니다"
+
+#. Native Go kiosk UI.
+msgid "坐标越界或格式不受支持"
+msgstr "좌표 범위 초과 또는 형식 미지원"
+
+#. Native Go kiosk UI.
+msgid "连接证书缺少固定初始棋块"
+msgstr "연결 인증서에 고정된 초기 돌무리가 없습니다"
+
+#. Native Go kiosk UI.
+msgid "已核对题面与局部填气目标"
+msgstr "문제 내용과 국소 활로 채우기 목표를 확인했습니다"
+
+#. Native Go kiosk UI.
+msgid "题面要求反击指定白棋错着，本次未能确认完整目标"
+msgstr "지정된 백 악수에 대한 반격을 묻는 문제이나 전체 목표를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "本次未能确认较长变化的局部目标"
+msgstr "긴 변화의 국소 목표를 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "数气证书缺少唯一目标"
+msgstr "활로 수 인증서에 유일한 대상이 없습니다"
+
+#. Native Go kiosk UI.
+msgid "重算结果与源选择题答案不符"
+msgstr "다시 계산한 결과가 원본 선택형 문제의 답과 다릅니다"
+
+#. Native Go kiosk UI.
+msgid "登录后使用引擎分析"
+msgstr "로그인 후 엔진 분석 사용"
+
+#. Native Go kiosk UI.
+msgid "登录后查看{feature}"
+msgstr "로그인 후 {feature} 보기"
+
+#. Native Go kiosk UI.
+msgid "登录后继续{feature}"
+msgstr "로그인 후 {feature} 계속"
+
+#. Native Go kiosk UI.
+msgid "登录后进入{feature}"
+msgstr "로그인 후 {feature} 입장"
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效。当前棋盘仍会保留。登录后可继续使用。"
+msgstr "로그인이 만료되었습니다. 현재 판은 유지됩니다. 로그인하면 계속할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效。已暂停读取{feature}中的个人内容。登录后可继续使用。"
+msgstr "로그인이 만료되어 {feature}의 개인 내용 읽기를 일시정지했습니다. 로그인하면 계속할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "登录后返回当前棋谱分组，当前棋盘不会被清空。"
+msgstr "로그인 후 현재 기보 그룹으로 돌아옵니다. 현재 판은 지워지지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "登录后仍需确认原操作，当前棋盘不会被清空。"
+msgstr "로그인 후 원래 조작을 다시 확인해야 합니다. 현재 판은 지워지지 않습니다."
+
+#. Native Go kiosk UI.
+msgid "继续浏览"
+msgstr "계속 둘러보기"
+
+#. Native Go kiosk UI.
+msgid "{wins} 胜 · {losses} 负"
+msgstr "{wins}승 · {losses}패"
+
+#. Native Go kiosk UI.
+msgid "{type} · {handicap} · 19 路"
+msgstr "{type} · {handicap} · 19줄"
+
+#. Native Go kiosk UI.
+msgid "对局类型待返回"
+msgstr "대국 유형 대기"
+
+#. Native Go kiosk UI.
+msgid "同步失败"
+msgstr "동기화 실패"
+
+#. Native Go kiosk UI.
+msgid "快照同步"
+msgstr "스냅샷 동기화"
+
+#. Native Go kiosk UI.
+msgid "类型未返回"
+msgstr "유형 미수신"
+
+#. Native Go kiosk UI.
+msgid "{n} 题"
+msgstr "{n}문제"
+
+#. Native Go kiosk UI.
+msgid "进入 {level} 题型"
+msgstr "{level} 문제 유형 열기"
+
+#. Native Go kiosk UI.
+msgid "{head} · 第 {n} 题"
+msgstr "{head} · {n}번 문제"
+
+#. Native Go kiosk UI.
+msgid "{n} 手"
+msgstr "{n}수"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_black_stone"
+msgstr "카메라가 흑돌을 인식했습니다"
+
+#. Native Go kiosk UI.
+msgid "game:camera_sees_white_stone"
+msgstr "카메라가 백돌을 인식했습니다"
+
+#. Native Go kiosk UI.
+msgid "tsumego:level_dan"
+msgstr "{n}단"
+
+#. Native Go kiosk UI.
+msgid "tsumego:level_kyu"
+msgstr "{n}급"
+
+#. Native Go kiosk UI.
+msgid "盒内段位由升降级对弈决定。净胜分达到正 3 升一档，达到负 3 降一档。"
+msgstr "기기 내 급단위는 승강급 대국으로 정합니다. 순승점 +3이면 한 단계 승급하고 −3이면 한 단계 강급합니다."
+
+#. Native Go kiosk UI.
+msgid "这里只列已计入的升降级对局，按对手当时的段位分组。开局设置里的强度调的是对手，不是你的段位。"
+msgstr "반영된 승강급 대국만 당시 상대 급단위별로 표시합니다. 시작 설정의 실력은 상대를 고르는 것이며 내 급단위가 아닙니다."
+
+#. Native Go kiosk UI.
+msgid "正在同步"
+msgstr "동기화 중"
+
+#. Native Go kiosk UI.
+msgid "{n} 秒"
+msgstr "{n}초"
+
+#. Native Go kiosk UI.
+msgid "登录后查看会员用量、API 积分与订单。"
+msgstr "로그인 후 멤버십 사용량, API 포인트 및 주문을 확인할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "自由对弈"
+msgstr "자유 대국"
+
+#. Native Go kiosk UI.
+msgid "对弈"
+msgstr "대국"
+
+#. Native Go kiosk UI.
+msgid "升降级对弈"
+msgstr "승단 대국"
+
+#. Native Go kiosk UI.
+msgid "退出"
+msgstr "나가기"
+
+#. Native Go kiosk UI.
+msgid "成长记录"
+msgstr "성장 기록"
+
+#. Native Go kiosk UI.
+msgid "教程"
+msgstr "튜토리얼"
+
+#. Native Go kiosk UI.
+msgid "棋谱库"
+msgstr "기보 라이브러리"
+
+#. Native Go kiosk UI.
+msgid "会员与用量"
+msgstr "멤버십 및 사용량"
+
+#. Native Go kiosk UI.
+msgid "进行中"
+msgstr "진행 중"
+
+#. Native Go kiosk UI.
+msgid "登录"
+msgstr "로그인"
+
+#. Native Go kiosk UI.
+msgid "死活题"
+msgstr "사활"
+
+#. Native Go kiosk UI.
+msgid "跨平台对弈"
+msgstr "외부 플랫폼 대국"
+
+#. Native Go kiosk UI.
+msgid "设置"
+msgstr "설정"
+
+#. Native Go kiosk UI.
+msgid "实体棋盘镜像:识别的盘面还没接进来"
+msgstr "실물 바둑판 미러: 인식된 판 미연결"
+
+#. Native Go kiosk UI.
+msgid "面对面的局，以及没记下你执黑还是执白的局，没有计入近 30 天胜率。"
+msgstr "대면 대국과 내 돌 색이 기록되지 않은 대국은 최근 30일 승률에서 제외합니다."
+
+#. Native Go kiosk UI.
+msgid "{value1} · {at} / {totalMoves} {value4}"
+msgstr "{value1} · {at} / {totalMoves} {value4}"
+
+#. Native Go kiosk UI.
+msgid "{requested_visits} visits · {move_count} {value3}"
+msgstr "{requested_visits} visits · {move_count} {value3}"
+
+#. Native Go kiosk UI.
+msgid "邀请已发送，等待对方回应。"
+msgstr "초대를 보냈습니다. 상대 응답을 기다립니다."
+
+#. Native Go kiosk UI.
+msgid "胜负记在 OGS 账上"
+msgstr "승패는 OGS에 기록"
+
+#. Native Go kiosk UI.
+msgid "公开挑战"
+msgstr "공개 도전"
+
+#. Native Go kiosk UI.
+msgid "段位来自 OGS"
+msgstr "OGS 급단위"
+
+#. Native Go kiosk UI.
+msgid "国家或地区区号"
+msgstr "국가 또는 지역 전화 코드"
+
+#. Native Go kiosk UI.
+msgid "{value1}，{totalCount} 题，{value3}"
+msgstr "{value1}, {totalCount}문제, {value3}"
+
+#. Native Go kiosk UI.
+msgid "结算中"
+msgstr "결과 정산 중"
+
+#. Native Go kiosk UI.
+msgid "已结束{value1}"
+msgstr "종료됨{value1}"
+
+#. Native Go kiosk UI.
+msgid "等待对局快照"
+msgstr "대국 스냅샷 대기"
+
+#. Native Go kiosk UI.
+msgid "实时快照"
+msgstr "실시간 스냅샷"
+
+#. Native Go kiosk UI.
+msgid "星猛虎"
+msgstr "별 맹호"
+
+#. Native Go kiosk UI.
+msgid "星雄狮"
+msgstr "별 사자"
+
+#. Native Go kiosk UI.
+msgid "星巨象"
+msgstr "별 거대 코끼리"
+
+#. Native Go kiosk UI.
+msgid "星壮牛"
+msgstr "별 힘센 소"
+
+#. Native Go kiosk UI.
+msgid "星蓝鲸"
+msgstr "별 대왕고래"
+
+#. Native Go kiosk UI.
+msgid "星美鹿"
+msgstr "별 고운 사슴"
+
+#. Native Go kiosk UI.
+msgid "星孤狼"
+msgstr "별 외로운 늑대"
+
+#. Native Go kiosk UI.
+msgid "星奇豚"
+msgstr "별 특이한 돌고래"
+
+#. Native Go kiosk UI.
+msgid "星萌猪"
+msgstr "별 귀여운 돼지"
+
+#. Native Go kiosk UI.
+msgid "星骏马"
+msgstr "별 준마"
+
+#. Native Go kiosk UI.
+msgid "星呆羊"
+msgstr "별 멍한 양"
+
+#. Native Go kiosk UI.
+msgid "星跳鼠"
+msgstr "별 뛰는 쥐"
+
+#. Native Go kiosk UI.
+msgid "星云鹤"
+msgstr "별 구름 학"
+
+#. Native Go kiosk UI.
+msgid "星灵狐"
+msgstr "별 영리한 여우"
+
+#. Native Go kiosk UI.
+msgid "星白鹭"
+msgstr "별 백로"
+
+#. Native Go kiosk UI.
+msgid "星智狗"
+msgstr "별 지혜로운 개"
+
+#. Native Go kiosk UI.
+msgid "星巧猫"
+msgstr "별 재주꾼 고양이"
+
+#. Native Go kiosk UI.
+msgid "星皮猴"
+msgstr "별 장난꾸러기 원숭이"
+
+#. Native Go kiosk UI.
+msgid "星乖兔"
+msgstr "별 착한 토끼"
+
+#. Native Go kiosk UI.
+msgid "星树熊"
+msgstr "별 코알라"
+
+#. Native Go kiosk UI.
+msgid "星长蛇"
+msgstr "별 긴 뱀"
+
+#. Native Go kiosk UI.
+msgid "星铠虾"
+msgstr "별 갑옷 새우"
+
+#. Native Go kiosk UI.
+msgid "星夜鹰"
+msgstr "별 쏙독새"
+
+#. Native Go kiosk UI.
+msgid "星憨鹅"
+msgstr "별 순한 거위"
+
+#. Native Go kiosk UI.
+msgid "星刺头"
+msgstr "별 가시돌이"
+
+#. Native Go kiosk UI.
+msgid "星黄鸭"
+msgstr "별 노란 오리"
+
+#. Native Go kiosk UI.
+msgid "星轻燕"
+msgstr "별 날렵한 제비"
+
+#. Native Go kiosk UI.
+msgid "星绿蛙"
+msgstr "별 초록 개구리"
+
+#. Native Go kiosk UI.
+msgid "星老龟"
+msgstr "별 늙은 거북"
+
+#. Native Go kiosk UI.
+msgid "星钳蟹"
+msgstr "별 집게 게"
+
+#. Native Go kiosk UI.
+msgid "星尾鱼"
+msgstr "별 꼬리 물고기"
+
+#. Native Go kiosk UI.
+msgid "星敏螳"
+msgstr "별 날쌘 사마귀"
+
+#. Native Go kiosk UI.
+msgid "星鸣蝉"
+msgstr "별 노래 매미"
+
+#. Native Go kiosk UI.
+msgid "星飞蜓"
+msgstr "별 나는 잠자리"
+
+#. Native Go kiosk UI.
+msgid "星舞蝶"
+msgstr "별 춤추는 나비"
+
+#. Native Go kiosk UI.
+msgid "星忙蜂"
+msgstr "별 바쁜 벌"
+
+#. Native Go kiosk UI.
+msgid "星慢蜗"
+msgstr "별 느린 달팽이"
+
+#. Native Go kiosk UI.
+msgid "星花虫"
+msgstr "별 꽃벌레"
+
+#. Native Go kiosk UI.
+msgid "星小蚁"
+msgstr "별 작은 개미"
+
+#. Native Go kiosk UI.
+msgid "数子失败"
+msgstr "계가 실패"
+
+#. Native Go kiosk UI.
+msgid "本局 3 次机会已用完"
+msgstr "이번 대국의 기회 3회를 모두 사용했습니다"
+
+#. Native Go kiosk UI.
+msgid "（你）"
+msgstr "(나)"
+
+#. Native Go kiosk UI.
+msgid "恭喜答对！"
+msgstr "정답입니다!"
+
+#. Native Go kiosk UI.
+msgid "{n} 分"
+msgstr "{n}분"
+
+#. Native Go kiosk UI.
+msgid "{main} · 读秒 {seconds} 秒 × {periods}"
+msgstr "{main} · 초읽기 {seconds}초 × {periods}"
+
+#. Native Go kiosk UI.
+msgid "rank:golaxy_stars"
+msgstr "Golaxy {n}성"
+
+#. Native Go kiosk UI.
+msgid "game:realtime_rejected"
+msgstr "실시간 연결이 거부되었습니다({reason}). 바둑판이 자동 갱신되지 않습니다. 다시 로그인하고 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "创建"
+msgstr "생성"
+
+#. Native Go kiosk UI.
+msgid "登录后查看自己的成绩、活动与成长记录。"
+msgstr "로그인하면 내 전적, 활동, 성장 기록을 볼 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "个人棋谱"
+msgstr "개인 기보"
+
+#. Native Go kiosk UI.
+msgid "返回首页"
+msgstr "홈으로"
+
+#. Native Go kiosk UI.
+msgid "登录后浏览教程与章节内容。"
+msgstr "로그인하면 교재와 장 내용을 볼 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "登录后开始双人对弈，并保存自己的棋谱。"
+msgstr "로그인하면 2인 대국을 시작하고 내 기보를 저장할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "登录后查看自己的云端棋谱与分组。"
+msgstr "로그인하면 내 클라우드 기보와 그룹을 볼 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "个人复盘"
+msgstr "개인 복기"
+
+#. Native Go kiosk UI.
+msgid "定级与升降级成绩需要记录到你的账号。"
+msgstr "배치와 승강급 전적은 내 계정에 기록해야 합니다."
+
+#. Native Go kiosk UI.
+msgid "做题中"
+msgstr "풀이 중"
+
+#. Native Go kiosk UI.
+msgid "登录后可继续当前对弈设置。"
+msgstr "로그인하면 현재 대국 설정을 계속할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "答对"
+msgstr "정답"
+
+#. Native Go kiosk UI.
+msgid "AI解题中"
+msgstr "AI 문제 풀이 중"
+
+#. Native Go kiosk UI.
+msgid "绿"
+msgstr "초록"
+
+#. Native Go kiosk UI.
+msgid "红"
+msgstr "빨강"
+
+#. Native Go kiosk UI.
+msgid "自由战"
+msgstr "자유 대국"
+
+#. Native Go kiosk UI.
+msgid "摆放黑棋"
+msgstr "흑돌 놓기"
+
+#. Native Go kiosk UI.
+msgid "本地双人对弈"
+msgstr "로컬 2인 대국"
+
+#. Native Go kiosk UI.
+msgid "升降战"
+msgstr "승강급 대국"
+
+#. Native Go kiosk UI.
+msgid "rank:fox_reference"
+msgstr "Fox 9D"
+
+#. Native Go kiosk UI.
+msgid "查看你的棋谱与复盘报告，继续分析对局。"
+msgstr "내 기보와 복기 보고서를 보고 대국 분석을 계속합니다."
+
+#. Native Go kiosk UI.
+msgid "登录后进入研究棋盘，继续摆谱。"
+msgstr "로그인하면 연구 바둑판에 들어가 기보 놓기를 계속합니다."
+
+#. Native Go kiosk UI.
+msgid "棋盘已重新检测到"
+msgstr "바둑판을 다시 감지했습니다"
+
+#. Native Go kiosk UI.
+msgid "登录后浏览棋谱，回放对局或摆到实体棋盘。"
+msgstr "로그인하면 기보 보기, 대국 재생, 실물 바둑판에 기보 놓기를 할 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "检测质量下降，请检查光线"
+msgstr "감지 품질이 떨어졌습니다. 조명을 확인하세요"
+
+#. Native Go kiosk UI.
+msgid "登录后进入训练营，继续做题。"
+msgstr "로그인하면 훈련에 들어가 문제 풀이를 계속합니다."
+
+#. Native Go kiosk UI.
+msgid "研究分析"
+msgstr "연구 분석"
+
+#. Native Go kiosk UI.
+msgid "game:session_gone"
+msgstr "이 대국은 서버에 더 이상 없습니다. 이 페이지를 나가도 됩니다."
+
+#. Native Go kiosk UI.
+msgid "蓝"
+msgstr "파랑"
+
+#. Native Go kiosk UI.
+msgid "研究棋盘"
+msgstr "연구 바둑판"
+
+#. Native Go kiosk UI.
+msgid "登录后进入设备视觉与棋盘标定工作台。"
+msgstr "로그인하면 기기 카메라와 바둑판 보정 화면에 들어갑니다."
+
+#. Native Go kiosk UI.
+msgid "先登录智星盒，再连接你的星阵或 OGS 账号。"
+msgstr "먼저 StellaBox에 로그인한 뒤 Golaxy 또는 OGS 계정을 연결하세요."
+
+#. Native Go kiosk UI.
+msgid "答错拿除"
+msgstr "오답 돌 거두기"
+
+#. Native Go kiosk UI.
+msgid "标定工作台"
+msgstr "보정 작업 화면"
+
+#. Native Go kiosk UI.
+msgid "星阵返回的棋谱内容不完整"
+msgstr "Golaxy가 반환한 기보 내용이 불완전합니다"
+
+#. Native Go kiosk UI.
+msgid "离线"
+msgstr "오프라인"
+
+#. Native Go kiosk UI.
+msgid "登录后可使用引擎分析，当前棋盘与设置将保留。"
+msgstr "로그인하면 엔진 분석을 사용할 수 있습니다. 현재 판과 설정은 유지됩니다."
+
+#. Native Go kiosk UI.
+msgid "登录后查看并调整围棋设置。"
+msgstr "로그인하면 바둑 설정을 보고 바꿀 수 있습니다."
+
+#. Native Go kiosk UI.
+msgid "拒绝邀请"
+msgstr "초대 거절"
+
+#. Native Go kiosk UI.
+msgid "棋谱内容与当前房间不一致"
+msgstr "기보가 현재 대국실과 일치하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "状态未返回"
+msgstr "상태 미수신"
+
+#. Native Go kiosk UI.
+msgid "rank:pro_fox_reference"
+msgstr "프로 / Fox 9D+"
+
+#. Native Go kiosk UI.
+msgid "研究中"
+msgstr "연구 중"
+
+#. Native Go kiosk UI.
+msgid "查看正在进行的对局，邀请棋友或匹配对手。"
+msgstr "진행 중인 대국을 보고 사용자를 초대하거나 상대를 찾습니다."
+
+#. Native Go kiosk UI.
+msgid "允许邀请"
+msgstr "초대 허용"
+
+#. Native Go kiosk UI.
+msgid "忙碌"
+msgstr "바쁨"
+
+#. Native Go kiosk UI.
+msgid "应手"
+msgstr "응수"
+
+#. Native Go kiosk UI.
+msgid "当前棋盘路数暂不支持观战"
+msgstr "현재 줄 수의 바둑판은 관전을 지원하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "星阵登录已失效"
+msgstr "Golaxy 로그인 만료"
+
+#. Native Go kiosk UI.
+msgid "common:close"
+msgstr "닫기"
+
+#. Native Go kiosk UI.
+msgid "kifu:preview_failed"
+msgstr "기보 미리보기를 불러오지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "kifu:selected_game"
+msgstr "선택한 대국"
+
+#. Native Go kiosk UI.
+msgid "kifu:open_replay"
+msgstr "기보 보기"
+
+#. Native Go kiosk UI.
+msgid "kifu:view_kifu"
+msgstr "기보 보기"
+
+#. Native Go kiosk UI.
+msgid "report:event"
+msgstr "대회"
+
+#. Native Go kiosk UI.
+msgid "report:date"
+msgstr "날짜"
+
+#. Native Go kiosk UI.
+msgid "report:result"
+msgstr "결과"
+
+#. Native Go kiosk UI.
+msgid "report:rules"
+msgstr "규칙"
+
+#. Native Go kiosk UI.
+msgid "report:source"
+msgstr "출처"
+
+#. Native Go kiosk UI.
+msgid "该局型暂不支持观战"
+msgstr "이 대국 유형은 관전을 지원하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "没能同步星阵棋谱"
+msgstr "Golaxy 기보를 동기화하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "请先连接星阵账号"
+msgstr "먼저 Golaxy 계정을 연결하세요"
+
+#. Native Go kiosk UI.
+msgid "星阵账号未连接"
+msgstr "Golaxy 계정 연결 전"
+
+#. Native Go kiosk UI.
+msgid "没能检查星阵连接"
+msgstr "Golaxy 연결을 확인하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "请重新登录后观战。"
+msgstr "다시 로그인한 뒤 관전하세요."
+
+#. Native Go kiosk UI.
+msgid "登录状态已失效，请重新登录。"
+msgstr "로그인이 만료되었습니다. 다시 로그인하세요."
+
+#. Native Go kiosk UI.
+msgid "对局已结束，已保留最后终局。"
+msgstr "대국이 끝났으며 최종 판을 유지합니다."
+
+#. Native Go kiosk UI.
+msgid "对局不存在或已结束。"
+msgstr "대국이 없거나 이미 끝났습니다."
+
+#. Native Go kiosk UI.
+msgid "观战同步失败，请重试。"
+msgstr "관전 동기화에 실패했습니다. 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "观战快照内容不完整，请重试。"
+msgstr "관전 스냅샷이 불완전합니다. 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "中央对局连接中断"
+msgstr "중앙 대국 연결이 끊겼습니다"
+
+#. Native Go kiosk UI.
+msgid "实时连接已断开，棋盘不会自动更新，请刷新页面"
+msgstr "실시간 연결이 끊겼습니다. 바둑판이 자동 갱신되지 않으니 페이지를 새로고침하세요"
+
+#. Native Go kiosk UI.
+msgid "Failed to connect to game"
+msgstr "대국에 연결하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "邀请已过期，请对方重新邀请。"
+msgstr "초대가 만료되었습니다. 상대에게 다시 초대해 달라고 하세요."
+
+#. Native Go kiosk UI.
+msgid "操作失败，请重试。"
+msgstr "조작에 실패했습니다. 다시 시도하세요."
+
+#. Native Go kiosk UI.
+msgid "OGS 没有返回挑战编号"
+msgstr "OGS가 도전 ID를 반환하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "约战已取消"
+msgstr "도전을 취소했습니다"
+
+#. Native Go kiosk UI.
+msgid "取消约战失败"
+msgstr "도전 취소 실패"
+
+#. Native Go kiosk UI.
+msgid "OGS 没有返回对局编号"
+msgstr "OGS가 대국 ID를 반환하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "接受挑战失败"
+msgstr "도전 수락 실패"
+
+#. Native Go kiosk UI.
+msgid "AI 引擎准备中，稍后即可开始"
+msgstr "AI 엔진 준비 중이며 곧 시작할 수 있습니다"
+
+#. Native Go kiosk UI.
+msgid "AI 引擎暂未就绪，请稍后重试"
+msgstr "AI 엔진이 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid " · 最新落子 {coord}"
+msgstr " · 최신 착수 {coord}"
+
+#. Native Go kiosk UI.
+msgid "当前不是实时态。"
+msgstr "현재 실시간 상태가 아닙니다."
+
+#. Native Go kiosk UI.
+msgid "{n} 分钟"
+msgstr "{n}분"
+
+#. Native Go kiosk UI.
+msgid "{n} 小时"
+msgstr "{n}시간"
+
+#. Native Go kiosk UI.
+msgid "{duration}前"
+msgstr "{duration} 전"
+
+#. Native Go kiosk UI.
+msgid "返回对局"
+msgstr "대국으로 돌아가기"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：棋力服务未能正常完成对局"
+msgstr "승강급 미반영: 기력 서비스가 대국을 정상적으로 완료하지 못했습니다"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对局没有形成有效胜负"
+msgstr "승강급 미반영: 유효한 승패가 성립하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：本局对手尚未通过计分认证"
+msgstr "승강급 미반영: 이번 상대가 점수 인증을 통과하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对手档位与开局快照不一致"
+msgstr "승강급 미반영: 상대 단계가 시작 스냅샷과 다릅니다"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：对局类型不符合升降级规则"
+msgstr "승강급 미반영: 대국 유형이 승강급 규칙에 맞지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "本局不计入升降级：服务器判定本局不计入"
+msgstr "승강급 미반영: 서버가 이번 대국을 제외했습니다"
+
+#. Native Go kiosk UI.
+msgid "这台盒子上现在连的不是你的账号"
+msgstr "이 기기에 연결된 계정은 내 계정이 아닙니다"
+
+#. Native Go kiosk UI.
+msgid "扫码请求太频繁,请稍后再试"
+msgstr "QR 요청이 너무 많습니다. 잠시 후 다시 시도하세요"
+
+#. Native Go kiosk UI.
+msgid "扫码会话不存在或已过期"
+msgstr "QR 로그인 세션이 없거나 만료되었습니다"
+
+#. Native Go kiosk UI.
+msgid "这条扫码登录不是你发起的"
+msgstr "내가 시작한 QR 로그인이 아닙니다"
+
+#. Native Go kiosk UI.
+msgid "扫码会话已过期"
+msgstr "QR 로그인 세션이 만료되었습니다"
+
+#. Native Go kiosk UI.
+msgid "还没在手机上确认"
+msgstr "휴대폰에서 아직 확인하지 않았습니다"
+
+#. Native Go kiosk UI.
+msgid "扫码登录失败"
+msgstr "QR 로그인 실패"
+
+#. Native Go kiosk UI.
+msgid "连不上星阵"
+msgstr "Golaxy에 연결할 수 없습니다"
+
+#. Native Go kiosk UI.
+msgid "platform:account_busy"
+msgstr "다른 사람의 {platform} 계정이 연결되어 있습니다. 설정에서 연결을 해제한 뒤 로그인하세요."
+
+#. Native Go kiosk UI.
+msgid "platform:scan_unsupported"
+msgstr "{platform}은(는) QR 로그인을 지원하지 않습니다"
+
+#. Native Go kiosk UI.
+msgid "platform:scan_connection_detail"
+msgstr "Golaxy 연결 실패: {detail}"
+
+#. Native Go kiosk UI.
+msgid "ladder:matched_rung_summary"
+msgstr "내 급단위는 {rank}, 상대는 {rung}입니다 — {reason}"
+
+#. Native Go kiosk UI.
+msgid "ladder:rung_number"
+msgstr "{n}단계"
+
+#. Native Go kiosk UI.
+msgid "report:color_leads_points"
+msgstr "{color} {points}집 우세"
+
+#. Native Go kiosk UI.
+msgid "report:color_winrate"
+msgstr "{color} 승률 {percentage}"
+
+#. Native Go kiosk UI.
+msgid "Golaxy"
+msgstr "GoLaxy"
+
+#. Native Go kiosk UI.
+msgid "Fox Weiqi"
+msgstr "Fox Weiqi"
+
+msgid "membership:order_cancelled"
+msgstr "주문이 취소되었습니다"
+
+msgid "membership:wechat_another_screen"
+msgstr "휴대폰으로 보고 있다면 다른 화면에서 이 페이지를 연 다음 휴대폰의 WeChat으로 코드를 스캔해 주세요."
+
+msgid "membership:wechat_cancel"
+msgstr "주문 취소"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "취소 결과를 확인하고 있습니다. 이미 결제되었다면 결제 확인 내역이 우선합니다."
+
+msgid "membership:wechat_cancelling"
+msgstr "취소 중…"
+
+msgid "membership:wechat_close_help"
+msgstr "닫기는 이 페이지만 숨깁니다. 주문 내역에서 다시 확인할 수 있습니다."
+
+msgid "membership:wechat_confirming"
+msgstr "결제 결과를 확인하고 있습니다. 중복 주문하지 마세요."
+
+msgid "membership:wechat_paid"
+msgstr "WeChat Pay 결제가 완료되었습니다. 계정을 동기화하고 있습니다."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat Pay 결제 QR 코드"
+
+msgid "membership:wechat_qr_error"
+msgstr "지금은 QR 코드를 표시할 수 없습니다. 이 주문 확인을 다시 시도해 주세요."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "QR 코드가 아직 준비되지 않았습니다. 주문을 확인하고 있습니다."
+
+msgid "membership:wechat_retry"
+msgstr "안전하게 다시 시도"
+
+msgid "membership:wechat_scan"
+msgstr "스캔하여 결제"
+
+msgid "membership:wechat_scan_help"
+msgstr "휴대폰 WeChat의 스캔 기능으로 QR 코드를 스캔해 주세요."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR 코드 유효 시간 {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "WeChat Pay 결제 확인 대기 중"

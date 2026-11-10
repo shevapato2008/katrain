@@ -1,6 +1,14 @@
 import { render, screen, cleanup } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { API } from '../../../api';
+import { i18n } from '../../../i18n';
+import { ReportAnalysisRail } from '../report/ReportAnalysisRail';
+import type { MoveAnalysis } from '../../../types/live';
 
 import AiLadderSetupOpponent from '../../../features/aiLadder/AiLadderSetupOpponent';
 import { AI_LADDER_COPY } from '../../../features/aiLadder/copy';
@@ -134,4 +142,48 @@ describe('登记在案的两处不同 —— 必须是这两处', () => {
     // (`ai_ladder_ranked.py:178` `if rung is not None: return rung`)。
     // 所以这不是「你的段位」和「对手的档」两件事,是同一件事的两种写法。
   });
+});
+
+
+it('uses the real EN/KO catalogs for the rank and matched-rung sentence', async () => {
+  // Read singular gettext entries as the frontend payload returned by /api/translations.
+  const catalog = (lang: string) => {
+    const text = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../../i18n/locales', lang, 'LC_MESSAGES/katrain.po'), 'utf8');
+    const result: Record<string, string> = {};
+    let key = '', value = '', target = '';
+    for (const line of [...text.split('\n'), '']) {
+      if (!line) { if (key && value) result[key] = value; key = ''; value = ''; target = ''; }
+      else if (line.startsWith('msgid ')) { key = JSON.parse(line.slice(6)); target = 'key'; }
+      else if (line.startsWith('msgstr ')) { value = JSON.parse(line.slice(7)); target = 'value'; }
+      else if (line.startsWith('"')) { const part = JSON.parse(line); if (target === 'key') key += part; if (target === 'value') value += part; }
+    }
+    return result;
+  };
+  const translations = vi.spyOn(API, 'getTranslations').mockImplementation(async (lang) => ({ translations: catalog(lang) }));
+  const live = vi.spyOn(i18n, 'loadLiveTranslations').mockResolvedValue();
+  try {
+    for (const lang of ['en', 'ko']) {
+      await i18n.loadTranslations(lang);
+      const html = renderToStaticMarkup(<KioskAiLadderOpponent status={placed()} />);
+      const document = new DOMParser().parseFromString(html, 'text/html');
+      const paragraph = document.querySelector('.setexplain')!;
+      expect(paragraph.textContent).toContain(i18n.t('ladder:rung_number').replace('{n}', '16'));
+      expect(paragraph.querySelectorAll('b')).toHaveLength(2);
+      expect(paragraph.textContent).not.toContain('Move  16');
+      expect(paragraph.textContent).not.toMatch(/[\u3400-\u9fff]/);
+      const report = render(<ReportAnalysisRail testId="locale-report" pagebar={null} players={['Alice', 'Bob']} metadata={null} status={null} details={[]}
+        analysis={{ score_lead: 2, winrate: .6, top_moves: [] } as unknown as MoveAnalysis} analysisByMove={{}} playerToMove="B" currentMove={4} totalMoves={4}
+        points={[]} lead={[]} onMoveClick={() => {}} onCandidateClick={() => {}} activeMove={null} actions={null} toggles={null} navigation={null} />);
+      const scores = report.container.querySelector('.report-analysis-rail__scores')!;
+      expect(scores.textContent).toContain('2.0');
+      expect(scores.textContent).not.toContain('Blackleads');
+      expect(scores.textContent).not.toMatch(/[\u3400-\u9fff]/);
+      if (lang === 'en') expect(scores.textContent).toContain('Black leads 2.0 pts');
+      report.unmount();
+
+    }
+  } finally {
+    await i18n.loadTranslations('cn');
+    translations.mockRestore(); live.mockRestore();
+  }
 });

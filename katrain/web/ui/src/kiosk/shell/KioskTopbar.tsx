@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { kioskText } from '../appearance/messages';
 import { identityPresentation, type ShellIdentity } from './identityPresentation';
+import { useMembershipI18n } from '../../features/membership/useMembershipI18n';
 
 function clockText(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -41,13 +43,15 @@ function useMinuteClock(): Date {
  * 底部那三格(围棋在 `SmartBoardConsole` 里已经有了),L3 走 `VisionSyncOverlay` +
  * `PhysicalPlayStatusChip`。设置的入口在 Dock 里,顶栏再放一个是两个入口。
  */
-export function KioskTopbar({ identity, onHome, homeBusy = false }: {
+export function KioskTopbar({ identity, onHome, onAccount, homeBusy = false }: {
   identity: ShellIdentity;
   onHome?: () => void;
+  onAccount?: () => void;
   homeBusy?: boolean;
 }) {
+  const { t, lang } = useMembershipI18n();
   const clock = clockText(useMinuteClock());
-  const presented = identityPresentation(identity);
+  const presented = identityPresentation(identity.username ? identity : { username: kioskText(lang, 'guest') });
 
   return (
     <header className="kiosk-topbar">
@@ -60,24 +64,35 @@ export function KioskTopbar({ identity, onHome, homeBusy = false }: {
         <span className="kiosk-topbar__brand-en">StellaBox</span>
       </span>
       <span className="kiosk-topbar__rule" aria-hidden="true" />
-      <span className="kiosk-topbar__game">围棋</span>
+      <span className="kiosk-topbar__game">{kioskText(lang, 'go')}</span>
       <div className="kiosk-topbar__right">
         <div id="kiosk-topbar-actions" />
         {onHome && (
           <button
             type="button"
             className="kiosk-topbar__home"
-            aria-label="返回智星盒主页"
+            aria-label={kioskText(lang, 'backHome')}
             data-testid="kiosk-home-action"
             disabled={homeBusy}
             onClick={onHome}
           >
             <span className="kiosk-topbar__home-icon" aria-hidden="true" />
-            <span>主页</span>
+            <span>{kioskText(lang, 'home')}</span>
           </button>
         )}
-        <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
-        <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        {onAccount ? <button
+          type="button"
+          className="kiosk-topbar__account"
+          aria-label={t('membership:kiosk_account_entry_aria', '账户、会员与充值')}
+          onClick={onAccount}
+          style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: 0, border: 0, background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer' }}
+        >
+          <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
+          <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        </button> : <>
+          <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
+          <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        </>}
         {/* dateTime 和正文复用同一份格式化结果 —— 各写一套会独立漂移。 */}
         <time className="kiosk-topbar__clock" data-testid="clock" dateTime={clock}>{clock}</time>
       </div>

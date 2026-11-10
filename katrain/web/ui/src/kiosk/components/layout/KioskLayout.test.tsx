@@ -55,6 +55,13 @@ test('Dock shows on L1 play', () => {
   expect(screen.getByRole('button', { name: '返回智星盒主页' })).toBeInTheDocument();
 });
 
+test('OGS course home uses full width while keeping topbar and Dock', () => {
+  renderAt('/kiosk/tutorial');
+  expect(document.querySelector('.kiosk-console')).not.toBeInTheDocument();
+  expect(screen.getByTestId('kiosk-brand-zh')).toBeInTheDocument();
+  expect(screen.getByRole('navigation', { name: '主导航' })).toBeInTheDocument();
+});
+
 // L1 = Dock 词典里的六条,不是「路由表里排在前面的那几条」。Task 4 之前这份名单
 // (navTabs 的 L1_PATHS)有 8 条且不含 settings —— 两处名单会漂,所以现在只留一份。
 test.each(DOCK_TABS.map((t) => t.path))('home action shows on L1 route %s', (path) => {

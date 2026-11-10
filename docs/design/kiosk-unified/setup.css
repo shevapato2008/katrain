@@ -1,0 +1,53 @@
+.u-setup-cover{position:absolute;left:532px;top:56px;width:492px;height:544px;background:#0d1415}
+.u-setup-rail{position:absolute;left:548px;top:70px;width:460px;height:516px;color:#edf2ec;font-family:"SmartBox Kai",serif;overflow:hidden}
+.u-setup-rail *{box-sizing:border-box}
+.u-setup-page-head{height:52px;display:flex;align-items:center;gap:10px;min-width:0}
+.u-setup-back{height:48px;min-width:140px;padding:0 9px;display:flex;align-items:center;justify-content:center;gap:6px;background:#1b2924;border:1px solid #3c5949;border-radius:10px;color:#e9f2e9;font:22px "SmartBox Kai",serif;white-space:nowrap;cursor:pointer}
+.u-setup-back svg,.u-setup-start svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.u-setup-page-name{display:flex;flex-direction:column;min-width:0;line-height:1.05;gap:2px}
+.u-setup-page-name strong{font-size:28px;font-weight:600;white-space:nowrap}
+.u-setup-page-name>span{font-size:18px;color:#a5c4ae;white-space:nowrap}
+.u-setup-content{position:absolute;top:56px;left:0;right:0;bottom:58px;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.u-setup-group{flex:none}
+.u-setup-section-head{height:44px;display:flex;align-items:center;justify-content:space-between;color:#dfece1;font-size:18px;line-height:1}
+.u-setup-info{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;padding:0;border:0;background:transparent;color:#8cdba6;cursor:pointer}
+.u-setup-info svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.u-setup-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.u-setup-field{position:relative;height:58px;min-width:0;padding:6px 10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;border:1px solid #3a5848;border-radius:10px;background:#1d2b25;color:#e9f2e9}
+.u-setup-field-label{font-size:18px;line-height:1;white-space:nowrap;color:#a9c1af}
+.u-setup-field-value{font-size:22px;line-height:1.1;font-weight:500;white-space:nowrap}
+.u-setup-select{padding-right:29px;cursor:pointer;border-color:#4e775c;border-radius:17px;background:#203529 radial-gradient(ellipse 90% 70% at 50% -8%,#ffffff29,transparent 75%);box-shadow:inset 0 1px 0 #ffffff38,inset 0 -2px 2px #0004,0 3px 0 #102019,0 6px 10px #0007;translate:0 0;transition:translate 130ms ease,box-shadow 130ms ease}
+.u-setup-select:hover{border-color:#77d49a;background-color:#294433}
+.u-setup-select:has(.u-setup-hit:active){translate:0 3px;box-shadow:inset 0 4px 9px #0008,inset 0 1px 0 #ffffff14,0 1px 2px #0006}
+.u-setup-select:has(.u-setup-hit:focus-visible){outline:2px solid #a9efbd;outline-offset:2px}
+.u-setup-hit{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.u-setup-chevron{position:absolute;right:10px;top:50%;width:10px;height:10px;border-right:2px solid #b3d8bd;border-bottom:2px solid #b3d8bd;transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.u-setup-input{cursor:text}.u-setup-name-input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#edf2ec;font:22px "SmartBox Kai",serif}.u-setup-name-input::placeholder{color:#a7bdac}
+.u-setup-fixed{border-style:dashed;background:#17231f}
+.u-setup-komi-row{margin-top:5px}
+.u-setup-komi-row .u-setup-field{height:58px}
+.u-setup-rank-row{margin-top:5px}
+.u-setup-opponent-row{grid-template-columns:1fr}
+.u-setup-opponent-row .u-setup-field{height:58px;flex-direction:row;align-items:center;justify-content:flex-start;gap:18px;border-color:#55b77b;background:#20392a}
+.u-setup-opponent-row .u-setup-field-label{width:42px}
+.u-setup-double-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.u-setup-double-row .u-setup-field{height:58px}
+.u-setup-double-row .u-setup-field-value{font-size:22px}
+.u-setup-seat-row .u-setup-field{height:74px}
+.u-setup-seat-row .u-setup-field:has(.u-setup-time-line){justify-content:flex-start;padding-top:7px;gap:2px}
+.u-setup-seat-row .u-setup-field:has(.u-setup-time-line) .u-setup-field-value{display:flex;flex-direction:column;gap:0;line-height:1}
+.u-setup-time-line{display:block;font-size:20px;line-height:1}
+.u-setup-stake-row .u-setup-field{height:50px;flex-direction:row;align-items:center;gap:10px}
+.u-setup-stake-row .u-setup-field-value{color:#7cd398}
+.u-setup-players-row .u-setup-field{height:58px}
+.u-setup-players-row .u-setup-field-value{color:#c5d6c9}
+.u-setup-engine-plate{position:relative;width:100%;height:72px;display:flex;align-items:center;gap:12px;padding:7px 11px;border:1px solid #58b97e;border-radius:17px;background:#1d3025;color:#e9f2e9;font-family:inherit;text-align:left;cursor:pointer}
+.u-setup-engine-mark{width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #58a873;border-radius:50%;color:#7cd398;font-size:22px}
+.u-setup-engine-name{min-width:0;display:flex;flex-direction:column;gap:3px}
+.u-setup-engine-name strong{font-size:22px;font-weight:500;white-space:nowrap}
+.u-setup-engine-name span{font-size:18px;color:#a9c5b0;white-space:nowrap}
+.u-setup-engine-chevron{width:12px;height:12px;flex:none;margin:0 7px 6px auto;border-right:3px solid #a5e5b9;border-bottom:3px solid #a5e5b9;transform:rotate(45deg)}
+.u-setup-engine-plate:focus-visible{outline:2px solid #a9efbd;outline-offset:2px}
+.u-setup-platform-seat .u-setup-field{height:66px}
+.u-setup-start{position:absolute;left:0;bottom:0;width:460px;height:48px;display:flex;align-items:center;justify-content:center;gap:9px;border:1px solid #59bd81;border-radius:10px;background:#58b77e;color:#10241a;font:22px "SmartBox Kai",serif;cursor:pointer}
+.u-setup-back:focus-visible,.u-setup-info:focus-visible,.u-setup-start:focus-visible{outline:3px solid #ddf5b6;outline-offset:2px}

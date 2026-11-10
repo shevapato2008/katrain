@@ -75,6 +75,8 @@ export interface AiLadderTerritoryResult {
   ownership: number[];
   black_area: number;
   white_area: number;
+  /** Optional black-perspective estimate; older successful receipts omit it. */
+  score_lead?: number | null;
   stale?: boolean;
 }
 

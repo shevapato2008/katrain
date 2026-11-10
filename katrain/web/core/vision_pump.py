@@ -4,9 +4,10 @@ The worker event queue is DESTRUCTIVE (each event can be read once). Exactly ONE
 pump task drains it and routes by type:
   - dict events (sync/setup/monitor move_confirmed) -> broadcast to every /ws/vision
     client via its per-connection asyncio.Queue (each WS handler owns its socket writes);
-  - ConfirmedMove dataclasses (bound game path) -> app-level move queue consumed by
-    _vision_move_poller. Dropped when no session is bound (stale moves must not leak
-    into a later bind).
+  - ConfirmedMove dataclasses use VisionService's separate FIFO, consumed by
+    _vision_move_poller. The service filters stamped moves by binding and authority
+    revision; sync's temporary single-point ownership makes independent pump/poller
+    scheduling safe. route_vision_event retains compatibility for direct callers.
 Nothing else may call VisionService.poll_events().
 """
 

@@ -1,3 +1,4 @@
+import { interpolate } from '../utils/interpolate';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
@@ -13,6 +14,8 @@ import {
   loadErrorCopy,
   readLastCategory,
 } from './tsumegoUnits';
+
+import './trainingReviewed.css';
 
 interface CategoryInfo {
   category: string;
@@ -89,13 +92,13 @@ const TsumegoCategoriesPage = () => {
     [categories],
   );
   const totalCount = categories.reduce((sum, category) => sum + category.count, 0);
-  const levelName = level ? levelChinese(level) : '';
+  const levelName = level ? levelChinese(level, t) : '';
   const lastCategory = readLastCategory();
 
   const pagebar = (
     <KioskPagebar
-      title={`${levelName} · ${t('Select category', '选择题型')}`}
-      sub={loading ? t('Loading…', '加载中…') : `${totalCount} 题 · ${categories.length} 类`}
+      title={interpolate(t("{levelName} · {value2}", "{levelName} · {value2}"), { levelName: levelName, value2: t('Select category', '选择题型') })}
+      sub={loading ? t('Loading…', '加载中…') : interpolate(t("{totalCount} 题 · {length} 类", "{totalCount} 题 · {length} 类"), { totalCount: totalCount, length: categories.length })}
       backLabel={t('Difficulty', '难度')}
       onBack={() => navigate('/kiosk/tsumego')}
     />
@@ -103,7 +106,7 @@ const TsumegoCategoriesPage = () => {
 
   if (loading || error || categories.length === 0) {
     return (
-      <div className="kiosk-layout-b">
+      <div className="kiosk-layout-b training-reviewed">
         {pagebar}
         <KioskScrollZone>
           {loading ? (
@@ -137,7 +140,7 @@ const TsumegoCategoriesPage = () => {
   }
 
   return (
-    <div className="kiosk-layout-b">
+    <div className="kiosk-layout-b training-reviewed">
       {pagebar}
       <KioskScrollZone resetKey={level}>
         <section className="kiosk-section">
@@ -152,25 +155,19 @@ const TsumegoCategoriesPage = () => {
                 <KioskCard
                   key={category.category}
                   title={categoryName}
-                  sub={summary ? `${summary.completed} / ${summary.total} 题` : `${category.count} 题`}
+                  sub={summary ? interpolate(t("{completed} / {total} 题", "{completed} / {total} 题"), { completed: summary.completed, total: summary.total }) : interpolate(t("{count} 题", "{count} 题"), { count: category.count })}
                   icon={meta?.icon ?? 'puzzle-piece'}
                   current={lastCategory === category.category}
                   onClick={() => navigate(`/kiosk/tsumego/${level}/${category.category}`)}
                 />
               );
             })}
-          </div>
-        </section>
-
-        <section className="kiosk-section tsumego-mixed-section">
-          <KioskSecLabel zh={t('Mixed categories', '混合题型')} en="Mixed" value={`${totalCount} 题`} />
-          <div className="tsumego-mixed-card">
             <KioskCard
               title={t('Mixed training', '综合训练')}
               sub={t('Mix all categories at this level and group every 20 problems into a unit', '混合当前难度全部题型，也按每 20 题分成单元')}
               icon="squares-four"
               current={lastCategory === 'all'}
-              ariaLabel={`${t('Mixed training', '综合训练')}，${totalCount} 题，${t('20 problems per unit', '每 20 题一单元')}`}
+              ariaLabel={interpolate(t("{value1}，{totalCount} 题，{value3}", "{value1}，{totalCount} 题，{value3}"), { value1: t('Mixed training', '综合训练'), totalCount: totalCount, value3: t('20 problems per unit', '每 20 题一单元') })}
               onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
             />
           </div>

@@ -22,7 +22,7 @@ const { mockNavigate, mockUnitProgress, progressMap, progressFlags } = vi.hoiste
   mockNavigate: vi.fn(),
   mockUnitProgress: vi.fn(() => ({ completed: 0, total: 0 })),
   progressMap: {} as Record<string, TsumegoProgressEntry>,
-  progressFlags: { failed: false },
+  progressFlags: { failed: false, loading: false },
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -38,6 +38,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
     unitProgress: mockUnitProgress,
     categoryProgress: () => ({ completed: 0, total: 0 }),
     serverLoadFailed: progressFlags.failed,
+    progressLoading: progressFlags.loading,
     refresh: vi.fn(),
   }),
 }));
@@ -60,6 +61,7 @@ beforeEach(() => {
   mockUnitProgress.mockReturnValue({ completed: 0, total: 0 });
   for (const k of Object.keys(progressMap)) delete progressMap[k];
   progressFlags.failed = false;
+  progressFlags.loading = false;
   sessionStorage.clear();
   localStorage.clear();
   __resetKioskActivityStorageForTests();
@@ -297,4 +299,18 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
     await waitFor(() => expect(screen.getByTestId('units-empty')).toBeInTheDocument());
     expect(screen.queryByTestId('units-error')).toBeNull();
   });
+});
+
+
+it('keeps the wrong-book entry available while account progress is loading', async () => {
+  progressFlags.loading = true;
+  renderPage();
+  await screen.findByRole('tab', { name: '错题' });
+  fireEvent.click(screen.getByRole('tab', { name: '错题' }));
+  expect(screen.getByText('正在读取做题记录…')).toBeInTheDocument();
+  const entry = screen.getByText('错题簿').closest('button')!;
+  expect(entry).not.toBeDisabled();
+  expect(screen.queryByText('这一类现在有 0 道错题')).toBeNull();
+  fireEvent.click(entry);
+  expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing/wrong');
 });

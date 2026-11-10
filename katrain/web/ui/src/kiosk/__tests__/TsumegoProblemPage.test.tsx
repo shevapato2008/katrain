@@ -4,7 +4,10 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumegoUnits';
-import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
+import { API } from '../../api';
+import { LedAPI } from '../../api/ledApi';
+import type { ProblemDetail } from '../../hooks/useTsumegoProblem';
+import type { PhysicalTsumegoOptions, PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
 import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 // AUTO_ADVANCE_KEY is identity-scoped (box-SSO guest mode, R9-F1) — these tests exercise a
@@ -12,10 +15,11 @@ import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storag
 const TEST_UUID = 'test-uuid';
 
 // ---- Hoisted spies referenced by the mock factories below ----
-const { mockNavigate, mockFlush, mockReadPhysicalMode } = vi.hoisted(() => ({
+const { mockNavigate, mockFlush, mockReadPhysicalMode, mockUseProblem } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockFlush: vi.fn(),
   mockReadPhysicalMode: vi.fn(() => false),
+  mockUseProblem: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -68,6 +72,7 @@ vi.mock('../context/GeometryContext', async (importOriginal) => {
 
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({
+    connected: true,
     syncEvents: [],
     latestEvent: null,
     setupProgress: null,
@@ -94,6 +99,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 
 const mockUndo = vi.fn();
 const mockReset = vi.fn();
+const mockRestartTimer = vi.fn();
 const mockToggleHint = vi.fn();
 const mockEnterTryMode = vi.fn();
 const mockExitTryMode = vi.fn();
@@ -101,7 +107,7 @@ const mockPlaceStone = vi.fn();
 const mockSaveProgress = vi.fn();
 
 const defaultHookReturn = {
-  problem: { id: 'p1', level: '15k', category: '手筋', hint: '找到要点', boardSize: 9, initialBlack: [], initialWhite: [], sgfContent: '' },
+  problem: { id: 'p1', level: '15k', category: '手筋', hint: '找到要点', boardSize: 9, initialBlack: [], initialWhite: [], sgfContent: '' } as ProblemDetail,
   loading: false,
   error: null,
   boardSize: 9,
@@ -121,6 +127,7 @@ const defaultHookReturn = {
   placeStone: mockPlaceStone,
   undo: mockUndo,
   reset: mockReset,
+  restartTimer: mockRestartTimer,
   toggleHint: mockToggleHint,
   enterTryMode: mockEnterTryMode,
   exitTryMode: mockExitTryMode,
@@ -132,7 +139,7 @@ const defaultHookReturn = {
 let hookReturn = { ...defaultHookReturn };
 
 vi.mock('../../hooks/useTsumegoProblem', () => ({
-  useTsumegoProblem: () => hookReturn,
+  useTsumegoProblem: (...args: unknown[]) => { mockUseProblem(...args); return hookReturn; },
 }));
 
 // usePhysicalTsumego is the REAL IO hook (its own 38-test suite covers the phase machine +
@@ -149,12 +156,19 @@ const defaultPhysicalReturn: PhysicalTsumegoState = {
   stageTotal: 0,
   ledOk: true,
   onScreenMove: vi.fn(),
+  resetToInitial: vi.fn(),
+  canAcceptInput: () => true,
+  hasPendingReset: () => false,
 };
 let physicalReturn: PhysicalTsumegoState = { ...defaultPhysicalReturn };
+let useRealPhysical = false;
 
 vi.mock('../hooks/usePhysicalTsumego', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../hooks/usePhysicalTsumego')>();
-  return { ...actual, usePhysicalTsumego: () => physicalReturn };
+  return { ...actual, usePhysicalTsumego: (opts: PhysicalTsumegoOptions) => {
+    if (useRealPhysical) physicalReturn = actual.usePhysicalTsumego(opts);
+    return physicalReturn;
+  } };
 });
 
 import TsumegoProblemPage from '../pages/TsumegoProblemPage';
@@ -177,6 +191,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   hookReturn = { ...defaultHookReturn };
   physicalReturn = { ...defaultPhysicalReturn };
+  useRealPhysical = false;
   for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   sessionStorage.clear();
   localStorage.clear();
@@ -211,6 +226,20 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
   };
 
   const action = (name: string) => screen.getByRole('button', { name });
+
+  it('requests the Kiosk variant and explains a retained four-line source without blocking screen practice', () => {
+    hookReturn = { ...hookReturn, boardSize: 4, problem: { ...hookReturn.problem, boardSize: 4,
+      board_variant: { status: 'unavailable', source_size: 4, target_size: 19, policy_version: 'test', source_sha256: 'test', offset: [0, 0], reason: '本题需要保留四侧边界' },
+    } };
+    renderPage('p1');
+    expect(mockUseProblem).toHaveBeenCalledWith('p1', { boardVariant: 'kiosk19' });
+    expect(screen.getByTestId('puzzle-original-board-reason')).toHaveTextContent('原4路题：本题需要保留四侧边界');
+    expect(screen.getByTestId('physical-mode-toggle')).toBeDisabled();
+    expect(action('提示')).toBeEnabled();
+    expect(action('重摆')).toBeEnabled();
+    fireEvent.click(action('重摆'));
+    expect(mockReset).toHaveBeenCalled();
+  });
 
   it('页控条:标题是第几题,副标是档位和分类,返回键回这一题所在的单元', () => {
     renderPage('p1');
@@ -460,15 +489,14 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       );
     });
 
-    /* ⚠️ 回的是**屏 13 题目列表**(这道题所在的那一单元),不是屏 12 类目页 ——
-     * 稿子上写的是「← 吃子」,那是 2026-08-21 补出屏 13 之前的画法;
-     * 从一道题退出来,该落在它旁边那 20 道题上。 */
-    it('最后一题时「下一题」变成「返回单元」,回的是这一单元的题目列表', () => {
+    it('最后一题保留「下一题」并禁用，底部不重复放返回键', () => {
       renderPage('p2');
-      const back = action('返回单元');
-      fireEvent.click(back);
-      expect(mockFlush).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/手筋/1');
+      const next = action('下一题');
+      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('title', '这是最后一题');
+      expect(within(screen.getByTestId('puzzle-actions')).queryByText('返回单元')).toBeNull();
+      fireEvent.click(next);
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('页控条的返回键同一个去处,而且也先落盘', () => {
@@ -590,6 +618,101 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       // 摆盘阶段这一块**换掉**着法表,不是加一块 —— 加一块会把动作区顶出右栏。
       expect(screen.queryByTestId('puzzle-moves')).toBeNull();
       expect(screen.getByTestId('puzzle-physical-guide')).toBeInTheDocument();
+    });
+
+    it('重摆同步暂停实体输入，目标来自初始题面而非当前试下棋子', () => {
+      enablePhysical();
+      hookReturn = { ...hookReturn, isTryMode: true, problem: { ...hookReturn.problem, initialBlack: ['dd'], initialWhite: ['ee'] } };
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'ready' };
+      renderPage('p1');
+      fireEvent.click(action('重摆'));
+      const calls = vi.mocked(physicalReturn.resetToInitial);
+      const target = calls.mock.calls[0][0];
+      expect(target[3][3]).toBe(1);
+      expect(target[4][4]).toBe(2);
+      expect(target.flat().filter(Boolean)).toHaveLength(2);
+      expect(calls.mock.invocationCallOrder[0]).toBeLessThan(mockReset.mock.invocationCallOrder[0]);
+    });
+
+    it('核对初始局面显示红×与缺子指引，匹配后重设计时；普通退出试下保留计时', () => {
+      enablePhysical();
+      physicalReturn = { ...defaultPhysicalReturn, phase: 'ready' };
+      const view = renderPage('p1');
+      fireEvent.click(action('重摆'));
+      physicalReturn = { ...physicalReturn, phase: 'restoring', extra: [[3, 3, 2]], missing: [[4, 4]] };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(screen.getByTestId('puzzle-physical-restore')).toHaveTextContent('待取走 1 颗，待补回 1 颗');
+      expect(screen.getByTestId('puzzle-physical-restore')).toHaveTextContent('红灯补黑子、绿灯补白子');
+      physicalReturn = { ...physicalReturn, phase: 'ready' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(mockRestartTimer).toHaveBeenCalledTimes(1);
+      physicalReturn = { ...physicalReturn, phase: 'restoring' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      physicalReturn = { ...physicalReturn, phase: 'ready' };
+      view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      expect(mockRestartTimer).toHaveBeenCalledTimes(1);
+    });
+
+    it('真实 hook 的重摆意图在识别不可用时仍锁住屏幕操作，明确关实体后恢复', async () => {
+      for (const method of ['visionMonitor', 'visionPause', 'visionMoveDetection', 'visionExpectedBoard', 'visionSetupMode'] as const) {
+        vi.spyOn(API, method).mockResolvedValue({} as never);
+      }
+      vi.spyOn(LedAPI, 'clear').mockResolvedValue({} as never);
+      vi.spyOn(LedAPI, 'points').mockResolvedValue({ connected: true } as never);
+      enablePhysical();
+      useRealPhysical = true;
+      const view = renderPage('p1');
+      const flush = () => act(async () => { for (let i = 0; i < 60; i++) await Promise.resolve(); });
+      await flush();
+      fireEvent.click(action('重摆'));
+      await flush();
+      expect(physicalReturn.phase).toBe('restoring');
+      mockVision.recognitionReady = false;
+      const repaint = () => view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}><Routes><Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} /></Routes></MemoryRouter></ThemeProvider>);
+      repaint();
+      await flush();
+      const clickBoard = () => {
+        const canvas = view.container.querySelector('canvas')!;
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 800, height: 800 } as DOMRect);
+        fireEvent.click(canvas, { clientX: 400, clientY: 400 });
+      };
+      clickBoard();
+      expect(mockPlaceStone).not.toHaveBeenCalled();
+      expect(action('提示')).toBeDisabled();
+      expect(action('退一手')).toBeDisabled();
+      expect(screen.getByTestId('try-mode-toggle')).toBeDisabled();
+      fireEvent.click(action('提示'));
+      fireEvent.click(action('退一手'));
+      fireEvent.click(screen.getByTestId('try-mode-toggle'));
+      expect(mockToggleHint).not.toHaveBeenCalled();
+      expect(mockUndo).not.toHaveBeenCalled();
+      expect(mockEnterTryMode).not.toHaveBeenCalled();
+      expect(action('重摆')).toBeEnabled();
+      expect(action('下一题')).toBeEnabled();
+      fireEvent.click(screen.getByTestId('physical-mode-toggle'));
+      await flush();
+      clickBoard();
+      expect(mockPlaceStone).toHaveBeenCalledTimes(1);
+      expect(action('提示')).toBeEnabled();
+      expect(action('退一手')).toBeEnabled();
+      expect(screen.getByTestId('try-mode-toggle')).toBeEnabled();
+      vi.restoreAllMocks();
+    });
+
+    it('没有待核对重摆时，识别不可用仍允许原有屏幕做题', () => {
+      enablePhysical();
+      mockVision.recognitionReady = false;
+      useRealPhysical = true;
+      const view = renderPage('p1');
+      expect(physicalReturn.hasPendingReset()).toBe(false);
+      const canvas = view.container.querySelector('canvas')!;
+      vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 800, height: 800 } as DOMRect);
+      fireEvent.click(canvas, { clientX: 400, clientY: 400 });
+      expect(mockPlaceStone).toHaveBeenCalledTimes(1);
+      expect(action('提示')).toBeEnabled();
+      expect(action('退一手')).toBeEnabled();
+      expect(screen.getByTestId('try-mode-toggle')).toBeEnabled();
+      vi.restoreAllMocks();
     });
 
     it('只开开关、视觉没就绪时进不去 —— 状态板不挂,着法表还在', () => {
@@ -719,11 +842,33 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
     });
 
-    it('最后一道时键写「返回错题」,回错题页;页控条返回键同一个去处', () => {
+    it('最后一道禁用下一题；上一题仍沿错题快照走，顶部返回仍回错题簿', () => {
       renderWrong('q41');
-      fireEvent.click(button('返回错题'));
-      expect(mockFlush).toHaveBeenCalled();
+      const next = button('下一题');
+      expect(next).toBeDisabled();
+      expect(next).toHaveAttribute('title', '这是最后一题');
+      expect(screen.queryByRole('button', { name: '返回错题' })).toBeNull();
+      fireEvent.click(next);
+      expect(mockNavigate).not.toHaveBeenCalled();
+      fireEvent.click(button('上一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p1?set=wrong');
+      expect(mockFlush.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
+      fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('错题'));
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
+    });
+
+    it('第一道禁用上一题，下一题仍可进入下一道错题', () => {
+      renderWrong('q3');
+      expect(button('上一题')).toBeDisabled();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p1?set=wrong');
+    });
+
+    it('只有一道错题时两个导航键都禁用，顶部仍可返回', () => {
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(['p1']));
+      renderWrong('p1');
+      expect(button('上一题')).toBeDisabled();
+      expect(button('下一题')).toBeDisabled();
       fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('错题'));
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
     });

@@ -1,16 +1,34 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { Fragment, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { API, type EngineHealthResponse } from '../../api';
 import { useSettings } from '../../context/SettingsContext';
 import { useGeometry } from '../context/GeometryContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import AccountSection from '../components/settings/AccountSection';
-import PlatformAccounts from '../components/settings/PlatformAccounts';
+import { isStrictBoxKiosk } from '../shell/boxUrls';
+import { kioskText } from '../appearance/messages';
+import { useKioskTypography } from '../typography/KioskTypographyContext';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { readAudioPref, subscribeAudioPref, writeAudioPref, type AudioKind } from '../../utils/audioPrefs';
+import {
+  STONE_SOUND_TONE_OPTIONS,
+  previewStoneSound,
+  readAudioPref,
+  readStoneSoundTonePref,
+  subscribeAudioPref,
+  writeAudioPref,
+  writeStoneSoundTonePref,
+  type AudioKind,
+  type StoneSoundTone,
+} from '../../utils/audioPrefs';
+import {
+  BOARD_STYLE_OPTIONS,
+  STONE_STYLE_OPTIONS,
+  useBoardAppearance,
+  type BoardStyleId,
+  type StoneStyleId,
+} from '../../components/board/stoneAppearance';
 import { engineStatusLine } from '../utils/engineStatusLine';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
@@ -42,9 +60,9 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * **像是从别的应用里剪进来的**。2026-08-23 重排成两行:一行账号,一行 AI 段位;
  * 2026-09 段位详情也换成了就地展开的外壳行(`KioskAiLadderRows`),不再弹 MUI 对话框。
  *
- * ## 「关于」只画三行,一行都不编(Fan 2026-09-21)
+ * ## 「关于」显示服务端确认的信息
  *
- * 版本 + 本机引擎 + 云端引擎,全部来自 `/api/v1/health`;拿不到版本就不画那一行,不写「未知」。
+ * 版本、模型与引擎状态全部来自 `/api/v1/health`;拿不到版本就不画那一行,不写「未知」。
  * **设备名不画**:`settings.DEVICE_ID` 在没配 `KATRAIN_DEVICE_ID` 时是每次启动自铸的 uuid4
  * (`core/config.py`),不是出厂身份;出厂那份在 launcher 手里(`/etc/smartbox/device.json`),
  * 本仓读不到。显示一个自铸 id 就是编,所以等 launcher 给,不自己造。
@@ -63,10 +81,9 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * 上一版那条页控条(带返回 + `location.state.from`)是它还是 L2 时留下的。
  */
 
-type GroupKey = 'account' | 'board' | 'move' | 'sound' | 'language' | 'about';
+type GroupKey = 'board' | 'move' | 'sound' | 'language' | 'typography' | 'about';
 
 const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }[] = [
-  { key: 'account', zh: '账号与平台', en: 'Account', icon: 'user-circle' },
   { key: 'board', zh: '实体棋盘', en: 'Physical board', icon: 'camera' },
   { key: 'move', zh: '落子与提示', en: 'Move & hints', icon: 'hand-pointing' },
   // 稿子这一组叫「声音与报着」。**这里只写「声音」** —— 盒子上没有报着:
@@ -75,6 +92,7 @@ const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }
   // 「导航里写什么,右边那组的标题就是什么」)。
   { key: 'sound', zh: '声音', en: 'Sound', icon: 'speaker-high' },
   { key: 'language', zh: '语言', en: 'Language', icon: 'globe-hemisphere-west' },
+  { key: 'typography', zh: '字体与字号', en: 'Typography', icon: 'sliders-horizontal' },
   { key: 'about', zh: '关于', en: 'About', icon: 'info' },
 ];
 
@@ -103,8 +121,11 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, setLanguage, languages } = useSettings();
+  const { boardStyle, stoneStyle, setBoardStyle, setStoneStyle } = useBoardAppearance();
+  const { preference: typography, setPreference: setTypography, saving: typographySaving, error: typographyError, retry: retryTypography } = useKioskTypography();
   const { status, loaded } = useGeometry();
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
+  const groups = GROUPS.filter(group => !isStrictBoxKiosk || group.key !== 'language');
   const [active, setActive] = useState<GroupKey>(GROUPS[0].key);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const [tail, setTail] = useState(0);
@@ -146,7 +167,7 @@ const SettingsPage = () => {
     const onScroll = () => {
       const top = scrollEl.getBoundingClientRect().top;
       let current = GROUPS[0].key;
-      for (const g of GROUPS) {
+      for (const g of groups) {
         const el = scrollEl.querySelector(`[data-group="${g.key}"]`);
         // 上缘已经滚过视口顶(留 8px 容差)的那一组就是「正在看的」——
         // 最后一组永远排在后面,所以循环到底自然取到最靠下的那一个。
@@ -175,6 +196,7 @@ const SettingsPage = () => {
   // 两份迟早走散,而走散的表现正好是「屏上写着关、喇叭还在响」。
   const sfxOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('sfx'), () => true);
   const voiceOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('voice'), () => true);
+  const [stoneTone, setStoneTone] = useState<StoneSoundTone>(() => readStoneSoundTonePref());
 
   const handleAutoAdvance = (next: boolean) => {
     setAutoAdvance(next);
@@ -184,6 +206,19 @@ const SettingsPage = () => {
   // 「还没问到」「问到了没连上」「这台盒子压根没有摄像头」是三件事,屏上是三句话。
   // `GeometryContext` 为前两件留了 `loaded`;第三件是 `/status` 404 ⇒ `phase='disabled'`。
   const noCamera = loaded && status.phase === 'disabled';
+  const cameraReady = loaded && status.capabilities.camera_ready === true;
+  const ledReady = loaded && status.capabilities.led_ready === true;
+  const canCalibrate = cameraReady && ledReady;
+  const disconnected = [
+    !noCamera && status.capabilities.camera_ready === false && kioskText(language, 'camera'),
+    status.capabilities.led_ready === false && 'LED',
+  ].filter(Boolean).join('、');
+  const calibrationBlockers = [
+    noCamera && kioskText(language, 'noCamera'),
+    disconnected && kioskText(language, 'connectFirst', { devices: disconnected }),
+    !noCamera && status.capabilities.camera_ready == null && kioskText(language, 'cameraUnconfirmed'),
+    status.capabilities.led_ready == null && kioskText(language, 'ledUnconfirmed'),
+  ].filter(Boolean).join(' · ');
   const calibratedAt = !loaded
     ? '—'
     : noCamera
@@ -193,13 +228,13 @@ const SettingsPage = () => {
         : t('settings:not_calibrated', '还没标定');
 
   return (
-    <div className="kiosk-layout-l1" data-testid="settings-page">
+    <div className="kiosk-layout-l1 settings-page" data-testid="settings-page">
       <aside className="kiosk-console">
         <div className="kiosk-console__title">
           <b>{t('Settings', '设置')}</b><em>Settings</em>
         </div>
         <nav className="kiosk-navlist" data-testid="settings-nav" aria-label={t('Settings', '设置')}>
-          {GROUPS.map((g) => (
+          {groups.map((g) => (
             <button
               key={g.key}
               type="button"
@@ -207,52 +242,20 @@ const SettingsPage = () => {
               aria-current={active === g.key}
               onClick={() => jumpTo(g.key)}
             >
-              <Icon name={g.icon} />{t(`settings:nav_${g.key}`, g.zh)}
+              <Icon name={g.icon} />{isStrictBoxKiosk && g.key === 'typography' ? kioskText(language, 'size') : t(`settings:nav_${g.key}`, g.zh)}
             </button>
           ))}
         </nav>
       </aside>
 
       <KioskScrollZone>
-        <section className="kiosk-section" data-group="account" ref={anchorRef}>
-          <KioskSecLabel zh={t('settings:nav_account', '账号与平台')} en="Account" />
-          <p className="setnote">
-            {t('settings:box_account_sub', '不登录也能用，成绩存在这台盒子上；登录只是为了换机器时能带走')}
-          </p>
-          <div className="kiosk-rows">
-            {/* 账号那两行(账号 + AI 段位)在 `AccountSection` 里,和下面那行是同一族 `.kiosk-row`。
-                ⚠️ **段位详情那张卡还没重画** —— 它只在点开对话框之后才出现,不占这一组的正面。 */}
-            <AccountSection />
-            <PlatformAccounts />
-          </div>
-        </section>
-
-        <section className="kiosk-section" data-group="board">
+        <section className="kiosk-section" data-group="board" ref={anchorRef}>
           <KioskSecLabel
             zh={t('settings:nav_board', '实体棋盘')}
             en="Physical board"
             value={t('settings:board_secval', '摄像头 · 标定 · LED')}
           />
-          <div className="kiosk-rows">
-            <div className="kiosk-row">
-              <span className="kiosk-row__t">
-                <b>{t('Recalibrate board', '重新标定棋盘')}</b>
-                <em data-testid={noCamera ? 'settings-no-camera' : undefined}>{calibratedAt}</em>
-              </span>
-              <span className="kiosk-row__end">
-                {/* 没有摄像头时入口**不可点**,原因写在左边那行小字里 —— 不把人送进标定屏,
-                    再让那屏的空态把他弹回来(多一跳,而且那一跳没有解释)。 */}
-                <button
-                  type="button"
-                  className="kiosk-btn kiosk-btn--secondary"
-                  disabled={noCamera}
-                  onClick={() => { if (!noCamera) navigate('/kiosk/vision/setup'); }}
-                >
-                  {t('settings:start_calib', '开始标定')}
-                </button>
-              </span>
-            </div>
-            {/* LED 的 Board A 供电确认独立于摄像头；未知状态没有绿色灯色。 */}
+          <div className="kiosk-board-status" aria-label={t('settings:board_secval', '摄像头 · 标定 · LED')}>
             {([
               ['camera', t('Camera', '摄像头'), status.capabilities.camera_ready,
                 t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
@@ -261,19 +264,84 @@ const SettingsPage = () => {
               ['led', 'LED', status.capabilities.led_ready,
                 t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
             ] as const).map(([key, label, ok, yes, no]) => (
-              <div className="kiosk-row" key={key} data-testid={`settings-cap-${key}`}>
-                <span className="kiosk-row__t"><b>{label}</b></span>
-                <span className="kiosk-row__end">
-                  {key === 'led' && (!loaded || ok == null) ? (
-                    <span className="kiosk-tag">未确认</span>
-                  ) : !loaded || (noCamera && key !== 'led') ? (
-                    <span className="kiosk-tag">—</span>
-                  ) : (
-                    <span className={ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>{ok ? yes : no}</span>
-                  )}
-                </span>
+              <div className="kiosk-board-status__item" key={key} data-testid={`settings-cap-${key}`}>
+                <span>{label}</span>
+                <strong className={loaded && ok === true ? 'kiosk-board-status__good' : ''}>
+                  {!loaded || ok == null ? kioskText(language, 'unconfirmed') : noCamera && key !== 'led' ? kioskText(language, 'unconfirmed') : ok ? yes : no}
+                </strong>
               </div>
             ))}
+          </div>
+          <div className="kiosk-rows">
+            <div className="kiosk-row">
+              <span className="kiosk-row__t">
+                <b>{t('Recalibrate board', '重新标定棋盘')}</b>
+                <em data-testid={noCamera ? 'settings-no-camera' : undefined}>
+                  {!loaded ? kioskText(language, 'deviceLoading') : !canCalibrate ? calibrationBlockers : calibratedAt}
+                </em>
+              </span>
+              <span className="kiosk-row__end">
+                <button
+                  type="button"
+                  className="kiosk-btn kiosk-btn--secondary"
+                  disabled={!canCalibrate}
+                  onClick={() => { if (canCalibrate) navigate('/kiosk/vision/setup'); }}
+                >
+                  {t('settings:start_calib', '开始标定')}
+                </button>
+              </span>
+            </div>
+            <div className="kiosk-row">
+              <span className="kiosk-row__t">
+                <b>{t('kiosk.settings.board_style', '棋盘样式')}</b>
+                <em>{t('kiosk.settings.board_style_desc', '屏幕棋盘木纹与线条配色')}</em>
+              </span>
+              <span className="kiosk-row__end">
+                {/* 四款四字样式在 1024×600 半宽内摆不成分段控件(最多三段);统一用原生 select.ksearch__box */}
+                <select
+                  className="ksearch__box"
+                  data-testid="kiosk-board-style-select"
+                  aria-label={t('kiosk.settings.board_style', '棋盘样式')}
+                  value={boardStyle}
+                  onChange={(e) => setBoardStyle(e.target.value as BoardStyleId)}
+                >
+                  {BOARD_STYLE_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.id}
+                      value={opt.id}
+                      data-testid={`kiosk-board-style-${opt.id}`}
+                    >
+                      {t(`kiosk.settings.board_style_${opt.id}`, opt.label)}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </div>
+            <div className="kiosk-row">
+              <span className="kiosk-row__t">
+                <b>{t('kiosk.settings.stone_style', '棋子样式')}</b>
+                <em>{t('kiosk.settings.stone_style_desc', '屏幕棋子材质与光泽效果')}</em>
+              </span>
+              <span className="kiosk-row__end">
+                <select
+                  className="ksearch__box"
+                  data-testid="kiosk-stone-style-select"
+                  aria-label={t('kiosk.settings.stone_style', '棋子样式')}
+                  value={stoneStyle}
+                  onChange={(e) => setStoneStyle(e.target.value as StoneStyleId)}
+                >
+                  {STONE_STYLE_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.id}
+                      value={opt.id}
+                      data-testid={`kiosk-stone-style-${opt.id}`}
+                    >
+                      {t(`kiosk.settings.stone_style_${opt.id}`, opt.label)}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            </div>
           </div>
         </section>
 
@@ -310,36 +378,69 @@ const SettingsPage = () => {
           <KioskSecLabel zh={t('settings:nav_sound', '声音')} en="Sound" />
           <div className="kiosk-rows">
             {AUDIO_ROWS.map((row) => (
-              <div className="kiosk-row" key={row.kind}>
-                <span className="kiosk-row__t">
-                  <b>{t(row.titleKey, row.title)}</b>
-                  <em>{t(row.subKey, row.sub)}</em>
-                </span>
-                <span className="kiosk-row__end">
-                  {/* 同屏同控件(规范 §12):和「做对后自动进入下一题」一样是分段,不是开关。 */}
-                  <span className="kiosk-seg" role="group" aria-label={t(row.titleKey, row.title)}>
-                    <button
-                      type="button" className="kiosk-seg__btn"
-                      aria-pressed={row.kind === 'sfx' ? sfxOn : voiceOn}
-                      onClick={() => writeAudioPref(row.kind, true)}
-                    >
-                      {t('settings:on', '开')}
-                    </button>
-                    <button
-                      type="button" className="kiosk-seg__btn"
-                      aria-pressed={!(row.kind === 'sfx' ? sfxOn : voiceOn)}
-                      onClick={() => writeAudioPref(row.kind, false)}
-                    >
-                      {t('settings:off', '关')}
-                    </button>
+              <Fragment key={row.kind}>
+                <div className="kiosk-row">
+                  <span className="kiosk-row__t">
+                    <b>{t(row.titleKey, row.title)}</b>
+                    <em>{t(row.subKey, row.sub)}</em>
                   </span>
-                </span>
-              </div>
+                  <span className="kiosk-row__end">
+                    {/* 同屏同控件(规范 §12):和「做对后自动进入下一题」一样是分段,不是开关。 */}
+                    <span className="kiosk-seg" role="group" aria-label={t(row.titleKey, row.title)}>
+                      <button
+                        type="button" className="kiosk-seg__btn"
+                        aria-pressed={row.kind === 'sfx' ? sfxOn : voiceOn}
+                        onClick={() => writeAudioPref(row.kind, true)}
+                      >
+                        {t('settings:on', '开')}
+                      </button>
+                      <button
+                        type="button" className="kiosk-seg__btn"
+                        aria-pressed={!(row.kind === 'sfx' ? sfxOn : voiceOn)}
+                        onClick={() => writeAudioPref(row.kind, false)}
+                      >
+                        {t('settings:off', '关')}
+                      </button>
+                    </span>
+                  </span>
+                </div>
+                {row.kind === 'sfx' && (
+                  <div className="kiosk-row">
+                    <span className="kiosk-row__t">
+                      <b>{t('settings:stone_sound_tone', '落子音色')}</b>
+                      <em>{t('settings:stone_sound_tone_sub', '选择后即时试听落子声')}</em>
+                    </span>
+                    <span className="kiosk-row__end">
+                      <select
+                        className="ksearch__box"
+                        data-testid="kiosk-stone-tone-select"
+                        aria-label={t('settings:stone_sound_tone', '落子音色')}
+                        value={stoneTone}
+                        onChange={(e) => {
+                          const next = e.target.value as StoneSoundTone;
+                          writeStoneSoundTonePref(next);
+                          setStoneTone(next);
+                          if (!sfxOn) {
+                            writeAudioPref('sfx', true);
+                          }
+                          previewStoneSound(next);
+                        }}
+                      >
+                        {STONE_SOUND_TONE_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {t(`settings:stone_tone_${opt.id}`, opt.shortLabel)}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
         </section>
 
-        <section className="kiosk-section" data-group="language">
+        {!isStrictBoxKiosk && <section className="kiosk-section" data-group="language">
           <KioskSecLabel zh={t('settings:nav_language', '语言')} en="Language" />
           <div className="kiosk-rows">
             <div className="kiosk-row">
@@ -365,6 +466,40 @@ const SettingsPage = () => {
               </span>
             </div>
           </div>
+        </section>}
+        <section className="kiosk-section" data-group="typography">
+          <KioskSecLabel zh={isStrictBoxKiosk ? kioskText(language, 'size') : t('settings:nav_typography', '字体与字号')} en={isStrictBoxKiosk ? '' : 'Typography'} />
+          <p className="setnote">{isStrictBoxKiosk ? kioskText(language, 'sizeNote') : t('settings:typography_scope', '中文字体应用于围棋界面的汉字；英文字母与数字保持原样。')}</p>
+          {!isStrictBoxKiosk && <><div className="kiosk-type-heading">{t('settings:font', '字体')}</div>
+          <div className="kiosk-type-fonts" role="group" aria-label={t('settings:font', '字体')}>
+            {([
+              ['wenkai', t("霞鹜楷体", "霞鹜楷体")], ['kaiti', t("楷体", "楷体")], ['lishu', t("隶书", "隶书")], ['heiti', t("黑体", "黑体")],
+            ] as const).map(([id, label]) => (
+              <button key={id} type="button" className="kiosk-type-choice" data-font={id}
+                aria-pressed={typography.font === id} onClick={() => setTypography({ font: id })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          </>}
+          <div className="kiosk-type-heading">{kioskText(language, 'size')}</div>
+          <div className="kiosk-type-sizes kiosk-seg" role="group" aria-label={kioskText(language, 'size')}>
+            {([
+              ['large'], ['medium'], ['small'],
+            ] as const).map(([id]) => (
+              <button key={id} type="button" className="kiosk-seg__btn"
+                aria-pressed={typography.size === id} onClick={() => setTypography({ size: id })}>
+                {kioskText(language, id)}
+              </button>
+            ))}
+          </div>
+          {typographySaving && <p className="kiosk-type-save" role="status">{kioskText(language, 'saving')}</p>}
+          {typographyError && (
+            <p className="kiosk-type-save kiosk-type-save--error" role="alert">
+              {kioskText(language, 'notSaved')}
+              <button type="button" onClick={retryTypography}>{kioskText(language, 'retry')}</button>
+            </p>
+          )}
         </section>
         {/* ⚠️ 尾部留白量的是**最后一组** —— 它挂在这一组上;以后再加组,`lastGroupRef` 要跟着挪。 */}
         <section className="kiosk-section" data-group="about" ref={lastGroupRef}>
@@ -376,6 +511,10 @@ const SettingsPage = () => {
                 <span className="kiosk-row__t"><b>{health.version}</b></span>
               </div>
             )}
+            <div className="kiosk-row" data-testid="about-katago-model">
+              <span className="kiosk-row__lead">{kioskText(language, 'model')}</span>
+              <span className="kiosk-row__t"><b>{health?.katago_model || kioskText(language, 'unavailable')}</b></span>
+            </div>
             {/* 两个引擎都是 KataGo(`LOCAL_KATAGO_URL` / `CLOUD_KATAGO_URL`),区别只在跑在哪儿。 */}
             {([
               ['local', t('settings:about_local', '本机'), health?.engines?.local],

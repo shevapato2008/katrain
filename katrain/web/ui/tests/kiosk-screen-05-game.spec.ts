@@ -395,7 +395,9 @@ test('升降级领地:1024×600 显示额度、结果和棋盘覆盖', async ({ 
   await page.goto('/kiosk/play/ai/game/g-02');
   await expect(page.getByRole('button', { name: /领地 3/ })).toBeVisible();
   await page.getByRole('button', { name: /领地 3/ }).click();
-  await expect(page.getByText('领地判断结果')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '领地判断' })).toBeVisible();
+  await expect(page.getByText('黑方较确定区域 78 点')).toBeVisible();
+  await expect(page.getByText('暂未取得领先判断')).toBeVisible();
   await expect(page.getByText('领地判断：本局剩余 2 次')).toBeVisible();
   if (await page.locator('.MuiAlert-action button').count()) await page.locator('.MuiAlert-action button').click();
   await page.screenshot({ path: testInfo.outputPath('ranked-territory-1024x600.png') });

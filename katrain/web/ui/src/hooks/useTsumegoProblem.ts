@@ -2,6 +2,7 @@
  * Custom hook for managing tsumego problem solving logic
  */
 
+import type { BoardVariant } from '../types/boardVariant';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   parseSGF,
@@ -13,7 +14,7 @@ import {
   sgfToCoords
 } from '../utils/sgfParser';
 import type { SGFNode, ParsedSGF } from '../utils/sgfParser';
-import { useTsumegoProgress, writeLocalProgress } from '../context/TsumegoProgressContext';
+import { useTsumegoProgress, readLocalProgress, writeLocalProgress } from '../context/TsumegoProgressContext';
 
 export interface ProblemDetail {
   id: string;
@@ -24,6 +25,7 @@ export interface ProblemDetail {
   initialBlack: string[];
   initialWhite: string[];
   sgfContent: string;
+  board_variant?: BoardVariant;
 }
 
 export interface Stone {
@@ -200,9 +202,13 @@ export interface UseTsumegoProblemReturn extends TsumegoProblemState {
 }
 
 
-export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
+export function useTsumegoProblem(problemId: string, options?: { boardVariant?: 'kiosk19' }): UseTsumegoProblemReturn {
+  const boardVariant = options?.boardVariant;
   // Unified progress source (safe default when no Provider — see TsumegoProgressContext).
-  const { markProgress } = useTsumegoProgress();
+  const { markProgress, progress } = useTsumegoProgress();
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+  const touchedRef = useRef(false);
 
   // Problem data
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
@@ -211,6 +217,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Parsed SGF
   const parsedSGFRef = useRef<ParsedSGF | null>(null);
+  const initialStonesRef = useRef<Stone[]>([]);
 
   // Board state
   const [boardSize, setBoardSize] = useState(19);
@@ -228,6 +235,11 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [attempts, setAttempts] = useState(0);
+  // History is a cumulative baseline; failures in this visit are an additive delta.
+  // Keep our own published totals separate so provider echoes are not new history.
+  const attemptBaselineRef = useRef(0);
+  const localAttemptsRef = useRef(0);
+  const publishedAttemptsRef = useRef<number | null>(null);
 
   // Hint
   const [showHint, setShowHint] = useState(false);
@@ -253,6 +265,12 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     nextPlayer: 'B' | 'W';
   } | null>(null);
 
+  const pendingRepliesRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const cancelPendingReplies = useCallback(() => {
+    for (const timer of pendingRepliesRef.current) clearTimeout(timer);
+    pendingRepliesRef.current.clear();
+  }, []);
+
   // Timer effect
   useEffect(() => {
     if (!startTime || isSolved || isFailed) return;
@@ -275,10 +293,13 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   useEffect(() => {
     if (!problemId) return;
 
+    let cancelled = false;
     setLoading(true);
     setError(null);
+    setProblem(null);
+    touchedRef.current = false;
 
-    fetch(`/api/v1/tsumego/problems/${problemId}`)
+    fetch(`/api/v1/tsumego/problems/${problemId}${boardVariant ? `?board_variant=${boardVariant}` : ''}`)
       .then(res => {
         // 只有 404 才是「题不存在」。盒上连不上云端是 503(N9)—— 一律说成 not found 等于
         // 把「没网」讲成「没这道题」。其它状态码照各页 fetch 的惯例抛 `HTTP <status>`。
@@ -286,18 +307,53 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         return res.json();
       })
       .then((data: ProblemDetail) => {
+        if (cancelled) return;
+        attemptBaselineRef.current = Math.max(progressRef.current[data.id]?.attempts ?? 0, readLocalProgress()[data.id]?.attempts ?? 0);
+        localAttemptsRef.current = 0;
+        publishedAttemptsRef.current = null;
+        setAttempts(attemptBaselineRef.current);
+        setIsTryMode(false);
+        tryModeSnapshotRef.current = null;
         setProblem(data);
         initializeProblem(data);
         setLoading(false);
       })
       .catch(err => {
+        if (cancelled) return;
         setError(err.message);
         setLoading(false);
       });
-  }, [problemId]);
+    return () => {
+      cancelled = true;
+      cancelPendingReplies();
+      flushProgress();
+    };
+  }, [problemId, boardVariant]);
+
+  // Account history can finish loading after the problem details.
+  useEffect(() => {
+    if (!problem) return;
+    const historyAttempts = progress[problem.id]?.attempts ?? 0;
+    if (historyAttempts === publishedAttemptsRef.current) return;
+    attemptBaselineRef.current = Math.max(attemptBaselineRef.current, historyAttempts);
+    const rebasedAttempts = attemptBaselineRef.current + localAttemptsRef.current;
+    setAttempts(rebasedAttempts);
+    // A solve/explicit flush may already have published before history loaded.
+    // Publish the corrected absolute total once; ignore its provider echo above.
+    if (publishedAttemptsRef.current !== null && rebasedAttempts > publishedAttemptsRef.current) {
+      publishedAttemptsRef.current = rebasedAttempts;
+      const latest = latestRef.current;
+      markProgressRef.current(problem.id, {
+        completed: latest.isSolved, attempts: rebasedAttempts, lastDuration: latest.elapsedTime,
+      });
+    }
+  }, [problem, progress]);
 
   // Initialize problem state
   const initializeProblem = useCallback((data: ProblemDetail) => {
+    cancelPendingReplies();
+    setIsTryMode(false);
+    tryModeSnapshotRef.current = null;
     const size = data.boardSize || 19;
     setBoardSize(size);
 
@@ -318,6 +374,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       }
     }
 
+    initialStonesRef.current = initialStones;
     setStones(initialStones);
     setMoveHistory([]);
     setLastMove(null);
@@ -327,6 +384,9 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     setHintCoords(null);
     failedRecoveryRef.current = null;
 
+    parsedSGFRef.current = null;
+    setCurrentNode(null);
+    setNextPlayer('B');
     // Parse SGF if available
     if (data.sgfContent) {
       try {
@@ -353,10 +413,11 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     // Start timing
     setStartTime(Date.now());
     setElapsedTime(0);
-  }, []);
+  }, [cancelPendingReplies]);
 
   // Place a stone and validate against SGF tree
   const placeStone = useCallback((x: number, y: number): MoveResult | null => {
+    if (pendingRepliesRef.current.size > 0) return null;
     // In normal mode, don't allow moves after solved/failed
     if (!isTryMode && (isSolved || isFailed)) return null;
 
@@ -384,6 +445,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         captured: capturedCount
       };
     }
+
+    touchedRef.current = true;
 
     // If no SGF or no current node, just place the stone (free play mode)
     if (!currentNode) {
@@ -417,7 +480,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         nextPlayer,
       };
       setIsFailed(true);
-      setAttempts(prev => prev + 1);
+      localAttemptsRef.current += 1;
+      setAttempts(attemptBaselineRef.current + localAttemptsRef.current);
       setStones(prev => {
         const newStones = [...prev, newStone];
         return removeCaptures(newStones, newStone.player, boardSize);
@@ -439,7 +503,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         nextPlayer,
       };
       setIsFailed(true);
-      setAttempts(prev => prev + 1);
+      localAttemptsRef.current += 1;
+      setAttempts(attemptBaselineRef.current + localAttemptsRef.current);
       setStones(prev => {
         const newStones = [...prev, newStone];
         return removeCaptures(newStones, newStone.player, boardSize);
@@ -470,7 +535,8 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     const aiResponse = getAIResponse(matchingChild);
     if (aiResponse) {
       // Play AI's response after a short delay
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        pendingRepliesRef.current.delete(timer);
         const aiStone: Stone = { player: aiResponse.player, coords: aiResponse.coords };
         setStones(prev => {
           const newStones = [...prev, aiStone];
@@ -501,6 +567,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
         // In tsumego, user always plays the same color (e.g., Black for 黑先)
         setNextPlayer(aiResponse.player === 'B' ? 'W' : 'B');
       }, 300);
+      pendingRepliesRef.current.add(timer);
     } else {
       // Only switch player if no AI response (terminal node or free play)
       setNextPlayer(prev => prev === 'B' ? 'W' : 'B');
@@ -521,6 +588,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Undo last move
   const undo = useCallback(() => {
     if (isSolved) return;
+    cancelPendingReplies();
     // A wrong FIRST move leaves moveHistory empty (incorrect moves are never pushed) but
     // isFailed=true. Guard on history alone would strand isFailed forever — the isFailed
     // recovery branch below must still run (kiosk physical 'removing' recovery depends on it).
@@ -586,7 +654,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       }
 
       const newHistory = moveHistory.slice(0, -movesToRemove);
-      const newStones = stones.slice(0, -movesToRemove);
+      let newStones = [...initialStonesRef.current];
+      for (const move of newHistory) {
+        newStones = removeCaptures([...newStones, move], move.player, boardSize);
+      }
 
       setMoveHistory(newHistory);
       setStones(newStones);
@@ -607,19 +678,21 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       // Update hint
       const validMoves = getValidMoves(newNode);
       const correctMove = validMoves.find(m => m.isCorrect);
-      if (correctMove) {
-        setHintCoords(correctMove.coords);
-      }
+      setHintCoords(correctMove?.coords ?? null);
     }
-  }, [moveHistory, stones, currentNode, nextPlayer, isSolved, isFailed, isTryMode, boardSize]);
+  }, [cancelPendingReplies, moveHistory, stones, currentNode, nextPlayer, isSolved, isFailed, isTryMode, boardSize]);
 
   // Reset problem
   const reset = useCallback(() => {
     if (problem) {
       initializeProblem(problem);
-      setAttempts(prev => prev + 1);
+      if (!isTryMode) {
+        touchedRef.current = true;
+        localAttemptsRef.current += 1;
+        setAttempts(attemptBaselineRef.current + localAttemptsRef.current);
+      }
     }
-  }, [problem, initializeProblem]);
+  }, [problem, initializeProblem, isTryMode]);
 
   // Toggle hint
   const toggleHint = useCallback(() => {
@@ -628,7 +701,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
   // Enter try mode - save current state and allow free exploration
   const enterTryMode = useCallback(() => {
-    if (isTryMode || isSolved) return;
+    if (isTryMode || isSolved || pendingRepliesRef.current.size > 0) return;
 
     // Save current state
     tryModeSnapshotRef.current = {
@@ -717,6 +790,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
     const { problem: p, isSolved: solved, attempts: att, elapsedTime: et } = latestRef.current;
     if (!p) return;
     serverPersistedRef.current = true;
+    publishedAttemptsRef.current = att;
     markProgressRef.current(p.id, { completed: solved, attempts: att, lastDuration: et });
   }, []);
 
@@ -728,10 +802,10 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Flush on leave: if this problem had any attempt and wasn't already persisted this
   // session, write once. Safe to call repeatedly (guarded by serverPersistedRef).
   const flushProgress = useCallback(() => {
-    const { problem: p, attempts: att, moveHistoryLen } = latestRef.current;
+    const { problem: p } = latestRef.current;
     if (!p) return;
     if (serverPersistedRef.current) return;
-    if (att <= 0 && moveHistoryLen <= 0) return;
+    if (!touchedRef.current) return;
     persistProgress();
   }, [persistProgress]);
 
@@ -741,6 +815,7 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
       prevSolvedRef.current = true;
       if (!serverPersistedRef.current && problem) {
         serverPersistedRef.current = true;
+        publishedAttemptsRef.current = attempts;
         markProgress(problem.id, { completed: true, attempts, lastDuration: elapsedTime });
       }
     } else if (!isSolved) {
@@ -762,11 +837,12 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
   // Flush once on unmount (navigate away) if there was an unpersisted attempt.
   useEffect(() => {
     return () => {
-      const { problem: p, isSolved: solved, attempts: att, elapsedTime: et, moveHistoryLen } = latestRef.current;
+      const { problem: p, isSolved: solved, attempts: att, elapsedTime: et } = latestRef.current;
       if (!p) return;
       if (serverPersistedRef.current) return;
-      if (att <= 0 && moveHistoryLen <= 0) return;
+      if (!touchedRef.current) return;
       serverPersistedRef.current = true;
+      publishedAttemptsRef.current = att;
       markProgressRef.current(p.id, { completed: solved, attempts: att, lastDuration: et });
     };
   }, []);

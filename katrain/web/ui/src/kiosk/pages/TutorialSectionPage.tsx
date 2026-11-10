@@ -156,7 +156,7 @@ const TutorialSectionPage = () => {
   }, [onAudio, index]);
 
   const backToToc = useCallback(() => {
-    if (!nav?.category || !nav.bookId) { navigate('/kiosk/tutorial'); return; }
+    if (!nav?.category || !nav.bookId) { navigate('/kiosk/tutorial/library'); return; }
     const ch = nav.chapterId ? `&ch=${nav.chapterId}` : '';
     navigate(`/kiosk/tutorial/${encodeURIComponent(nav.category)}?book=${nav.bookId}${ch}`);
   }, [nav, navigate]);
@@ -285,7 +285,7 @@ const TutorialSectionPage = () => {
   return (
     <div className="kiosk-layout-a" data-testid="tutorial-section-page">
       {onVideo && deviceVideo && (
-        <div role="dialog" aria-modal="true" aria-label="RK3562 · 7英寸视频" data-testid="tutorial-figure-video"
+        <div role="dialog" aria-modal="true" aria-label={t("RK3562 · 7英寸视频", "RK3562 · 7英寸视频")} data-testid="tutorial-figure-video"
           style={{ position: 'fixed', inset: 0, zIndex: 1500, background: '#000' }}>
           <TutorialVideoPlayer key={deviceVideo.asset} fill src={TutorialReadAPI.assetUrl(deviceVideo.asset)} />
           <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setVideoFor(null)}
@@ -427,8 +427,8 @@ const TutorialSectionPage = () => {
             `none` 那一档上面那段讲解块写的就是「书上没有配文字,也还没有录讲解」,
             再挂一行等于同一句话占两处(Fan 8-22:「不要写那么多解释文字」)。
             读屏那一侧不受影响 —— `reason` 照旧挂在按钮的 `title` 上。 */}
-        {!deviceVideo && <p className="kiosk-opthint">RK3562 · 7英寸视频尚未生成</p>}
-        {deviceVideo && <p className="kiosk-opthint">RK3562 · 7英寸</p>}
+        {!deviceVideo && <p className="kiosk-opthint">{t("RK3562 · 7英寸视频尚未生成", "RK3562 · 7英寸视频尚未生成")}</p>}
+        {deviceVideo && <p className="kiosk-opthint">{t("RK3562 · 7英寸", "RK3562 · 7英寸")}</p>}
         {videoCalibrationNote && <p className="kiosk-opthint">{videoCalibrationNote}</p>}
         {teach === 'text' && teachReason && <p className="kiosk-opthint">{teachReason}</p>}
 

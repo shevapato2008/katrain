@@ -25,7 +25,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from katrain.web.core.config import settings
 from katrain.web.core.db import Base
@@ -197,6 +197,38 @@ def test_the_other_player_is_also_allowed(app, client):
 
     resp = client.post("/api/resign", json={"session_id": session.session_id}, headers=_login(client, white_name))
     assert resp.status_code == 200, resp.text
+
+
+@pytest.mark.parametrize("branch", ["spectator", "already-ended", "first-forfeit", "bot-forfeit"])
+def test_multiplayer_leave_returns_the_root_lobby_redirect(app, branch):
+    black_id, black_name = _make_user(app, "alice")
+    white_id, _ = _make_user(app, "bob")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=white_id)
+    leaving_name = black_name
+    if branch == "spectator":
+        _, leaving_name = _make_user(app, "spectator")
+    elif branch == "already-ended":
+        session.game_ended = True
+        session.katrain.game.end_result = "W+R"
+    elif branch == "bot-forfeit":
+        session.bot_game = True
+        app.state.pvp_lobby_bots = MagicMock(finish=AsyncMock())
+
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/api/multiplayer/leave",
+            json={"session_id": session.session_id},
+            headers=_login(client, leaving_name),
+        )
+    finally:
+        client.close()
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "status": "left" if branch == "spectator" else "forfeited",
+        "redirect": "/play/human",
+    }
 
 
 # ------------------------------------------------------- 告诉对面 vs 记进账本

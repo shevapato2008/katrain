@@ -1,0 +1,40 @@
+.u-play-layer{position:absolute;inset:0;font-family:"SmartBox Kai",serif;color:#edf3ed;font-size:18px;line-height:1.2;pointer-events:none}
+.u-play-layer *{box-sizing:border-box}
+.u-play-console,.u-play-rail{position:absolute;top:70px;height:434px;pointer-events:auto}
+.u-play-console{left:16px;width:296px;padding:10px 11px;background:#1b2824;border:1px solid #30463b;border-radius:15px}
+.u-play-console-title{height:31px;display:flex;align-items:flex-start;justify-content:space-between;padding-left:1px}
+.u-play-console-title strong{font-size:18px;font-weight:500}
+.u-play-console-title .u-play-info{top:0;right:7px;transform:none;z-index:3}
+.u-play-board-frame{position:absolute;left:11px;top:41px;width:272px;height:273px;background:#14201e;border-radius:12px}
+.u-play-board-crop{position:absolute;left:12px;top:12px;width:248px;height:249px;overflow:hidden;background:#9f7643}
+.u-play-board-crop img{position:absolute;left:-40px;top:-124px;width:1024px;height:600px;max-width:none}
+.u-play-sync{position:absolute;left:11px;right:11px;top:324px;height:28px;display:flex;align-items:center;justify-content:space-between;gap:4px;white-space:nowrap;color:#dbe8dc;font-size:18px}
+.u-play-sync strong{font-weight:500;color:#eac484}
+.u-play-statuses{position:absolute;left:11px;right:11px;bottom:10px;height:65px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.u-play-status{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid #3a5244;border-radius:9px;background:#182420;color:#d5e3d5;font-size:18px;white-space:nowrap}
+.u-play-status strong{font-weight:500}
+.u-play-status-bad strong{color:#f0a69c}.u-play-status-warn strong{color:#e9c486}
+.u-play-rail{left:328px;width:680px;background:#0d1415;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#4c6656 transparent}
+.u-play-heading{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 3px}
+#stage .u-play-heading h2{margin:0;padding:0;font-size:28px;font-weight:500;white-space:nowrap}.u-play-heading h2 span{color:#63c489}
+.u-play-heading-hint{font-size:20px;color:#b9c9bd}
+.u-play-panels{padding:3px 3px 8px 0}.u-play-panel{display:block}
+.u-play-group{margin:0 0 6px}.u-play-group h3{height:24px;margin:0;display:flex;align-items:center;font-size:20px;font-weight:500;color:#d3e4d4}
+.u-play-group h3:after{content:"";height:1px;background:#2a4434;flex:1;margin-left:12px}
+.u-play-mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.u-play-card,.u-play-platform{position:relative;border-radius:17px}
+.u-play-card{height:63px}.u-play-card-action,.u-play-platform-action{appearance:none;border:1px solid #334b3f;border-radius:17px;background:#1d2b27;color:#f0f4ef;font:23px "SmartBox Kai",serif;text-align:left;cursor:pointer}
+.u-play-card-action{width:100%;height:100%;display:flex;align-items:center;gap:10px;padding:0 11px}
+.u-play-card-action>span{white-space:nowrap}.u-play-card-action .u-play-icon:last-child{width:20px;height:20px;margin-left:auto;color:#91cda3}
+.u-play-icon{display:block;width:24px;height:24px;flex:none}
+.u-play-info{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#80cb99;cursor:pointer}
+.u-play-info .u-play-icon{width:24px;height:24px}
+.u-play-platform-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.u-play-platform{height:63px}.u-play-platform-action{width:100%;height:100%;display:flex;align-items:center;gap:8px;padding:7px 12px}
+.u-play-platform-mark{display:block;width:32px;height:32px;flex:none;object-fit:contain;border-radius:7px;background:#101918}
+.u-play-platform-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.u-play-platform-copy strong{font-size:22px;font-weight:500;white-space:nowrap}.u-play-platform-copy em{font-size:18px;font-style:normal;color:#d1dfd3;white-space:nowrap}
+.u-play-platform-action>.u-play-icon:last-child{display:none}
+.u-play-platform-disabled{opacity:.65}.u-play-platform-disabled .u-play-platform-action{cursor:default}.u-play-platform-disabled .u-play-platform-copy em{color:#dfbd87}
+.u-play-history-group{margin-top:0}.u-play-history-card{width:calc((100% - 20px)/3);height:63px}
+.u-play-card-action:hover,.u-play-platform-action:not(:disabled):hover{background:#294136}.u-play-card-action:active,.u-play-platform-action:not(:disabled):active{background:#335b43}
+.u-play-card-action:focus-visible,.u-play-platform-action:focus-visible,.u-play-info:focus-visible{outline:2px solid #a9efbd;outline-offset:-3px}

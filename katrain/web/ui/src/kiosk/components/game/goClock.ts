@@ -84,8 +84,16 @@ export function useGoClock(gameState: GameState, color: 'B' | 'W', onExpired?: (
   useEffect(() => {
     if (!active) return undefined;
     const startedAt = Date.now();
-    const id = window.setInterval(() => setTick({ key: baseKey, elapsed: (Date.now() - startedAt) / 1000 }), TICK_MS);
-    return () => window.clearInterval(id);
+    const refresh = () => setTick({ key: baseKey, elapsed: (Date.now() - startedAt) / 1000 });
+    const onVisibility = () => { if (document.visibilityState !== 'hidden') refresh(); };
+    const id = window.setInterval(refresh, TICK_MS);
+    // Background tabs can suspend intervals. Refresh the same reading before the
+    // countdown visibility listener evaluates whether its old window still exists.
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [active, baseKey]);
 
   const elapsed = tick.key === baseKey ? tick.elapsed : 0;

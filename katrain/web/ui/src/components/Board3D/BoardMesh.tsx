@@ -1,5 +1,13 @@
-import { useMemo, useEffect, useRef, memo, Suspense, lazy } from 'react';
+import { useMemo, useEffect, memo, Suspense, lazy } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import {
+  type BoardStyleId,
+  getBoardStylePalette,
+  getBoardTextureUrl,
+  normalizeBoardStyleId,
+  useBoardAppearance,
+} from '../board/stoneAppearance';
 import SolidWoodSlab from './SolidWoodSlab';
 import {
   getBoardDimensions,
@@ -21,113 +29,195 @@ interface BoardMeshProps {
   solidWood?: boolean;
 }
 
-/** Procedural wood-grain canvas texture. Ported from go-board-3d.html. */
+const BOARD_3D_STYLE_CONFIG: Record<
+  BoardStyleId,
+  {
+    topColor: string;
+    sideColor: string;
+    bottomColor: string;
+  }
+> = {
+  kaya: {
+    topColor: '#e5ba70',
+    sideColor: '#cc9c52',
+    bottomColor: '#b08040',
+  },
+  'shin-kaya': {
+    topColor: '#e5c687',
+    sideColor: '#cca666',
+    bottomColor: '#b89b62',
+  },
+  bamboo: {
+    topColor: '#c78c46',
+    sideColor: '#b07634',
+    bottomColor: '#8c5820',
+  },
+  walnut: {
+    topColor: '#876244',
+    sideColor: '#6b472e',
+    bottomColor: '#4a3221',
+  },
+};
+
+function drawBakedGridOnTopCanvas(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  boardSize: number,
+  dims: ReturnType<typeof getBoardDimensions>,
+  starPoints: [number, number][],
+  gridColor: string,
+  starColor: string,
+) {
+  const scale = size / dims.boardWidth;
+  const halfExtent = dims.boardExtent / 2;
+  const origin = (dims.boardWidth / 2 - halfExtent) * scale;
+  const step = dims.gridSpacing * scale;
+  const extentPx = dims.boardExtent * scale;
+
+  ctx.save();
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = Math.max(2.2, size * 0.0014);
+  for (let i = 0; i < boardSize; i++) {
+    const pos = origin + i * step;
+    ctx.beginPath();
+    ctx.moveTo(pos, origin);
+    ctx.lineTo(pos, origin + extentPx);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(origin, pos);
+    ctx.lineTo(origin + extentPx, pos);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = starColor;
+  const starRadius = Math.max(5.5, size * 0.0036);
+  for (const [col, row] of starPoints) {
+    const x = origin + col * step;
+    const y = origin + row * step;
+    ctx.beginPath();
+    ctx.arc(x, y, starRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** Real 2K wood-veneer texture with stripe-free canvas fallback supporting all 4 board styles. */
 function createWoodTexture(
-  width: number, height: number,
-  baseColor: string, grainColor: [number, number, number], grainCount: number,
+  width: number,
+  height: number,
+  baseColor: string,
+  boardStyle: BoardStyleId = 'kaya',
+  onPaintOverlay?: (ctx: CanvasRenderingContext2D) => void,
+  onLoad?: () => void,
 ): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = baseColor;
-  ctx.fillRect(0, 0, width, height);
-
-  for (let i = 0; i < 12; i++) {
-    const y = Math.random() * height;
-    const bandH = 20 + Math.random() * 60;
-    const grad = ctx.createLinearGradient(0, y, 0, y + bandH);
-    grad.addColorStop(0, 'rgba(180, 140, 70, 0)');
-    grad.addColorStop(0.5, `rgba(180, 140, 70, ${0.05 + Math.random() * 0.08})`);
-    grad.addColorStop(1, 'rgba(180, 140, 70, 0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, y, width, bandH);
+  if (ctx) {
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, width, height);
+    onPaintOverlay?.(ctx);
   }
-
-  for (let i = 0; i < grainCount; i++) {
-    const y = Math.random() * height;
-    const alpha = 0.04 + Math.random() * 0.1;
-    ctx.strokeStyle = `rgba(${grainColor[0]}, ${grainColor[1]}, ${grainColor[2]}, ${alpha})`;
-    ctx.lineWidth = 0.5 + Math.random() * 2.5;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    const freq = 0.01 + Math.random() * 0.03;
-    const amp = 3 + Math.random() * 12;
-    for (let x = 0; x < width; x += 8) {
-      ctx.lineTo(x, y + Math.sin(x * freq) * amp + Math.sin(x * 0.005) * 6 + (Math.random() - 0.5) * 2);
-    }
-    ctx.stroke();
-  }
-
-  for (let i = 0; i < grainCount / 3; i++) {
-    const y = Math.random() * height;
-    ctx.strokeStyle = `rgba(100, 60, 20, ${0.03 + Math.random() * 0.05})`;
-    ctx.lineWidth = 2 + Math.random() * 4;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    for (let x = 0; x < width; x += 15) {
-      ctx.lineTo(x, y + Math.sin(x * 0.015) * 10 + (Math.random() - 0.5) * 3);
-    }
-    ctx.stroke();
-  }
-
-  const imgData = ctx.getImageData(0, 0, width, height);
-  const pixels = imgData.data;
-  const noiseCount = width * height * 0.3;
-  for (let i = 0; i < noiseCount; i++) {
-    const idx = Math.floor(Math.random() * width * height) * 4;
-    const noise = (Math.random() - 0.5) * 18;
-    pixels[idx] = Math.max(0, Math.min(255, pixels[idx] + noise));
-    pixels[idx + 1] = Math.max(0, Math.min(255, pixels[idx + 1] + noise));
-    pixels[idx + 2] = Math.max(0, Math.min(255, pixels[idx + 2] + noise * 0.5));
-  }
-  ctx.putImageData(imgData, 0, 0);
 
   const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 16;
+  tex.generateMipmaps = true;
+
+  if (typeof Image !== 'undefined' && ctx) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+      onPaintOverlay?.(ctx);
+      tex.needsUpdate = true;
+      onLoad?.();
+    };
+    img.src = getBoardTextureUrl(boardStyle);
+  }
+
   return tex;
 }
 
 const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshProps) => {
+  const { boardStyle } = useBoardAppearance();
+  const resolvedBoardStyle = normalizeBoardStyleId(boardStyle);
+  const palette = getBoardStylePalette(resolvedBoardStyle);
+  let invalidate: (() => void) | undefined;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    invalidate = useThree()?.invalidate;
+  } catch {
+    // Rendered outside R3F Canvas in unit tests
+  }
+
+  useEffect(() => {
+    invalidate?.();
+  }, [resolvedBoardStyle, invalidate]);
+
   const dims = useMemo(() => getBoardDimensions(boardSize), [boardSize]);
   const starPoints = useMemo(() => getStarPoints(boardSize), [boardSize]);
   const halfExtent = dims.boardExtent / 2;
 
-  // Textures with cleanup
-  const texturesRef = useRef<THREE.CanvasTexture[]>([]);
-  const materialsRef = useRef<THREE.Material[]>([]);
+  const resources = useMemo(() => {
+    if (solidWood) {
+      return {
+        materials: [] as THREE.Material[],
+        textures: [] as THREE.CanvasTexture[],
+        allMaterials: [] as THREE.Material[],
+      };
+    }
+    const cfg = BOARD_3D_STYLE_CONFIG[resolvedBoardStyle];
+    const handleTextureLoaded = () => invalidate?.();
+    const topTex = createWoodTexture(
+      2048,
+      2048,
+      cfg.topColor,
+      resolvedBoardStyle,
+      (ctx) => drawBakedGridOnTopCanvas(ctx, 2048, boardSize, dims, starPoints, palette.gridColor, palette.starColor),
+      handleTextureLoaded,
+    );
+    const sideTex = createWoodTexture(1024, 256, cfg.sideColor, resolvedBoardStyle, undefined, handleTextureLoaded);
 
-  const { materials } = useMemo(() => {
-    if (solidWood) return { materials: [] };
-    const topTex = createWoodTexture(1024, 1024, '#DBA85A', [120, 75, 30], 150);
-    const sideTex = createWoodTexture(1024, 256, '#C89848', [110, 70, 28], 120);
-
-    const topMat = new THREE.MeshStandardMaterial({
-      map: topTex, roughness: 0.4, metalness: 0.02, color: 0xdba85a,
+    // Do NOT multiply map by cfg.topColor (keep color #ffffff) so 2K wood veneer preserves 100% natural brightness
+    const topMat = new THREE.MeshPhysicalMaterial({
+      map: topTex,
+      color: '#ffffff',
+      roughness: 0.36,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.28,
+      metalness: 0.0,
     });
-    const sideMat = new THREE.MeshStandardMaterial({
-      map: sideTex, roughness: 0.5, metalness: 0.03, color: 0xc89848,
+    const sideMat = new THREE.MeshPhysicalMaterial({
+      map: sideTex,
+      color: '#ffffff',
+      roughness: 0.52,
+      metalness: 0.0,
     });
     const bottomMat = new THREE.MeshStandardMaterial({
-      color: 0xb08040, roughness: 0.7, metalness: 0.02,
+      color: cfg.bottomColor,
+      roughness: 0.7,
+      metalness: 0.02,
     });
 
-    texturesRef.current = [topTex, sideTex];
-    materialsRef.current = [topMat, sideMat, bottomMat];
-
     // BoxGeometry face order: +x, -x, +y, -y, +z, -z
-    return { materials: [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat] };
-  }, [boardSize, solidWood]);
+    return {
+      materials: [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat],
+      textures: [topTex, sideTex],
+      allMaterials: [topMat, sideMat, bottomMat],
+    };
+  }, [boardSize, solidWood, resolvedBoardStyle, dims, starPoints, palette.gridColor, palette.starColor]);
 
-  // Cleanup on boardSize change and unmount (dispose is a side effect → useEffect, not useMemo)
+  // Dispose textures and materials whenever resources change or on unmount (Finding C-1)
   useEffect(() => {
     return () => {
-      texturesRef.current.forEach(t => t.dispose());
-      materialsRef.current.forEach(m => m.dispose());
+      resources.textures.forEach(t => t.dispose());
+      resources.allMaterials.forEach(m => m.dispose());
     };
-  }, [boardSize]);
+  }, [resources]);
 
   // Grid lines as a single LineSegments geometry (1 draw call instead of 38)
   const gridGeometry = useMemo(() => {
@@ -176,16 +266,16 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
       {/* Board slab */}
       {solidWood ? <SolidWoodSlab width={dims.boardWidth} /> : <mesh
         position={[0, dims.boardHeight / 2, 0]}
-        material={materials}
+        material={resources.materials}
         castShadow
-        receiveShadow
+        receiveShadow={false}
       >
         <boxGeometry args={[dims.boardWidth, dims.boardHeight, dims.boardWidth]} />
       </mesh>}
 
       {/* Grid lines — single LineSegments for efficiency (1 draw call) */}
       <lineSegments geometry={gridGeometry}>
-        <lineBasicMaterial color="black" transparent opacity={0.7} />
+        <lineBasicMaterial color={palette.gridColor} transparent opacity={0.95} />
       </lineSegments>
 
       {/* Star points */}
@@ -195,7 +285,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
         return (
           <mesh key={`star-${i}`} position={[x, BOARD_SURFACE_Y + SURFACE_EPSILON, z]} rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[0.08, 16]} />
-            <meshBasicMaterial color="black" opacity={0.85} transparent />
+            <meshBasicMaterial color={palette.starColor} opacity={0.95} transparent />
           </mesh>
         );
       })}
@@ -203,7 +293,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
       {/* Coordinate labels — lazy-loaded to avoid troika CDN dependency in headless mode */}
       {showCoordinates && (
         <Suspense fallback={null}>
-          <CoordinateLabels labels={coordLabels} />
+          <CoordinateLabels labels={coordLabels} color={palette.coordColor} />
         </Suspense>
       )}
     </group>

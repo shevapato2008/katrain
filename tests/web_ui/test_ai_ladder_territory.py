@@ -168,8 +168,17 @@ async def test_territory_failure_does_not_charge_and_response_is_private(territo
     result = await analyze_ranked_territory(
         app, user_id=user_id, game_id="game", reservation_key="key", sgf_content=SGF, request_id="one"
     )
-    assert result == {"remaining": 2, "move_count": 1, "ownership": [0.2] * 361, "black_area": 0, "white_area": 0}
+    assert result == {
+        "remaining": 2,
+        "move_count": 1,
+        "ownership": [0.2] * 361,
+        "black_area": 0,
+        "white_area": 0,
+        "score_lead": 9.0,
+    }
     assert calls[-1]["includeOwnership"] is True and calls[-1]["includePolicy"] is False
+    assert calls[-1]["overrideSettings"] == {"reportAnalysisWinratesAs": "BLACK"}
+    assert calls[-1]["maxVisits"] == 200
     assert len(calls) == 2
     assert (
         await analyze_ranked_territory(
@@ -178,6 +187,79 @@ async def test_territory_failure_does_not_charge_and_response_is_private(territo
         == result
     )
     assert len(calls) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("root_info", "expected"),
+    [
+        pytest.param({"scoreLead": 7}, 7.0, id="positive"),
+        pytest.param({"scoreLead": -4.5}, -4.5, id="negative"),
+        pytest.param({"scoreLead": 0}, 0.0, id="zero"),
+        pytest.param({}, None, id="missing-lead"),
+        pytest.param(None, None, id="missing-root"),
+        pytest.param([], None, id="invalid-root"),
+        pytest.param({"scoreLead": True}, None, id="true"),
+        pytest.param({"scoreLead": False}, None, id="false"),
+        pytest.param({"scoreLead": "7.5"}, None, id="string"),
+        pytest.param({"scoreLead": None}, None, id="null"),
+        pytest.param({"scoreLead": [7.5]}, None, id="list"),
+        pytest.param({"scoreLead": float("nan")}, None, id="nan"),
+        pytest.param({"scoreLead": float("inf")}, None, id="infinity"),
+        pytest.param({"scoreLead": float("-inf")}, None, id="negative-infinity"),
+    ],
+)
+async def test_territory_returns_only_finite_numeric_root_lead(territory, root_info, expected):
+    repo, _, user_id = territory
+
+    async def analyze(payload):
+        return {
+            "ownership": [0.9, -0.9] + [0.0] * 359,
+            "rootInfo": root_info,
+            "moveInfos": [{"move": "D4", "scoreLead": 99}],
+            "policy": [0.1] * 362,
+            "scoreLead": 99,
+            "winrate": 0.9,
+        }
+
+    app = SimpleNamespace(
+        state=SimpleNamespace(
+            ai_ladder_repo=repo, router=SimpleNamespace(local_client=SimpleNamespace(analyze=analyze))
+        )
+    )
+    result = await analyze_ranked_territory(
+        app, user_id=user_id, game_id="game", reservation_key="key", sgf_content=SGF, request_id="lead"
+    )
+    assert result == {
+        "remaining": 2,
+        "move_count": 1,
+        "ownership": [0.9, -0.9] + [0.0] * 359,
+        "black_area": 1,
+        "white_area": 1,
+        "score_lead": expected,
+    }
+    if expected is not None:
+        assert isinstance(result["score_lead"], float)
+    assert repo.get_territory_status(user_id=user_id, game_id="game") == {"remaining": 2, "in_flight": False}
+
+
+@pytest.mark.asyncio
+async def test_territory_replays_old_success_without_lead_or_engine(territory):
+    repo, _, user_id = territory
+    old_result = {"ownership": [0.0] * 361, "black_area": 0, "white_area": 0, "move_count": 1}
+    claim = repo.claim_territory(
+        user_id=user_id, game_id="game", reservation_key="key", request_id="old", sgf_content=SGF
+    )
+    assert repo.complete_territory(
+        user_id=user_id, game_id="game", request_id="old", claim_token=claim["claim_token"], result=old_result
+    )
+    app = SimpleNamespace(state=SimpleNamespace(ai_ladder_repo=repo))
+    result = await analyze_ranked_territory(
+        app, user_id=user_id, game_id="game", reservation_key="key", sgf_content=SGF, request_id="old"
+    )
+    assert result == {"remaining": 2, **old_result}
+    assert "score_lead" not in result
+    assert repo.get_territory_status(user_id=user_id, game_id="game") == {"remaining": 2, "in_flight": False}
 
 
 @pytest.mark.asyncio
@@ -208,5 +290,6 @@ async def test_territory_routes_require_current_account_and_return_only_territor
         assert (await client.post(path, headers=other, json=body)).status_code == 404
         response = await client.post(path, headers=owner, json=body)
     assert response.status_code == 200, response.text
-    assert set(response.json()) == {"remaining", "move_count", "ownership", "black_area", "white_area"}
+    assert set(response.json()) == {"remaining", "move_count", "ownership", "black_area", "white_area", "score_lead"}
+    assert response.json()["score_lead"] == 9.0
     assert response.json()["remaining"] == 2

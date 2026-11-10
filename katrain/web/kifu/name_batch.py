@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from functools import lru_cache
 import hashlib
 import json
 from pathlib import Path
 import re
 
-from sqlalchemy import DateTime, func, or_, select, text
+from sqlalchemy import Date, DateTime, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,7 @@ from katrain.web.core.models_db import (
     KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry,
     KifuPlayer, KifuPlayerAlias, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
     KifuRawPlayerName, KifuRawPlayerValue, KifuSource,
+    KifuPlayerRankHistory, KifuAlbumRankSnapshot,
 )
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.name_candidates import (
@@ -48,9 +49,11 @@ _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
     KifuNameSourceRegistry, KifuNameResearchEvidence, KifuPlayerName, KifuEventName,
     KifuRawPlayerName, KifuRawEventName, KifuPlayer, KifuEvent,
     KifuRawPlayerValue, KifuRawEventValue, KifuAlbum, KifuAlbumEventSelection,
+    KifuPlayerRankHistory, KifuAlbumRankSnapshot,
 )}
 _ADVISORY_LOCK_KEY = 720220261002
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_NUMADATE_CORRECTION_MARKER = "numadate-canonical-first-pass-correction-v1"
 _TEAM_RAW = "团体赛"
 _TEAM_OWNER_ID = 73686
 _TEAM_ALL_IDS_SHA256 = "39fee6c73115534d2c206b0eaa4fc834cb6bc624dafdf147a3955fb09a9ea967"
@@ -183,29 +186,37 @@ def approved_name_snapshot(engine) -> list[dict]:
 
 
 @contextmanager
-def _locked_write(engine, *, lock_timeout_ms=None):
+def _locked_write(engine, *, lock_timeout_ms=None, _emergency_undo=False,
+                  search_operation=None, _search_maintenance=False, _table_lock=None):
+    """Keep the original writer locks on this connection through ES refresh.
+
+    Session locks survive the real business commit; an uncertain unlock must
+    discard the connection instead of returning a possibly locked session.
+    """
+    from katrain.web.kifu import search_sync
+
     conn = engine.connect()
+    acquired = []
+    token = None
+    commit_started = False
+    committed = False
     try:
         if engine.dialect.name == "postgresql":
             conn = conn.execution_options(isolation_level="READ COMMITTED")
-            conn.begin()
             if lock_timeout_ms is not None:
                 _fail(type(lock_timeout_ms) is int and 0 < lock_timeout_ms <= 60000, "invalid lock timeout")
-                conn.execute(text("SELECT set_config('lock_timeout', :timeout, true)"),
+                conn.execute(text("SELECT set_config('lock_timeout', :timeout, false)"),
                              {"timeout": f"{lock_timeout_ms}ms"})
-            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (_ADVISORY_LOCK_KEY,))
-            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261003,))
-            conn.exec_driver_sql(
-                "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, "
-                "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
-                "kifu_raw_player_values, kifu_raw_event_values, "
-                "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
-                "kifu_name_research_evidence, kifu_name_source_registry, kifu_name_batches, kifu_name_changes, "
-                "kifu_album_event_selections, kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
-            )
+            for key in (_ADVISORY_LOCK_KEY, 720220261003):
+                try:
+                    conn.exec_driver_sql("SELECT pg_advisory_lock(%s)", (key,))
+                except BaseException:
+                    # A lost response can mean that the server acquired the key.
+                    conn.invalidate()
+                    raise
+                acquired.append(key)
+            conn.commit()
         elif engine.dialect.name == "sqlite":
-            # CLI engines do not share the application's connect hook. Undo relies
-            # on FK rejection when a later edit still references batch evidence.
             conn.exec_driver_sql("PRAGMA foreign_keys=ON")
             if lock_timeout_ms is not None:
                 _fail(type(lock_timeout_ms) is int and 0 < lock_timeout_ms <= 60000, "invalid lock timeout")
@@ -215,13 +226,64 @@ def _locked_write(engine, *, lock_timeout_ms=None):
             conn.exec_driver_sql("BEGIN IMMEDIATE")
         else:
             raise BatchError("Only PostgreSQL and SQLite are supported")
+        if not _search_maintenance:
+            if search_operation is None:
+                _fail(search_sync.sync_mode() != "enabled", "search operation reference is required")
+                search_sync.begin_sync(conn, "bootstrap", {})
+            else:
+                token = search_sync.begin_sync(conn, *search_operation)
+        if engine.dialect.name == "postgresql":
+            # Finish only the lock/read transaction, before business table locks.
+            conn.commit()
+            conn.begin()
+            if lock_timeout_ms is not None:
+                conn.execute(text("SELECT set_config('lock_timeout', :timeout, true)"),
+                             {"timeout": f"{lock_timeout_ms}ms"})
+            conn.exec_driver_sql(_table_lock or (
+                "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, "
+                "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
+                "kifu_raw_player_values, kifu_raw_event_values, "
+                "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
+                "kifu_name_research_evidence, kifu_name_source_registry, kifu_name_batches, kifu_name_changes, "
+                "kifu_album_event_selections, kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
+            ))
         yield conn
+        commit_started = True
         conn.commit()
-    except Exception:
-        conn.rollback()
+        committed = True
+        search_sync.finish_sync(conn, token)
+        token = None
+    except BaseException as exc:
+        if not commit_started:
+            conn.rollback()
+            search_sync.cancel_sync(token)
+            token = None
+        elif not committed and token is not None:
+            # A failed COMMIT response is not proof of rollback. Original native
+            # receipt/journal resolves this pending operation on the next entry.
+            token.client.close()
+            token = None
+            raise search_sync.SearchIndexPending(search_operation[1], "database commit outcome is unknown") from exc
         raise
     finally:
-        conn.close()
+        try:
+            if acquired and not conn.invalidated:
+                # Projection SELECTs may have opened another read transaction.
+                conn.rollback()
+                for key in reversed(acquired):
+                    released = conn.exec_driver_sql("SELECT pg_advisory_unlock(%s)", (key,)).scalar_one()
+                    if released is not True:
+                        conn.invalidate()
+                        break
+                if not conn.invalidated:
+                    if lock_timeout_ms is not None:
+                        conn.exec_driver_sql("RESET lock_timeout")
+                    conn.commit()
+        except BaseException:
+            conn.invalidate()
+            raise
+        finally:
+            conn.close()
 
 
 def _primary_key(table):
@@ -232,7 +294,7 @@ def _image(conn, table, row_id: int) -> dict | None:
     row = conn.execute(select(table).where(_primary_key(table) == row_id)).mappings().one_or_none()
     if row is None:
         return None
-    return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
+    return {key: value.isoformat() if isinstance(value, (datetime, date)) else value for key, value in row.items()}
 
 
 def _team_raw_scope(conn) -> dict:
@@ -310,6 +372,9 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
 
     owner, lang = candidate["owner"], candidate["lang"]
     marker = candidate.get("first_pass_correction")
+    if isinstance(marker, dict) and marker.get("version") == _NUMADATE_CORRECTION_MARKER:
+        _check_numadate_first_pass_correction(conn, candidate, marker, prior_proofs)
+        return
     if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
         _check_generated_raw_correction(conn, candidate, marker, prior_proofs, owner_kind="raw_event")
         return
@@ -395,6 +460,38 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
           and persisted_eligible(name, evidence, "raw_player", old_owner, batch, changes,
                                  batch_members=batch_members),
           "first-pass correction old name lacks complete generated journal proof")
+
+
+def _check_numadate_first_pass_correction(conn, candidate: dict, marker: dict,
+                                         prior_proofs: dict | None) -> None:
+    """Only the prevalidated, same-connection correction can replace these cells."""
+    hash_keys = {"identity_transition_sha256", "name_preimage_sha256", "prior_evidence_sha256",
+                 "prior_candidate_sha256", "prior_bundle_sha256", "owner_before_sha256",
+                 "owner_after_sha256", "source_input_sha256"}
+    integer_keys = {"prior_evidence_id", "prior_batch_id", "prior_revision"}
+    _fail(set(marker) == {"version", "player_id", "lang"} | hash_keys | integer_keys
+          and candidate.get("owner") == {"kind": "player", "id": 5364}
+          and candidate.get("lang") in {"cn", "tw", "en", "ko"}
+          and type(marker.get("player_id")) is int and marker["player_id"] == 5364
+          and marker.get("lang") == candidate["lang"]
+          and marker.get("name_preimage_sha256") == candidate.get("name_preimage_sha256")
+          and candidate.get("decision_kind") == "generated"
+          and candidate.get("generation_rule_version") == "user_authorized_first_pass_v1"
+          and candidate.get("review_status") == "approved"
+          and all(type(marker[key]) is int and marker[key] > 0 for key in integer_keys)
+          and all(isinstance(marker[key], str) and _SHA256.fullmatch(marker[key]) for key in hash_keys),
+          "canonical correction is outside the reviewed player5364 generated scope")
+    _fail(isinstance(prior_proofs, dict) and prior_proofs.get("_numadate_canonical_correction") is not None,
+          "Numadate trusted correction context is required")
+    # The serialized marker and proof hashes are not authority. The operator
+    # checks its private operation-local context against this exact connection,
+    # independently reviewed transition, candidates and original journal proof.
+    from katrain.web.kifu.numadate_canonical_correction import _validate_name_correction_context
+    try:
+        verified_marker = _validate_name_correction_context(conn, prior_proofs, candidate)
+    except ValueError as exc:
+        raise BatchError(f"Numadate trusted correction context invalid: {exc}") from exc
+    _fail(verified_marker == marker, "Numadate trusted correction context marker differs")
 
 
 def _check_generated_raw_correction(conn, candidate: dict, marker: dict,
@@ -557,6 +654,11 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
               "first-pass source owner changed")
         kind = source["kind"]
         marker = candidate.get("first_pass_correction")
+        if isinstance(marker, dict) and marker.get("version") == _NUMADATE_CORRECTION_MARKER:
+            _fail(kind == "catalog_canonical" and owner == {"kind": "player", "id": 5364}
+                  and marker.get("owner_after_sha256") == source["owner_preimage_sha256"]
+                  and marker.get("source_input_sha256") == canonical_sha256(source),
+                  "canonical correction generated source differs from the new owner")
         if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
             _fail(kind == "raw_event_literal" and research["generation"].get("method") == "translation",
                   "generated raw-event correction needs literal translation research")
@@ -632,6 +734,8 @@ def _values_for_table(table, image: dict) -> dict:
     for key, value in values.items():
         if value is not None and isinstance(table.c[key].type, DateTime):
             values[key] = datetime.fromisoformat(value)
+        elif value is not None and isinstance(table.c[key].type, Date):
+            values[key] = date.fromisoformat(value)
     return values
 
 
@@ -1535,7 +1639,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                          for row in bundle["candidates"])
     normative_research = [record for record in evidence_records
                           if record.get("source_basis") in {"normative_ja_ko_v1", "normative_zh_ko_v1"}]
-    with _locked_write(engine) as conn:
+    with _locked_write(engine, search_operation=("name_apply", {"bundle_sha256": bundle_hash})) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
             _fail(previous["status"] == "applied", "bundle was previously undone; issue a new reviewed revision")
@@ -1744,11 +1848,40 @@ def _retained_composition_dependency(conn, table, row_id: int, before_image: dic
     return False
 
 
-def undo_batch(engine, batch_id: int) -> dict:
+def _check_canonical_correction_undo(conn, batch) -> None:
+    """This correction has no post-commit rollback, including child-only undo."""
+    artifact = batch["reviewed_artifact"]
+    if not isinstance(artifact, dict):
+        return
+    bundle = artifact.get("bundle")
+
+    def correction_candidate(candidate):
+        marker = candidate.get("first_pass_correction") if isinstance(candidate, dict) else None
+        return isinstance(marker, dict) and marker.get("version") == _NUMADATE_CORRECTION_MARKER
+
+    blocked = (artifact.get("format") == "kifu-numadate-canonical-correction-v1"
+               or "canonical_correction_parent" in artifact
+               or isinstance(bundle, dict) and any(
+                   correction_candidate(candidate) for candidate in bundle.get("candidates", ())))
+    if not blocked:
+        # A stripped child binding must not turn the immutable creation journal
+        # into an ordinary name undo, even if its bundle marker was also lost.
+        evidence_images = conn.scalars(select(KifuNameChange.after_image).where(
+            KifuNameChange.batch_id == batch["id"],
+            KifuNameChange.target_table == KifuNameResearchEvidence.__tablename__))
+        blocked = any(correction_candidate((image.get("research_payload") or {}).get("candidate"))
+                      for image in evidence_images if isinstance(image, dict))
+    _fail(not blocked, "Numadate canonical correction v1 does not support undo")
+
+
+def undo_batch(engine, batch_id: int, *, emergency_invalidate_search: bool = False) -> dict:
     """Undo each unchanged after-image in reverse order, retaining later edits."""
-    with _locked_write(engine) as conn:
+    _fail(type(emergency_invalidate_search) is bool, "emergency invalidation must be a boolean")
+    context = _locked_write(engine, search_operation=("name_undo", {"batch_id": batch_id}))
+    with context as conn:
         batch = conn.execute(select(KifuNameBatch).where(KifuNameBatch.id == batch_id)).mappings().one_or_none()
         _fail(batch is not None, f"batch {batch_id} not found")
+        _check_canonical_correction_undo(conn, batch)
         bundle = batch["reviewed_artifact"].get("bundle")
         _fail(isinstance(bundle, dict) and canonical_sha256(bundle) == batch["bundle_sha256"],
               "batch artifact changed")
@@ -1757,6 +1890,9 @@ def undo_batch(engine, batch_id: int) -> dict:
             KifuNameChange.target_table == KifuAlbumEventSelection.__tablename__).limit(1)).first()
         _fail(has_selection_change is None or bundle.get("bundle_format") == 4,
               "selected event artifact changed")
+        if batch["status"] == "undone":
+            return {"batch_id": batch_id, "status": "already_undone", "reverted": 0,
+                    "already_reverted": 0, "skipped": 0}
         if isinstance(bundle, dict) and bundle.get("bundle_format") == 4:
             _fail(batch["status"] == "applied", "v4 batch is not applied")
             _fail(canonical_sha256(bundle) == batch["bundle_sha256"], "v4 batch artifact changed")
@@ -1782,8 +1918,9 @@ def undo_batch(engine, batch_id: int) -> dict:
                 raise BatchError("dependent row blocks atomic v4 undo") from exc
             conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
                          .values(status="undone"))
-            return {"batch_id": batch_id, "status": "undone", "reverted": len(changes),
-                    "already_reverted": 0, "skipped": 0}
+            result = {"batch_id": batch_id, "status": "undone", "reverted": len(changes),
+                      "already_reverted": 0, "skipped": 0}
+            return result
         _fail(batch["status"] in {"applied", "partial_undo"}, "batch is not applied")
         changes = conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == batch_id)
                                .order_by(KifuNameChange.sequence.desc())).mappings().all()
@@ -1816,5 +1953,6 @@ def undo_batch(engine, batch_id: int) -> dict:
             reverted += 1
         status = "undone" if skipped == 0 else "partial_undo"
         conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(status=status))
-        return {"batch_id": batch_id, "status": status, "reverted": reverted,
-                "already_reverted": already_reverted, "skipped": skipped}
+        result = {"batch_id": batch_id, "status": status, "reverted": reverted,
+                  "already_reverted": already_reverted, "skipped": skipped}
+        return result

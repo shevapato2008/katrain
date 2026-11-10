@@ -14,6 +14,14 @@ vi.mock('../../context/SettingsContext', () => ({
   useSettings: () => ({ language: 'cn', setLanguage: mockSetLanguage, languages: [] }),
 }));
 
+// Route tests exercise the shell after the device preference has loaded.
+// The provider's async load/save behavior has its own focused tests.
+vi.mock('../typography/KioskTypographyContext', () => ({
+  KioskTypographyProvider: ({ children }: { children: React.ReactNode }) => children,
+  useKioskTypography: () => ({ loading: false }),
+}));
+vi.mock('../typography/applyTextSizing', () => ({ installKioskTextSizing: () => () => undefined }));
+
 // Keep the tutorial landing page deterministic (no real network) when we render
 // the /kiosk/tutorial route.
 vi.mock('../../api/tutorialApi', () => ({

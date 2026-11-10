@@ -9,8 +9,38 @@
 (function () {
   "use strict";
 
+  // currentScript is only defined while this file executes, not in a later key handler.
+  var keyboardScriptSrc = typeof document !== "undefined" && document.currentScript
+    ? document.currentScript.src : "";
+  var nativeLocal = typeof window !== "undefined" &&
+    /^(127\.0\.0\.1|localhost|\[::1\])$/.test(window.location.hostname);
+  var nativeLoader = null;
   var CAND_PAGE_SIZE = 7;
   var FREQ_KEY = "skbd-freq-v1";
+
+  // Interface language is independent of the EN/Pinyin input mode and its composition.
+  var UI = {
+    zh: {space:"空格", enter:"换行", go:"前往", hide:"收起键盘", unavailable:"中文输入暂不可用", retry:"重试", loading:"中文输入处理中…", empty:"无候选", prev:"上一页候选", next:"下一页候选"},
+    "zh-TW": {space:"空格", enter:"換行", go:"前往", hide:"收起鍵盤", unavailable:"中文輸入暫不可用", retry:"重試", loading:"中文輸入處理中…", empty:"無候選字", prev:"上一頁候選字", next:"下一頁候選字"},
+    en: {space:"Space", enter:"Return", go:"Go", hide:"Hide keyboard", unavailable:"Chinese input unavailable", retry:"Retry", loading:"Processing Chinese input…", empty:"No candidates", prev:"Previous candidates", next:"Next candidates"},
+    ja: {space:"空白", enter:"改行", go:"移動", hide:"キーボードを閉じる", unavailable:"中国語入力を利用できません", retry:"再試行", loading:"中国語入力を処理中…", empty:"候補なし", prev:"前の候補", next:"次の候補"},
+    ko: {space:"공백", enter:"줄바꿈", go:"이동", hide:"키보드 닫기", unavailable:"중국어 입력을 사용할 수 없습니다", retry:"재시도", loading:"중국어 입력 처리 중…", empty:"후보 없음", prev:"이전 후보", next:"다음 후보"}
+  };
+  var CJK_FONTS = {wenkai:'"SmartBox Kai"', kaiti:'"SmartBox CNS Kai"', lishu:'"SmartBox DaoLi"', heiti:'"SmartBox Noto Sans CJK"'};
+  function uiLanguage() {
+    var lang = document.documentElement.lang;
+    if (lang === "zh-CN") lang = "zh";
+    return Object.prototype.hasOwnProperty.call(UI, lang) ? lang : "zh";
+  }
+  function ui(key) { return UI[uiLanguage()][key]; }
+  function applyAppearance() {
+    var lang = uiLanguage();
+    root.lang = lang;
+    var font = document.documentElement.getAttribute("data-smartbox-font");
+    root.style.setProperty("--skbd-cjk", lang === "ja" || lang === "ko"
+      ? CJK_FONTS.heiti : (Object.prototype.hasOwnProperty.call(CJK_FONTS, font) ? CJK_FONTS[font] : CJK_FONTS.wenkai));
+    root.querySelector(".skbd-hide").setAttribute("aria-label", ui("hide"));
+  }
 
   function loadFreq() {
     try {
@@ -72,9 +102,90 @@
 
   var state = {
     mode: "en", layer: "letters", shift: false, target: null, buffer: "",
-    cands: [], page: 0, freq: loadFreq()
+    cands: [], page: 0, freq: loadFreq(),
+    generation: 0, nativeClient: null, nativeSnapshot: null,
+    nativeTail: Promise.resolve(), nativePending: 0, nativeError: null
   };
   var root, candBar, compose, candList, rowsEl;
+  var shiftTarget = null;
+
+  function isPassword() { return state.target && state.target.type === "password"; }
+  function useNative() { return nativeLocal && state.mode === "zh" && !isPassword(); }
+  function hasComposition(snapshot) { return snapshot && !!(snapshot.input || snapshot.preedit); }
+
+  function loadNative() {
+    if (window.SmartBoxRimeClient) return Promise.resolve(window.SmartBoxRimeClient);
+    if (!nativeLoader) {
+      nativeLoader = new Promise(function (resolve, reject) {
+        if (!keyboardScriptSrc) { reject(new Error("Missing keyboard script URL")); return; }
+        var url = new URL("rime-client.js", keyboardScriptSrc);
+        url.search = new URL(keyboardScriptSrc).search;
+        var script = document.createElement("script");
+        script.src = url.href;
+        script.onload = function () {
+          if (window.SmartBoxRimeClient) resolve(window.SmartBoxRimeClient);
+          else reject(new Error("Rime client unavailable"));
+        };
+        script.onerror = function () { script.remove(); reject(new Error("Rime client failed to load")); };
+        document.head.appendChild(script);
+      });
+      nativeLoader.catch(function () { nativeLoader = null; });
+    }
+    return nativeLoader;
+  }
+
+  function resetNative() {
+    state.generation++;
+    if (state.nativeClient) state.nativeClient.reset();
+    state.nativeClient = state.nativeSnapshot = state.nativeError = null;
+    state.nativePending = 0;
+    state.nativeTail = Promise.resolve();
+    state.buffer = "";
+  }
+
+  function nativeValid(generation, target) {
+    return generation === state.generation && target === state.target &&
+      target && target.isConnected && document.activeElement === target && useNative();
+  }
+
+  // Loading, opening, native mutation, insertion and dependent literals/Return share one queue.
+  // Later keys do not invalidate valid earlier commits; only target/language lifecycle does.
+  function queueNative(action, after) {
+    var generation = state.generation, target = state.target;
+    state.nativePending++;
+    candList.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
+    updateCandidates();
+    var work = state.nativeTail.then(async function () {
+      if (!nativeValid(generation, target)) return;
+      if (state.nativeError) throw state.nativeError;
+      var Client = await loadNative();
+      if (!nativeValid(generation, target)) return;
+      if (!state.nativeClient) state.nativeClient = new Client();
+      var client = state.nativeClient;
+      return client.run(function (snapshot) {
+        // Removing a focused node need not fire focusout in every browser.
+        if (!nativeValid(generation, target)) { client.reset(); return null; }
+        return typeof action === "function" ? action(snapshot) : action;
+      }, function (snapshot, submitted) {
+        if (!nativeValid(generation, target)) { client.reset(); return; }
+        state.nativeSnapshot = snapshot;
+        state.buffer = snapshot.input || "";
+        if (snapshot.commit) insertText(snapshot.commit);
+        // Framework onInput handlers may synchronously move focus or replace the node.
+        if (!nativeValid(generation, target)) { client.reset(); return; }
+        updateCandidates();
+        if (after) after(snapshot, submitted);
+      });
+    });
+    state.nativeTail = work.catch(function (error) {
+      if (nativeValid(generation, target)) state.nativeError = error;
+    }).then(function () {
+      if (generation === state.generation) {
+        state.nativePending--;
+        updateCandidates();
+      }
+    });
+  }
 
   function isEditable(el) {
     if (!el) return false;
@@ -124,12 +235,15 @@
   function keyLabel(spec) {
     if (typeof spec === "string") return state.shift ? spec.toUpperCase() : spec;
     if (spec.icon) return spec.icon;
-    if (spec.k === "return" && state.target && state.target.enterKeyHint === "go") return state.target.getAttribute("data-enter-label") || "Go";
+    if (spec.k === "return" && state.target && state.target.enterKeyHint === "go") return state.target.getAttribute("data-enter-label") || ui("go");
     if (spec.k === "lang") return state.mode === "zh" ? "中" : "EN";
+    if (spec.k === "space") return ui("space");
+    if (spec.k === "return") return ui("enter");
     return spec.label || spec.k;
   }
 
   function render() {
+    applyAppearance();
     root.classList.toggle("skbd-zh", state.mode === "zh");
     rowsEl.innerHTML = "";
     var rows = LAYOUTS[state.layer];
@@ -166,6 +280,8 @@
       case "sym": state.layer = "sym"; render(); return;
       case "abc": state.layer = "letters"; render(); return;
       case "lang":
+        if (isPassword()) return;
+        resetNative();
         state.mode = state.mode === "zh" ? "en" : "zh";
         if (state.mode === "en") clearBuffer();
         render(); return;
@@ -174,9 +290,84 @@
     }
   }
 
+  function physicalTarget(event) {
+    var target = event.target;
+    if (event.defaultPrevented || event.isComposing || event.keyCode === 229 ||
+        event.smartKeyboardSource || !isEditable(target) || target !== document.activeElement ||
+        target.readOnly || target.disabled || target.type === "password") return null;
+    return target;
+  }
+
+  function consumeKey(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  // External keyboards share the touch keyboard's mode, decoder and async queue.
+  // Capture before form/xterm handlers so uncommitted Pinyin cannot be submitted.
+  function onPhysicalKeydown(event) {
+    var target = physicalTarget(event);
+    if (event.key === "Shift") {
+      shiftTarget = target && !event.repeat && !event.ctrlKey && !event.altKey && !event.metaKey ? target : null;
+      return;
+    }
+    shiftTarget = null;
+    if (!target) return;
+    if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
+        (event.key === " " || event.code === "Space")) {
+      consumeKey(event);
+      if (!event.repeat) {
+        if (state.target !== target) showKbd(target);
+        onKey("lang");
+      }
+      return;
+    }
+    if (event.ctrlKey || event.altKey || event.metaKey || state.mode !== "zh") return;
+    var composing = !!state.buffer || state.nativePending > 0;
+    var key = event.key;
+    if (!/^[a-z']$/.test(key) && !(composing &&
+        (key.length === 1 || /^(Backspace|Enter|Escape)$/.test(key)))) return;
+    if (state.target !== target) showKbd(target);
+    consumeKey(event);
+    if (/^[1-7]$/.test(key) && composing) {
+      var position = state.page * CAND_PAGE_SIZE + Number(key) - 1;
+      if (useNative()) {
+        queueNative(function (snapshot) {
+          var item = snapshot.candidates[position];
+          return item ? { type: "select", index: item.index, revision: snapshot.revision } : null;
+        });
+      } else if (state.cands[position]) commit(state.cands[position], true);
+    } else if (key === " ") onSpace();
+    else if (key === "Backspace") onBack();
+    else if (key === "Escape") {
+      if (useNative()) queueNative({ type: "clear" });
+      else clearBuffer();
+    } else if (key === "Enter") {
+      if (useNative()) queueNative(function (snapshot) {
+        return hasComposition(snapshot) ? { type: "commit" } : null;
+      });
+      else flushBuffer();
+    } else onChar(key);
+  }
+
+  function onPhysicalKeyup(event) {
+    if (event.key !== "Shift") return;
+    var target = shiftTarget;
+    shiftTarget = null;
+    if (!target || physicalTarget(event) !== target || event.ctrlKey || event.altKey || event.metaKey) return;
+    consumeKey(event);
+    if (state.target !== target) showKbd(target);
+    onKey("lang");
+  }
+
   function onChar(ch) {
     var out = state.shift ? ch.toUpperCase() : ch;
-    if (state.mode === "zh" && state.layer === "letters" && /^[a-z]$/.test(ch)) {
+    if (useNative()) {
+      if (/^[a-z']$/.test(ch)) queueNative({ type: "key", key: ch });
+      else queueNative(function (snapshot) {
+        return hasComposition(snapshot) ? { type: "commit" } : null;
+      }, function () { insertText(out); });
+    } else if (state.mode === "zh" && state.layer === "letters" && /^[a-z]$/.test(ch)) {
       state.buffer += ch;       // 拼音始终小写
       updateCandidates();
     } else {
@@ -187,6 +378,12 @@
   }
 
   function onBack() {
+    if (useNative()) {
+      queueNative(function (snapshot) {
+        return hasComposition(snapshot) ? { type: "key", key: "BackSpace" } : null;
+      }, function (snapshot, submitted) { if (!submitted) deleteBack(); });
+      return;
+    }
     if (state.mode === "zh" && state.buffer) {
       state.buffer = state.buffer.slice(0, -1);
       updateCandidates();
@@ -196,13 +393,30 @@
   }
 
   function onSpace() {
+    if (useNative()) {
+      queueNative(function (snapshot) {
+        return hasComposition(snapshot) ? { type: "key", key: "space" } : null;
+      }, function (snapshot, submitted) { if (!submitted) insertText(" "); });
+      return;
+    }
     if (state.mode === "zh" && state.buffer) { commitFirst(); }
     else { insertText(" "); }
   }
 
   function onReturn() {
+    if (useNative()) {
+      queueNative(function (snapshot) {
+        return hasComposition(snapshot) ? { type: "commit" } : null;
+      }, finishReturn);
+      return;
+    }
     if (state.mode === "zh" && state.buffer) { flushBuffer(); return; }
+    finishReturn();
+  }
+
+  function finishReturn() {
     var el = state.target;
+    if (el && sendControl(el, "Enter")) { hideKbd(); return; }
     if (el && el.enterKeyHint === "go" && el.form) { el.form.requestSubmit(); return; }
     if (el && el.tagName === "TEXTAREA") { insertText("\n"); }
     else { hideKbd(); }
@@ -270,8 +484,11 @@
 
   function updateCandidates() {
     if (!candBar) return;
+    root.setAttribute("data-ime-engine", useNative()
+      ? ((state.nativeSnapshot && state.nativeSnapshot.engine) || "native") : "legacy");
     if (state.mode !== "zh") { compose.innerHTML = ""; candList.innerHTML = ""; state.cands = []; state.page = 0; return; }
-    state.cands = state.buffer ? getCands() : [];
+    state.cands = useNative() ? ((state.nativeSnapshot && state.nativeSnapshot.candidates) || [])
+      : state.buffer ? getCands() : [];
     state.page = 0;
     renderCompose();
     renderCandPage();
@@ -282,6 +499,10 @@
   // PinyinCompose.segment 的约定一致。DOM 只用 <span> 分段,不插入分隔字符。
   function renderCompose() {
     compose.innerHTML = "";
+    if (useNative()) {
+      compose.textContent = (state.nativeSnapshot && state.nativeSnapshot.preedit) || "";
+      return;
+    }
     if (!state.buffer) return;
     var headL = state.cands.length ? state.cands[0].l : 0;
     var segs;
@@ -303,10 +524,27 @@
   // 只重渲染候选行(翻页调用路径),不触碰键盘主体(rowsEl 不重建),也不重算 segment。
   function renderCandPage() {
     candList.innerHTML = "";
+    if (useNative() && state.nativeError) {
+      var status = document.createElement("span");
+      status.className = "skbd-cand-empty";
+      status.textContent = ui("unavailable");
+      candList.appendChild(status);
+      var retry = document.createElement("button");
+      retry.type = "button"; retry.className = "skbd-cand-retry skbd-cand-nav"; retry.textContent = ui("retry");
+      tap(retry, function () { resetNative(); queueNative(null); });
+      candList.appendChild(retry);
+      return;
+    }
+    if (useNative() && state.nativePending && !state.cands.length) {
+      var loading = document.createElement("span");
+      loading.className = "skbd-cand-empty"; loading.textContent = ui("loading");
+      candList.appendChild(loading);
+      return;
+    }
     if (!state.buffer) return;
     if (!state.cands.length) {
       var em = document.createElement("span");
-      em.className = "skbd-cand-empty"; em.textContent = "无候选";
+      em.className = "skbd-cand-empty"; em.textContent = ui("empty");
       candList.appendChild(em); return;
     }
     var totalPages = Math.max(1, Math.ceil(state.cands.length / CAND_PAGE_SIZE));
@@ -317,7 +555,8 @@
 
     var prevBtn = document.createElement("button");
     prevBtn.type = "button"; prevBtn.className = "skbd-cand-nav skbd-cand-prev"; prevBtn.textContent = "‹";
-    prevBtn.disabled = state.page <= 0;
+    prevBtn.setAttribute("aria-label", ui("prev"));
+    prevBtn.disabled = state.page <= 0 || (useNative() && state.nativePending > 0);
     tap(prevBtn, function () {
       if (state.page > 0) { state.page--; renderCandPage(); }
     });
@@ -329,8 +568,15 @@
       var it = document.createElement("button");
       it.type = "button";
       it.className = "skbd-cand-item" + (isFirstCand(state.page, idx) ? " skbd-cand-item-first" : "");
-      it.textContent = item.t;
-      tap(it, function () { commit(item, true); });
+      it.textContent = useNative() ? item.text : item.t;
+      if (useNative()) {
+        var revision = state.nativeSnapshot.revision, generation = state.generation;
+        it.disabled = state.nativePending > 0;
+        tap(it, function () {
+          if (state.nativePending || generation !== state.generation || !useNative()) return;
+          queueNative({ type: "select", index: item.index, revision: revision });
+        });
+      } else tap(it, function () { commit(item, true); });
       itemsWrap.appendChild(it);
     });
     var fade = document.createElement("div");
@@ -352,7 +598,8 @@
 
     var nextBtn = document.createElement("button");
     nextBtn.type = "button"; nextBtn.className = "skbd-cand-nav skbd-cand-next"; nextBtn.textContent = "›";
-    nextBtn.disabled = state.page >= totalPages - 1;
+    nextBtn.setAttribute("aria-label", ui("next"));
+    nextBtn.disabled = state.page >= totalPages - 1 || (useNative() && state.nativePending > 0);
     tap(nextBtn, function () {
       if (state.page < totalPages - 1) { state.page++; renderCandPage(); }
     });
@@ -379,11 +626,21 @@
       var pos = start + text.length;
       try { el.setSelectionRange(pos, pos); } catch (e) {}
     }
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+    var event = new Event("input", { bubbles: true });
+    // Durable provenance survives the pointer task while an async Rime request runs.
+    event.smartKeyboardSource = true;
+    event.smartKeyboardText = text;
+    el.dispatchEvent(event);
+  }
+
+  function sendControl(el, key) {
+    var event = new CustomEvent("smartkeyboard:control", { bubbles: true, cancelable: true, detail: { key: key } });
+    return !el.dispatchEvent(event);
   }
 
   function deleteBack() {
     var el = state.target; if (!el) return;
+    if (sendControl(el, "Backspace")) return;
     try { el.focus(); } catch (e) {}
     var start, end;
     try { start = el.selectionStart; end = el.selectionEnd; } catch (e) { start = end = null; }
@@ -400,12 +657,15 @@
   }
 
   function showKbd(target) {
+    if (state.target !== target) resetNative();
     state.target = target;
+    if (isPassword()) { state.mode = "en"; state.shift = false; }
     if (target.inputMode === "numeric") { state.layer = "num"; clearBuffer(); }
     render();
     root.classList.add("skbd-open");
     document.body.classList.add("skbd-padded");
     requestAnimationFrame(function () {
+      if (state.target !== target || !root.classList.contains("skbd-open")) return;
       var height = root.offsetHeight + "px";
       document.body.style.paddingBottom = height;
       document.body.style.setProperty("--skbd-height", height);
@@ -414,7 +674,9 @@
   }
 
   function hideKbd() {
+    shiftTarget = null;
     root.classList.remove("skbd-open");
+    resetNative();
     clearBuffer();
     state.target = null;
     document.body.style.paddingBottom = "";
@@ -423,7 +685,13 @@
   }
 
   function init() {
+    if (root) return;
     build();
+    new MutationObserver(function () { render(); }).observe(document.documentElement, {
+      attributes: true, attributeFilter: ["lang", "data-smartbox-font"]
+    });
+    document.addEventListener("keydown", onPhysicalKeydown, true);
+    document.addEventListener("keyup", onPhysicalKeyup, true);
     document.addEventListener("focusin", function (e) {
       if (isEditable(e.target)) showKbd(e.target);
     });

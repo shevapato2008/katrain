@@ -1,4 +1,6 @@
 import threading
+import time
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -15,6 +17,7 @@ class FakeCamera:
         self.close_calls = 0
         self.is_connected = False
         self.frame = np.zeros((4, 6, 3), np.uint8)
+        self.fresh_timeouts = []
 
     def open(self):
         self.open_calls += 1
@@ -28,7 +31,8 @@ class FakeCamera:
     def read_frame(self):
         return self.frame.copy()
 
-    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+    def grab_fresh(self, after_ts=None, settle_ms=150.0, timeout=2.0):
+        self.fresh_timeouts.append(timeout)
         return self.frame.copy(), 7, 123.0
 
 
@@ -49,6 +53,138 @@ def test_camera_hub_owns_one_camera_lifecycle():
     hub.stop()
     hub.stop()
     assert camera.close_calls == 1
+
+
+@pytest.mark.parametrize("timeout", [None, 0.5])
+def test_grab_fresh_waits_for_preview_and_only_spends_remaining_timeout(timeout):
+    preview_entered, preview_release, captured = threading.Event(), threading.Event(), threading.Event()
+    requested = threading.Event()
+
+    class PreviewCamera(FakeCamera):
+        def read_frame(self):
+            preview_entered.set()
+            assert preview_release.wait(2)
+            return super().read_frame()
+
+    camera = PreviewCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    preview = threading.Thread(target=hub.read_frame)
+    results = []
+    elapsed = []
+
+    def capture():
+        started = time.monotonic()
+        requested.set()
+        results.append(hub.grab_fresh(after_ts=100.0, settle_ms=10, timeout=timeout))
+        elapsed.append(time.monotonic() - started)
+        captured.set()
+
+    fresh = threading.Thread(target=capture)
+    try:
+        preview.start()
+        assert preview_entered.wait(1)
+        fresh.start()
+        assert requested.wait(1)
+        assert not captured.wait(0.04), "fresh capture returned while preview still owned the camera"
+        preview_release.set()
+        assert captured.wait(1)
+        assert results[0][1:] == (7, 123.0)
+        assert results[0][0].shape == camera.frame.shape
+        budget = 2.0 if timeout is None else timeout
+        assert 0 < camera.fresh_timeouts[0] <= budget - 0.03
+        assert camera.fresh_timeouts[0] == pytest.approx(budget - elapsed[0], abs=0.02)
+    finally:
+        preview_release.set()
+        preview.join(2)
+        if fresh.ident is not None:
+            fresh.join(2)
+        hub.stop()
+
+
+def test_grab_fresh_times_out_waiting_for_lifecycle_lock():
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    try:
+        with hub._lifecycle_lock:
+            started = time.monotonic()
+            result = hub.grab_fresh(timeout=0.04)
+            elapsed = time.monotonic() - started
+        assert result == (None, 0, 0.0)
+        assert 0.03 <= elapsed < 0.3
+        assert camera.fresh_timeouts == []
+    finally:
+        hub.stop()
+
+
+def test_grab_fresh_does_not_call_camera_after_budget_is_exhausted(monkeypatch):
+    from katrain.web.core import camera_hub
+
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    clock = iter([10.0, 10.1])
+    monkeypatch.setattr(camera_hub, "time", SimpleNamespace(monotonic=lambda: next(clock)))
+    try:
+        frame, seq, ts = hub.grab_fresh(timeout=0.05)
+        assert frame is None
+        assert (seq, ts) == (0, 0.0)
+        assert camera.fresh_timeouts == []
+        assert hub._lifecycle_lock.acquire(blocking=False), "exhausted capture retained lifecycle lock"
+        hub._lifecycle_lock.release()
+    finally:
+        hub.stop()
+
+
+def test_grab_fresh_waiting_for_stop_does_not_read_closed_camera():
+    close_entered, close_release, captured = threading.Event(), threading.Event(), threading.Event()
+
+    class ClosingCamera(FakeCamera):
+        def close(self):
+            close_entered.set()
+            assert close_release.wait(2)
+            super().close()
+
+    camera = ClosingCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    closer = threading.Thread(target=hub.stop)
+    results = []
+
+    def capture():
+        results.append(hub.grab_fresh(timeout=0.5))
+        captured.set()
+
+    fresh = threading.Thread(target=capture)
+    try:
+        closer.start()
+        assert close_entered.wait(1)
+        fresh.start()
+        assert not captured.wait(0.03), "capture bypassed the active lifecycle operation"
+        close_release.set()
+        assert captured.wait(1)
+        assert results == [(None, 0, 0.0)]
+        assert camera.fresh_timeouts == []
+    finally:
+        close_release.set()
+        closer.join(2)
+        if fresh.ident is not None:
+            fresh.join(2)
+        hub.stop()
+
+
+def test_preview_reads_stay_nonblocking_while_lifecycle_lock_is_held():
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=FakeCamera())
+    hub.start()
+    try:
+        with hub._lifecycle_lock:
+            started = time.monotonic()
+            assert hub.read_frame() is None
+            assert hub.read_frame_identified() == (None, 0, 0.0)
+            assert time.monotonic() - started < 0.1
+    finally:
+        hub.stop()
 
 
 class RecoveringCamera(FakeCamera):
@@ -402,3 +538,441 @@ def test_identified_frame_reads_do_not_reopen_a_stopped_hub():
     hub.stop()
     assert hub.read_frame_identified() == (None, 0, 0.0)
     assert camera.identified_reads == 1
+
+
+class HotplugMonitor:
+    instances = []
+    available = True
+
+    def __init__(self, path, callback):
+        self.path, self.callback = path, callback
+        self.started = False
+        self.stopped = False
+        self.instances.append(self)
+
+    def start(self):
+        self.started = True
+        return self.available
+
+    def stop(self):
+        self.stopped = True
+
+
+class HotplugCamera(RecoveringCamera):
+    def __init__(self):
+        super().__init__()
+        self.events = []
+        self.event_threads = []
+
+    def handle_device_event(self, action):
+        self.events.append(action)
+        self.event_threads.append(threading.current_thread().name)
+        if action == "remove":
+            self.is_connected = False
+
+
+@pytest.fixture
+def hotplug_monitor(monkeypatch):
+    from katrain.web.core import camera_hub
+
+    HotplugMonitor.instances = []
+    HotplugMonitor.available = True
+    monkeypatch.setattr(camera_hub, "UdevDeviceMonitor", HotplugMonitor, raising=False)
+    return HotplugMonitor
+
+
+def test_hub_subscribes_before_initial_open_and_arrival_wakes_owner_within_500ms(hotplug_monitor):
+    camera = HotplugCamera()
+    original_open = camera.open
+
+    def open_camera():
+        assert hotplug_monitor.instances[0].started, "initial reconcile ran before subscribing"
+        return original_open()
+
+    camera.open = open_camera
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    try:
+        hub.start(allow_unavailable=True)
+        camera.available = True
+        monitor = hotplug_monitor.instances[0]
+        started = time.monotonic()
+        monitor.callback("add")
+        assert camera.recovered.wait(0.5)
+        assert time.monotonic() - started < 0.5
+        assert camera.events == ["add"]
+        assert camera.event_threads == ["camera-recovery"]
+    finally:
+        hub.stop()
+    assert monitor.stopped
+
+
+def test_hub_coalesces_events_received_during_start_and_drops_late_events(hotplug_monitor):
+    camera = HotplugCamera()
+    original_open = camera.open
+
+    def open_camera():
+        monitor = hotplug_monitor.instances[0]
+        if camera.open_calls == 0:
+            monitor.callback("remove")
+            monitor.callback("add")
+            monitor.callback("add")
+        camera.available = True
+        return original_open()
+
+    camera.open = open_camera
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start(allow_unavailable=True)
+    try:
+        deadline = time.monotonic() + 1
+        while len(camera.events) < 2 and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert camera.events == ["remove", "add"]
+    finally:
+        hub.stop()
+    attempts = camera.open_calls
+    hotplug_monitor.instances[0].callback("add")
+    assert camera.events == ["remove", "add"]
+    assert camera.open_calls == attempts
+
+
+@pytest.mark.parametrize("monitor_available", [False, True])
+def test_monitor_failure_and_lost_events_retain_timer_recovery(monkeypatch, hotplug_monitor, monitor_available):
+    hotplug_monitor.available = monitor_available
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    camera = HotplugCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    try:
+        hub.start(allow_unavailable=True)
+        camera.available = True
+        assert camera.recovered.wait(1)
+        assert camera.events == []
+        assert len(hotplug_monitor.instances) == 1
+    finally:
+        hub.stop()
+
+
+def test_stop_queued_event_does_not_reopen_closed_camera(hotplug_monitor):
+    camera = HotplugCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start(allow_unavailable=True)
+    with hub._lifecycle_lock:
+        monitor = hotplug_monitor.instances[0]
+        monitor.callback("add")
+        # Withdraw pending recovery as shutdown does, before releasing lifecycle ownership.
+        hub._recovery_stop.set()
+    hub.stop()
+    assert camera.open_calls == 1
+    assert camera.events == []
+    assert monitor.stopped
+
+
+def test_idle_timer_reconciles_identity_even_while_cached_camera_is_ready(monkeypatch, hotplug_monitor):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    checked = threading.Event()
+    camera = HotplugCamera()
+    camera.available = True
+
+    def reconcile_device():
+        checked.set()
+        camera.is_connected = False
+        camera.available = False
+
+    camera.reconcile_device = reconcile_device
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    try:
+        hub.start()
+        assert hub.is_connected()
+        assert checked.wait(1)
+        assert not hub.is_connected()
+    finally:
+        hub.stop()
+
+
+def test_usb_recovery_hides_frames_retains_lease_and_resumes_normal_reader(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    camera = RecoveringCamera()
+    camera.available = True
+    device = uuid.uuid4().hex
+    hub = CameraHub(CameraHubConfig(device_id=device), camera=camera)
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    hub.start()
+    try:
+        assert hub.begin_usb_recovery(timeout=0.5)
+        assert not hub.is_connected()
+        assert hub.read_frame() is None
+        assert hub.read_frame_identified() == (None, 0, 0.0)
+        assert hub.grab_fresh(timeout=0.01) == (None, 0, 0.0)
+        calls = camera.open_calls
+        time.sleep(0.03)
+        assert camera.open_calls == calls
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        camera.recovered.clear()
+        hub.end_usb_recovery()
+        hub.end_usb_recovery()
+        assert camera.recovered.wait(0.5)
+        assert hub.is_connected()
+    finally:
+        peer.stop()
+        hub.stop()
+        hub.stop()
+
+
+def test_usb_recovery_cannot_ack_a_blocked_reader_or_leave_a_late_pause(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    entered, finish = threading.Event(), threading.Event()
+    camera = RecoveringCamera()
+    camera.available = True
+    original_close = camera.close
+
+    def close():
+        entered.set()
+        assert finish.wait(1)
+        original_close()
+
+    camera.close = close
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    try:
+        started = time.monotonic()
+        assert not hub.begin_usb_recovery(timeout=0.03)
+        assert time.monotonic() - started < 0.2
+        assert entered.is_set()
+        camera.recovered.clear()
+        finish.set()
+        assert camera.recovered.wait(0.5), "timed out pause was applied after its caller left"
+        assert hub.is_connected()
+    finally:
+        finish.set()
+        hub.stop()
+
+
+def test_usb_recovery_requires_old_reader_to_really_exit(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    finish = threading.Event()
+    camera = FakeCamera()
+    camera._reader_thread = threading.Thread(target=finish.wait, daemon=True)
+    camera._reader_thread.start()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+    try:
+        assert not hub.begin_usb_recovery(timeout=0.03)
+    finally:
+        finish.set()
+        camera._reader_thread.join(1)
+        hub.stop()
+
+
+def test_startup_check_precedes_initial_open_and_reconnect(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    allowed = threading.Event()
+    camera = RecoveringCamera()
+    camera.available = True
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.set_usb_startup_check(allowed.is_set)
+    try:
+        hub.start(allow_unavailable=True)
+        time.sleep(0.03)
+        assert camera.open_calls == 0
+        assert hub.read_frame() is None
+        assert hub.grab_fresh(timeout=0.01) == (None, 0, 0.0)
+        allowed.set()
+        assert camera.recovered.wait(0.5)
+        allowed.clear()
+        camera.is_connected = False
+        calls = camera.open_calls
+        hub.read_frame()
+        time.sleep(0.03)
+        assert camera.open_calls == calls
+    finally:
+        hub.stop()
+
+
+def test_device_recovery_ticks_healthy_camera_outside_lifecycle_lock_and_stops_first(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    ticked = threading.Event()
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+
+    class Recovery:
+        def tick(self):
+            assert hub._lifecycle_lock.acquire(blocking=False)
+            hub._lifecycle_lock.release()
+            ticked.set()
+
+        def stop(self, timeout=2.0):
+            assert camera.close_calls == 0
+            assert hub._lifecycle_lock.acquire(blocking=False)
+            hub._lifecycle_lock.release()
+            return True
+
+    hub.set_device_recovery(Recovery())
+    hub.start()
+    assert ticked.wait(0.5)
+    hub.stop()
+
+
+def test_recovery_tick_can_pause_its_own_camera_and_keeps_ticking_while_paused(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    finished = threading.Event()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=FakeCamera())
+
+    class Recovery:
+        calls = 0
+
+        def tick(self):
+            self.calls += 1
+            if self.calls == 1:
+                assert hub.begin_usb_recovery(timeout=0.1)
+            else:
+                hub.end_usb_recovery()
+                finished.set()
+
+        def stop(self, timeout=2.0):
+            return True
+
+    hub.set_device_recovery(Recovery())
+    try:
+        hub.start()
+        assert finished.wait(0.5)
+    finally:
+        hub.stop()
+
+
+def test_same_thread_pause_spends_timeout_waiting_for_lifecycle_without_late_close(monkeypatch):
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 10)
+    owned, release, done = threading.Event(), threading.Event(), threading.Event()
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    hub.start()
+
+    def hold_lifecycle():
+        with hub._lifecycle_lock:
+            owned.set()
+            release.wait(1)
+
+    holder = threading.Thread(target=hold_lifecycle)
+    results = []
+
+    def pause_as_owner():
+        hub._recovery_thread = threading.current_thread()
+        results.append(hub.begin_usb_recovery(timeout=0.03))
+        done.set()
+
+    pauser = threading.Thread(target=pause_as_owner)
+    worker = hub._recovery_thread
+    try:
+        holder.start()
+        assert owned.wait(0.5)
+        pauser.start()
+        assert done.wait(0.2), "same-thread pause ignored its lifecycle wait budget"
+        assert results == [False]
+        assert camera.close_calls == 0
+    finally:
+        release.set()
+        holder.join(1)
+        pauser.join(1)
+        hub._recovery_thread = worker
+        hub.stop()
+
+
+def test_healthy_cached_frames_do_not_repeat_startup_operation_lock_check():
+    checked = []
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=FakeCamera())
+    hub.set_usb_startup_check(lambda: checked.append(True) or True)
+    try:
+        hub.start()
+        assert len(checked) == 1
+        hub.read_frame()
+        hub.grab_fresh(timeout=0.1)
+        assert len(checked) == 1
+    finally:
+        hub.stop()
+
+
+def test_owner_loop_kills_usb_reset_at_eight_seconds_without_waiting_full_poll(tmp_path):
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+    from katrain.web.core.linux_usb_hub import HubSnapshot, PortSnapshot
+    from katrain.web.core.usb_hub_recovery import UsbHubRecovery
+
+    clock = SimpleNamespace(now=1000.0)
+    stop = threading.Event()
+    waits, launched, killed = [], [], []
+
+    class AdvancingWake:
+        def wait(self, delay):
+            waits.append(delay)
+            clock.now += delay
+            return False
+
+        def set(self):
+            pass
+
+        def clear(self):
+            pass
+
+    class Operation:
+        returncode = None
+
+        def poll(self):
+            return self.returncode
+
+        def kill(self):
+            killed.append(clock.now)
+            self.returncode = -9
+            stop.set()
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+    ports = {
+        i: PortSnapshot(
+            i,
+            i in (3, 4),
+            True,
+            i == 3,
+            False,
+            False,
+            ("303a", "1001") if i == 3 else None,
+            "1-1.3" if i == 3 else None,
+        )
+        for i in range(1, 5)
+    }
+
+    def start_reset(_lock, _candidates):
+        launched.append(clock.now)
+        return Operation()
+
+    adapter = SimpleNamespace(
+        snapshot=lambda: HubSnapshot(True, "1-1", ("1a40", "0101"), ports), start_reset=start_reset
+    )
+    quiet = SimpleNamespace(begin_usb_recovery=lambda timeout=2: True, end_usb_recovery=lambda: None)
+    camera = FakeCamera()
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    recovery = UsbHubRecovery(
+        adapter,
+        hub,
+        quiet,
+        quiet,
+        HardwareRecoveryGate(),
+        tmp_path / "state" / "state.json",
+        clock=lambda: clock.now,
+        wall_clock=lambda: clock.now,
+    )
+    hub.set_device_recovery(recovery)
+    hub._started = True
+    camera.is_connected = True
+    hub._recovery_wake = AdvancingWake()
+    worker = threading.Thread(target=hub._recover_loop, args=(stop,), name="camera-recovery")
+    hub._recovery_thread = worker
+    try:
+        worker.start()
+        worker.join(1)
+        assert not worker.is_alive()
+        assert len(launched) == len(killed) == 1
+        assert killed[0] - launched[0] == pytest.approx(8.0)
+        assert waits == [5.0, 5.0, 5.0, 5.0, 3.0]
+    finally:
+        stop.set()
+        worker.join(1)
+        hub.stop()

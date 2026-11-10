@@ -267,6 +267,7 @@ def _guest_row_has_data(repo: Any, user_id: int) -> bool:
             return True
 
         owned_row_queries = [
+            session.query(models_db.BaipuHistory).filter(models_db.BaipuHistory.user_id == user_id),
             session.query(models_db.UserGame).filter(models_db.UserGame.user_id == user_id),
             session.query(models_db.UserGameAnalysis)
             .join(models_db.UserGame, models_db.UserGameAnalysis.game_id == models_db.UserGame.id)

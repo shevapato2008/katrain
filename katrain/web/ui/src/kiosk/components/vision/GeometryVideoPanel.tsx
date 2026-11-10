@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { Refresh, VideocamOff } from '@mui/icons-material';
 
+import { geometrySourceText, type GeometryTranslator } from './geometryText';
+
 interface GeometryVideoPanelProps {
+  t?: GeometryTranslator;
   title?: string;
   src?: string;
   alt: string;
@@ -17,6 +20,7 @@ interface GeometryVideoPanelProps {
 }
 
 const GeometryVideoPanel = ({
+  t = geometrySourceText,
   title,
   src,
   alt,
@@ -36,23 +40,33 @@ const GeometryVideoPanel = ({
   onImageLoadRef.current = onImageLoad;
 
   useEffect(() => {
+    setSnapshotReady(false);
+    setSnapshotError(false);
     if (!snapshot || !src) return;
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let transportDeadline: ReturnType<typeof setTimeout> | undefined;
+    let frameExpiry: ReturnType<typeof setTimeout> | undefined;
     let request: AbortController | undefined;
     let reportedSize = '';
-    setSnapshotReady(false);
-    setSnapshotError(false);
 
     const pull = async () => {
       const started = performance.now();
-      request = new AbortController();
-      const deadline = setTimeout(() => request?.abort(), 1500);
+      const controller = new AbortController();
+      request = controller;
+      transportDeadline = setTimeout(() => controller.abort(), 1500);
+      let bitmap: ImageBitmap | undefined;
+      let failed = true;
       try {
-        const response = await fetch(src, { cache: 'no-store', signal: request.signal });
+        const response = await fetch(src, { cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(`snapshot ${response.status}`);
-        const bitmap = await createImageBitmap(await response.blob());
-        if (!live) { bitmap.close(); return; }
+        if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
+        const body = await response.blob();
+        clearTimeout(transportDeadline);
+        transportDeadline = undefined;
+        if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
+        bitmap = await createImageBitmap(body);
+        if (!live || controller.signal.aborted) throw new Error('snapshot cancelled');
         const canvas = canvasRef.current;
         const context = canvas?.getContext('2d', { alpha: false });
         if (!canvas || !context) throw new Error('canvas unavailable');
@@ -61,26 +75,37 @@ const GeometryVideoPanel = ({
           canvas.height = bitmap.height;
         }
         context.drawImage(bitmap, 0, 0);
+        setSnapshotReady(true);
+        setSnapshotError(false);
+        clearTimeout(frameExpiry);
+        frameExpiry = setTimeout(() => {
+          if (live) {
+            setSnapshotReady(false);
+            setSnapshotError(true);
+          }
+        }, 3000);
         const size = `${bitmap.width}x${bitmap.height}`;
         if (reportedSize !== size) {
           reportedSize = size;
           onImageLoadRef.current?.({ width: bitmap.width, height: bitmap.height });
         }
-        bitmap.close();
-        setSnapshotReady(true);
-        setSnapshotError(false);
+        failed = false;
       } catch {
         if (live) setSnapshotError(true);
       } finally {
-        clearTimeout(deadline);
+        bitmap?.close();
+        clearTimeout(transportDeadline);
+        transportDeadline = undefined;
       }
-      if (live) timer = setTimeout(pull, Math.max(0, 200 - (performance.now() - started)));
+      if (live) timer = setTimeout(pull, failed ? 1000 : Math.max(0, 200 - (performance.now() - started)));
     };
     void pull();
     return () => {
       live = false;
       request?.abort();
-      if (timer) clearTimeout(timer);
+      clearTimeout(timer);
+      clearTimeout(transportDeadline);
+      clearTimeout(frameExpiry);
     };
   }, [snapshot, src]);
 
@@ -122,26 +147,26 @@ const GeometryVideoPanel = ({
             />
             {!snapshotReady && (
               <Typography color="text.secondary" sx={{ position: 'absolute' }}>
-                {snapshotError ? '画面重连中…' : '画面连接中…'}
+                {snapshotError ? t('vision:stream_reconnecting', '画面重连中…') : t('vision:stream_connecting', '画面连接中…')}
               </Typography>
             )}
             {snapshotReady && snapshotError && (
               <Typography color="warning.main" sx={{ position: 'absolute', bottom: 8, left: 12, bgcolor: 'rgba(0,0,0,.72)', px: 1 }}>
-                画面重连中…
+                {t('vision:stream_reconnecting', '画面重连中…')}
               </Typography>
             )}
           </>
         ) : streamError ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
             <VideocamOff color="error" sx={{ fontSize: 44 }} />
-            <Typography color="error.light">视频流连接中断</Typography>
+            <Typography color="error.light">{t('vision:stream_failed', '视频流连接中断')}</Typography>
             <Button
               variant="outlined"
               color="error"
               startIcon={<Refresh />}
               onClick={() => { setStreamError(false); setStreamKey((value) => value + 1); }}
             >
-              重试
+              {t('vision:stream_retry', '重试')}
             </Button>
           </Box>
         ) : (
@@ -154,7 +179,7 @@ const GeometryVideoPanel = ({
             style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
           />
         )}
-        {src && (snapshot ? snapshotReady : !streamError) && overlay}
+        {src && (snapshot ? snapshotReady && !snapshotError : !streamError) && overlay}
       </Paper>
     </Box>
   );

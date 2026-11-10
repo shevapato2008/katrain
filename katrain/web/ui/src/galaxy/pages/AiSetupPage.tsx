@@ -6,6 +6,7 @@ import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
 import { useDebounce } from '../../hooks/useDebounce';
 import {
     AiLadderApiError,
@@ -115,8 +116,9 @@ const AiSetupContent = () => {
     const isLadder = opponent === 'ai:ladder';
 
     // Time Settings
+    const { unlock: unlockSound } = useSound();
     const [timerEnabled, setTimerEnabled] = useState(isRated); 
-    const [mainTime, setMainTime] = useState(10); 
+    const [mainTime, setMainTime] = useState(isRated ? 30 : 10);
     const [byoLength, setByoLength] = useState(30); 
     const [byoPeriods, setByoPeriods] = useState(3); 
 
@@ -211,6 +213,7 @@ const AiSetupContent = () => {
     };
 
     const handleStartGame = async () => {
+        void unlockSound();
         if (isRated) setStartPending(true);
         else setLoading(true);
         try {
@@ -228,7 +231,7 @@ const AiSetupContent = () => {
                     String(user?.id ?? user?.username ?? 'anonymous'),
                     session.game_id,
                 );
-                navigate(`/galaxy/play/game/${session.session_id}?mode=rated&game_id=${encodeURIComponent(session.game_id)}`);
+                navigate(`/play/game/${session.session_id}?mode=rated&game_id=${encodeURIComponent(session.game_id)}`);
                 return;
             }
             const session = await API.createSession(token || undefined);
@@ -291,7 +294,7 @@ const AiSetupContent = () => {
             }
 
             // Navigate to game page immediately - AI moves will be handled by the game page via WebSocket
-            navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
+            navigate(`/play/game/${session.session_id}?mode=${mode}`);
         } catch (err: any) {
             // 把服务端的英文报文原样贴上去（`Request failed 401: {"detail":"Not
             // authenticated"}`）既没说是什么事，也没给可按的东西。但**只有 401 才是「去登录」**：
@@ -510,7 +513,7 @@ const AiSetupContent = () => {
                             String(user?.id ?? user?.username ?? 'anonymous'),
                             gameId,
                         );
-                        navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
+                        navigate(`/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
                     }}
                     onEndGame={handleEndGame}
                     onRetrySettlement={handleRetrySettlement}
@@ -763,7 +766,7 @@ const AiSetupContent = () => {
                             startIcon={loading ? <CircularProgress size={18} color="inherit" /> : undefined}>
                             {t('btn:Play', 'Start Game')}
                         </Button>
-                        <Button data-testid="free-return-action" variant="outlined" color="inherit" onClick={() => navigate('/galaxy/play')}>
+                        <Button data-testid="free-return-action" variant="outlined" color="inherit" onClick={() => navigate('/play')}>
                             返回对局
                         </Button>
                     </Stack>

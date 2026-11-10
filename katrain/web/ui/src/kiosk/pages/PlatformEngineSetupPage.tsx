@@ -1,3 +1,4 @@
+import { uiError, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert } from '@mui/material';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -18,9 +19,10 @@ import { SetupDerived, SetupFixed } from '../components/setup/SetupDerived';
 import { PLATFORM_META } from '../constants/platforms';
 import { RULE_LABEL } from '../utils/setupOptions';
 import { interpolate } from '../utils/interpolate';
-import { platformErrorMessage } from '../utils/platformErrorMessage';
+import { platformErrorMessage, presentPlatformError } from '../utils/platformErrorMessage';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { writeActiveSession } from '../utils/activeSession';
+import './platformReviewed.css';
 
 /** 星阵固定 19 路、中国规则；档位来自平台，让子与贴目沿用平台原有对应关系。 */
 const HANDICAP_TRACK = [0, -1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
@@ -46,7 +48,7 @@ const PlatformEngineSetupPage = () => {
   const [handicap, setHandicap] = useState<number>(0);
   const [humanColor, setHumanColor] = useState<'B' | 'W' | 'nigiri'>('nigiri');
   const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState('');
+  const [startError, setStartError] = useState<UiMessage | string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [railEl, setRailEl] = useState<HTMLDivElement | null>(null);
 
@@ -104,7 +106,7 @@ const PlatformEngineSetupPage = () => {
       });
       navigate(route, { state: backToState(location) });
     } catch (e) {
-      setStartError(platformErrorMessage(e, t('Failed to start game', '创建对局失败')));
+      setStartError(uiError(e, 'Failed to start game', '创建对局失败'));
     } finally {
       setStarting(false);
     }
@@ -174,7 +176,7 @@ const PlatformEngineSetupPage = () => {
                 <KioskSecLabel zh={t('platform:opponent', '对手')} en="Opponent" />
                 {/* **不给兜底表。** 编一份档次出来,人选中的会是星阵不认识的那一档。 */}
                 <Alert severity="error" sx={{ fontSize: '0.75rem' }}>
-                  {levelsError || t('platform:levels_failed', '没能从平台取回棋力档')}
+                  {presentPlatformError(levelsError, t) || t('platform:levels_failed', '没能从平台取回棋力档')}
                 </Alert>
               </>
             ) : (
@@ -253,7 +255,7 @@ const PlatformEngineSetupPage = () => {
           />
         )}
 
-        {startError && <Alert severity="error" sx={{ mb: 1 }}>{startError}</Alert>}
+        {startError && <Alert severity="error" sx={{ mb: 1 }}>{renderUiMessage(startError, t)}</Alert>}
 
         <button
           type="button"

@@ -17,6 +17,8 @@ from katrain.web.core.ranked_session_guard import (
     is_ai_ladder_ranked_session,
 )
 from katrain.web.models import User
+from katrain.vision.service import VisionService, binding_game_identity
+from katrain.web.core.physical_play_orchestrator import capture_vision_source, publish_current_expected
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -31,6 +33,7 @@ class BindRequest(BaseModel):
 
 class SetupModeRequest(BaseModel):
     target_board: list[list[int]]  # (board_size x board_size) matrix
+    setup_id: str | None = None
 
 
 class DenyStoneRequest(BaseModel):
@@ -190,6 +193,9 @@ async def bind_session(
     """Bind vision to a game session."""
     vision = _get_vision(request)
     manager = request.app.state.session_manager
+    request.app.state.vision_bind_generation = getattr(request.app.state, "vision_bind_generation", 0) + 1
+    bind_generation = request.app.state.vision_bind_generation
+    binding_epoch = getattr(vision, "binding_epoch", 0)
     try:
         session = manager.get_session(body.session_id)
     except KeyError:
@@ -203,9 +209,21 @@ async def bind_session(
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 
         generation = request.app.state.box_sso.active_generation
+        game_identity = binding_game_identity(session)
         room = bridge.rooms.for_local(generation, body.session_id)
         if current_user is None or room is None or room.local_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="PvP room unavailable")
+
+        def request_is_current():
+            return (
+                request.app.state.vision_bind_generation == bind_generation
+                and getattr(vision, "binding_epoch", 0) == binding_epoch
+                and request.app.state.box_sso.active_generation == generation
+                and bridge.rooms.for_local(generation, body.session_id) is room
+                and manager.get_session(body.session_id) is session
+                and binding_game_identity(session) == game_identity
+            )
+
         try:
             payload = await bridge.fetch_state(generation, body.session_id)
         except PvpBoxAuthError as exc:
@@ -213,22 +231,29 @@ async def bind_session(
         except PvpBoxRemoteError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 404:
+            if exc.response.status_code == 404 and request_is_current():
                 bridge.rooms.discard_local(body.session_id)
                 manager.remove_session(body.session_id)
             raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
-        state = payload["state"]
+        if not request_is_current():
+            raise HTTPException(status_code=409, detail="Vision binding changed during remote fetch")
+        state = bridge.newer_state(session.last_state, payload["state"])
         if state.get("board_size") not in ([19, 19], (19, 19), 19):
             raise HTTPException(status_code=409, detail="physical PvP requires a 19x19 board")
         session.last_state = state
-        vision.bind_session(body.session_id)
+        if isinstance(vision, VisionService):
+            vision.bind_session(body.session_id, session=session)
+        else:
+            vision.bind_session(body.session_id)
         request.app.state.ranked_vision_binding = None
         _drain_stale_move_queue(request)
-        vision.set_expected_from_stones(state["stones"], expected_node_id=state.get("current_node_id"))
         orchestrator = getattr(request.app.state, "physical_play", None)
         if orchestrator is not None:
             orchestrator.on_bind(body.session_id, session)
-            orchestrator.on_game_state(state)
+        else:
+            publish_current_expected(
+                vision, body.session_id, session, capture_vision_source(vision, body.session_id, session)
+            )
         return {"ok": True, "session_id": body.session_id}
     ranked_binding = None
     if is_ai_ladder_ranked_session(session):
@@ -244,7 +269,10 @@ async def bind_session(
                 game_id=snapshot.game_id,
             )
 
-    vision.bind_session(body.session_id)
+    if isinstance(vision, VisionService):
+        vision.bind_session(body.session_id, session=session)
+    else:
+        vision.bind_session(body.session_id)
     request.app.state.ranked_vision_binding = ranked_binding
     _drain_stale_move_queue(request)
 
@@ -257,16 +285,13 @@ async def bind_session(
     calibration = getattr(request.app.state, "geometry_calibration", None)
     geometry_status = calibration.status() if calibration is not None else None
     geometry_revision = geometry_status.get("geometry_revision") if geometry_status is not None else None
-    if game_state and "stones" in game_state:
-        vision.set_expected_from_stones(
-            game_state["stones"],
-            game_state["board_size"][0],
-            expected_node_id=game_state.get("current_node_id"),
-        )
-
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:
         orchestrator.on_bind(body.session_id, session)
+    else:
+        publish_current_expected(
+            vision, body.session_id, session, capture_vision_source(vision, body.session_id, session)
+        )
 
     if game_state.get("game_type") == "pvp_local" and not game_state.get("end_result"):
         from katrain.web.core.local_confirmation import local_confirmation_for
@@ -347,6 +372,7 @@ async def bind_session(
 @router.post("/unbind")
 async def unbind_session(request: Request):
     """Unbind from current session."""
+    request.app.state.vision_bind_generation = getattr(request.app.state, "vision_bind_generation", 0) + 1
     vision = _get_vision(request)
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:
@@ -398,7 +424,7 @@ async def enter_setup_mode(request: Request, body: SetupModeRequest):
     import numpy as np
 
     target = np.array(body.target_board, dtype=int)
-    vision.enter_setup_mode(target)
+    vision.enter_setup_mode(target, **({"setup_id": body.setup_id} if body.setup_id is not None else {}))
     return {"ok": True}
 
 
@@ -457,6 +483,8 @@ async def set_expected_board(request: Request, body: ExpectedBoardRequest):
     vision = _get_vision(request)
     import numpy as np
 
+    if getattr(vision, "bound_session_id", None):
+        raise HTTPException(status_code=409, detail="Bound games use digital authority; use vision resync")
     vision.set_expected_board(np.array(body.board, dtype=int))
     return {"ok": True}
 

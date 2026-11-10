@@ -4002,7 +4002,7 @@ msgid "login:box_gate_cta"
 msgstr "StellaBox ana ekranına git"
 
 msgid "vision:back_settings"
-msgstr "Ayarlar"
+msgstr "Ayarlara dön"
 
 msgid "vision:board_lost_hint"
 msgstr ""
@@ -4013,7 +4013,7 @@ msgid "vision:calibrate_title"
 msgstr "Tahta kalibrasyonu"
 
 msgid "vision:calibrate_sub"
-msgstr "Önce tahtayı boşaltın · 13 nokta: 4 köşe + 9 yıldız"
+msgstr "Önce tahtayı boşaltın · 5 nokta: 4 köşe ve merkez"
 
 msgid "vision:cancel_calibration"
 msgstr "Kalibrasyonu iptal et"
@@ -7272,3 +7272,1287 @@ msgstr "Bu bir taş değil"
 
 msgid "report:score_difference"
 msgstr "Puan farkı"
+
+msgid "kifu:history_guest"
+msgstr "Yalnızca bu misafir oturumu için"
+
+msgid "kifu:history_local_cache"
+msgstr "Bu cihazdaki hesap önbelleği"
+
+msgid "kifu:history_this_node"
+msgstr "Bu cihaza kaydedildi"
+
+msgid "kifu:history_cloud"
+msgstr "Hesabın bulut geçmişi"
+
+msgid "kifu:history_loading"
+msgstr "Tekrar oynatma geçmişi yükleniyor"
+
+msgid "kifu:history_error"
+msgstr "Tekrar oynatma geçmişi kullanılamıyor"
+
+msgid "kifu:history_cache_empty"
+msgstr "Bu cihazda önbelleğe alınmış hesap geçmişi yok"
+
+msgid "kifu:history_empty"
+msgstr "Henüz tekrar oynatma geçmişi yok"
+
+msgid "kifu:history_guest_hint"
+msgstr "Misafir geçmişi oturum sona erdiğinde silinir."
+
+msgid "kifu:history_account_hint"
+msgstr ""
+"Fiziksel tahtada tekrar oynatma başladığında ilerleme geçerli hesaba "
+"kaydedilir."
+
+msgid "kifu:history_pending"
+msgstr "Bu cihaza kaydedildi; eşitleme bekleniyor"
+
+msgid "kifu:history_conflict"
+msgstr "İlerleme çakışması; hangi kopyanın korunacağını seçin"
+
+msgid "kifu:history_refused"
+msgstr "Bu cihaza kaydedildi; eşitleme reddedildi"
+
+msgid "kifu:history_saving"
+msgstr "İlerleme kaydediliyor"
+
+msgid "kifu:history_save_error"
+msgstr "İlerleme kaydedilemedi; lütfen yeniden deneyin"
+
+msgid "kifu:history_saved"
+msgstr "İlerleme kaydedildi"
+
+msgid "kifu:history_use_cloud"
+msgstr "Buluttaki ilerlemeyi kullan"
+
+msgid "kifu:history_keep_local"
+msgstr "Cihazdaki ilerlemeyi koru"
+
+msgid "kifu:history_resolve_error"
+msgstr "Çakışma çözülemedi; ilerlemeyi yeniden kontrol edin"
+
+msgid "baipu:operator_manual"
+msgstr "Elle onaylamaya geçildi"
+
+msgid "baipu:pre_remove_title"
+msgstr "Önce hedef noktadaki eski taşı kaldırın"
+
+msgid "baipu:pre_remove_hint"
+msgstr ""
+"Mavi ışıklardaki taşları kaldırın, ardından kayıtta belirtilen renkleri "
+"yerleştirin"
+
+msgid "baipu:pre_remove_done"
+msgstr "Eski taşlar kaldırıldı"
+
+msgid "baipu:entry_confirm"
+msgstr "Tahta düzeni doğru"
+
+msgid "baipu:manual_entry_hint"
+msgstr ""
+"Taşları ekrandaki gibi yerleştirin, ardından “Tahta düzeni doğru” düğmesine "
+"basın"
+
+msgid "baipu:recheck"
+msgstr "Tahtayı yeniden tanı"
+
+msgid "baipu:switch_manual"
+msgstr "Elle onaylamaya geç"
+
+msgid "baipu:done_hint_saved"
+msgstr "{n} adım tamamlandı · Geri dönmek için sol üstteki düğmeyi kullanın"
+
+msgid "baipu:exit_body_neutral"
+msgstr ""
+"Çıktıktan sonra bu kaydı oyun kayıtları sayfasından yeniden açabilirsiniz."
+
+msgid "baipu:exit_anyway"
+msgstr "Yine de çık"
+
+msgid "membership:account_checking"
+msgstr "Hesap doğrulanıyor"
+
+msgid "membership:account_entry"
+msgstr "Kullanım, API puanları ve üyelik avantajları"
+
+msgid "membership:account_identity_help"
+msgstr ""
+"Hesap kimliği doğrulandıktan sonra üyelik avantajları, Free hakkı ve API "
+"puan bakiyesi gösterilir."
+
+msgid "membership:account_retry"
+msgstr "Hesap doğrulamayı yeniden dene"
+
+msgid "membership:account_unconfirmed"
+msgstr "Hesap durumu henüz doğrulanmadı"
+
+msgid "membership:advanced"
+msgstr "Gelişmiş"
+
+msgid "membership:advanced_depth_ratio"
+msgstr "Gelişmiş rapor yaklaşık {ratio} kat tüketir."
+
+msgid "membership:advanced_depth_rule"
+msgstr ""
+"Gelişmiş rapor tüketimi, sunucudaki analiz derinliğine göre hesaplanır."
+
+msgid "membership:advanced_position_cost"
+msgstr "Gelişmiş: yaklaşık {points} puan/hamle"
+
+msgid "membership:analysis_depth"
+msgstr "Analiz derinliği"
+
+msgid "membership:api_balance"
+msgstr "API puan bakiyesi"
+
+msgid "membership:api_on_demand"
+msgstr "İhtiyaca göre API analizi"
+
+msgid "membership:api_prices"
+msgstr "API analiz fiyatları"
+
+msgid "membership:api_topup"
+msgstr "API yükleme"
+
+msgid "membership:auth_after_login"
+msgstr "Giriş yaptıktan sonra kullan"
+
+msgid "membership:auth_box_login"
+msgstr "Kutunun ana sayfasında giriş yap"
+
+msgid "membership:auth_box_note"
+msgstr ""
+"Zhixing kutusunun ana sayfasında giriş yapın, ardından Go girişinden bu "
+"bölüme dönün."
+
+msgid "membership:auth_checking_action"
+msgstr "Doğrulanıyor"
+
+msgid "membership:auth_checking_description"
+msgstr "Lütfen bekleyin. Doğrulama tamamlanınca otomatik olarak devam edilir."
+
+msgid "membership:auth_checking_note"
+msgstr "Doğrulama sırasında hesap içeriği okunmaz."
+
+msgid "membership:auth_checking_title"
+msgstr "Oturum durumu doğrulanıyor"
+
+msgid "membership:auth_description"
+msgstr ""
+"Üyelik kullanımını, API puanlarını ve siparişleri görmek için giriş yapın."
+
+msgid "membership:auth_expired_description"
+msgstr ""
+"Oturumunuzun süresi doldu. Üyelik ve kullanım bölümündeki kişisel verilerin "
+"okunması durduruldu. Devam etmek için giriş yapın."
+
+msgid "membership:auth_expired_title"
+msgstr "Yeniden giriş yapın"
+
+msgid "membership:auth_label"
+msgstr "Üyelik ve kullanım"
+
+msgid "membership:auth_login_continue"
+msgstr "Giriş yap ve devam et"
+
+msgid "membership:auth_login_title"
+msgstr "Üyelik ve kullanımı görmek için giriş yapın"
+
+msgid "membership:auth_return_note"
+msgstr ""
+"Giriş yaptıktan sonra bu sayfaya dönersiniz; yeniden aramanız gerekmez."
+
+msgid "membership:auth_unavailable_description"
+msgstr ""
+"Ağ veya hizmet geçici olarak kullanılamıyor. Yeniden deneyin. Giriş "
+"bilgileriniz korunur."
+
+msgid "membership:auth_unavailable_note"
+msgstr "Hesaptan çıkmanız gerekmez. Bağlantı düzeldiğinde yeniden deneyin."
+
+msgid "membership:auth_unavailable_title"
+msgstr "Oturum durumu şu anda doğrulanamıyor"
+
+msgid "membership:back_to_play"
+msgstr "Oyuna dön"
+
+msgid "membership:billing_rules"
+msgstr "Üyelik ve API ücretlendirme kuralları"
+
+msgid "membership:billing_source_rule"
+msgstr ""
+"Önce üyelik kotası kullanılır. Üyelikte kalan kotalardan biri bu analize "
+"yetmezse işlemin tamamı mevcut API puanlarıyla karşılanır; ücretlendirme "
+"kaynakları bölünmez. Puan yetersizse yükleme yapın veya kotanın "
+"yenilenmesini bekleyin. Otomatik puan satın alınmaz ve yuan tahsil edilmez."
+
+msgid "membership:cancel"
+msgstr "İptal"
+
+msgid "membership:checkout_renewal_rule"
+msgstr ""
+"Yeni dönem mevcut üyelik bittikten sonra başlar; mevcut kota sıfırlanmaz. "
+"Geçerlilik tarihleri, ödeme sonrası sunucu makbuzuna göre belirlenir."
+
+msgid "membership:choose_topup"
+msgstr "Yükleme tutarını seçin"
+
+msgid "membership:close"
+msgstr "Kapat"
+
+msgid "membership:compare_membership_api"
+msgstr "Üyelik ile API'yi karşılaştır"
+
+msgid "membership:compare_plans"
+msgstr "Üyelik planlarını karşılaştır"
+
+msgid "membership:compute"
+msgstr "Hesaplama miktarı"
+
+msgid "membership:confirm_consumption"
+msgstr "Onayla ve başlat"
+
+msgid "membership:confirm_position"
+msgstr "Mevcut konum analizini onayla"
+
+msgid "membership:confirm_purchase"
+msgstr "Satın almayı onayla"
+
+msgid "membership:confirm_report"
+msgstr "Rapor oluşturmayı onayla"
+
+msgid "membership:confirm_wallet_consumption"
+msgstr "API puanı kullan, en fazla {points}"
+
+msgid "membership:confirming"
+msgstr "Doğrulanıyor"
+
+msgid "membership:consumption_policy"
+msgstr ""
+"Önce üyelik; yetmezse analizin tamamı API puanlarıyla, en fazla {points} "
+"puan"
+
+msgid "membership:countdown_days"
+msgstr "{days} gün {hours} saat {minutes} dakika"
+
+msgid "membership:countdown_hours"
+msgstr "{hours} saat {minutes} dakika"
+
+msgid "membership:create_order"
+msgstr "Sipariş oluştur"
+
+msgid "membership:create_report"
+msgstr "Oyun inceleme raporu oluştur"
+
+msgid "membership:creating_order"
+msgstr "Oluşturuluyor…"
+
+msgid "membership:current_plan"
+msgstr "Mevcut üyelik"
+
+msgid "membership:date_pending"
+msgstr "Onay bekleniyor"
+
+msgid "membership:done"
+msgstr "Tamam"
+
+msgid "membership:entitlement_pending"
+msgstr "Hesap hakları doğrulanmayı bekliyor"
+
+msgid "membership:error_analysis_login_required"
+msgstr "Analiz için önce giriş yapın"
+
+msgid "membership:error_insufficient"
+msgstr ""
+"Üyelik kotası ve API puanları yetersiz. Üyelik sayfasından kontrol edin."
+
+msgid "membership:error_operation_running"
+msgstr ""
+"Analiz devam ediyor. Durumu sorgulamak için biraz sonra yeniden deneyin."
+
+msgid "membership:error_position_failed"
+msgstr "Analiz tamamlanamadı. Yeniden deneyin."
+
+msgid "membership:error_position_refunded"
+msgstr ""
+"Analiz tamamlanamadı. Bu işlemde tüketilen miktar iade edildi. Yeniden "
+"deneyin."
+
+msgid "membership:error_position_unavailable"
+msgstr "Tek konum analizi şu anda kullanıma açık değil"
+
+msgid "membership:error_quote_expired"
+msgstr ""
+"Fiyat teklifi geçersiz veya mevcut istekle uyuşmuyor. Güncel teklifi "
+"onaylayıp yeniden deneyin."
+
+msgid "membership:error_quote_failed"
+msgstr "Fiyat teklifi alınamadı. Yeniden deneyin."
+
+msgid "membership:error_report_failed"
+msgstr "Rapor oluşturulamadı. Yeniden deneyin."
+
+msgid "membership:error_report_login_required"
+msgstr "Rapor oluşturmadan önce giriş yapın"
+
+msgid "membership:error_report_missing"
+msgstr "Rapor bulunamadı. Sayfayı yenileyip yeniden deneyin."
+
+msgid "membership:error_result_expired"
+msgstr ""
+"Analiz sonucunun süresi doldu veya sonuç geçici olarak kullanılamıyor. "
+"Analizi yeniden çalıştırın."
+
+msgid "membership:error_service_busy"
+msgstr "Şu anda çok sayıda istek var. Biraz sonra yeniden deneyin."
+
+msgid "membership:error_service_paused"
+msgstr "Analiz hizmeti duraklatıldı. Biraz sonra yeniden deneyin."
+
+msgid "membership:error_service_unavailable"
+msgstr ""
+"Analiz hizmeti geçici olarak kullanılamıyor. Biraz sonra yeniden deneyin."
+
+msgid "membership:error_verification_required"
+msgstr "Önce giriş doğrulamasını tamamlayıp yeniden deneyin"
+
+msgid "membership:example_depth"
+msgstr "Örnek analiz derinliği"
+
+msgid "membership:free_eligibility_rule"
+msgstr ""
+"Kimlik doğrulama koşullarını sağlamak kaydıyla her takvim haftasında {count}"
+" standart rapor için ayrı bir hak verilir. Genel analiz kotası değildir."
+
+msgid "membership:free_pending"
+msgstr "Free hakkı doğrulanmayı bekliyor"
+
+msgid "membership:free_remaining"
+msgstr "Bu hafta kalan: {count}"
+
+msgid "membership:free_reset_countdown"
+msgstr "{time} sonra yenilenir · {date} (Pekin saati)"
+
+msgid "membership:free_unavailable"
+msgstr "Free hakkı şu anda kullanılamıyor"
+
+msgid "membership:free_unavailable_rule"
+msgstr ""
+"Free standart raporları için önce güvenilir kimlik koşulları sağlanmalıdır. "
+"Şu anda alınabilecek rapor sayısı gösterilmiyor. Ücretli üyeliğe ek Free "
+"rapor hakkı verilmez."
+
+msgid "membership:free_weekly_eligibility"
+msgstr "Her takvim haftası için ayrı standart rapor hakkı"
+
+msgid "membership:free_weekly_title"
+msgstr "Free · Bu haftanın standart rapor hakkı"
+
+msgid "membership:fulfillment_pending"
+msgstr ""
+"Hakların tanımlandığına ilişkin makbuz henüz doğrulanmadı. Kullanımı "
+"yenileyin."
+
+msgid "membership:full_use_days"
+msgstr "{days} günlük kotanın tamamı kullanıldığında"
+
+msgid "membership:full_use_savings_rule"
+msgstr ""
+"Tasarruf, dönem kotasının tamamının kullanıldığı varsayılarak hesaplanır; "
+"gerçek tasarruf kullanıma göre değişir. Yeni üyelik dönemi mevcut üyelik "
+"bittikten sonra başlar."
+
+msgid "membership:galaxy_api_help"
+msgstr ""
+"API için abonelik gerekmez; 1 yuan = 1 puan. Analiz başlamadan önce "
+"sunucunun fiyat teklifini onaylayın."
+
+msgid "membership:galaxy_choose_membership"
+msgstr "Kullanımınıza uygun üyeliği seçin"
+
+msgid "membership:galaxy_comparison_basis"
+msgstr ""
+"Aynı miktarda standart analiz için dönem kotasının tamamının kullanıldığı "
+"varsayılır."
+
+msgid "membership:galaxy_intro"
+msgstr ""
+"Analiz kullanımınızı görüntüleyin; ihtiyaca göre yükleme veya üyelik seçin."
+
+msgid "membership:galaxy_membership_savings"
+msgstr "Sık analiz yapıyorsanız üyelik daha ekonomik"
+
+msgid "membership:galaxy_occasional_analysis"
+msgstr "Ara sıra analiz yapıyorsanız ihtiyacınız kadar yükleyebilirsiniz"
+
+msgid "membership:galaxy_plan_price"
+msgstr "{plan} · {amount} / {days} gün"
+
+msgid "membership:galaxy_plan_selection"
+msgstr "{plan} · {days} günlük üyelik"
+
+msgid "membership:galaxy_report_estimate_rule"
+msgstr ""
+"İlk konum dahil, oyun başına 300 hamle üzerinden tahmin edilir; kalan dönem "
+"kotasıyla sınırlıdır."
+
+msgid "membership:galaxy_report_example_title"
+msgstr "300 hamlelik bir oyunun maliyeti ne kadar?"
+
+msgid "membership:galaxy_report_reset_rule"
+msgstr ""
+"Haftalık kota her pazartesi 00.00'da (Pekin saati) yenilenir; dönem "
+"sonundaki kalan kota sona erer."
+
+msgid "membership:galaxy_tabs"
+msgstr "Üyelik sayfası"
+
+msgid "membership:galaxy_term_reset_rule"
+msgstr ""
+"{date} tarihinde sona erer (Pekin saati); pazartesi yenilemesi dönem "
+"kotasını artırmaz."
+
+msgid "membership:galaxy_title"
+msgstr "Üyelik ve kullanım"
+
+msgid "membership:history_unavailable"
+msgstr "Sipariş geçmişi geçici olarak kullanılamıyor"
+
+msgid "membership:kiosk_account_actions"
+msgstr "Hesap işlemleri"
+
+msgid "membership:kiosk_account_entry_aria"
+msgstr "Hesap, üyelik ve yükleme"
+
+msgid "membership:kiosk_advanced_analysis"
+msgstr "Gelişmiş analiz"
+
+msgid "membership:kiosk_advanced_report_quote"
+msgstr "Gelişmiş: {points} puan; her ikisinde de ilk konum dahil"
+
+msgid "membership:kiosk_api_balance"
+msgstr "API bakiyesi"
+
+msgid "membership:kiosk_api_pay_as_you_go"
+msgstr "API yükleme · Kullandıkça öde"
+
+msgid "membership:kiosk_api_points_topup"
+msgstr "API puanı yükle"
+
+msgid "membership:kiosk_api_when_insufficient"
+msgstr "Üyelik kotası yetmezse API puanı kullanılır"
+
+msgid "membership:kiosk_back"
+msgstr "Geri"
+
+msgid "membership:kiosk_back_settings"
+msgstr "Ayarlara dön"
+
+msgid "membership:kiosk_benefits_after_sync"
+msgstr "Hesap hakları doğrulandıktan sonra gösterilir"
+
+msgid "membership:kiosk_check_order_amount"
+msgstr "Ödemeden önce sipariş tutarını kontrol edin"
+
+msgid "membership:kiosk_choose_plan"
+msgstr "{plan} seç"
+
+msgid "membership:kiosk_cloud_synced"
+msgstr "Bulutla eşitlendi"
+
+msgid "membership:kiosk_compare_plans"
+msgstr "Üyelikleri karşılaştır"
+
+msgid "membership:kiosk_confirm_account"
+msgstr "Önce hesabı doğrulayın"
+
+msgid "membership:kiosk_confirm_source_quote"
+msgstr "Analizden önce ödeme kaynağını ve fiyat teklifini onaylayın"
+
+msgid "membership:kiosk_creating_order"
+msgstr "Sipariş oluşturuluyor…"
+
+msgid "membership:kiosk_credited_points"
+msgstr "Yükleme: {points} puan"
+
+msgid "membership:kiosk_current_api_balance"
+msgstr "Mevcut API bakiyesi"
+
+msgid "membership:kiosk_current_benefits"
+msgstr "Mevcut avantajlar"
+
+msgid "membership:kiosk_current_plan"
+msgstr "Mevcut üyelik"
+
+msgid "membership:kiosk_estimated_period"
+msgstr "Tahmini dönem: {start} – {end} · Pekin saati"
+
+msgid "membership:kiosk_exchange_rate"
+msgstr "{amount} = {points} puan"
+
+msgid "membership:kiosk_free_cloud_verified"
+msgstr "Ücretsiz rapor hakkı bulut doğrulamasına göre belirlenir"
+
+msgid "membership:kiosk_free_pending"
+msgstr "Ücretsiz rapor hakkı doğrulanmayı bekliyor"
+
+msgid "membership:kiosk_free_report_only"
+msgstr "Standart rapor hakkıdır; genel analiz kotası verilmez"
+
+msgid "membership:kiosk_free_reports_remaining"
+msgstr "Kalan {remaining} / {limit}"
+
+msgid "membership:kiosk_free_verify_account"
+msgstr ""
+"Önce hesap doğrulamasını tamamlayın. Doğrulama geçince bu haftanın hakları "
+"gösterilir."
+
+msgid "membership:kiosk_frequent_member_saves"
+msgstr "Sık kullanımda üyelik daha ekonomik olabilir"
+
+msgid "membership:kiosk_full_use_savings"
+msgstr "Kotanın tamamı kullanıldığında API'den daha ekonomik"
+
+msgid "membership:kiosk_history_error"
+msgstr "Sipariş geçmişi henüz eşitlenmedi. Biraz sonra yeniden deneyin."
+
+msgid "membership:kiosk_member_first"
+msgstr "Analizde önce üyelik kotası kullanılır"
+
+msgid "membership:kiosk_member_then_api"
+msgstr "Önce üyelik, ardından API puanları"
+
+msgid "membership:kiosk_membership_extension"
+msgstr ""
+"Yeni üyelik, satın alınmış dönem bittikten sonra başlar. Mevcut kullanım "
+"korunur; kesin tarihler ödeme makbuzuna göre belirlenir."
+
+msgid "membership:kiosk_membership_purchase"
+msgstr "Üyelik satın alma"
+
+msgid "membership:kiosk_membership_receipt_period"
+msgstr "Geçerlilik: {start} – {end} · Pekin saati · Bu makbuz esas alınır"
+
+msgid "membership:kiosk_membership_unavailable"
+msgstr "Üyelik hizmeti geçici olarak kullanılamıyor"
+
+msgid "membership:kiosk_mock_fulfillment"
+msgstr ""
+"Test ortamında ödeme sonucu sunucu tarafından simüle edilir. Bu sayfa ödeme "
+"başlatmaz ve kendi başına hak tanımlamaz."
+
+msgid "membership:kiosk_next_plan"
+msgstr "Sonraki dönem: {plan} · Başlangıç {date} · Pekin saati"
+
+msgid "membership:kiosk_no_auto_topup"
+msgstr ""
+"Analizden önce ödeme kaynağını ve fiyat teklifini onaylayın. Otomatik "
+"yükleme yapılmaz."
+
+msgid "membership:kiosk_no_local_fulfillment"
+msgstr "Bu sayfa kendi başına hak tanımlamaz. Gerekirse seçim ekranına dönün."
+
+msgid "membership:kiosk_no_orders"
+msgstr "Henüz sipariş kaydı yok"
+
+msgid "membership:kiosk_normal_analysis"
+msgstr "Standart analiz"
+
+msgid "membership:kiosk_normal_report_quote"
+msgstr "{moves} hamlelik rapor · Standart: {points} puan"
+
+msgid "membership:kiosk_not_available"
+msgstr "Henüz kullanıma açık değil"
+
+msgid "membership:kiosk_order_confirmation"
+msgstr "Sipariş onayı"
+
+msgid "membership:kiosk_order_expired"
+msgstr "Siparişin süresi doldu"
+
+msgid "membership:kiosk_order_failed"
+msgstr "Sipariş tamamlanmadı"
+
+msgid "membership:kiosk_order_history"
+msgstr "Sipariş geçmişi"
+
+msgid "membership:kiosk_order_history_item"
+msgstr "{kind} · {date}"
+
+msgid "membership:kiosk_order_id"
+msgstr "Sipariş {id}"
+
+msgid "membership:kiosk_order_refunded"
+msgstr "Sipariş iade edildi"
+
+msgid "membership:kiosk_order_server_paid"
+msgstr "Sunucu ödemeyi onayladı"
+
+msgid "membership:kiosk_order_sync_error"
+msgstr ""
+"Sipariş durumu henüz eşitlenmedi; yeniden deneniyor. Lütfen tekrar sipariş "
+"vermeyin."
+
+msgid "membership:kiosk_order_uncertain"
+msgstr ""
+"Sipariş sonucu doğrulanmadı. Tekrar oluşturmamak için önce sipariş geçmişini"
+" kontrol edin."
+
+msgid "membership:kiosk_order_unconfirmed"
+msgstr "Sipariş onay bekliyor"
+
+msgid "membership:kiosk_order_valid_until"
+msgstr "Siparişin son geçerlilik tarihi: {date} · Pekin saati"
+
+msgid "membership:kiosk_order_waiting_server"
+msgstr "Sunucunun ödeme onayı bekleniyor"
+
+msgid "membership:kiosk_owned_result_reuse"
+msgstr ""
+"Sahip olduğunuz sonuç tekrar görüntülenebilir; alan ve hamle önerileri aynı "
+"sonuca dahildir."
+
+msgid "membership:kiosk_paid_time"
+msgstr "Onay zamanı: {date} · Pekin saati"
+
+msgid "membership:kiosk_payment_entry_pending"
+msgstr ""
+"Ödeme bağlantısı henüz hazır değil. Sipariş durumunu daha sonra kontrol "
+"edin."
+
+msgid "membership:kiosk_pending_no_order"
+msgstr "Doğrulamadan önce kalan oran gösterilmez ve sipariş oluşturulmaz."
+
+msgid "membership:kiosk_period_pending"
+msgstr "Dönem kontrol bekliyor"
+
+msgid "membership:kiosk_period_quota_pending"
+msgstr "Dönem kotası kontrol bekliyor"
+
+msgid "membership:kiosk_plan_catalog_help"
+msgstr "Katalog doğrulandıktan sonra fiyatlar ve avantajlar gösterilir."
+
+msgid "membership:kiosk_plan_catalog_pending"
+msgstr "Üyelik kataloğu eşitlenmeyi bekliyor"
+
+msgid "membership:kiosk_plan_report_reference"
+msgstr "{plan}: {reports} oyun"
+
+msgid "membership:kiosk_plan_term"
+msgstr "/ {days} gün"
+
+msgid "membership:kiosk_plan_valid_until"
+msgstr "Son geçerlilik: {date} · Pekin saati"
+
+msgid "membership:kiosk_points_amount"
+msgstr "{points} puan"
+
+msgid "membership:kiosk_points_per_move"
+msgstr "{points} puan / hamle"
+
+msgid "membership:kiosk_pricing_fallback_help"
+msgstr ""
+"Analiz için hem dönem hem de hafta üyelik kotası yeterli olmalıdır. Aksi "
+"halde tamamı API puanlarıyla karşılanır; ücret bölünmez. Yuan ile otomatik "
+"yükleme yapılmaz."
+
+msgid "membership:kiosk_pricing_help"
+msgstr "API fiyatlandırması"
+
+msgid "membership:kiosk_pricing_positions_help"
+msgstr ""
+"N hamlelik rapor, ilk konum dahil toplam N+1 konum içerir. Gerçek tüketim, "
+"analiz öncesinde oyun kaydı için verilen fiyat teklifine göre belirlenir."
+
+msgid "membership:kiosk_pricing_rates_help"
+msgstr ""
+"Bakiye {precision} puan hassasiyetle gösterilir. Konum başına standart "
+"analiz {normal}, gelişmiş analiz {advanced} puandır."
+
+msgid "membership:kiosk_pricing_sync_help"
+msgstr ""
+"Çevrimdışıysanız veya kota bilinmiyorsa önce eşitleyin. Sahip olduğunuz "
+"sonuçlar tekrar görüntülenebilir; alan ve hamle önerileri aynı sonuca "
+"dahildir."
+
+msgid "membership:kiosk_purchase_after_sync"
+msgstr "Satın alma için önce hesap ve kota doğrulanmalıdır"
+
+msgid "membership:kiosk_quota_confirming"
+msgstr "Kota doğrulanıyor"
+
+msgid "membership:kiosk_quota_fallback_help"
+msgstr ""
+"Yalnızca kalan her iki kota da yeterliyse üyelik kullanılır. Aksi halde "
+"analizin tamamı API puanlarıyla karşılanır; ücret bölünmez. Analizden önce "
+"ödeme kaynağını ve fiyat teklifini onaylayın. Puan yetmezse elle yükleme "
+"yapın veya kotanın yenilenmesini bekleyin."
+
+msgid "membership:kiosk_quota_help"
+msgstr "Üyelik kotası ve tasarruf bilgileri"
+
+msgid "membership:kiosk_quota_not_confirmed"
+msgstr "Kota henüz doğrulanmadı"
+
+msgid "membership:kiosk_quota_report_help"
+msgstr ""
+"Haftalık en yüksek oyun sayısı, {moves} hamlelik standart raporlar üzerinden"
+" tahmin edilir ve kalan dönem kotasıyla sınırlıdır. Dönemlik standart rapor "
+"referansı: {references}."
+
+msgid "membership:kiosk_quota_reset_help"
+msgstr ""
+"Üyelik satın alınan dönemin sonunda biter. Haftalık kota, Pekin saatine göre"
+" pazartesi 00.00'da sıfırlanır. Dönem ve hafta için kalan oranlar ayrı "
+"hesaplanır; devam eden analizlerin tüketimi dahildir."
+
+msgid "membership:kiosk_quota_result_help"
+msgstr ""
+"Aynı sonuç alan ve hamle önerilerini içerir; tekrar görüntüleme yeniden "
+"ücretlendirilmez. Gelişmiş analiz, standart analizin {multiplier} katı kota "
+"tüketir."
+
+msgid "membership:kiosk_quota_savings_help"
+msgstr ""
+"Tasarruf, API standart analiziyle karşılaştırılarak dönem kotasının "
+"tamamının kullanıldığı varsayımıyla hesaplanır. Kota tamamen kullanılmazsa "
+"gerçek tasarruf kullanıma göre değişir. Free yalnızca ücretsiz standart "
+"rapor hakkı verir; genel analiz kotası vermez."
+
+msgid "membership:kiosk_quota_unconfirmed"
+msgstr "Kota bulut doğrulamasını bekliyor"
+
+msgid "membership:kiosk_receipt_resync"
+msgstr ""
+"Hesap kullanımı yeniden eşitleniyor. Bakiye ve haklar için bulut verileri "
+"esas alınır."
+
+msgid "membership:kiosk_remaining"
+msgstr "Kalan"
+
+msgid "membership:kiosk_remaining_unconfirmed"
+msgstr "Kalan miktar henüz doğrulanmadı"
+
+msgid "membership:kiosk_renew_plan"
+msgstr "{plan} yenile"
+
+msgid "membership:kiosk_report_estimate"
+msgstr ""
+"{moves} hamle üzerinden tahmin edilir; kalan dönem kotasıyla sınırlıdır. "
+"Gelişmiş analiz yaklaşık {multiplier} kat tüketir"
+
+msgid "membership:kiosk_reserved_included"
+msgstr "Devam eden analiz tüketimi dahil"
+
+msgid "membership:kiosk_result_reuse"
+msgstr ""
+"Alan ve hamle önerileri aynı sonuca dahildir. Tekrar görüntüleme yeniden "
+"ücretlendirilmez."
+
+msgid "membership:kiosk_resync"
+msgstr "Yeniden eşitle"
+
+msgid "membership:kiosk_return_selection"
+msgstr "Seçime dön"
+
+msgid "membership:kiosk_return_usage"
+msgstr "Kullanıma dön"
+
+msgid "membership:kiosk_save_vs_api"
+msgstr "API'ye göre yaklaşık {percent} tasarruf"
+
+msgid "membership:kiosk_savings_condition"
+msgstr ""
+"Tasarruf, dönem kotasının tamamı kullanıldığında geçerlidir; aksi halde "
+"gerçek tasarruf kullanıma göre değişir"
+
+msgid "membership:kiosk_select_topup"
+msgstr "API yükleme tutarını seçin"
+
+msgid "membership:kiosk_service_unavailable"
+msgstr "Hizmet geçici olarak kullanılamıyor"
+
+msgid "membership:kiosk_sync_failed"
+msgstr "Eşitleme başarısız"
+
+msgid "membership:kiosk_sync_pending"
+msgstr "Eşitleme bekliyor"
+
+msgid "membership:kiosk_synced"
+msgstr "Eşitlendi"
+
+msgid "membership:kiosk_syncing"
+msgstr "Eşitleniyor"
+
+msgid "membership:kiosk_syncing_orders"
+msgstr "Siparişler eşitleniyor…"
+
+msgid "membership:kiosk_term"
+msgstr "Bu dönem"
+
+msgid "membership:kiosk_term_expiry_beijing"
+msgstr "Dönem sonu · Pekin saati"
+
+msgid "membership:kiosk_term_remaining_aria"
+msgstr "Bu dönem kalan oran"
+
+msgid "membership:kiosk_term_reports"
+msgstr "Standart rapor · {days} günde toplam yaklaşık {reports} oyun"
+
+msgid "membership:kiosk_test_environment"
+msgstr "TEST · Test ortamı"
+
+msgid "membership:kiosk_test_order"
+msgstr "TEST simülasyon siparişi · Gerçek tahsilat yapılmaz"
+
+msgid "membership:kiosk_title"
+msgstr "Üyelik ve yükleme"
+
+msgid "membership:kiosk_topup"
+msgstr "Yükle"
+
+msgid "membership:kiosk_topup_amount"
+msgstr "{amount} yükle"
+
+msgid "membership:kiosk_topup_catalog_pending"
+msgstr "Yükleme kataloğu eşitlenmeyi bekliyor"
+
+msgid "membership:kiosk_topup_member_priority"
+msgstr ""
+"Kalan her iki üyelik kotası da yeterliyse önce üyelik kullanılır; aksi halde"
+" analizin tamamı API puanlarıyla karşılanır."
+
+msgid "membership:kiosk_topup_option"
+msgstr "{amount} · {points} puan"
+
+msgid "membership:kiosk_topup_points"
+msgstr "{points} puan"
+
+msgid "membership:kiosk_unconfirmed"
+msgstr "Henüz doğrulanmadı"
+
+msgid "membership:kiosk_understood"
+msgstr "Anladım"
+
+msgid "membership:kiosk_usage_fallback"
+msgstr ""
+"Bu analiz için kalan her iki kota da yeterli olmalıdır; aksi halde tamamı "
+"API puanlarıyla karşılanır."
+
+msgid "membership:kiosk_usage_sync_error"
+msgstr "Kullanım şu anda eşitlenemiyor"
+
+msgid "membership:kiosk_used_reserved"
+msgstr "Kullanılan ve analizde: {percent}"
+
+msgid "membership:kiosk_verify_identity"
+msgstr "Önce hesap kimliğini doğrulayın"
+
+msgid "membership:kiosk_view_order"
+msgstr "Siparişi görüntüle: {id}"
+
+msgid "membership:kiosk_view_plans"
+msgstr "Üyelikleri görüntüle"
+
+msgid "membership:kiosk_week"
+msgstr "Bu hafta"
+
+msgid "membership:kiosk_week_remaining_aria"
+msgstr "Bu hafta kalan oran"
+
+msgid "membership:kiosk_week_reports"
+msgstr "Haftada en fazla yaklaşık {reports} oyun"
+
+msgid "membership:kiosk_week_reset_beijing"
+msgstr "Pazartesi 00.00'da yenilenir · Pekin saati"
+
+msgid "membership:kiosk_weekly_free_reports"
+msgstr "Haftalık ücretsiz standart raporlar"
+
+msgid "membership:loading"
+msgstr "Üyelik ve kullanım yükleniyor…"
+
+msgid "membership:login"
+msgstr "Hesaba giriş yap"
+
+msgid "membership:login_to_view"
+msgstr "Üyelik ve kullanımı görmek için giriş yapın"
+
+msgid "membership:membership_first"
+msgstr "Önce üyelik kotası kullanılır"
+
+msgid "membership:membership_free_pending_help"
+msgstr ""
+"Üyelik ve Free hakkı henüz doğrulanmadı. Görüntülemek için yeniden yükleyin."
+
+msgid "membership:membership_order"
+msgstr "Üyelik siparişi"
+
+msgid "membership:next_membership"
+msgstr "Satın alınan: {plan} · Başlangıç: {date}"
+
+msgid "membership:no_orders"
+msgstr "Henüz sipariş yok"
+
+msgid "membership:normal"
+msgstr "Standart"
+
+msgid "membership:normal_position_cost"
+msgstr "Standart: yaklaşık {points} puan/hamle"
+
+msgid "membership:on_demand_no_subscription"
+msgstr "İhtiyacınız kadar satın alın, abonelik gerekmez"
+
+msgid "membership:open"
+msgstr "Görüntüle"
+
+msgid "membership:order_actual_end"
+msgstr "Kesin bitiş: {date} (Pekin saati)"
+
+msgid "membership:order_actual_points"
+msgstr "Yüklenen gerçek miktar: {points} puan"
+
+msgid "membership:order_actual_start"
+msgstr "Kesin başlangıç: {date} (Pekin saati)"
+
+msgid "membership:order_estimated_dates"
+msgstr ""
+"Tahmini başlangıç: {start}, tahmini bitiş: {end} (Pekin saati). Kesin "
+"tarihler ödeme makbuzuna göre belirlenir."
+
+msgid "membership:order_expired"
+msgstr "Siparişin süresi doldu"
+
+msgid "membership:order_expires_at"
+msgstr "Siparişin son geçerlilik tarihi: {date} (Pekin saati)."
+
+msgid "membership:order_failed"
+msgstr "Sipariş tamamlanmadı"
+
+msgid "membership:order_history"
+msgstr "Sipariş geçmişi"
+
+msgid "membership:order_id"
+msgstr "Sipariş numarası"
+
+msgid "membership:order_paid"
+msgstr "Ödendi"
+
+msgid "membership:order_pending"
+msgstr "Ödeme bekleniyor"
+
+msgid "membership:order_poll_error"
+msgstr ""
+"Ödeme durumu şu anda doğrulanamıyor; yeniden deneniyor. Lütfen tekrar ödeme "
+"yapmayın."
+
+msgid "membership:order_refunded"
+msgstr "İade edildi"
+
+msgid "membership:order_result_unknown"
+msgstr ""
+"Sipariş sonucu henüz doğrulanmadı. Tekrar oluşturmamak için önce sipariş "
+"geçmişini kontrol edin."
+
+msgid "membership:order_topup"
+msgstr "API puanı yükleme"
+
+msgid "membership:payment_account_pending"
+msgstr ""
+"Ödeme siparişi ancak hesap ve kullanım doğrulandıktan sonra oluşturulabilir."
+
+msgid "membership:payment_channel_unavailable"
+msgstr ""
+"Ödeme kanalı henüz kullanıma açık değil. Bu sayfa dışında bilinmeyen "
+"hesaplara ödeme yapmayın."
+
+msgid "membership:payments_disabled"
+msgstr "Ödeme henüz kullanıma açık değil"
+
+msgid "membership:payments_unavailable"
+msgstr ""
+"Ödeme henüz kullanıma açık değil; şu anda ödeme siparişi oluşturulamaz."
+
+msgid "membership:pending_order_notice"
+msgstr ""
+"Ödeme bekleniyor. Sayfa, sunucudaki durumu otomatik olarak kontrol eder."
+
+msgid "membership:plan_pending"
+msgstr "Üyelik hakları doğrulanmayı bekliyor"
+
+msgid "membership:plan_term"
+msgstr "/ {days} gün"
+
+msgid "membership:plan_unavailable"
+msgstr "{plan} henüz kullanıma açık değil"
+
+msgid "membership:plans"
+msgstr "Üyelik"
+
+msgid "membership:points"
+msgstr "Puan"
+
+msgid "membership:points_amount"
+msgstr "{points} puan"
+
+msgid "membership:points_exchange_rate"
+msgstr "1 yuan = 1 puan"
+
+msgid "membership:position_cost"
+msgstr "Hamle başına ücret"
+
+msgid "membership:position_pricing_rule"
+msgstr ""
+"Tek konumda ve tam oyunda aynı birim fiyat uygulanır. Tam oyun, hamle sayısı"
+" artı ilk konum üzerinden ücretlendirilir."
+
+msgid "membership:processing"
+msgstr "İşleniyor…"
+
+msgid "membership:quota"
+msgstr "Üyelik kotası"
+
+msgid "membership:quota_dual_rule"
+msgstr ""
+"Dönem ve hafta için kalan oranlar kendi kotalarına göre ayrı gösterilir. "
+"Analiz için her ikisinin de yeterli olması gerekir. Devam eden analiz için "
+"ayrılan miktar kullanıma dahildir; işlem başarısız olursa iade edilir."
+
+msgid "membership:quota_expires_in"
+msgstr "{time} sonra sona erer"
+
+msgid "membership:quota_pending"
+msgstr "Kota doğrulanmayı bekliyor"
+
+msgid "membership:quota_recovers_in"
+msgstr "{time} sonra yenilenir"
+
+msgid "membership:quota_refresh_pending"
+msgstr "Güncel kota doğrulanıyor"
+
+msgid "membership:quota_reservation_help"
+msgstr ""
+"Kalan iki kota ayrı hesaplanır; analiz için ikisi de yeterli olmalıdır. "
+"Devam eden analiz için ayrılan miktar kullanım oranına dahildir; işlem "
+"başarısız olursa iade edilir."
+
+msgid "membership:quote_and_owned_rule"
+msgstr ""
+"Analizden önce sunucunun fiyat teklifi ve ödeme kaynağı gösterilir. Hesap "
+"veya kullanım durumu doğrulanmamışsa analiz başlatılamaz. Sahip olduğunuz "
+"sonuçları tekrar görüntülemek ve alan ile hamle önerileri arasında geçiş "
+"yapmak yeniden ücretlendirilmez."
+
+msgid "membership:refresh"
+msgstr "Yenile"
+
+msgid "membership:reload"
+msgstr "Yeniden yükle"
+
+msgid "membership:remaining_percent"
+msgstr "Kalan {percent}"
+
+msgid "membership:renew_plan"
+msgstr "{plan} yenile"
+
+msgid "membership:renewal_rule"
+msgstr ""
+"Yeni dönem mevcut üyelik bittikten sonra başlar; kullanılan ve ayrılan "
+"miktarlar sıfırlanmaz. Ödeme beklenirken tarihler tahminidir; kesin "
+"geçerlilik dönemi ödeme sonrası sunucu makbuzuna göre belirlenir. Ücretli "
+"üyeliğe ek Free standart rapor hakkı verilmez."
+
+msgid "membership:report_estimate_limit"
+msgstr ""
+"Oyun başına 300 hamle üzerinden tahmin edilir; kalan dönem kotasıyla "
+"sınırlıdır."
+
+msgid "membership:report_example_rule"
+msgstr ""
+"İlk konum dahil toplam 301 analiz konumu vardır. Gerçek ücret, göndermeden "
+"önce sunucunun verdiği fiyat teklifine göre belirlenir."
+
+msgid "membership:retry"
+msgstr "Yeniden dene"
+
+msgid "membership:savings_approx"
+msgstr "Yaklaşık {percent} tasarruf"
+
+msgid "membership:savings_vs_api"
+msgstr "API'ye göre yaklaşık {percent} tasarruf"
+
+msgid "membership:select_plan"
+msgstr "{plan} seç"
+
+msgid "membership:server_authority"
+msgstr "Bakiye ve haklar için sunucunun onayladığı sonuç esas alınır."
+
+msgid "membership:service_unavailable"
+msgstr ""
+"Bu hizmette üyelik kullanımı şu anda açık değil; haklar ve bakiye "
+"doğrulanmayı bekliyor."
+
+msgid "membership:source_free"
+msgstr "Şu an haftalık ücretsiz rapor hakkının kullanılması bekleniyor"
+
+msgid "membership:source_membership"
+msgstr "Şu an üyelik kotasının kullanılması bekleniyor"
+
+msgid "membership:source_owned"
+msgstr "Bu sonuca zaten sahipsiniz"
+
+msgid "membership:source_pending"
+msgstr "Ödeme kaynağı doğrulanmayı bekliyor"
+
+msgid "membership:source_wallet"
+msgstr "Şu an API puanlarının kullanılması bekleniyor"
+
+msgid "membership:stale"
+msgstr "Güncelleme bekliyor"
+
+msgid "membership:stale_warning"
+msgstr ""
+"Son yüklenen veriler gösteriliyor. Hesap ve ödeme kaynağı yeniden "
+"doğrulanmalıdır; satın alma geçici olarak kullanılamıyor."
+
+msgid "membership:synced"
+msgstr "Eşitlendi"
+
+msgid "membership:temporarily_unavailable"
+msgstr "Geçici olarak kullanılamıyor"
+
+msgid "membership:term_remaining"
+msgstr "Bu dönem kalan"
+
+msgid "membership:term_report_reference"
+msgstr ""
+"{plan}: her {days} günlük dönem için yaklaşık {reports} standart rapor."
+
+msgid "membership:term_total_reports"
+msgstr "{days} günde toplam yaklaşık {reports} oyun"
+
+msgid "membership:test_order_warning"
+msgstr "TEST simülasyon siparişi; gerçek tahsilat yapılmaz"
+
+msgid "membership:time_pending"
+msgstr "Zaman doğrulanmayı bekliyor"
+
+msgid "membership:topup_amount"
+msgstr "{amount} yükle"
+
+msgid "membership:topup_arrival"
+msgstr "{points} puan yüklenir"
+
+msgid "membership:topup_arrival_rule"
+msgstr ""
+"Ödeme onaylandıktan sonra puanlar yüklenir. Üyelik kotası yetmezse mevcut "
+"API puanları kullanılır; otomatik yükleme yapılmaz."
+
+msgid "membership:topup_option"
+msgstr "{amount}, {points} puan yüklenir"
+
+msgid "membership:unavailable"
+msgstr "Henüz kullanıma açık değil"
+
+msgid "membership:unavailable_title"
+msgstr "Üyelik ve kullanım geçici olarak kullanılamıyor"
+
+msgid "membership:unconfirmed_help"
+msgstr ""
+"Hesap hakları ve bakiye henüz doğrulanmadı. Biraz sonra yeniden deneyin."
+
+msgid "membership:usage"
+msgstr "Kullanım"
+
+msgid "membership:used_and_reserved"
+msgstr "Kullanılan ve analizde: {percent}"
+
+msgid "membership:valid_until"
+msgstr "Son geçerlilik: {date} (Pekin saati)"
+
+msgid "membership:view_api_topup"
+msgstr "API yüklemeyi görüntüle"
+
+msgid "membership:view_plans"
+msgstr "Üyelik planlarını görüntüle"
+
+msgid "membership:visits"
+msgstr "{count} arama ziyareti"
+
+msgid "membership:week_remaining"
+msgstr "Bu hafta kalan"
+
+msgid "membership:weekly_report_reference"
+msgstr "Standart raporlar: haftada en fazla yaklaşık {reports} oyun"
+
+msgid "membership:weekly_reports"
+msgstr "Haftada en fazla yaklaşık {reports} oyun"
+
+msgid "membership:weekly_reports_unavailable"
+msgstr "Haftada en fazla yaklaşık {reports} oyun · Henüz kullanıma açık değil"
+
+msgid "membership:weekly_reset_rule"
+msgstr "Haftalık kota her pazartesi 00.00'da (Pekin saati) yenilenir."
+
+msgid "membership:whole_request_fallback"
+msgstr ""
+"Üyelik kotası bu analize yetmezse analizin tamamı mevcut API puanlarıyla "
+"karşılanır."
+
+msgid "kifu:first_page"
+msgstr "İlk sayfa"
+
+msgid "kifu:last_page"
+msgstr "Son sayfa"
+
+msgid "membership:order_cancelled"
+msgstr "Sipariş iptal edildi"
+
+msgid "membership:wechat_another_screen"
+msgstr "Telefondan bakıyorsanız bu sayfayı başka bir ekranda açın, ardından telefonunuzdaki WeChat ile kodu tarayın."
+
+msgid "membership:wechat_cancel"
+msgstr "Siparişi iptal et"
+
+msgid "membership:wechat_cancel_confirming"
+msgstr "İptal sonucu doğrulanıyor. Ödeme zaten tamamlandıysa ödeme makbuzu esas alınır."
+
+msgid "membership:wechat_cancelling"
+msgstr "İptal ediliyor…"
+
+msgid "membership:wechat_close_help"
+msgstr "Kapatmak yalnızca bu sayfayı gizler. Sipariş geçmişinden tekrar açabilirsiniz."
+
+msgid "membership:wechat_confirming"
+msgstr "Ödeme sonucu doğrulanıyor. Lütfen yeni bir sipariş oluşturmayın."
+
+msgid "membership:wechat_paid"
+msgstr "WeChat Pay ödemesi başarılı. Hesabınız eşitleniyor."
+
+msgid "membership:wechat_pay"
+msgstr "WeChat Pay"
+
+msgid "membership:wechat_qr_alt"
+msgstr "WeChat Pay QR kodu"
+
+msgid "membership:wechat_qr_error"
+msgstr "QR kodu şu anda görüntülenemiyor. Lütfen bu siparişi kontrol etmeyi yeniden deneyin."
+
+msgid "membership:wechat_qr_unavailable"
+msgstr "QR kodu henüz hazır değil. Siparişiniz kontrol ediliyor."
+
+msgid "membership:wechat_retry"
+msgstr "Güvenle yeniden dene"
+
+msgid "membership:wechat_scan"
+msgstr "Ödemek için tarayın"
+
+msgid "membership:wechat_scan_help"
+msgstr "Telefonunuzdaki WeChat uygulamasının tarama işleviyle QR kodunu tarayın."
+
+msgid "membership:wechat_valid_for"
+msgstr "QR kodunun kalan süresi {time}"
+
+msgid "membership:wechat_waiting"
+msgstr "WeChat Pay onayı bekleniyor"

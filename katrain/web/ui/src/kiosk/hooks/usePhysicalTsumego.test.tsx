@@ -64,13 +64,15 @@ function makeOpts(overrides: Partial<PhysicalTsumegoOptions> = {}): PhysicalTsum
   };
 }
 
+const currentSetupId = () => vi.mocked(API.visionSetupMode).mock.calls.at(-1)?.[1];
+
 const setupProgressEvent = (
   seq: number,
   missing: Array<[number, number]> = [],
   extra: Array<[number, number, number]> = [],
-): VisionSyncEvent => ({ seq, type: 'setup_progress', data: { missing, extra } });
+): VisionSyncEvent => ({ seq, type: 'setup_progress', data: { missing, extra, setup_id: currentSetupId() } });
 
-const setupCompleteEvent = (seq: number): VisionSyncEvent => ({ seq, type: 'setup_complete', data: {} });
+const setupCompleteEvent = (seq: number): VisionSyncEvent => ({ seq, type: 'setup_complete', data: { setup_id: currentSetupId() } });
 
 const moveConfirmedEvent = (seq: number, row: number, col: number, color = 1): VisionSyncEvent => ({
   seq,
@@ -81,8 +83,7 @@ const moveConfirmedEvent = (seq: number, row: number, col: number, color = 1): V
 // Flush the microtasks that follow the mocked (already-resolved) API/LED promises,
 // so `.then`/`.catch` continuations settle inside `act` and don't warn.
 const flush = () => act(async () => {
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let i = 0; i < 40; i++) await Promise.resolve();
 });
 
 beforeEach(() => {
@@ -114,7 +115,7 @@ describe('usePhysicalTsumego', () => {
     // and the physical target now mirrors the screen (non-empty, distinct from the
     // ENABLE-time empty-board setupMode call).
     const expectedTarget = stonesToVisionBoard(stones, BOARD_SIZE);
-    expect(API.visionSetupMode).toHaveBeenLastCalledWith(expectedTarget);
+    expect(API.visionSetupMode).toHaveBeenLastCalledWith(expectedTarget, expect.any(String));
     expect(result.current.phase).toBe('setup');
 
     const pointsCallsBefore = vi.mocked(LedAPI.points).mock.calls.length;
@@ -180,7 +181,9 @@ describe('usePhysicalTsumego', () => {
     await flush();
 
     // clearing -> setup -> ready
-    rerender({ ...opts, syncEvents: [setupCompleteEvent(0), setupCompleteEvent(1)] });
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(0)] });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(1)] });
     await flush();
     expect(result.current.phase).toBe('ready');
 
@@ -208,7 +211,9 @@ describe('usePhysicalTsumego', () => {
     await flush();
 
     // clearing -> setup -> ready (still unpaused: showHint=false)
-    const readyEvents = [setupCompleteEvent(0), setupCompleteEvent(1)];
+    rerender({ ...baseOpts, syncEvents: [setupCompleteEvent(0)] });
+    await flush();
+    const readyEvents = [setupCompleteEvent(1)];
     rerender({ ...baseOpts, syncEvents: readyEvents });
     await flush();
     expect(result.current.phase).toBe('ready');
@@ -254,7 +259,7 @@ describe('usePhysicalTsumego', () => {
     expect(result.current.phase).toBe('clearing');
   });
 
-  it('re-runs the clearing lifecycle when resyncKey bumps (Reset)', async () => {
+  it('restores initial target when resyncKey bumps (Reset)', async () => {
     const opts = makeOpts();
     const { result, rerender } = renderHook((props: PhysicalTsumegoOptions) => usePhysicalTsumego(props), {
       initialProps: opts,
@@ -273,10 +278,148 @@ describe('usePhysicalTsumego', () => {
     rerender({ ...opts, resyncKey: 1 });
     await flush();
 
-    expect(result.current.phase).toBe('clearing');
+    expect(result.current.phase).toBe('restoring');
     expect(vi.mocked(API.visionMonitor).mock.calls.length).toBeGreaterThan(monitorCallsBefore);
     expect(API.visionMonitor).toHaveBeenLastCalledWith(true);
     expect(vi.mocked(API.visionSetupMode).mock.calls.length).toBeGreaterThan(setupCallsBefore);
+  });
+
+  it('reset synchronously blocks moves, rejects stale targets, and guides extras and missing colors', async () => {
+    const opts = makeOpts();
+    const { result, rerender } = renderHook(usePhysicalTsumego, { initialProps: opts });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(0)] });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(1)] });
+    await flush();
+    expect(result.current.canAcceptInput()).toBe(true);
+    const staleId = currentSetupId();
+    const board = stonesToVisionBoard([{ player: 'B', coords: [3, 3] }, { player: 'W', coords: [4, 4] }], 19);
+    act(() => {
+      result.current.resetToInitial(board);
+      expect(result.current.canAcceptInput()).toBe(false);
+      result.current.onScreenMove({ type: 'incorrect' }, []);
+    });
+    await flush();
+    const resetId = currentSetupId();
+    expect(resetId).not.toBe(staleId);
+    expect(API.visionSetupMode).toHaveBeenLastCalledWith(board, resetId);
+    rerender({ ...opts, syncEvents: [
+      { seq: 2, type: 'setup_complete', data: { setup_id: staleId } },
+      { seq: 3, type: 'setup_progress', data: { setup_id: staleId, missing: [], extra: [[1, 1, 1]] } },
+      moveConfirmedEvent(4, 2, 2),
+      setupProgressEvent(5, [[15, 3], [14, 4]], [[6, 6, 2]]),
+    ] });
+    await flush();
+    expect(result.current.phase).toBe('restoring');
+    expect(opts.placeStone).not.toHaveBeenCalled();
+    expect(opts.undo).not.toHaveBeenCalled();
+    expect(LedAPI.points).toHaveBeenLastCalledWith([
+      { row: 15, col: 3, color: 'black' }, { row: 14, col: 4, color: 'white' }, { row: 6, col: 6, color: 'flash' },
+    ]);
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(6)] });
+    await flush();
+    expect(result.current.phase).toBe('ready');
+    expect(API.visionExpectedBoard).toHaveBeenLastCalledWith(board);
+    expect(API.visionMoveDetection).toHaveBeenLastCalledWith(true);
+    rerender({ ...opts, physicalRequested: true, enabled: false });
+    await flush();
+    rerender({ ...opts, physicalRequested: true });
+    await flush();
+    expect(result.current.phase).toBe('clearing'); // completed reset intent is no longer pending
+  });
+
+  it.each(['connection', 'readiness'] as const)('preserves reset intent during %s outage, but clears it on explicit off and problem change', async (outage) => {
+    const opts = makeOpts({ physicalRequested: true });
+    const { result, rerender } = renderHook(usePhysicalTsumego, { initialProps: opts });
+    await flush();
+    const board = stonesToVisionBoard([{ player: 'B', coords: [2, 2] }], 19);
+    act(() => result.current.resetToInitial(board));
+    await flush();
+    rerender({ ...opts, ...(outage === 'connection' ? { visionConnected: false } : { enabled: false }) });
+    await flush();
+    expect(result.current.hasPendingReset()).toBe(true);
+    rerender(opts);
+    await flush();
+    expect(result.current.phase).toBe('restoring');
+    expect(API.visionSetupMode).toHaveBeenLastCalledWith(board, expect.any(String));
+    rerender({ ...opts, enabled: false, physicalRequested: false });
+    await flush();
+    expect(result.current.hasPendingReset()).toBe(false);
+    rerender(opts);
+    await flush();
+    expect(result.current.phase).toBe('clearing');
+    act(() => result.current.resetToInitial(board));
+    await flush();
+    rerender({ ...opts, problemKey: 'p2' });
+    await flush();
+    expect(result.current.phase).toBe('clearing');
+  });
+
+  it('allows screen exploration in ready try mode while physical recognition stays paused, and reset fences the old try render', async () => {
+    const opts = makeOpts();
+    const { result, rerender } = renderHook(usePhysicalTsumego, { initialProps: opts });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(0)] });
+    await flush();
+    rerender({ ...opts, syncEvents: [setupCompleteEvent(1)] });
+    await flush();
+    const tryOpts = { ...opts, isTryMode: true };
+    rerender(tryOpts);
+    await flush();
+    expect(result.current.phase).toBe('ready');
+    expect(result.current.canAcceptInput()).toBe(true);
+    rerender({ ...tryOpts, syncEvents: [moveConfirmedEvent(2, 4, 4)] });
+    await flush();
+    expect(opts.placeStone).not.toHaveBeenCalled();
+    expect(API.visionPause).toHaveBeenLastCalledWith(true);
+    act(() => {
+      result.current.resetToInitial(stonesToVisionBoard([], 19));
+      expect(result.current.canAcceptInput()).toBe(false);
+    });
+    await flush();
+    // Hook has re-rendered with the old isTryMode=true props; reset still wins.
+    expect(result.current.phase).toBe('restoring');
+    expect(result.current.canAcceptInput()).toBe(false);
+  });
+
+  it('serializes an in-flight old setup before the newest reset, dropping queued stale commands', async () => {
+    let finishOld!: () => void;
+    vi.mocked(API.visionSetupMode).mockImplementationOnce(() => new Promise<void>((resolve) => { finishOld = resolve; }));
+    const opts = makeOpts();
+    const { result } = renderHook(usePhysicalTsumego, { initialProps: opts });
+    await flush();
+    const first = stonesToVisionBoard([{ player: 'B', coords: [1, 1] }], 19);
+    const newest = stonesToVisionBoard([{ player: 'W', coords: [5, 5] }], 19);
+    act(() => { result.current.resetToInitial(first); result.current.resetToInitial(newest); });
+    await flush();
+    expect(API.visionSetupMode).toHaveBeenCalledTimes(1);
+    await act(async () => { finishOld(); });
+    await flush();
+    expect(API.visionSetupMode).toHaveBeenCalledTimes(2);
+    expect(API.visionSetupMode).toHaveBeenLastCalledWith(newest, expect.any(String));
+  });
+
+  it('reset aborts solved celebration and try-exit cannot replace the initial target', async () => {
+    vi.useFakeTimers();
+    try {
+      const opts = makeOpts({ autoAdvance: true });
+      const { result, rerender } = renderHook(usePhysicalTsumego, { initialProps: opts });
+      await flush();
+      rerender({ ...opts, isSolved: true });
+      await flush();
+      expect(result.current.phase).toBe('solved');
+      rerender({ ...opts, isTryMode: true });
+      await flush();
+      const board = stonesToVisionBoard([{ player: 'B', coords: [7, 7] }], 19);
+      act(() => result.current.resetToInitial(board));
+      rerender({ ...opts, isTryMode: false });
+      await flush();
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+      expect(result.current.phase).toBe('restoring');
+      expect(API.visionSetupMode).toHaveBeenLastCalledWith(board, expect.any(String));
+      expect(opts.onAdvance).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
   });
 
   it('tears down vision/LED state on unmount', async () => {

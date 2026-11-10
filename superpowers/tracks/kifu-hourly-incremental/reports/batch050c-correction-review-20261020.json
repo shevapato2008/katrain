@@ -1,0 +1,170 @@
+{
+  "schema_version": "independent-finite-three-display-correction-review-v1",
+  "decision": "approve",
+  "reviewed_at": "2026-10-19T21:49:57.766062+00:00",
+  "reviewer": {
+    "id": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max",
+    "configuration_basis": "Parent explicitly configured this independent task as gpt-6-astra / max / fork_turns none."
+  },
+  "inputs": [
+    {
+      "file": "signed-manifests/batch050.json",
+      "file_sha256": "07b645a81815fe7c062e0ba04635d3b00592648ac5106eaf069dcf1327f7507b"
+    },
+    {
+      "file": "corrections/batch050c.draft.json",
+      "file_sha256": "27597ef5baf85a1dfe045c7317e204456f9f7e6565cb2d1a1336ddca403e7939"
+    },
+    {
+      "file": "A-050-three-display-unsigned-candidate.json",
+      "file_sha256": "b92a2296a9207413200caec911ece6b920def89f4b7420a8822d2753e1b31df7"
+    },
+    {
+      "file": "A-050-053-native-collision-TEST.json",
+      "file_sha256": "98d37acec33b204bce96315099dc06ab82b3a4214d556d543d916591eaeb8537"
+    },
+    {
+      "file": "A-050-three-display.diff",
+      "file_sha256": "3fe2591471679457a59df2a07f19830945f0356176d4865cd568e01115897c87"
+    }
+  ],
+  "original": {
+    "file": "signed-manifests/batch050.json",
+    "file_sha256": "07b645a81815fe7c062e0ba04635d3b00592648ac5106eaf069dcf1327f7507b",
+    "manifest_sha256": "0f354a9d5fcd07fb93b9468ef9d594da4d492edd1ff9f5a2adb65e05f44f2daa",
+    "publication_key": "kifu-backfill5536-20261019-reviewed-batch050"
+  },
+  "draft": {
+    "file": "corrections/batch050c.draft.json",
+    "file_sha256": "27597ef5baf85a1dfe045c7317e204456f9f7e6565cb2d1a1336ddca403e7939",
+    "manifest_sha256": "707e91bd7721f8d860d0ecd52964b87041c6decf0dd3d1323edc42da95c8b625"
+  },
+  "approved": {
+    "file": "corrections/batch050c.json",
+    "file_sha256": "4dee12b4b7cf3de2ad036d0b909f7e2e73e6874939a3407d77904c02d263f7d6",
+    "manifest_sha256": "4c5e5d0870b525e12269c629cc0c524b25a23dc6651f7ecd65528670157f226f",
+    "publication_key": "kifu-backfill5536-20261019-reviewed-batch050c",
+    "games": 100,
+    "decisions": 43,
+    "changed_decision_index_zero_based": 1,
+    "decision_content_sha256": "d98062c2546c64cb59adb0bb2359d612874ebbc1dcb1bc529b68f8d98dbdf29b"
+  },
+  "semantic_review": {
+    "kind": "raw_event",
+    "raw": "第81期日本本因坊战本战第一轮",
+    "source_items": [
+      {
+        "source_key": "19x19",
+        "source_item_id": "76059136",
+        "slot": "event",
+        "sgf_sha256": "d10b116c861bfee6230665bd3a7661fb68745c9599844d89aac2a7df6d39fda0"
+      }
+    ],
+    "approved_names5": {
+      "cn": "第81期日本本因坊战本战第一轮",
+      "tw": "第81期日本本因坊戰本戰第一輪",
+      "jp": "第81期 日本本因坊戦本戦第1回戦",
+      "ko": "제81기 일본 혼인보전 본선 1회전",
+      "en": "81st Japanese Honinbo Main Tournament, Round 1"
+    },
+    "changed_languages": [
+      "jp",
+      "ko",
+      "en"
+    ],
+    "conclusion": "The three proposed translations preserve the 81st edition, Japan, Honinbo tournament, main competition and first-round meaning. Japanese 第1回戦 and Korean 1회전 are natural first-round terms; English Main Tournament, Round 1 retains 本战第一轮. These are literal display variants, not claims that the two raw values identify distinct events or people. No canonical identity instruction changes.",
+    "language_notes": {
+      "jp": "本戦第1回戦 preserves the main competition first round.",
+      "ko": "본선 1회전 preserves the main competition first round.",
+      "en": "Main Tournament, Round 1 preserves the main competition first round."
+    }
+  },
+  "historical_semantic_approval": {
+    "artifact": "translation-final-data-review.json",
+    "artifact_sha256": "809910945ca7593625541115bb711e71b5523f0683b41251040c191af27d61ba",
+    "kind": "event",
+    "raw": "第81期日本本因坊战本战第一轮",
+    "decision": "approve"
+  },
+  "semantic_approval_precedence": "The unchanged semantic_approval field is the historical base approval. This actual correction review expressly supersedes only its JP/KO/EN strings for this exact raw key and finite binding. Old signatures are retained solely for unchanged decisions, never for the modified decision.",
+  "verification": {
+    "all_100_game_payloads_unchanged": true,
+    "all_43_source_item_bindings_unchanged": true,
+    "other_42_decisions_including_reviews_identical": true,
+    "methods_sources_original_language_cn_tw_unchanged": true,
+    "native_validate_decision": "pass",
+    "native_validate_manifest_games": 100,
+    "native_shared_event_display_predicate_all_five": "pass",
+    "proposed_three_texts_match_supplied_diagnostic_candidate": true,
+    "new_three_normalized_displays_differ_from_decision_0": true,
+    "native_code_catalog_file_sha256": "7abc91d18a38429ed40b35cc09d8fc9bdb072fa4e6d58c562f30abeca039e4fb",
+    "native_code_first_pass_file_sha256": "e9663c82af9c832fb133016b7700a41e12a5caf91a84d96bea872aa471d4b006"
+  },
+  "diagnostic_evidence": {
+    "file": "A-050-053-native-collision-TEST.json",
+    "file_sha256": "98d37acec33b204bce96315099dc06ab82b3a4214d556d543d916591eaeb8537",
+    "observation": "The supplied read-only TEST diagnostic records three pre-renewal risks for original050 and zero currently-blocked/pre-renewal risks for the proposed050 and 051-053. This reviewer inspected and pinned that artifact but made no live query; it is not a publication receipt.",
+    "parent_reported_live_reconciliation": "Original050 digest/publication-key receipts count zero on both environments; parent-reported, not independently queried here."
+  },
+  "partition": "Replacing only this package with the same 100 source members leaves the established 5279 ready / 257 isolated partition unchanged.",
+  "exact_diff_from_original": [
+    {
+      "path": "/decisions/1/displays/en",
+      "before": "81st Japanese Honinbo Tournament Main Draw Round 1",
+      "after": "81st Japanese Honinbo Main Tournament, Round 1"
+    },
+    {
+      "path": "/decisions/1/displays/jp",
+      "before": "第81期 日本本因坊戦本戦第1ラウンド",
+      "after": "第81期 日本本因坊戦本戦第1回戦"
+    },
+    {
+      "path": "/decisions/1/displays/ko",
+      "before": "제81기 일본혼인보전 본선 제1라운드",
+      "after": "제81기 일본 혼인보전 본선 1회전"
+    },
+    {
+      "path": "/decisions/1/producer/at",
+      "before": "2026-10-19T11:22:26.909949+00:00",
+      "after": "2026-10-19T21:48:14.242144+00:00"
+    },
+    {
+      "path": "/decisions/1/producer/id",
+      "before": "/root/kifu_full_backfill_package_assembly",
+      "after": "/root"
+    },
+    {
+      "path": "/decisions/1/producer/model",
+      "before": "Codex GPT-6 session; deterministic offline assembly",
+      "after": "Codex session"
+    },
+    {
+      "path": "/decisions/1/producer/request_id",
+      "before": "finite-backfill-assembly-20261019",
+      "after": "local-task:A-honinbo-first-round-correction-20261020"
+    },
+    {
+      "path": "/decisions/1/review/at",
+      "before": "2026-10-19T11:37:23.711773+00:00",
+      "after": "2026-10-19T21:49:57.766062+00:00"
+    },
+    {
+      "path": "/decisions/1/review/content_sha256",
+      "before": "11c62a2715837a16a1c284be702c0ef48620408b14b90ea8ff7c8d3f112d43e8",
+      "after": "d98062c2546c64cb59adb0bb2359d612874ebbc1dcb1bc529b68f8d98dbdf29b"
+    },
+    {
+      "path": "/decisions/1/review/request_id",
+      "before": "/root/kifu_backfill_names_astra_review/finite-binding-review/batch050.json/2026-10-19T11:37:23.711773+00:00",
+      "after": "/root/kifu_backfill_names_astra_review/finite-three-display-correction-review/batch050c/2026-10-19T21:49:57.766062+00:00"
+    },
+    {
+      "path": "/publication_key",
+      "before": "kifu-backfill5536-20261019-reviewed-batch050",
+      "after": "kifu-backfill5536-20261019-reviewed-batch050c"
+    }
+  ],
+  "scope_limit": "Only this corrected package and review record were written. No DB, Stage, Git, server, model, deployment or native publication action; original package and prior corrections remain unchanged. Native collision, qualification, scope, lock and atomic publication guards remain required."
+}

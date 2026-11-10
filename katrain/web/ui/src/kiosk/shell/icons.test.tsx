@@ -53,7 +53,7 @@ describe('ICON_NAMES 与 icons/ 目录**一一对应**', () => {
     expect(stray).toEqual([]);
   });
 
-  test('目录 82 个文件 = 41 对', () => {
+  test('目录中每个图标都有基础版和填充版', () => {
     expect(Icon.all()).toHaveLength(ICON_NAMES.length * 2);
   });
 });

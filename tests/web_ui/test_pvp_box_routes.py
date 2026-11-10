@@ -1,6 +1,7 @@
 """A strict physical box reaches the central lobby through its own origin."""
 
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 import asyncio
 import json
 import logging
@@ -162,6 +163,89 @@ def test_box_mirror_rejects_local_game_tree_mutation_and_forfeit(box_app):
         assert client.post("/api/nav", json={"session_id": "local-room", "node_id": 0}).status_code == 403
         assert client.post("/api/multiplayer/leave", json={"session_id": "local-room"}).status_code == 409
     katrain.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "during_request,expected",
+    [
+        (None, 200),
+        ("revoke", 401),
+        ("remove", 404),
+        ("end", 409),
+        ("invalid", 503),
+        ("invalid-position", 503),
+        ("unmap", 401),
+        ("move", 200),
+        ("replace-type", 403),
+    ],
+)
+def test_box_private_territory_maps_room_and_rechecks_authority(box_app, monkeypatch, during_request, expected):
+    app, central, token = box_app
+    bridge = app.state.pvp_box_bridge
+    bridge.rewrite_match(12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "B"})
+    mirror = WebSession(
+        session_id="local-room", katrain=SimpleNamespace(local_confirmation_in_progress=False), user_id=4, player_b_id=4
+    )
+    mirror.game_type = "pvp_lobby"
+    mirror.last_state = {"game_id": "game", "current_node_id": 123}
+    app.state.session_manager._sessions["local-room"] = mirror
+    broadcast = MagicMock()
+    monkeypatch.setattr(app.state.session_manager, "broadcast_to_session", broadcast)
+    payload = {
+        "session_id": "central-room",
+        "game_id": "game",
+        "current_node_id": 123,
+        "move_count": 5,
+        "board_size": [2, 2],
+        "ownership": [1, -1, 0, 0.6],
+        "black_area": 2,
+        "white_area": 1,
+        "stale": False,
+        "state": {"private": "must not apply"},
+        "winrate": 0.9,
+        "token": "cloud-secret",
+    }
+
+    async def territory_request(method, path, **kwargs):
+        central.calls.append((method, path, kwargs))
+        if during_request == "revoke":
+            app.state.box_sso.active_generation = 13
+        elif during_request == "remove":
+            app.state.session_manager._sessions.pop("local-room")
+        elif during_request == "end":
+            mirror.last_state = {"terminal_result": "W+R"}
+        elif during_request == "invalid":
+            payload["ownership"] = [1]
+        elif during_request == "invalid-position":
+            payload["current_node_id"] = "123"
+        elif during_request == "unmap":
+            bridge.rooms.discard_local("local-room")
+        elif during_request == "move":
+            mirror.last_state = {"game_id": "game", "current_node_id": 456}
+        elif during_request == "replace-type":
+            mirror.game_type = "ai_ladder_ranked"
+        return httpx.Response(200, json=payload, request=httpx.Request(method, f"https://central.example{path}"))
+
+    monkeypatch.setattr(central, "_request", territory_request)
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        response = client.post("/api/pvp/territory", json={"session_id": "local-room"})
+    assert response.status_code == expected, response.text
+    assert central.calls == [("POST", "/api/pvp/territory", {"json": {"session_id": "central-room"}})]
+    assert "cloud-secret" not in response.text
+    broadcast.assert_not_called()
+    assert not app.state.ranked_analysis_activity._temporary
+    if expected == 200:
+        expected_payload = {
+            key: ("local-room" if key == "session_id" else value)
+            for key, value in payload.items()
+            if key not in {"state", "winrate", "token"}
+        }
+        expected_payload["stale"] = during_request == "move"
+        assert response.json() == expected_payload
+        assert mirror.last_state == {"game_id": "game", "current_node_id": 456 if during_request == "move" else 123}
+    else:
+        assert "ownership" not in response.json()
 
 
 class Upstream:

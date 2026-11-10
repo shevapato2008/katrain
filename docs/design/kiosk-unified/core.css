@@ -1,0 +1,37 @@
+/* Shared fixed 1024×600 presentation shell. The product UI uses only 18/22/28 px text. */
+#stage .proposal-overlay{font-family:"SmartBox Kai",serif}
+#stage .proposal-overlay button{font-family:"SmartBox Kai",serif;cursor:pointer}
+.u-shell-top{position:absolute;z-index:12;left:0;top:0;width:1024px;height:56px;display:flex;align-items:center;gap:12px;padding:0 23px;background:#17221e;border-bottom:1px solid #2e4037;color:#edf5ec;font-size:22px}
+.u-shell-logo{width:35px;height:39px;flex:none;background-image:url(../kiosk-evidence-2026-10-14/current/play-device.png);background-position:-22px -8px;background-repeat:no-repeat}
+.u-shell-brand{font-family:"SmartBox Brand LongCang","SmartBox Kai",serif;font-size:22px;font-weight:400;white-space:nowrap}
+@font-face{font-family:"SmartBox Fondamento";src:url("../../../katrain/web/ui/src/kiosk-shell/fonts/fondamento-latin-regular.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
+.u-shell-en{font-family:"SmartBox Fondamento",serif;font-size:18px;font-style:normal;font-weight:400;letter-spacing:.005em;position:relative;top:1px;color:#b9c8bd;white-space:nowrap}
+.u-shell-separator{height:31px;border-left:1px solid #375045;margin:0 2px}
+.u-shell-product{color:#62c989;font-size:22px}
+.u-shell-spacer{flex:1}
+.u-shell-home{height:46px;min-width:94px;padding:0 12px;border-radius:9px;border:1px solid #3a5245;background:#1b2923;color:#edf5ec;font-size:22px;display:flex;align-items:center;justify-content:center;gap:7px}
+.u-shell-home svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.u-shell-avatar{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:#5fc488;color:#10241a;font-size:18px}
+.u-shell-user{font-size:18px;white-space:nowrap}
+.u-shell-clock{font-size:22px;white-space:nowrap;margin-left:3px}
+.u-shell-local-title{font-size:22px;white-space:nowrap}
+.u-shell-local-meta{font-size:18px;white-space:nowrap;color:#b9cdbd}
+.u-shell-local-action{height:46px;padding:0 9px;border-radius:9px;border:1px solid #3a5245;background:#1b2923;color:#edf5ec;font-size:22px;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.u-shell-dock{position:absolute;z-index:13;left:0;top:518px;width:1024px;height:82px;padding:7px 14px;background:#17231e;border-top:1px solid #33463a;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.u-shell-dock button{height:68px;border:0;border-radius:10px;background:transparent;color:#c7d5ca;font-size:22px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:7px}
+.u-shell-dock button.is-active{background:#58b77e;color:#102117}
+.u-shell-dock .ic{width:24px;height:24px}
+.u-info{width:44px;height:44px;min-width:44px;border:1px solid #52785e;border-radius:50%;background:#1f3427;color:#9be1aa;display:grid;place-items:center;font-size:22px;line-height:1}
+.u-info svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8}
+.u-primary{background:#59b980;color:#102117;border:1px solid #59b980}
+.u-secondary{background:#1c2b24;color:#e8f2e8;border:1px solid #3a5946}
+.u-danger{background:#1c2823;color:#ed9389;border:1px solid #9c5b53}
+.u-value-label{font-size:18px;color:#b9cdbd}
+.u-value{font-size:22px;color:#edf5ec}
+.u-heading{font-size:28px;color:#f2f6f0}
+.u-tab{height:48px;min-width:44px;padding:0 10px;border:1px solid #3a5946;border-radius:9px;background:#1b2a23;color:#c9dacd;font-size:22px}
+.u-tab.is-active{border-color:#6fca90;background:#2b4b36;color:#e9f7ed}
+#stage .u-shell-top .ic{width:22px;height:22px}
+#modal-root .modal{font-family:"SmartBox Kai",serif}
+#modal-root .modal>div{max-width:600px;min-width:420px;padding:24px;border-radius:14px;background:#1c2e23;border:1px solid #6eba83;color:#eef6ee;font-size:22px;line-height:1.45}
+#modal-root .modal button{height:48px;min-width:126px;margin-left:8px;font-size:22px;float:none}

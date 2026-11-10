@@ -166,7 +166,7 @@ test.describe('galaxy 升降级设置页 @1024×600 — 内容溢出，CTA 必�
 
   test('MAIN 是滚动容器，真滚轮拨得动，滚到底后开局按钮不被裁', async ({ page }) => {
     await stubLadder(page);
-    await page.goto('/galaxy/play/ai?mode=rated');
+    await page.goto('/play/ai?mode=rated');
 
     // Matched by test id, not by label: the CTA's text is language-dependent and this gate
     // is about geometry, not copy.

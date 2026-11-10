@@ -91,3 +91,27 @@ def test_a_resumed_job_is_not_overdue_for_the_time_it_was_paused(env):
     post(client, auth, "fetch_list", "resume")
     job = next(j for j in client.get("/api/admin/cron/jobs", headers=auth).json()["jobs"] if j["name"] == "fetch_list")
     assert job["health"]["state"] == "ok"
+
+
+@pytest.mark.parametrize("table", [CronJobControl.__table__, CronJobCommand.__table__])
+def test_jobs_api_reports_unavailable_controls_instead_of_unpaused(env, table):
+    client, factory, auth = env
+    table.drop(factory.kw["bind"])
+    response = client.get("/api/admin/cron/jobs", headers=auth)
+    assert response.status_code == 503
+    assert response.json() == {"detail": "cron 数据库暂时不可用"}
+
+
+@pytest.mark.parametrize("last_status", ["failed", "errors"])
+def test_jobs_api_retains_prior_result_when_health_becomes_overdue(env, last_status):
+    client, factory, auth = env
+    with factory() as db:
+        status = db.get(CronJobStatus, "fetch_list")
+        status.last_started_at = datetime.now(timezone.utc) - timedelta(hours=1)
+        status.last_status, status.last_error = last_status, "prior failure detail"
+        db.commit()
+    job = next(
+        j for j in client.get("/api/admin/cron/jobs", headers=auth).json()["jobs"] if j["name"] == "fetch_list"
+    )
+    assert job["health"]["state"] == "overdue"
+    assert (job["last_status"], job["last_error"]) == (last_status, "prior failure detail")

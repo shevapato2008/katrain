@@ -65,6 +65,13 @@ const App = () => <MemoryRouter initialEntries={['/kiosk/play/cross-platform/gol
   <Route path="/kiosk/play/cross-platform/golaxy" element={<Location />} />
 </Routes></MemoryRouter>;
 const open = () => render(<App />);
+it.each([undefined, null, 9, {}])('keeps a usable board when a current player rank is blank or non-label %s', async (rank) => {
+  platformStatus.mockResolvedValue({ platforms: [{ platform: 'golaxy', connected: true }] });
+  platformRoomSnapshot.mockResolvedValue({ ...snapshot, black: { username: '测试黑方', rank }, white: { username: '测试白方', rank: '  ' } });
+  open(); expect(await screen.findByTitle('测试黑方')).toBeInTheDocument();
+  expect(screen.getAllByText('等级未知')).toHaveLength(2);
+  expect(screen.queryByText('尚未定级')).toBeNull();
+});
 const openReadyWithFakeTimers = async () => {
   vi.useFakeTimers();
   const page = open();

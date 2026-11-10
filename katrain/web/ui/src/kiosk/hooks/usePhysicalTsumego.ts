@@ -39,6 +39,9 @@ export function stonesToVisionBoard(stones: Stone[], boardSize: number): number[
 const emptyBoard = (size: number): number[][] =>
   Array.from({ length: size }, () => Array(size).fill(0));
 
+let setupSequence = 0;
+const setupPrefix = Date.now().toString(36);
+
 const STAR_POINTS: Array<[number, number]> = [
   [3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15],
 ];
@@ -47,9 +50,10 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export interface PhysicalTsumegoOptions {
   enabled: boolean;
+  physicalRequested?: boolean; // separates temporary recognition outage from explicit mode off
   visionConnected: boolean; // /ws/vision open — ENABLE must wait for it or SETUP_COMPLETE is lost
   problemKey: string | null; // problem.id — lifecycle restarts on change
-  resyncKey: number; // bumped by Reset — re-runs the clearing→setup lifecycle without a problem change
+  resyncKey: number; // legacy render-driven reset; screen stones must already be reset
   boardSize: number;
   stones: Stone[];
   isSolved: boolean;
@@ -72,7 +76,13 @@ export interface PhysicalTsumegoState {
   stageMatched: number;
   stageTotal: number;
   ledOk: boolean;
-  /** Page reports screen clicks here so the physical board is guided to follow (PRD TR1). */
+  /** Synchronously fence inputs before resetting virtual-board state. */
+  resetToInitial: (board: number[][]) => void;
+  /** Pending convergence survives temporary recognition/readiness loss. */
+  hasPendingReset: () => boolean;
+  /** Screen input gate; try/hint pause applies only to physical recognition. */
+  canAcceptInput: () => boolean;
+  /** Page reports screen clicks so the physical board follows (PRD TR1). */
   onScreenMove: (result: MoveResult | null, preBoard: number[][]) => void;
 }
 
@@ -93,6 +103,15 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   pausedRef.current = showHint || isTryMode;
 
   const runIdRef = useRef(0); // bumps on lifecycle changes → aborts in-flight celebrate
+  const resetIntentRef = useRef<{ key: string | null; board: number[][] } | null>(null);
+  const activeSetupRef = useRef<string | null>(null);
+  const controlQueueRef = useRef(Promise.resolve());
+  const control = useCallback((request: () => Promise<unknown>) => {
+    const generation = runIdRef.current;
+    controlQueueRef.current = controlQueueRef.current.then(async () => {
+      if (generation === runIdRef.current) await request();
+    }).catch(() => {});
+  }, []);
   const lastLedKeyRef = useRef('');
   const processedSeqRef = useRef(-1);
   const prevTryRef = useRef(false); // last-seen isTryMode; drives try-exit edge detection
@@ -174,13 +193,17 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   const execute = useCallback((cmd: Command) => {
     switch (cmd.kind) {
       case 'setupMode':
-        API.visionSetupMode(cmd.board).catch(() => {});
+        {
+          const setupId = `tsumego-${setupPrefix}-${++setupSequence}`;
+          activeSetupRef.current = setupId;
+          control(() => API.visionSetupMode(cmd.board, setupId));
+        }
         break;
       case 'expectedBoard':
-        API.visionExpectedBoard(cmd.board).catch(() => {});
+        control(() => API.visionExpectedBoard(cmd.board));
         break;
       case 'armMoves':
-        API.visionMoveDetection(cmd.armed).catch(() => {});
+        control(() => API.visionMoveDetection(cmd.armed));
         break;
       case 'ledPoints':
         ledPoints(cmd.points);
@@ -201,7 +224,7 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
         optsRef.current.onAdvance();
         break;
     }
-  }, [ledPoints, ledClear, speak, celebrate]);
+  }, [ledPoints, ledClear, speak, celebrate, control]);
 
   const dispatch = useCallback((evt: MachineEvent) => {
     const { state, commands } = reduce(machineRef.current, evt);
@@ -211,42 +234,79 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   }, [execute]);
   dispatchRef.current = dispatch;
 
-  // ---- enable / per-problem lifecycle ---------------------------------------
-  // Wait for the vision WS: arming setup-mode before /ws/vision is registered loses the
-  // (near-instant, on an empty board) SETUP_COMPLETE, wedging the flow at "clear board".
+  // Reset is synchronous: a second physical event in this turn must already see restoring.
+  const resetToInitial = useCallback((board: number[][]) => {
+    if (!(optsRef.current.physicalRequested ?? optsRef.current.enabled)) return;
+    resetIntentRef.current = { key: optsRef.current.problemKey, board };
+    runIdRef.current += 1;
+    activeSetupRef.current = null;
+    prevTryRef.current = false;
+    pausedRef.current = false;
+    if (optsRef.current.enabled && optsRef.current.visionConnected) {
+      control(() => API.visionMonitor(true));
+      control(() => API.visionPause(false));
+      dispatch({ type: 'RESET', board });
+    } else {
+      machineRef.current = { ...initialState, phase: 'restoring', targetBoard: board };
+      setUi(machineRef.current);
+    }
+  }, [control, dispatch]);
+
   useEffect(() => {
+    if (!(opts.physicalRequested ?? enabled) || resetIntentRef.current?.key !== problemKey) {
+      resetIntentRef.current = null;
+    }
+  }, [opts.physicalRequested, enabled, problemKey]);
+
+  const previousResyncRef = useRef(resyncKey);
+  useEffect(() => {
+    const resetting = previousResyncRef.current !== resyncKey;
+    previousResyncRef.current = resyncKey;
+    if (resetting) resetIntentRef.current = { key: problemKey, board: stonesToVisionBoard(stonesRef.current, boardSize) };
     if (!enabled || !visionConnected) return;
     runIdRef.current += 1;
-    API.visionMonitor(true).catch(() => {});
-    dispatch({ type: 'ENABLE', emptyBoard: emptyBoard(boardSize) });
+    control(() => API.visionMonitor(true));
+    const intent = resetIntentRef.current;
+    if (intent?.key === problemKey) dispatch({ type: 'RESET', board: intent.board });
+    else dispatch({ type: 'ENABLE', emptyBoard: emptyBoard(boardSize) });
     return () => {
-      runIdRef.current += 1; // abort celebrate
+      runIdRef.current += 1;
+      activeSetupRef.current = null;
       machineRef.current = initialState;
-      prevTryRef.current = false; // clear stale try-mode edge so re-enable can't fire a stray TRY_EXIT
+      prevTryRef.current = false;
       setUi(initialState);
-      API.visionMoveDetection(false).catch(() => {});
-      API.visionPause(false).catch(() => {});
-      API.visionMonitor(false).catch(() => {});
-      LedAPI.clear().catch(() => {});
+      control(() => API.visionMoveDetection(false));
+      control(() => API.visionPause(false));
+      control(() => API.visionMonitor(false));
+      ledClear();
     };
-    // dispatch/boardSize stable across a problem's life; problemKey drives per-problem
-    // restarts, resyncKey drives Reset-triggered restarts, visionConnected gates the
-    // first arm until the WS can receive events.
+    // Lifecycle intentionally ignores stones: they change with each answer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, visionConnected, problemKey, resyncKey]);
 
   // ---- WS event consumption (seq queue — every event exactly once, in order) --
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !visionConnected) return;
     for (const evt of syncEvents) {
       if (evt.seq <= processedSeqRef.current) continue;
       processedSeqRef.current = evt.seq;
       if (pausedRef.current) continue; // hint/try active: recognition is paused backend-side too
+      if (evt.type === 'setup_progress' || evt.type === 'setup_complete') {
+        if (!activeSetupRef.current || evt.data.setup_id !== activeSetupRef.current) continue;
+      }
       if (evt.type === 'setup_progress') {
         const d = evt.data as { missing?: Array<[number, number]>; extra?: Array<[number, number, number]> };
         dispatch({ type: 'SETUP_PROGRESS', missing: d.missing ?? [], extra: d.extra ?? [] });
       } else if (evt.type === 'setup_complete') {
-        dispatch({ type: 'SETUP_COMPLETE', screenBoard: stonesToVisionBoard(stonesRef.current, boardSize) });
+        const completingReset = machineRef.current.phase === 'restoring';
+        const screenBoard = machineRef.current.phase === 'clearing'
+          ? stonesToVisionBoard(stonesRef.current, boardSize)
+          : machineRef.current.targetBoard ?? stonesToVisionBoard(stonesRef.current, boardSize);
+        dispatch({ type: 'SETUP_COMPLETE', screenBoard });
+        if (machineRef.current.phase === 'ready') {
+          activeSetupRef.current = null;
+          if (completingReset) resetIntentRef.current = null;
+        }
       } else if (evt.type === 'move_confirmed' && machineRef.current.phase === 'ready') {
         const d = evt.data as { row: number; col: number; color: number };
         const preBoard = stonesToVisionBoard(stonesRef.current, boardSize);
@@ -255,7 +315,7 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
         dispatch({ type: 'MOVE_APPLIED', result, preBoard });
       }
     }
-  }, [enabled, syncEvents, boardSize, dispatch]);
+  }, [enabled, visionConnected, syncEvents, boardSize, dispatch]);
 
   // ---- screen settle watcher (replying phase) --------------------------------
   useEffect(() => {
@@ -282,13 +342,13 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
   useEffect(() => {
     if (!enabled) return;
     const paused = showHint || isTryMode;
-    API.visionPause(paused).catch(() => {});
+    control(() => API.visionPause(paused));
     ledClear(); // wipe convergence frame on pause; wipe hint LED on unpause
     if (paused && showHint && hintCoords) {
       ledPoints([{ row: boardSize - 1 - hintCoords[1], col: hintCoords[0], color: 'hint' }]);
     }
     // On unpause the next SETUP_PROGRESS frame re-lights convergence LEDs; 'ready' has no LEDs.
-  }, [enabled, showHint, isTryMode, hintCoords, boardSize, ledPoints, ledClear]);
+  }, [enabled, showHint, isTryMode, hintCoords, boardSize, ledPoints, ledClear, control]);
 
   // ---- try-mode exit → restore/verify physical board --------------------------
   useEffect(() => {
@@ -317,5 +377,9 @@ export function usePhysicalTsumego(opts: PhysicalTsumegoOptions): PhysicalTsumeg
     stageTotal: ui.stageTotal,
     ledOk,
     onScreenMove,
+    resetToInitial,
+    hasPendingReset: () => Boolean((optsRef.current.physicalRequested ?? optsRef.current.enabled)
+      && resetIntentRef.current?.key === optsRef.current.problemKey),
+    canAcceptInput: () => optsRef.current.enabled && optsRef.current.visionConnected && machineRef.current.phase === 'ready',
   };
 }

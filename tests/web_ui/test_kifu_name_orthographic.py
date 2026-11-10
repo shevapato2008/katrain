@@ -306,8 +306,7 @@ def test_catalog_chinese_default_import_read_and_undo(monkeypatch, lang):
         name = db.query(KifuPlayerName).filter_by(player_id=17, lang=lang).one()
         assert name.display_name == bundle["candidates"][0]["display_name"]
         assert name.decision_kind == "generated"
-        page = asyncio.run(kifu.list_kifu_albums(_request(), q=name.display_name, page=1, page_size=20,
-                                                lang=lang, db=db))
+        page = kifu.read_album_page(db, q=name.display_name, page=1, page_size=20, lang=lang)
         assert page.total == 1 and page.items[0].display_player_black == name.display_name
     assert coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"]["generated"] == 1
     undo_batch(engine, applied["batch_id"])
@@ -416,7 +415,7 @@ def test_catalog_chinese_default_reader_allows_pages_but_rechecks_identity(monke
     with Session(engine) as db:
         assert not verified_source_live(db.connection(), anchors[0])  # dry-run/apply still require full row
         assert verified_source_live(db.connection(), anchors[0], allow_authoritative_pages_drift=True)
-        page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+        page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang=lang)
         assert page.total == 1 and page.items[0].display_player_black == output
         player = db.get(KifuPlayer, 17)
         if identity_drift == "canonical_name":
@@ -447,7 +446,7 @@ def test_catalog_chinese_default_creation_ledger_rejects_masked_target(monkeypat
         evidence.research_payload = payload
         db.commit()
     with Session(engine) as db:
-        page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+        page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang=lang)
         assert all(item.display_player_black != output for item in page.items)
     decisions = coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"]
     assert decisions.get("generated", 0) == 0 and decisions.get("conventional", 0) == 0
@@ -486,8 +485,7 @@ def test_verified_chinese_display_replaces_exact_legacy_review_and_undoes(monkey
             change = db.query(KifuNameChange).filter_by(batch_id=applied["batch_id"],
                                                        target_table="kifu_player_names", target_row_id=before["id"]).one()
             assert change.before_image == before
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="加納一夫", page=1, page_size=20,
-                                                     lang="tw", db=db))
+            page = kifu.read_album_page(db, q="加納一夫", page=1, page_size=20, lang="tw")
             assert page.total == 1 and page.items[0].display_player_black == "加納一夫"
         undone = undo_batch(engine, applied["batch_id"])
         assert undone["status"] == "undone"
@@ -568,7 +566,7 @@ def test_verified_chinese_display_import_and_readback(monkeypatch, original, out
         assert dry_run_bundle(engine, bundle, registry(), inventory, anchors)["write_ready"]
         assert apply_bundle(engine, bundle, registry(), inventory, anchors)["status"] == "applied"
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang="tw")
             assert page.total == 1 and page.items[0].display_player_black == output
             assert db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").one().decision_kind == "generated"
     finally:
@@ -688,7 +686,7 @@ def test_verified_chinese_display_reader_rejects_damaged_proof(monkeypatch, drif
                 evidence.research_payload = payload
             db.commit()
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="加納一夫", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="加納一夫", page=1, page_size=20, lang="tw")
             assert page.total == 0
         assert coverage_report(engine, inventory, languages=("tw",))["languages"]["tw"]["by_decision"].get("generated", 0) == 0
     finally:
@@ -715,7 +713,7 @@ def test_verified_japanese_display_import_read_and_coverage(monkeypatch, lang, o
         assert dry_run_bundle(engine, bundle, registry(), inventory, anchors)["write_ready"]
         assert apply_bundle(engine, bundle, registry(), inventory, anchors)["status"] == "applied"
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+            page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang=lang)
             assert page.total == 1 and page.items[0].display_player_black == output
             assert db.query(KifuPlayerName).filter_by(player_id=17, lang=lang).one().decision_kind == "generated"
             source = db.query(KifuPlayerName).filter_by(player_id=17, lang="jp").one()
@@ -921,7 +919,7 @@ def test_verified_japanese_display_reader_rejects_damaged_proof(monkeypatch, lan
                 evidence.research_payload = payload
             db.commit()
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+            page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang=lang)
             if lang == "cn":
                 # The qualified JP source remains searchable by the same exact spelling.
                 assert all(item.display_player_black != output for item in page.items)
@@ -1026,7 +1024,7 @@ def test_import_display_search_coverage_and_tampering(monkeypatch, lang, drift):
         assert applied["status"] == "applied"
         assert apply_bundle(engine, bundle, registry(), inventory, anchors)["status"] == "already_applied"
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+            page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang=lang)
             assert page.total == 1 and page.items[0].display_player_black == output
         assert coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"]["generated"] == 1
         with Session(engine) as db:
@@ -1066,7 +1064,7 @@ def test_import_display_search_coverage_and_tampering(monkeypatch, lang, drift):
             evidence.research_payload = payload
             db.commit()
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+            page = kifu.read_album_page(db, q=output, page=1, page_size=20, lang=lang)
             assert page.total == 0
         assert (
             coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"].get("generated", 0)
@@ -1196,7 +1194,7 @@ def test_raw_player_orthographic_name_applies_only_to_frozen_scope(monkeypatch):
         assert report["write_ready"], report
         apply_bundle(engine, bundle, registry(), inventory, anchors)
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert page.total == 1 and page.items[0].display_player_black == "劉元赫"
             db.add(
                 KifuAlbum(
@@ -1207,7 +1205,7 @@ def test_raw_player_orthographic_name_applies_only_to_frozen_scope(monkeypatch):
                 )
             )
             db.commit()
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert page.total == 1
             assert db.query(KifuAlbum).filter(KifuAlbum.black_player_id.isnot(None)).count() == 0
     finally:
@@ -1230,14 +1228,14 @@ def test_list_reuses_orthographic_batch_but_rechecks_source(monkeypatch):
                 counts["batch"] += 1
             return original_batch(batch)
 
-        def count_source(conn, anchor):
+        def count_source(conn, anchor, **kwargs):
             counts["source"] += 1
-            return original_source(conn, anchor)
+            return original_source(conn, anchor, **kwargs)
 
         monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", count_batch)
         monkeypatch.setattr(name_orthographic, "verified_source_live", count_source)
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert page.total == 1 and page.items[0].display_player_black == "劉元赫"
         assert counts == {"batch": 1, "source": 2}
     finally:
@@ -1260,14 +1258,14 @@ def test_non_strict_list_reuses_orthographic_batch_in_legacy_exact_search(monkey
                 counts["batch"] += 1
             return original(batch)
 
-        def count_source(conn, anchor):
+        def count_source(conn, anchor, **kwargs):
             counts["source"] += 1
-            return original_source(conn, anchor)
+            return original_source(conn, anchor, **kwargs)
 
         monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", count_batch)
         monkeypatch.setattr(name_orthographic, "verified_source_live", count_source)
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="加納一夫", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="加納一夫", page=1, page_size=20, lang="tw")
             assert page.total == 1 and page.items[0].display_player_black == "加納一夫"
         assert counts == {"batch": 1, "source": 3}
     finally:
@@ -1304,10 +1302,10 @@ def test_list_refreshes_orthographic_batch_within_and_between_requests(monkeypat
         monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", revoke_after_first_validation)
         with Session(engine) as db:
             held_batch = db.get(KifuNameBatch, applied["batch_id"])
-            first = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            first = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert first.total == 1
             assert first.items[0].display_player_black != "劉元赫"
-            second = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            second = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert getattr(held_batch, drift) == changed
             assert second.total == 0
     finally:
@@ -1321,7 +1319,7 @@ def test_list_refreshes_orthographic_batch_on_new_request_with_held_orm(monkeypa
         applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
         with Session(engine) as db:
             held_batch = db.get(KifuNameBatch, applied["batch_id"])
-            first = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            first = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert first.total == 1 and first.items[0].display_player_black == "劉元赫"
             assert held_batch.status == "applied"
 
@@ -1330,7 +1328,7 @@ def test_list_refreshes_orthographic_batch_on_new_request_with_held_orm(monkeypa
                 writer.commit()
             assert held_batch.status == "applied"
 
-            second = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            second = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert second.total == 0
             assert held_batch.status == "undone"
     finally:
@@ -1355,7 +1353,7 @@ def test_list_preserves_pending_orthographic_batch_change(monkeypatch):
         monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", change_after_first_validation)
         with Session(engine, autoflush=False) as db:
             held_batch = db.get(KifuNameBatch, applied["batch_id"])
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="劉元赫", page=1, page_size=20, lang="tw")
             assert page.total == 1
             assert page.items[0].display_player_black != "劉元赫"
             assert held_batch.status == "undone" and held_batch in db.dirty
@@ -1654,7 +1652,7 @@ def test_official_hanja_exact_retention_import_and_reader(monkeypatch):
         applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
         assert applied["status"] == "applied"
         with Session(engine) as db:
-            page = asyncio.run(kifu.list_kifu_albums(_request(), q="李昌植", page=1, page_size=20, lang="tw", db=db))
+            page = kifu.read_album_page(db, q="李昌植", page=1, page_size=20, lang="tw")
             assert page.total == 1 and page.items[0].display_player_black == "李昌植"
             evidence = db.query(KifuNameResearchEvidence).one().research_payload
             assert evidence["candidate"]["reference_kind"] == "official_hanja_preserved"

@@ -1,0 +1,60 @@
+{
+  "base_commit": "e23ac4105ad6ec770c4ebedf03e389b20768ee6c",
+  "decision": "APPROVE",
+  "files_sha256": {
+    "katrain/cron/jobs/kifu_ingest.py": "654667a0434619decce19cacf26636f97a0c5075d16a794992ecccf3a278289c",
+    "katrain/kifu_ingest/orchestration.py": "856925207cbec38a9ab981cc3f4e3eb947957a3f10856e4acb7da3c50535356a",
+    "katrain/kifu_ingest/staging.py": "6f5c53b28394321b90e67d55e2be2efdad57e55fca7ab3c0d18ea0f40ed61182",
+    "tests/cron/test_kifu_ingest.py": "05914ec132cb25cd53dca1bcd1817b0b7e3eb7eb8060b57e5b9036a66c105f87",
+    "tests/test_kifu_incremental_decision_checkpoint.py": "6fb551b7ccfdd71427e4feac863774df371ad6b615f6ceb047ac2bb534ea009b",
+    "tests/test_kifu_incremental_decision_resume.py": "86189253f94a20ef053f42102c59c6f8b6566768609fd51ebf5759e98f89e0c1"
+  },
+  "findings": [
+    {
+      "file": "katrain/kifu_ingest/staging.py",
+      "result": "Complete actual decision, including original review/producer metadata and source evidence, is retained with whole-decision and exact-request hashes. Finite members/SGF hashes are validated, not rewritten. Current template context/source snapshots participate in the request key. Reads reject corrupt, nonregular, symlinked or oversized records; writes use the existing atomic file pattern, private permissions and directory fsync."
+    },
+    {
+      "file": "katrain/kifu_ingest/orchestration.py",
+      "result": "Fresh identity/template/scope gates still run. Cache lookup precedes Wiki refresh and model work; hits retain original approved sources and identities, revalidate native decision/hash and current candidate/template rules. Actual complete initial or narrowed decisions are saved before later paid operations. Budget/transport errors still defer; no review is copied onto changed scope and no partial manifest is emitted."
+    },
+    {
+      "file": "katrain/cron/jobs/kifu_ingest.py",
+      "result": "Stage is wired as the optional decision store. Already-qualified games with empty required-name sets are grouped before paid games, before any new review has signed a scope. This does not split reviewed decisions or increase name/token/source budgets. Native publication, receiver protocol and durable paid ledger are unchanged."
+    },
+    {
+      "file": "tests/test_kifu_incremental_decision_resume.py",
+      "result": "Focused regression cases cover successful-review persistence before a later budget error, exact restart reuse without repaying that name, finite-scope/template change requiring a fresh review, and persistence of a completed narrowed review before a later narrowing budget error."
+    },
+    {
+      "file": "tests/test_kifu_incremental_decision_checkpoint.py",
+      "result": "Cases cover restart identity preservation, changed intent misses, invalid review/membership rejection, corruption without overwrite, bounded private file handling, interrupted atomic replacement and fsync."
+    },
+    {
+      "file": "tests/cron/test_kifu_ingest.py",
+      "result": "New focused case proves a fully reusable game is grouped before a game needing a paid name review."
+    }
+  ],
+  "format": "kifu-name-checkpoint-code-review-v1",
+  "limits": [
+    "Producer-only incomplete calls are not approved checkpoints.",
+    "Previously lost run62158 outputs cannot be reconstructed from usage metadata by this patch.",
+    "Approval is for the pinned code, not a claim that a new deployed run or paid recovery has succeeded."
+  ],
+  "must_fix": [],
+  "reviewed_at": "2026-10-20T07:14:08.067141+00:00",
+  "reviewer": {
+    "agent_id": "/root/kifu_backfill_names_astra_review",
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max"
+  },
+  "scope": "Three runtime files and three scoped test files only: preserve completed finite name decisions across budget/service deferral, and group already-qualified games before paid preparation.",
+  "tracked_diff_sha256": "fd244f4194153902bfa938be1ff48878e9a00f16c417aadd1461c256af4f1315",
+  "verification": {
+    "additional_tests_run": false,
+    "independent_git_diff_check": "PASS",
+    "independent_python_ast": "PASS, all six scoped files",
+    "product_or_cloud_or_database_or_model_actions": false,
+    "reported_focused_suite": "117 passed in 1.28s, supplied by root; not rerun by this reviewer"
+  }
+}

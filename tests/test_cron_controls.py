@@ -104,6 +104,118 @@ def test_a_missing_control_table_does_not_break_the_poller():
     assert poller.poll() is False
 
 
+def test_a_failed_poll_preserves_the_last_known_pause_snapshot(factory):
+    recorder = setup(factory)
+    with factory() as db:
+        db.add(
+            CronJobControlDB(
+                job_name="fetch_list", paused=True, reason="上游维护中",
+                changed_at=datetime.now(timezone.utc), changed_by="admin:fan",
+            )
+        )
+        db.commit()
+    poller = ControlPoller(factory, recorder, FakeScheduler(["fetch_list"]))
+    assert poller.poll(False)
+
+    def unavailable():
+        raise RuntimeError("controls unavailable")
+
+    poller.session_factory = unavailable
+    assert poller.poll(False) is False
+    assert recorder.paused == {"fetch_list": "上游维护中"}
+
+
+@pytest.mark.parametrize("failures", [6, 8])
+def test_startup_waits_for_controls_then_honours_the_persisted_pause(factory, monkeypatch, failures):
+    from katrain.cron import controls
+    from katrain.cron.scheduler import CronScheduler
+
+    class SchedulerStarted(Exception):
+        pass
+
+    async def inline(func, *args):
+        return func(*args)
+
+    async def no_sleep(seconds):
+        pass
+
+    async def scenario():
+        scheduler = CronScheduler()
+        scheduler._recorder = RunRecorder(factory)
+        attempts = 0
+        with factory() as db:
+            db.add(
+                CronJobControlDB(
+                    job_name="fetch_list", paused=True, reason="上游维护中",
+                    changed_at=datetime.now(timezone.utc), changed_by="admin:fan",
+                )
+            )
+            db.commit()
+
+        def recovering_factory():
+            nonlocal attempts
+            attempts += 1
+            if attempts <= failures:
+                raise RuntimeError("controls unavailable")
+            return factory()
+
+        def started():
+            assert attempts == failures + 1  # interval execution must wait until pause state is known
+            raise SchedulerStarted
+
+        monkeypatch.setattr(
+            controls, "ControlPoller", lambda _, recorder, aps: ControlPoller(recovering_factory, recorder, aps)
+        )
+        monkeypatch.setattr(controls, "POLL_S", 0)
+        monkeypatch.setattr(asyncio, "to_thread", inline)
+        monkeypatch.setattr(asyncio, "sleep", no_sleep)
+        monkeypatch.setattr(scheduler._scheduler, "start", started)
+        with pytest.raises(SchedulerStarted):
+            await scheduler.start()
+        assert scheduler._recorder.paused == {"fetch_list": "上游维护中"}
+        paused, unpaused = Job("fetch_list"), Job("poll_moves")
+        scheduler._schedule(paused, 60)
+        scheduler._schedule(unpaused, 3)
+        for job in scheduler._scheduler.get_jobs():
+            await job.func(*job.args)
+        assert paused.calls == 0 and unpaused.calls == 1
+
+    asyncio.run(scenario())
+
+
+def test_shutdown_while_waiting_for_initial_controls_does_not_start_scheduler(factory, monkeypatch):
+    from katrain.cron import controls
+    from katrain.cron.scheduler import CronScheduler
+
+    async def inline(func, *args):
+        return func(*args)
+
+    async def scenario():
+        scheduler = CronScheduler()
+        scheduler._recorder = RunRecorder(factory)
+        entered, started = asyncio.Event(), []
+
+        def unavailable(self, commands=True):
+            entered.set()
+            return False
+
+        monkeypatch.setattr(controls.ControlPoller, "poll", unavailable)
+        monkeypatch.setattr(asyncio, "to_thread", inline)
+        monkeypatch.setattr(scheduler._scheduler, "start", lambda: started.append(True))
+        task = asyncio.create_task(scheduler.start())
+        try:
+            await asyncio.wait_for(entered.wait(), timeout=1)
+            await scheduler.shutdown()
+            await asyncio.wait_for(task, timeout=1)
+            assert started == []
+        finally:
+            if not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+
+    asyncio.run(scenario())
+
+
 def test_web_and_cron_map_identical_control_tables():
     for web, cron in ((models_db.CronJobControl, CronJobControlDB), (models_db.CronJobCommand, CronJobCommandDB)):
         shape = lambda m: {c.name: (str(c.type), c.nullable, c.primary_key) for c in m.__table__.columns}  # noqa: E731

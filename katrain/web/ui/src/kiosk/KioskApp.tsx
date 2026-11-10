@@ -15,6 +15,7 @@
 // 引在 KioskApp.tsx 而不是 main.tsx:AppRouter 是 lazy(() => import('./kiosk/KioskApp')),
 // 引在这里 CSS 就落进 kiosk 分块,galaxy 不受影响;kiosk-2d 构建里 galaxy 整条被 DCE。
 import '../kiosk-shell/fonts.css';
+import '../kiosk-shell/brand-font.css';
 import '../kiosk-shell/tokens.css';
 import '../kiosk-shell/go-tokens.css';
 import '../kiosk-shell/seclabel.css';
@@ -22,14 +23,24 @@ import '../kiosk-shell/icon.css';
 import '../kiosk-shell/card.css';
 import '../kiosk-shell/status.css';
 import '../kiosk-shell/go-screens.css';
+import '../kiosk-shell/shell-redesign.css';
+import '../kiosk-shell/play-redesign.css';
+import '../kiosk-shell/setup-redesign.css';
+import '../kiosk-shell/local-setup-redesign.css';
+import '../kiosk-shell/game-redesign.css';
+import '../kiosk-shell/dialog-typography.css';
 
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
+import { KioskTypographyProvider, useKioskTypography } from './typography/KioskTypographyContext';
+import { installKioskTextSizing } from './typography/applyTextSizing';
 import { accessAllowed, kioskAccessPolicy } from '../components/auth/accessPolicy';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
+import { isStrictBoxKiosk } from './shell/boxUrls';
+import { kioskText } from './appearance/messages';
+import { DEVICE_UI_FONT, useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { VisionProvider } from './context/VisionContext';
@@ -59,6 +70,7 @@ const BaipuSessionRoute = lazy(() => import('./pages/BaipuSessionRoute'));
 const LobbyPage = lazy(() => import('./pages/LobbyPage'));
 const PvpSpectatorPage = lazy(() => import('./pages/PvpSpectatorPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const MembershipPage = lazy(() => import('./pages/membership/MembershipPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const ReportDetailPage = lazy(() => import('./pages/ReportDetailPage'));
 const VisionSetupPage = lazy(() => import('./pages/VisionSetupPage'));
@@ -71,6 +83,9 @@ const PlatformEngineSetupPage = lazy(() => import('./pages/PlatformEngineSetupPa
 const TutorialCategoriesPage = lazy(() => import('./pages/TutorialCategoriesPage'));
 const TutorialBooksPage = lazy(() => import('./pages/TutorialBooksPage'));
 const TutorialSectionPage = lazy(() => import('./pages/TutorialSectionPage'));
+const OgsCourseHomePage = lazy(() => import('./pages/OgsCourseHomePage'));
+const OgsCourseChapterPage = lazy(() => import('./pages/OgsCourseChapterPage'));
+const OgsCourseExercisePage = lazy(() => import('./pages/OgsCourseExercisePage'));
 
 const LegacyPlatformLobbyRedirect = () => {
   const { search } = useLocation();
@@ -184,14 +199,16 @@ export const KioskRoutes = () => {
           {/* 成长(屏 22)。**Dock 第五项**,一级页 ⇒ 路径必须与 `DOCK_TABS` 里那条**全等**
               (`dockLevelOf` 是全等比较,差一个尾斜杠就掉成 L2、中间区从 434 变 516)。 */}
           <Route path="growth" element={<GrowthPage />} />
-          {/* 课程(只读镜像)。`tutorial/book/:bookId` 2026-08-24 连同 `TutorialBookDetailPage`
-              一起删了 —— 选书和目录合成了 `tutorial/:category?book=<id>` 一屏。
-              没留重定向:kiosk 是全屏 chromium,没有地址栏也没有书签。 */}
-          <Route path="tutorial" element={<TutorialCategoriesPage />} />
+          {/* OGS 互动课是课程入口；原有只读教材保留在 /library 与分类深链。 */}
+          <Route path="tutorial" element={<OgsCourseHomePage />} />
+          <Route path="tutorial/chapter/:chapterId" element={<OgsCourseChapterPage />} />
+          <Route path="tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} />
+          <Route path="tutorial/library" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="membership" element={<MembershipPage />} />
         </Route>
 
         {/* 兜底在守卫**外面**:留在里面的话,游客输一个不存在的路径连它都匹配不到
@@ -202,14 +219,21 @@ export const KioskRoutes = () => {
   );
 };
 
-const KioskApp = () => {
-  const { setLanguage } = useSettings();
+function KioskTypographyGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useKioskTypography();
   useEffect(() => {
-    // The kiosk is a Chinese-market terminal: default to Simplified Chinese
-    // unless the user has explicitly picked a language before (persisted in
-    // localStorage by useSettings). Runs once on mount; a later user choice
-    // in Settings wins because it writes the same localStorage key.
-    if (!localStorage.getItem('katrain_language')) {
+    if (!loading) return installKioskTextSizing();
+  }, [loading]);
+  if (loading) return <div data-testid="kiosk-typography-loading" style={{ position: 'fixed', inset: 0, background: '#0f1416' }} />;
+  return children;
+}
+
+const KioskApp = () => {
+  const { language, setLanguage, deviceAppearance, appearanceLoading, appearanceError, refreshAppearance } = useSettings();
+  useEffect(() => {
+    // Non-strict kiosks retain their local Chinese-market default. Strict Box
+    // startup waits for the wizard authority below and never persists a choice.
+    if (!isStrictBoxKiosk && !localStorage.getItem('katrain_language')) {
       setLanguage('cn');
     }
   }, [setLanguage]);
@@ -219,22 +243,33 @@ const KioskApp = () => {
     document.title = '智星盒 StellaBox';
   }, []);
 
+  if (isStrictBoxKiosk && !deviceAppearance) return <main className="kiosk-appearance-state" role={appearanceError ? 'alert' : 'status'}>
+    <p>{kioskText(language, appearanceError ? 'settingsError' : 'settingsLoading')}</p>
+    {appearanceError && <button onClick={refreshAppearance}>{kioskText(language, 'retry')}</button>}
+  </main>;
   return (
-    <ThemeProvider theme={kioskTheme}>
-      <CssBaseline />
-      <VisionProvider>
-        <GeometryProvider>
-          <TsumegoProgressProvider>
-            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
-            <KioskViewport>
-              <EngineReadinessProvider>
-                <KioskRoutes />
-              </EngineReadinessProvider>
-            </KioskViewport>
-          </TsumegoProgressProvider>
-        </GeometryProvider>
-      </VisionProvider>
-    </ThemeProvider>
+    <KioskTypographyProvider language={language} deviceFont={isStrictBoxKiosk && deviceAppearance ? DEVICE_UI_FONT[deviceAppearance.font] : undefined}>
+      <ThemeProvider theme={kioskTheme}>
+        <CssBaseline />
+        {isStrictBoxKiosk && appearanceError && <aside className="kiosk-appearance-refresh" role="alert">
+          {kioskText(language, 'settingsError')} <button disabled={appearanceLoading} onClick={refreshAppearance}>{kioskText(language, 'retry')}</button>
+        </aside>}
+        <KioskTypographyGate>
+          <VisionProvider>
+            <GeometryProvider>
+              <TsumegoProgressProvider>
+                {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+                <KioskViewport>
+                  <EngineReadinessProvider>
+                    <KioskRoutes />
+                  </EngineReadinessProvider>
+                </KioskViewport>
+              </TsumegoProgressProvider>
+            </GeometryProvider>
+          </VisionProvider>
+        </KioskTypographyGate>
+      </ThemeProvider>
+    </KioskTypographyProvider>
   );
 };
 

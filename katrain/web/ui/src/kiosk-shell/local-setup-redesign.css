@@ -1,0 +1,99 @@
+/* Approved setup screens: preserve the 516 px board and 460 px settings rail. */
+.local-setup-redesign .kiosk-rail[data-su] { gap: 4px; }
+.local-setup-redesign .kiosk-pagebar { height: 52px; gap: 10px; }
+.local-setup-redesign .kiosk-pagebar__back {
+  height: 48px; min-width: 140px; justify-content: center; padding: 0 9px;
+  border-color: #3c5949; border-radius: 17px; background-color: #1b2924;
+  font-family: var(--font-serif); font-size: 22px; font-weight: 400; white-space: nowrap;
+}
+.local-setup-redesign .kiosk-pagebar__back svg { width: 24px; height: 24px; }
+.local-setup-redesign .kiosk-pagebar__title {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  font-size: 28px; font-weight: 600; line-height: 1.05; white-space: nowrap;
+  overflow: visible;
+}
+.local-setup-redesign .kiosk-pagebar__sub {
+  margin: 0; font-size: 18px; font-weight: 400; font-style: normal; color: #a5c4ae;
+}
+.local-setup-redesign .setgrp-scroll { height: auto; }
+.local-setup-redesign .setgrp-scroll .kiosk-side__scroll { gap: 4px; padding-right: 0; }
+.local-setup-redesign .kiosk-rail[data-su] .setgrp + .setgrp { margin-top: 0; }
+.local-setup-redesign .kiosk-rail[data-su] .kiosk-seclabel { height: 44px; margin: 0; gap: 0; }
+.local-setup-redesign .kiosk-seclabel h2 {
+  color: #dfece1; font-family: var(--font-serif); font-size: 18px;
+  font-weight: 400; letter-spacing: 0; line-height: 1;
+}
+.local-setup-redesign .kiosk-seclabel .rule { background: none; }
+.local-setup-info {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  padding: 0; border: 0; border-radius: 50%; background-color: transparent; color: #8cdba6; cursor: pointer;
+}
+.local-setup-info svg { display: block; width: 27px; height: 27px; }
+.local-setup-redesign .su-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.local-setup-redesign .su-cell,
+.local-setup-redesign .su-out {
+  height: 58px; min-width: 0; padding: 6px 29px 6px 10px; gap: 3px;
+  border: 1px solid #4e775c; border-radius: 17px; background-color: #203529;
+  font-family: var(--font-serif); color: #e9f2e9;
+}
+.local-setup-redesign .su-cell__k,
+.local-setup-redesign .su-out__k { font-size: 18px; color: #a9c1af; letter-spacing: 0; line-height: 1; }
+.local-setup-redesign .su-cell__v,
+.local-setup-redesign .su-out__v {
+  display: flex; align-items: center; min-width: 0; gap: 4px; font-family: var(--font-serif);
+  font-size: 22px; line-height: 1.1; font-weight: 500; color: #e9f2e9;
+}
+.local-setup-redesign .su-cell__c { color: #b3d8bd; }
+.local-setup-redesign .su-cell__c,
+.local-setup-redesign .su-cell__c svg,
+.local-setup-redesign .su-cell__c .kiosk-icon { width: 16px; height: 16px; }
+.local-setup-redesign .su-cell__c { margin-top: -8px; }
+.local-setup-redesign .su-cell--fixed,
+.local-setup-redesign .su-out:not(.su-out--pick) {
+  border: 1px dashed #3a5848; border-radius: 10px; padding-right: 10px;
+  background: #17231f; box-shadow: none; cursor: default;
+}
+.local-setup-redesign .su-out { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; margin: 0; }
+.local-setup-redesign .su-out__n { display: none; }
+.local-setup-redesign .local-setup-terms-row { margin-top: 5px; }
+.local-setup-redesign .local-setup-seat-row .su-cell { height: 74px; }
+.local-setup-redesign [data-testid="setup-clock"] .su-cell__v { display: block; white-space: normal; overflow-wrap: anywhere; font-size: 20px; line-height: 1.05; }
+.local-setup-redesign .kiosk-primary-action {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  height: 48px; min-height: 48px; flex: none; margin-top: 6px; padding: 0 12px;
+  border: 1px solid #59bd81; border-radius: 17px; background-color: #58b77e;
+  font-family: var(--font-serif); font-size: 22px; font-weight: 400; color: #10241a;
+}
+.local-setup-redesign .kiosk-primary-action svg { width: 24px; height: 24px; }
+.local-setup-redesign :is(button.su-cell, .su-out--pick, .kiosk-primary-action, .kiosk-pagebar__back, .local-setup-info) {
+  background-image: radial-gradient(ellipse 90% 70% at 50% -8%, #ffffff29, transparent 75%), linear-gradient(180deg, transparent 57%, #00000016);
+  box-shadow: inset 0 1px 0 #ffffff38, inset 0 -2px 2px #0004, 0 3px 0 #102019, 0 6px 10px #0007;
+  translate: 0 0; transition: translate 130ms ease, box-shadow 130ms ease; touch-action: manipulation;
+}
+.local-setup-redesign :is(button.su-cell, .su-out--pick, .kiosk-primary-action, .kiosk-pagebar__back, .local-setup-info):active:not(:disabled) {
+  translate: 0 3px; box-shadow: inset 0 4px 9px #0008, inset 0 1px 0 #ffffff14, 0 1px 2px #0006;
+}
+.local-setup-redesign :is(button.su-cell, .kiosk-primary-action):disabled { background-image: none; box-shadow: none; }
+.local-setup-redesign button:focus-visible { outline: 2px solid #a9efbd; outline-offset: 2px; }
+.local-setup-redesign .su-pop { max-width: calc(100% - 4px); max-height: calc(100% - 8px); overflow-y: auto; box-sizing: border-box; }
+.local-setup-redesign .su-pop__i { font-family: var(--font-serif); font-size: 20px; }
+.local-setup-help .MuiDialog-paper { border: 1px solid #52785e; border-radius: 17px; background: #1b2c22; color: #edf2ec; }
+.local-setup-help :is(.MuiDialogTitle-root, .MuiDialogContent-root, .MuiButton-root) { font-family: var(--font-serif); }
+.local-setup-help .MuiDialogContent-root { font-size: 20px; line-height: 1.5; }
+.local-setup-help .MuiDialogContent-root p { margin: 0 0 14px; }
+.local-setup-help .MuiButton-root { min-width: 100px; min-height: 44px; font-size: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  .local-setup-redesign :is(button.su-cell, .su-out--pick, .kiosk-primary-action, .kiosk-pagebar__back, .local-setup-info) { transition: none; }
+}
+
+.local-setup-redesign .su-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.local-setup-redesign .su-out { margin-top: 0; }
+.local-setup-redesign .su-cell--input { padding-right: 10px; border-color: #3a5848; border-radius: 10px; background: #1d2b25; box-shadow: none; }
+.local-setup-redesign .su-nameinput { width: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: #edf2ec; }
+.local-setup-redesign .su-nameinput::placeholder { color: #a7bdac; }
+.local-setup-redesign .su-cell--input:focus-within { outline: 2px solid #a9efbd; outline-offset: 2px; }
+.local-setup-redesign .su-cell__k .disc { display: none; }
+.local-setup-redesign .su-hint:empty { display: none; }
+.local-setup-redesign .su-hint { margin: 6px 0 0; font-size: 16px; line-height: 1.25; }
+.local-setup-help .setnote { font-size: inherit; line-height: inherit; }
+.local-setup-redesign .su-cell[aria-expanded="true"] .su-cell__c { transform: rotate(180deg); }

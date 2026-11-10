@@ -263,13 +263,22 @@ export default function ReportDetailPage() {
 
   const handleRetryReport = useCallback(async () => {
     const id = Number(taskId);
-    if (!isAuthenticated || !Number.isSafeInteger(id) || id <= 0) return;
+    if (!isAuthenticated || loading || retrying || !task || task.id !== id
+      || !Number.isSafeInteger(id) || id <= 0
+      || (task.status !== 'completed' && task.status !== 'failed')) return;
     const requestIdentity = reportIdentity;
     setRetryingIdentity(requestIdentity);
     setRetryFailure(null);
     try {
       await refresh();
       if (identityRef.current !== requestIdentity) return;
+      if (task.status === 'completed') {
+        const nextTask = await ReportsAPI.create(token, {
+          user_game_id: task.user_game_id, report_type: task.report_type, force: true,
+        });
+        if (identityRef.current === requestIdentity) navigate(`/kiosk/report/${nextTask.id}`);
+        return;
+      }
       await ReportsAPI.retry(token, id);
       if (identityRef.current !== requestIdentity) return;
       await refresh();
@@ -288,13 +297,13 @@ export default function ReportDetailPage() {
     } finally {
       if (identityRef.current === requestIdentity) setRetryingIdentity(null);
     }
-  }, [isAuthenticated, refresh, reportIdentity, t, taskId, token]);
+  }, [isAuthenticated, loading, navigate, refresh, reportIdentity, retrying, t, task, taskId, token]);
 
   const shell = (body: React.ReactNode) => (
     <div className="kiosk-rail" data-testid="report-detail-shell">
       <KioskPagebar
         testId="report-detail-pagebar"
-        backLabel={t('review:back_review', '复盘')}
+        backLabel={t('review:back_review_full', '返回复盘')}
         onBack={() => navigate(BACK_PATH)}
         title={t('report:my_reports', '复盘')}
       />
@@ -403,7 +412,7 @@ export default function ReportDetailPage() {
         players={[game.player_black || t('review:black', '黑'), game.player_white || t('review:white', '白')]}
         pagebar={(<KioskPagebar
           testId="report-detail-pagebar"
-          backLabel={t('review:back_review', '复盘')}
+          backLabel={t('review:back_review_full', '返回复盘')}
           onBack={() => navigate(BACK_PATH)}
           title={title}
           sub={sub}
@@ -430,8 +439,8 @@ export default function ReportDetailPage() {
           [t('review:white', '白'), [game.player_white, game.white_rank].filter(Boolean).join(' · ')],
           [t('report:event', '赛事'), [game.event, game.round_name].filter(Boolean).join(' · ')],
           [t('report:date', '日期'), game.game_date || game.created_at],
-          [t('report:result', '结果'), game.result],
-          [t('report:rules', '规则'), game.rules],
+          [t('report:result', '结果'), outcomeLine(game, null, t)],
+          [t('report:rules', '规则'), kifuRulesLabel(game.rules, t)],
           [t('report:komi', '贴目'), game.komi],
           [t('report:status', '状态'), taskStatusLabel(task?.status, t)],
           [t('report:source', '来源'), game.source],
@@ -446,7 +455,8 @@ export default function ReportDetailPage() {
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill"
-              disabled={retrying || !task}
+              disabled={loading || retrying || !task || task.id !== Number(taskId)
+                || (task.status !== 'completed' && task.status !== 'failed')}
               onClick={() => void handleRetryReport()}
             >
               {retrying ? t('report:retrying', '正在重试…') : t('review:recompute', '重算')}

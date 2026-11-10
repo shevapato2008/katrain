@@ -72,21 +72,26 @@ def derive_health(row, now: datetime, paused_reason: str | None = None, resumed_
 
     interval = timedelta(seconds=row.interval_seconds or 0)
     started = as_utc(row.last_started_at)
-    if started is None:
-        return Health("pending", "进程启动后还没有运行过")
-    elapsed = now - started
-    if row.last_status == "running":
+    if started is not None and row.last_status == "running":
+        elapsed = now - started
         limit = max(3 * interval, INTERVAL_STUCK_FLOOR)
         if elapsed > limit:
             return Health("stuck", f"已运行 {_human(elapsed)}，超过了 {_human(limit)}")
         return Health("running", f"已运行 {_human(elapsed)}")
+
+    anchor = started or as_utc(row.process_started_at)
+    resumed = as_utc(resumed_at)
+    if resumed is not None and (anchor is None or resumed > anchor):
+        anchor = resumed  # paused time does not count, including before the first run
+    elapsed = now - anchor if anchor is not None else None
+    if elapsed is not None and elapsed > 2 * interval + OVERDUE_GRACE:
+        if started is None:
+            return Health("overdue", f"等待首次运行已 {_human(elapsed)}，间隔是 {_human(interval)}")
+        return Health("overdue", f"上次开始于 {_human(elapsed)}前，间隔是 {_human(interval)}")
+    if started is None:
+        return Health("pending", "进程启动后还没有运行过")
     if row.last_status == "failed":
         return Health("failed", f"连续 {row.consecutive_failures} 次不成功，最近一次抛出了异常")
     if row.last_status == "errors":
         return Health("errors", "跑完了，但运行期间有报错")
-    resumed = as_utc(resumed_at)
-    if resumed is not None and resumed > started:
-        elapsed = min(elapsed, now - resumed)  # a job that was paused is not overdue for the paused time
-    if elapsed > 2 * interval + OVERDUE_GRACE:
-        return Health("overdue", f"上次开始于 {_human(elapsed)}前，间隔是 {_human(interval)}")
     return Health("ok", f"上次开始于 {_human(elapsed)}前")

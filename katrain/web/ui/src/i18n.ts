@@ -1,4 +1,6 @@
 import { API } from './api';
+import kifuMessages from './kiosk/appearance/kifuMessages.json';
+import { isStrictBoxKiosk } from './kiosk/shell/boxUrls';
 import { LiveAPI } from './api/live';
 
 type TranslationCallback = () => void;
@@ -14,21 +16,28 @@ class I18n {
   private translations: Record<string, string> = {};
   private liveTranslations: LiveTranslations | null = null;
   private currentLang: string = (() => {
+    if (isStrictBoxKiosk) return 'cn';
     try { return localStorage.getItem('katrain_language') || 'cn'; } catch { return 'cn'; }
   })();
   private callbacks: Set<TranslationCallback> = new Set();
   private liveTranslationsLoading: boolean = false;
 
-  async loadTranslations(lang: string) {
+  private translationGeneration = 0;
+
+  async loadTranslations(lang: string, signal?: AbortSignal): Promise<boolean> {
+    const generation = ++this.translationGeneration;
     try {
       const data = await API.getTranslations(lang);
+      if (generation !== this.translationGeneration || signal?.aborted) return false;
       this.translations = data.translations;
       this.currentLang = lang;
       this.notify();
       // Library/UI labels must not wait for the unrelated live-name endpoint.
       void this.loadLiveTranslations(lang).then(() => this.notify());
+      return true;
     } catch (error) {
       console.error(`Failed to load translations for ${lang}`, error);
+      return false;
     }
   }
 
@@ -56,7 +65,9 @@ class I18n {
   }
 
   t(key: string, defaultText?: string): string {
-    return this.translations[key] || defaultText || key;
+    const kifuMessage = kifuMessages[key as keyof typeof kifuMessages];
+    const localText = kifuMessage?.[this.currentLang as keyof typeof kifuMessage] ?? kifuMessage?.en;
+    return this.translations[key] || localText || defaultText || key;
   }
 
   /**

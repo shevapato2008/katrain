@@ -22,7 +22,7 @@ import type { GameState } from '../../api';
 const { authState } = vi.hoisted(() => ({ authState: { current: { token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() } as any } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => authState.current }));
 
-vi.mock('../../api/userGamesApi', () => ({ UserGamesAPI: { get: vi.fn(), list: vi.fn() } }));
+vi.mock('../../api/userGamesApi', () => ({ UserGamesAPI: { get: vi.fn(), list: vi.fn(), create: (...args: unknown[]) => reportAction.save(...args) } }));
 
 vi.mock('../../api', () => ({
   API: {
@@ -77,6 +77,12 @@ vi.mock('../../hooks/useResearchSession', () => ({
   }),
 }));
 
+
+const paidApi = vi.hoisted(() => ({ getCatalog: vi.fn(), createQuote: vi.fn(), createPosition: vi.fn() }));
+const reportAction = vi.hoisted(() => ({ create: vi.fn(), save: vi.fn() }));
+vi.mock('../../api/membershipApi', () => ({ membershipApi: paidApi }));
+vi.mock('../../features/report/useReportTasks', () => ({ useReportTasks: () => ({ createReport: reportAction.create, pendingQuote: null, quoteBusy: false, error: null }) }));
+
 import ResearchPage from '../pages/ResearchPage';
 import { API } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
@@ -89,25 +95,6 @@ const MOVE_INFOS = [
 ];
 
 const quick = (moveInfos: unknown[] = MOVE_INFOS) => ({ turnInfos: [{ moveInfos, ownership: null }] });
-
-function buildGameState(overrides: Partial<GameState> = {}): GameState {
-  return {
-    game_id: 'test-game', board_size: [19, 19], komi: 7.5, handicap: 0, ruleset: 'chinese',
-    current_node_id: 0, current_node_index: 0,
-    history: [{ node_id: 0, score: 0, winrate: 0.5 }],
-    player_to_move: 'B', stones: [], last_move: null, prisoner_count: { B: 0, W: 0 },
-    analysis: { winrate: 0.632, score: 3.5, moves: [] },
-    commentary: '', is_root: false, is_pass: false, end_result: null, children: [], ghost_stones: [],
-    players_info: {
-      B: { player_type: 'human', player_subtype: '', name: 'fan', calculated_rank: null, periods_used: 0, main_time_used: 0 },
-      W: { player_type: 'ai', player_subtype: 'katago', name: 'KataGo', calculated_rank: null, periods_used: 0, main_time_used: 0 },
-    },
-    note: '',
-    ui_state: { show_children: false, show_dots: false, show_hints: false, show_policy: false, show_ownership: false, show_move_numbers: false, show_coordinates: true, zen_mode: false },
-    language: 'zh',
-    ...overrides,
-  };
-}
 
 const renderPage = (entry = '/kiosk/research') =>
   render(
@@ -124,8 +111,6 @@ const renderPage = (entry = '/kiosk/research') =>
   );
 
 /** 表是**防抖 400ms** 之后才有的 —— 每条要看表的用例都得等它。 */
-const table = () => screen.findByTestId('research-ai', {}, { timeout: 2000 });
-const rows = async () => within(await table()).findAllByTestId('ai-recommend-row');
 const actions = () => screen.getByTestId('research-actions');
 
 describe('屏 21 研究', () => {
@@ -135,9 +120,14 @@ describe('屏 21 研究', () => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
     mockCreateSession.mockResolvedValue('session-123');
     mockGameState = null;
+    paidApi.getCatalog.mockResolvedValue({ membership_mode: 'enabled', capabilities: { quotes: true, positions: true } });
+    paidApi.createQuote.mockResolvedValue({ token: 'signed', kind: 'position', source: 'membership', profile: 'normal', wallet_max_display_points: '0.01' });
+    paidApi.createPosition.mockResolvedValue({ state: 'succeeded', operation_id: 'op1', result: { ownership: Array(361).fill(0.2), moves: MOVE_INFOS.map(m => ({ ...m, score_lead: m.scoreLead })) } });
+    reportAction.save.mockResolvedValue({ id: 'owned-game', move_count: 1 });
+    reportAction.create.mockResolvedValue(null);
     vi.mocked(API.quickAnalyze).mockResolvedValue(quick());
     vi.mocked(API.analysisScan).mockResolvedValue({});
-    authState.current = { token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() };
+    authState.current = { identityKey: 'person-a', status: 'authenticated', token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() };
   });
 
   it('sounds once after an accepted placement and keeps delete, pass, and the opening silent', async () => {
@@ -205,133 +195,6 @@ describe('屏 21 研究', () => {
 
   // ── AI 推荐表 ──────────────────────────────────────────────────────────────
 
-  it('表:首行标绿、负目差标红、推荐度按 visits 占比', async () => {
-    renderPage();
-    const r = await rows();
-    expect(r).toHaveLength(3);
-
-    const cells = (i: number) => Array.from(r[i].querySelectorAll('span'));
-    expect(cells(0)[0]).toHaveTextContent('R11');
-    expect(cells(0)[0].className).toContain('best');
-    // 61 / (61+18+11) = 67.7 → 68%
-    expect(cells(0)[1]).toHaveTextContent('68%');
-    expect(cells(0)[2]).toHaveTextContent('+1.8');
-    expect(cells(0)[3]).toHaveTextContent('54.2%');
-
-    // Q6 的目差是负的 ⇒ 那一格走 .neg
-    expect(cells(2)[2]).toHaveTextContent('−0.9');
-    expect(cells(2)[2].className).toContain('neg');
-  });
-
-  /**
-   * 🔴 状态诚实。`current_winrate` 那一类「真的 50%」和「没有这个数」同值的坑,
-   * 屏 18 已经判过一次:**算不出来写「—」,不写 50%**。
-   */
-  it('还没有数的时候折叠头写「—」,不写一个 50%', async () => {
-    vi.mocked(API.quickAnalyze).mockImplementation(() => new Promise(() => {})); // 永不 resolve
-    renderPage();
-    await screen.findByTestId('research-ai-pending', {}, { timeout: 2000 });
-    expect(await table()).toHaveTextContent('—');
-    expect(screen.queryByText(/50\.0%/)).toBeNull();
-  });
-
-  it('算失败:说出服务端那句话,不把上一手的数留着假装是这一手的', async () => {
-    vi.mocked(API.quickAnalyze).mockRejectedValue(new Error('引擎没起来'));
-    renderPage();
-    const err = await screen.findByTestId('research-ai-error', {}, { timeout: 2000 });
-    expect(err).toHaveTextContent('引擎没起来');
-    expect(within(await table()).queryAllByTestId('ai-recommend-row')).toHaveLength(0);
-  });
-
-  it('AI 一个候选都没给:说这句话,不画一张空表', async () => {
-    vi.mocked(API.quickAnalyze).mockResolvedValue(quick([]));
-    renderPage();
-    expect(await screen.findByTestId('research-ai-none', {}, { timeout: 2000 }))
-      .toHaveTextContent('没有给出候选');
-  });
-
-  // ── 全局分析 ───────────────────────────────────────────────────────────────
-
-  /**
-   * 🔴 弹层里**只许写算得出来的数**。「大概几分钟」需要一个开跑前没人校准过的每手速率
-   * —— 那个数只能编。真正的「预计剩余」在扫描中由两次采样实测得出。
-   */
-  it('全局分析先弹确认,里面只有手数和 500,没有「大概几分钟」', async () => {
-    renderPage();
-    await userEvent.click(within(actions()).getByRole('button', { name: '全局分析' }));
-    const dlg = screen.getByTestId('research-scan-confirm');
-    expect(dlg).toHaveTextContent('每手算 500 次');
-    expect(dlg).toHaveTextContent('可以随时取消');
-    expect(dlg.textContent).not.toMatch(/分钟|大约|大概/);
-    // 弹确认 ≠ 已经开跑
-    expect(mockCreateSession).not.toHaveBeenCalled();
-  });
-
-  it('确认之后才建会话并以 500 visits 起扫', async () => {
-    renderPage();
-    await userEvent.click(within(actions()).getByRole('button', { name: '全局分析' }));
-    await userEvent.click(screen.getByRole('button', { name: '开始算' }));
-    await waitFor(() => expect(mockCreateSession).toHaveBeenCalled());
-    await waitFor(() => expect(API.analysisScan).toHaveBeenCalledWith('session-123', 500));
-  });
-
-  /**
-   * 🔴 扫描中分段和提示行**不渲染**,不是「渲染出来全部灰掉」——
-   * `KioskOptSeg` 的契约写死「永远至少留一段能选」,全灰是违约。
-   * 而「保存」**不跟着灰**:它只读,存下当前这份谱没有任何危险。
-   */
-  it('扫描中:编辑工具整组撤走,第 5 颗变取消,但「保存」不灰', async () => {
-    vi.mocked(API.analysisProgress).mockResolvedValue({ analyzed: 3, total: 9 });
-    renderPage();
-    await userEvent.click(within(actions()).getByRole('button', { name: '全局分析' }));
-    await userEvent.click(screen.getByRole('button', { name: '开始算' }));
-
-    await waitFor(() => expect(screen.queryByTestId('research-tools')).toBeNull());
-    expect(screen.queryByTestId('research-hint')).toBeNull();
-    expect(within(actions()).getByRole('button', { name: '取消分析' })).toBeInTheDocument();
-    expect(within(actions()).getByRole('button', { name: '清空' })).toBeDisabled();
-    expect(within(actions()).getByRole('button', { name: '保存' })).toBeEnabled();
-    expect(await screen.findByTestId('research-scan')).toHaveTextContent('已分析手数');
-  });
-
-  it('连续 5 次读不到进度才判失败,并给得出「重试分析」', async () => {
-    vi.mocked(API.analysisProgress).mockRejectedValue(new Error('断了'));
-    renderPage();
-    await userEvent.click(within(actions()).getByRole('button', { name: '全局分析' }));
-    await userEvent.click(screen.getByRole('button', { name: '开始算' }));
-
-    await waitFor(
-      () => expect(within(actions()).getByRole('button', { name: '重试分析' })).toBeInTheDocument(),
-      { timeout: 8000 },
-    );
-    expect(await screen.findByTestId('research-ai-error')).toHaveTextContent('连续 5 次');
-  }, 12000);
-
-  it('扫完:第 5 颗变「重新分析」,表改读会话里那份 500/手', async () => {
-    vi.mocked(API.analysisProgress).mockResolvedValue({ analyzed: 9, total: 9 });
-    mockGameState = buildGameState({
-      analysis: { winrate: 0.7, score: 5, moves: [{ move: 'D4', coords: null, winrate: 0.7, scoreLead: 5, scoreLoss: 0, visits: 500, psv: 500 }] } as any,
-    });
-    renderPage();
-    await userEvent.click(within(actions()).getByRole('button', { name: '全局分析' }));
-    await userEvent.click(screen.getByRole('button', { name: '开始算' }));
-
-    // 进度是 1s 一轮的,`waitFor` 默认 1000ms 正好卡在边界上 —— 给够。
-    await waitFor(
-      () => expect(within(actions()).getByRole('button', { name: '重新分析' })).toBeInTheDocument(),
-      { timeout: 4000 },
-    );
-    const r = await rows();
-    expect(r).toHaveLength(1);
-    expect(r[0]).toHaveTextContent('D4');
-  });
-
-  // ── 轻重:清空要确认,停一手不要 ────────────────────────────────────────────
-
-  /**
-   * 🔴 上一版轻重是**倒置**的:`onClear` 一点就把整盘擦掉、没有任何确认,
-   * 而「停一手」这个上一手就能撤销的动作反倒弹确认框。这一版扳回来。
-   */
   it('清空要确认,停一手不要', async () => {
     renderPage();
     await userEvent.click(within(actions()).getByRole('button', { name: '清空' }));
@@ -346,23 +209,6 @@ describe('屏 21 研究', () => {
 
   // ── 领地在页控条那一颗键上 ──────────────────────────────────────────────────
 
-  it('领地是页控条右端那颗页级图标键,有按下态', async () => {
-    renderPage();
-    const bar = screen.getByTestId('research-pagebar');
-    const btn = within(bar).getByRole('button', { name: '领地' });
-    expect(btn).toHaveAttribute('aria-pressed', 'false');
-    await userEvent.click(btn);
-    expect(within(bar).getByRole('button', { name: '领地' })).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  // ── 返回:跟着入口走 ───────────────────────────────────────────────────────
-
-  /**
-   * 🔴 稿子把返回键写死成「← 棋谱」,可这一屏有三个入口、回去的地方各不相同,
-   * 而屏 16 棋谱详情和屏 20 复盘报告两条的 URL 形状完全一样(都带 `?user_game_id=`)、
-   * 反推不出来。⇒ 由 `?from=` 说了算,目标路径查前端常量表
-   * (**不收路径参数**,那是个能注入的洞)。
-   */
   it('?from=report 回复盘', async () => {
     renderPage('/kiosk/research?from=report');
     await userEvent.click(within(screen.getByTestId('research-pagebar')).getByRole('button', { name: /复盘/ }));
@@ -397,98 +243,33 @@ describe('屏 21 研究', () => {
    * 反推 SGF,读到的是 `loadFromSGF` 之前的空盘。这里把**刚取到的** `sgf_content`
    * 直接串进 `createSession`,所以断言它收到的不是 undefined。
    */
-  it('?kifu_id&analyze=1:把刚取到的 SGF 直接串进 createSession,并写出出处', async () => {
-    vi.mocked(KifuAPI.getAlbum).mockResolvedValue({
-      id: 7, player_black: '柯洁', player_white: '申真谞', black_rank: null, white_rank: null,
-      display_player_black: '柯洁', display_player_white: '申真谞',
-      event: 'LG杯', display_event: 'LG杯', result: null, rules: 'chinese', date_played: '2026-06-15', komi: 7.5,
-      handicap: 0, board_size: 19, round_name: '决赛', move_count: 2,
-      display_round_name: '决赛',
-      place: null, source: null, sgf_content: '(;GM[1]FF[4]SZ[19];B[pd];W[dp])',
-    } as any);
 
-    renderPage('/kiosk/research?kifu_id=7&analyze=1&from=kifu');
-
-    await waitFor(() => expect(mockCreateSession).toHaveBeenCalled());
-    const [sgfArg] = mockCreateSession.mock.calls[0];
-    expect(sgfArg).toContain('B[pd]');
-
-    const bar = screen.getByTestId('research-pagebar');
-    expect(bar).toHaveTextContent('棋谱库');
-    expect(bar).toHaveTextContent('LG杯 · 决赛');
-    expect(bar).not.toHaveTextContent('undefined');
-  });
-
-  it('token 是 null 时照样发 quickAnalyze(严格 kiosk 走的是 cookie)', async () => {
-    authState.current = { token: null, isAuthenticated: false, user: null, login: vi.fn(), logout: vi.fn() };
+  it('quotes before consumption and reuses one result for territory and hints', async () => {
     renderPage();
-    await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalled(), { timeout: 2000 });
-    expect(vi.mocked(API.quickAnalyze).mock.calls[0][1]).toBeUndefined();
+    expect(API.quickAnalyze).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '领地' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('最多 0.01 积分');
+    expect(paidApi.createPosition).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole('button', { name: '取消' }));
+    expect(paidApi.createPosition).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '支招' }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: '确认并开始' }));
+    await waitFor(() => expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(3));
+    await userEvent.click(screen.getByRole('button', { name: '领地' }));
+    expect(screen.getByTestId('research-board-svg')).toHaveAttribute('data-ownership', 'grid');
+    expect(paidApi.createPosition).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    expect(screen.getByTestId('research-board-svg')).toHaveAttribute('data-ownership', 'none');
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(paidApi.createPosition).toHaveBeenCalledTimes(1);
   });
-
-  // ── 领地那张图:**只画这个局面自己的** ──────────────────────────────────────
-  //
-  // 两处真实存在过的假话(2026-08-26 查出并修):
-  //  ① 分析失败时只清了表,**没清这张图** ⇒「算不出来」的同时盘上照旧画着上一个局面的地。
-  //     那三行下面的注释写的正是「不留着上一手的数假装是这一手的」,而它自己漏了这一格。
-  //  ② 换了局面之后旧的那张会跟过去 —— 全局分析跑完时最明显:会话数据里**没有**
-  //     per-move 的 ownership,于是每一手都显示开扫那一刻的同一张地图。
-  //
-  // 判据落在**传给盘的那个 prop** 上,不落在「有没有调 setOwnership」上。
-  describe('领地', () => {
-    const withOwnership = (moveInfos: unknown[] = MOVE_INFOS) => ({
-      turnInfos: [{ moveInfos, ownership: new Array(19 * 19).fill(0.5) }],
-    });
-    const boardOwnership = () => screen.getByTestId('research-board-svg').getAttribute('data-ownership');
-    const openTerritory = async () => {
-      fireEvent.click(screen.getByRole('button', { name: /领地/ }));
-    };
-
-    it('拿到了就画', async () => {
-      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
-      renderPage();
-      await table();
-      await openTerritory();
-      await waitFor(() => expect(boardOwnership()).toBe('grid'));
-    });
-
-    it('分析失败时跟着清掉 —— 不留着上一个局面的地', async () => {
-      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
-      renderPage();
-      await table();
-      await openTerritory();
-      await waitFor(() => expect(boardOwnership()).toBe('grid'));
-
-      // 摆一颗子换局面,这一次算不出来
-      vi.mocked(API.quickAnalyze).mockRejectedValue(new Error('引擎没起来'));
-      fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
-      await waitFor(() => expect(boardOwnership()).toBe('none'), { timeout: 2000 });
-    });
-
-    it('响应里没带 ownership 时也清掉 —— 旧服务端不该让盘上留着上一张', async () => {
-      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
-      renderPage();
-      await table();
-      await openTerritory();
-      await waitFor(() => expect(boardOwnership()).toBe('grid'));
-
-      vi.mocked(API.quickAnalyze).mockResolvedValue(quick());   // ownership: null
-      fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
-      await waitFor(() => expect(boardOwnership()).toBe('none'), { timeout: 2000 });
-    });
-
-    it('换了局面而新的还没算出来时,旧的那张不跟过去', async () => {
-      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
-      renderPage();
-      await table();
-      await openTerritory();
-      await waitFor(() => expect(boardOwnership()).toBe('grid'));
-
-      // 新局面的请求永不 resolve ⇒ 这一帧「还不知道」,而不知道就是不画
-      vi.mocked(API.quickAnalyze).mockImplementation(() => new Promise(() => {}));
-      fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
-      await waitFor(() => expect(boardOwnership()).toBe('none'), { timeout: 2000 });
-    });
+  it('creates an owned full SGF before entering the report quote journey', async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    await userEvent.click(screen.getByRole('button', { name: '创建复盘报告' }));
+    await waitFor(() => expect(reportAction.create).toHaveBeenCalledWith({ userGameId: 'owned-game', totalMoves: 1 }));
+    expect(reportAction.save.mock.calls[0][1].sgf_content).toContain('B[dp]');
+    expect(API.analysisScan).not.toHaveBeenCalled();
   });
-
 });

@@ -1,3 +1,11 @@
+import { useTranslation } from '../../hooks/useTranslation';
+import {
+  getBoardStylePalette,
+  getBoardTextureDataUrl,
+  stoneSpriteUrl,
+  useBoardAppearance,
+} from '../board/stoneAppearance';
+
 export interface SGFPayload {
   size: number;
   stones: {
@@ -54,6 +62,9 @@ const HOSHI_19: [number, number][] = [
 ];
 
 export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, onClick, maxWidth, style, className, unknownStones = [], sourceRegion, knownRegion }: SGFBoardProps) {
+  const { t } = useTranslation();
+  const { boardStyle, stoneStyle } = useBoardAppearance();
+  const palette = getBoardStylePalette(boardStyle);
   const { size, stones, labels = {}, letters = {}, shapes = {}, highlights = [], viewport } = payload;
 
   // Viewport: support rectangular {col, row, cols, rows} and square {col, row, size}
@@ -93,13 +104,13 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
   for (let i = 0; i < vpRows; i++) {
     const y = MARGIN + i * CELL;
     gridLines.push(
-      <line key={`h${i}`} x1={MARGIN} y1={y} x2={MARGIN + (vpCols - 1) * CELL} y2={y} stroke="#7a5c2e" strokeWidth={0.8} />
+      <line key={`h${i}`} x1={MARGIN} y1={y} x2={MARGIN + (vpCols - 1) * CELL} y2={y} stroke={palette.gridColor} strokeWidth={0.8} />
     );
   }
   for (let i = 0; i < vpCols; i++) {
     const x = MARGIN + i * CELL;
     gridLines.push(
-      <line key={`v${i}`} x1={x} y1={MARGIN} x2={x} y2={MARGIN + (vpRows - 1) * CELL} stroke="#7a5c2e" strokeWidth={0.8} />
+      <line key={`v${i}`} x1={x} y1={MARGIN} x2={x} y2={MARGIN + (vpRows - 1) * CELL} stroke={palette.gridColor} strokeWidth={0.8} />
     );
   }
 
@@ -108,7 +119,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     .filter(([c, r]) => inViewport(c, r))
     .map(([c, r]) => {
       const { x, y } = toSvg(c, r);
-      return <circle key={`hoshi-${c}-${r}`} cx={x} cy={y} r={HOSHI_R} fill="#7a5c2e" />;
+      return <circle key={`hoshi-${c}-${r}`} cx={x} cy={y} r={HOSHI_R} fill={palette.starColor} />;
     });
 
   // Stones and labels
@@ -120,7 +131,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     const { x, y } = toSvg(col, row);
     const key = `B-${col}-${row}`;
     stoneEls.push(
-      <circle key={key} data-stone-color="B" data-point={`${col},${row}`} cx={x} cy={y} r={STONE_R} fill="#1a1a1a" stroke="#000" strokeWidth={0.5} />
+      <image key={key} data-stone-color="B" data-point={`${col},${row}`} href={stoneSpriteUrl('B', size, col, row, stoneStyle)} x={x - STONE_R} y={y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
     );
     const label = labels[`${col},${row}`];
     if (label && (maxMoveStep === undefined || parseInt(label, 10) <= (maxMoveStep ?? Infinity))) {
@@ -137,8 +148,19 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     if (!inViewport(col, row) || !shouldShowStone(col, row)) continue;
     const { x, y } = toSvg(col, row);
     const key = `W-${col}-${row}`;
+    if (stoneStyle === 'jade-agate') {
+      stoneEls.push(
+        <circle
+          key={`caustic-${key}`}
+          cx={x + STONE_R * 0.12}
+          cy={y + STONE_R * 0.12}
+          r={STONE_R * 0.86}
+          fill="rgba(255, 243, 210, 0.25)"
+        />
+      );
+    }
     stoneEls.push(
-      <circle key={key} data-stone-color="W" data-point={`${col},${row}`} cx={x} cy={y} r={STONE_R} fill="#f0f0f0" stroke="#555" strokeWidth={0.8} />
+      <image key={key} data-stone-color="W" data-point={`${col},${row}`} href={stoneSpriteUrl('W', size, col, row, stoneStyle)} x={x - STONE_R} y={y - STONE_R} width={STONE_R * 2} height={STONE_R * 2} />
     );
     const label = labels[`${col},${row}`];
     if (label && (maxMoveStep === undefined || parseInt(label, 10) <= (maxMoveStep ?? Infinity))) {
@@ -165,7 +187,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
     const empty = !blackPoints.has(coordStr) && !whitePoints.has(coordStr) && !unknownStones.some(stone => stone.point.join(',') === coordStr);
     const outsideKnown = knownRegion !== undefined && (!knownRegion || col < knownRegion.col || row < knownRegion.row || col >= knownRegion.col + knownRegion.cols || row >= knownRegion.row + knownRegion.rows);
     if (empty && calibrationOverlays) letterEls.push(<g key={`letter-mask-${coordStr}`} data-letter-mask={coordStr}>
-      <rect x={x - STONE_R * .68} y={y - STONE_R * .68} width={STONE_R * 1.36} height={STONE_R * 1.36} fill={String(style?.background ?? '#dcb468')} />
+      <rect x={x - STONE_R * .68} y={y - STONE_R * .68} width={STONE_R * 1.36} height={STONE_R * 1.36} fill={String(style?.background ?? palette.woodFill)} />
       {outsideKnown && <rect x={x - STONE_R * .68} y={y - STONE_R * .68} width={STONE_R * 1.36} height={STONE_R * 1.36} fill="#777d81" fillOpacity=".43" />}
     </g>);
     letterEls.push(
@@ -255,7 +277,15 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
       viewBox={`0 0 ${svgW} ${svgH}`}
       width="100%"
       className={className}
-      style={{ maxWidth: maxWidth ?? 500, display: 'block', background: '#dcb468', borderRadius: 4, ...style }}
+      style={{
+        maxWidth: maxWidth ?? 500,
+        display: 'block',
+        background: palette.woodFill,
+        backgroundImage: style?.background ? undefined : `url("${getBoardTextureDataUrl(boardStyle)}")`,
+        backgroundSize: 'cover',
+        borderRadius: 4,
+        ...style,
+      }}
       aria-label="Go board diagram"
     >
       {gridLines}
@@ -266,7 +296,7 @@ export default function SGFBoard({ payload, maxMoveStep, last, showFullBoard, on
         const coordinate = stone.point.join(',');
         const annotation = labels[coordinate] || (letters[coordinate] || shapes[coordinate] ? null : '?');
         return <g key={`unknown-${stone.point}`} data-testid="tutorial-unknown-stone">
-          <title>{stone.evidence || '棋子颜色待确认'}</title>
+          <title>{stone.evidence || t("棋子颜色待确认", "棋子颜色待确认")}</title>
           <circle cx={x} cy={y} r={STONE_R} fill="#999c9e" stroke="#4f5357" strokeDasharray="3 2" />
           {annotation && <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fontSize={STONE_R * 1.1} fill="#222" fontFamily="inherit">{annotation}</text>}
         </g>;

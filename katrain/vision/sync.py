@@ -14,6 +14,7 @@ from enum import Enum
 import numpy as np
 
 from katrain.vision.board_state import BLACK, EMPTY, WHITE
+from katrain.vision.ipc import ConfirmedMove
 
 # ---------------------------------------------------------------------------
 # Events
@@ -99,6 +100,10 @@ class SyncStateMachine:
         self._pending_expected_node_id: int | None = None
         self._target_board: np.ndarray | None = None
 
+        # One automatic submission may temporarily own one extra, never digital authority.
+        self._confirmed_move: ConfirmedMove | None = None
+        self._claimed_points: set[tuple[int, int, int]] = set()
+
         # Mismatch tracking
         self._mismatch_board: np.ndarray | None = None
         self._mismatch_count: int = 0
@@ -128,6 +133,33 @@ class SyncStateMachine:
 
     # -- public API ----------------------------------------------------------
 
+    @property
+    def has_confirmed_move(self) -> bool:
+        return self._confirmed_move is not None
+
+    def invalidate_confirmed_move(self) -> None:
+        self._confirmed_move = None
+
+    def claim_confirmed_move(self, move: ConfirmedMove, observed: np.ndarray) -> bool:
+        cell = (move.row, move.col, move.color)
+        if (
+            min(move.token) <= 0
+            or self._confirmed_move is not None
+            or cell in self._claimed_points
+            or int(self._expected_board[move.row, move.col]) != EMPTY
+            or int(observed[move.row, move.col]) != move.color
+        ):
+            return False
+        self._confirmed_move = move
+        self._claimed_points.add(cell)
+        return True
+
+    def release_confirmed_move(self, token: tuple[int, int, int]) -> bool:
+        if self._confirmed_move is None or self._confirmed_move.token != tuple(token):
+            return False
+        self._confirmed_move = None
+        return True
+
     def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
         """Set the expected board (from game engine).
 
@@ -137,6 +169,9 @@ class SyncStateMachine:
         revision is tracked independently and acknowledged once vision observes an
         exact physical match.
         """
+        if not np.array_equal(board, self._expected_board) or expected_node_id != self._expected_node_id:
+            self.invalidate_confirmed_move()
+            self._claimed_points.clear()
         if not np.array_equal(board, self._expected_board):
             self._prev_expected_board = self._expected_board.copy()
             self._expected_board = board.copy()
@@ -151,9 +186,11 @@ class SyncStateMachine:
             self._expected_node_id = expected_node_id
             self._pending_expected_node_id = expected_node_id
 
-    def enter_setup_mode(self, target_board: np.ndarray) -> None:
+    def enter_setup_mode(self, target_board: np.ndarray, setup_id: str | None = None) -> None:
         """Enter tsumego setup mode with a target position."""
+        self.invalidate_confirmed_move()
         self._target_board = target_board.copy()
+        self._setup_id = setup_id
         self._state = SyncState.SETUP_IN_PROGRESS
         # A fresh setup must not inherit a stale degraded countdown: otherwise an
         # already-empty board (mean_conf reported as 0.0) re-enters DEGRADED on the
@@ -229,6 +266,8 @@ class SyncStateMachine:
             self._expected_board = observed_board.copy()
         else:
             self._expected_board = np.zeros((self._board_size, self._board_size), dtype=int)
+        self.invalidate_confirmed_move()
+        self._claimed_points.clear()
         self._prev_expected_board = None
         self._expected_node_id = None
         self._pending_expected_node_id = None
@@ -306,12 +345,23 @@ class SyncStateMachine:
         events.append(
             SyncEvent(
                 SyncEventType.SETUP_PROGRESS,
-                data={"matched": matched, "total": total, "missing": missing, "extra": extra},
+                data={
+                    "matched": matched,
+                    "total": total,
+                    "missing": missing,
+                    "extra": extra,
+                    **({"setup_id": self._setup_id} if self._setup_id is not None else {}),
+                },
             )
         )
 
         if not missing and not extra:
-            events.append(SyncEvent(SyncEventType.SETUP_COMPLETE))
+            events.append(
+                SyncEvent(
+                    SyncEventType.SETUP_COMPLETE,
+                    data={"setup_id": self._setup_id} if self._setup_id is not None else {},
+                )
+            )
             self._target_board = None
             self._expected_board = observed_board.copy()
             self._prev_expected_board = None
@@ -324,6 +374,16 @@ class SyncStateMachine:
     def _compare_boards(self, observed_board: np.ndarray, now: float) -> list[SyncEvent]:
         """Compare observed board with expected board and emit sync events."""
         events: list[SyncEvent] = []
+        self._claimed_points = {
+            (r, c, color) for r, c, color in self._claimed_points if int(observed_board[r, c]) == color
+        }
+        owner = self._confirmed_move
+        if owner is not None and (
+            int(observed_board[owner.row, owner.col]) != owner.color
+            or int(self._expected_board[owner.row, owner.col]) != EMPTY
+        ):
+            self.invalidate_confirmed_move()
+            owner = None
         diff_mask = observed_board != self._expected_board
 
         diff_positions = list(zip(*np.where(diff_mask)))
@@ -454,13 +514,19 @@ class SyncStateMachine:
                 self._mismatch_board = current_mismatch
                 self._mismatch_count = 1
 
-            if self._mismatch_count >= self._illegal_change_frames:
+            actionable = [
+                (r, c, clr)
+                for r, c, clr in unexpected
+                if owner is None or (r, c, clr) != (owner.row, owner.col, owner.color)
+            ]
+            if self._mismatch_count >= self._illegal_change_frames and (actionable or ripe_missing):
                 self._state = SyncState.MISMATCH_WARNING
                 events.append(
                     SyncEvent(
                         SyncEventType.ILLEGAL_CHANGE,
                         data={
-                            "positions": [(r, c, clr) for r, c, clr in unexpected],
+                            "positions": [(r, c, clr) for r, c, clr in actionable],
+                            "actionable": True,
                             "missing": [(r, c, clr) for r, c, clr in ripe_missing + placement_pending],
                         },
                     )

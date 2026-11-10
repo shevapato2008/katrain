@@ -33,9 +33,22 @@ const album: KifuAlbumDetail = {
 
 beforeEach(() => { mocks.getAlbum.mockReset().mockResolvedValue(album); analysisParameters = null; parametersValid = undefined; });
 
+it.each([false, true])('formats normalized kifu ranks in report/replay details (replayOnly=%s)', async (replayOnly) => {
+  mocks.getAlbum.mockResolvedValue({ ...album, black_rank: '7d', white_rank: '7d', display_black_rank: '7p', display_white_rank: '7段' });
+  render(<MemoryRouter initialEntries={['/kifu/7/report']}><Routes>
+    <Route path="/kifu/:albumId/report" element={<KifuReportDetailPage replayOnly={replayOnly} />} />
+  </Routes></MemoryRouter>);
+  await screen.findByTestId('report-meta-panel');
+  fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+  const dialog = screen.getByRole('dialog');
+  expect(dialog).toHaveTextContent('黑棋手 七段');
+  expect(dialog).toHaveTextContent('白棋手 七段');
+  expect(dialog).not.toHaveTextContent('业余');
+});
+
 it('shows the professional report in the shared fixed rail without a duplicate kifu entry', async () => {
-  render(<MemoryRouter initialEntries={['/galaxy/kifu/7/report']}><Routes>
-    <Route path="/galaxy/kifu/:albumId/report" element={<KifuReportDetailPage />} />
+  render(<MemoryRouter initialEntries={['/kifu/7/report']}><Routes>
+    <Route path="/kifu/:albumId/report" element={<KifuReportDetailPage />} />
   </Routes></MemoryRouter>);
 
   const rail = await screen.findByTestId('report-analysis-layout');
@@ -54,8 +67,8 @@ it('passes valid default parameters to metadata and keeps report analysis availa
     provenance: { source: 'komi_default', raw_rules: null, raw_komi: '6.5', policy: 'komi-default-v1' } };
   parametersValid = true;
   mocks.getAlbum.mockResolvedValue({ ...album, rules: null, komi: 6.5 });
-  render(<MemoryRouter initialEntries={['/galaxy/kifu/7/report']}><Routes>
-    <Route path="/galaxy/kifu/:albumId/report" element={<KifuReportDetailPage />} />
+  render(<MemoryRouter initialEntries={['/kifu/7/report']}><Routes>
+    <Route path="/kifu/:albumId/report" element={<KifuReportDetailPage />} />
   </Routes></MemoryRouter>);
   const rail = await screen.findByTestId('report-analysis-layout');
   expect(within(rail).getByTestId('report-meta-panel')).toHaveTextContent('日本规则');
@@ -66,4 +79,14 @@ it('passes valid default parameters to metadata and keeps report analysis availa
   expect(dialog).toHaveTextContent('未核验赛事实际规则');
   expect(dialog).toHaveTextContent('分析已完成');
   expect(dialog).not.toHaveTextContent('已核验');
+});
+
+it.each([false, true])('returns to the root kifu library (replayOnly=%s)', async (replayOnly) => {
+  render(<MemoryRouter initialEntries={['/kifu/7/report']}><Routes>
+    <Route path="/kifu/:albumId/report" element={<KifuReportDetailPage replayOnly={replayOnly} />} />
+    <Route path="/kifu" element={<div>Kifu library destination</div>} />
+  </Routes></MemoryRouter>);
+  await screen.findByTestId('report-meta-panel');
+  fireEvent.click(screen.getByRole('link', { name: '返回棋谱库' }));
+  expect(await screen.findByText('Kifu library destination')).toBeInTheDocument();
 });

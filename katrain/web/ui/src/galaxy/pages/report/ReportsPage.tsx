@@ -1,3 +1,4 @@
+import { ConsumptionQuoteDialog } from '../../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
@@ -57,7 +58,7 @@ type ImportAction = 'save' | 'normal' | 'deep' | null;
 export default function ReportsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, identityKey, status } = useAuth();
   const { t } = useTranslation();
   const translationRef = useRef(t);
   translationRef.current = t;
@@ -76,11 +77,13 @@ export default function ReportsPage() {
     queueSummary,
     reportStatesByGame,
     error: reportTasksError,
+    billingError: reportBillingError,
     clearError: clearReportTasksError,
     refresh: refreshTasks,
     createReport,
     retryReport,
-  } = useReportTasks(token, isAuthenticated);
+    pendingQuote, quoteBusy, confirmQuote, cancelQuote,
+  } = useReportTasks(token, isAuthenticated, identityKey, status);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);
@@ -242,16 +245,18 @@ export default function ReportsPage() {
       const action: ImportAction = reportType || 'save';
       setLocalImporting(action);
       setTaskError(null);
+      let reportStarted = false;
       try {
         const createdGame = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
         await focusImportedGame(createdGame);
         if (reportType) {
+          reportStarted = true;
           await createReportForGame(createdGame, reportType);
         }
         setLocalImportOpen(false);
         await refreshTasks();
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : translationRef.current('report:import_failed', 'Failed to import SGF'));
+        if (!reportStarted) setTaskError(error instanceof Error ? error.message : translationRef.current('report:import_failed', 'Failed to import SGF'));
       } finally {
         setLocalImporting(null);
       }
@@ -265,17 +270,19 @@ export default function ReportsPage() {
       const action: ImportAction = reportType || 'save';
       setLibraryImporting(action);
       setTaskError(null);
+      let reportStarted = false;
       try {
         const detail = await KifuAPI.getAlbum(album.id);
         const createdGame = await UserGamesAPI.create(token, toLibraryUserGameParams(album, detail.sgf_content));
         await focusImportedGame(createdGame);
         if (reportType) {
+          reportStarted = true;
           await createReportForGame(createdGame, reportType);
         }
         setLibraryImportOpen(false);
         await refreshTasks();
       } catch (error) {
-        setTaskError(error instanceof Error ? error.message : translationRef.current('report:library_import_failed', 'Failed to import from library'));
+        if (!reportStarted) setTaskError(error instanceof Error ? error.message : translationRef.current('report:library_import_failed', 'Failed to import from library'));
       } finally {
         setLibraryImporting(null);
       }
@@ -374,7 +381,7 @@ export default function ReportsPage() {
           modulePlate={(
             <ModulePlate
               title={t('report:my_reports', 'Review')}
-              backTo="/galaxy/report"
+              backTo="/report"
               showBack={false}
             />
           )}
@@ -447,7 +454,7 @@ export default function ReportsPage() {
             subtitle={plateSubtitle}
             status={plateStatus}
             /* 复盘是一级导航页，没有上一级 —— 同棋谱库页 / 直播列表页。 */
-            backTo="/galaxy/report"
+            backTo="/report"
             showBack={false}
           />
         )}
@@ -562,7 +569,7 @@ export default function ReportsPage() {
                           reportState={reportStatesByGame[game.id] || {}}
                           onSelect={() => setSelectedGameId(game.id)}
                           onCreateReport={(reportType) => handleCreateReport(game, reportType)}
-                          onOpenReport={(taskId) => navigate(`/galaxy/report/${taskId}`)}
+                          onOpenReport={(taskId) => navigate(`/report/${taskId}`)}
                           onRetry={(taskId) => handleRetry(taskId)}
                           onDelete={() => setDeleteTarget(game.id)}
                         />
@@ -598,6 +605,8 @@ export default function ReportsPage() {
         onSubmit={handleLocalImport}
       />
 
+      <ConsumptionQuoteDialog quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={reportBillingError ? reportTasksError : null} onCancel={cancelQuote}
+        onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}

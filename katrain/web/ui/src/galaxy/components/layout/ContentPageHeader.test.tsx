@@ -2,6 +2,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ContentPageHeader from './ContentPageHeader';
+import PlayPageLayout from './PlayPageLayout';
 
 const requestNavigation = vi.fn();
 vi.mock('../../context/GameNavigationContext', () => ({
@@ -24,9 +25,16 @@ vi.mock('../../../hooks/useTranslation', () => ({
  *  M4 把 parentLabel 也渲染上屏 → 第一条红（`queryByText('对局')` 命中）。
  */
 describe('ContentPageHeader', () => {
+  it('returns play setup pages to the root play menu', () => {
+    requestNavigation.mockClear();
+    render(<PlayPageLayout title="对局设置"><span>SETUP</span></PlayPageLayout>);
+    fireEvent.click(screen.getByRole('button', { name: '返回对局' }));
+    expect(requestNavigation).toHaveBeenCalledWith('/play');
+  });
+
   it('puts the back arrow before the title and folds the parent name into its accessible name only', () => {
     requestNavigation.mockClear();
-    render(<ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/galaxy/play" />);
+    render(<ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/play" />);
 
     const plate = screen.getByTestId('module-plate');
     const heading = screen.getByRole('heading', { name: '升降级对弈' });
@@ -36,7 +44,7 @@ describe('ContentPageHeader', () => {
     expect(within(plate).queryByText('对局')).not.toBeInTheDocument();
 
     fireEvent.click(back);
-    expect(requestNavigation).toHaveBeenCalledWith('/galaxy/play');
+    expect(requestNavigation).toHaveBeenCalledWith('/play');
   });
 
   it('draws no back control on a root-level page', () => {

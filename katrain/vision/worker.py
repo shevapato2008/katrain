@@ -178,6 +178,8 @@ class _VisionWorkerLoop:
         # ConfirmedMove so a consumer can tell whether a board reading is newer than the
         # confirmation it is being used to judge.
         self._observation_seq = 0
+        self._binding_epoch = 0
+        self._expected_revision = 0
         self._frame_count = 0  # Throttle for per-gate debug logging
 
     def _reset_motion_region(self) -> None:
@@ -382,8 +384,11 @@ class _VisionWorkerLoop:
                     # should_detect_moves returns False when paused). bound → develop's confidence-gated
                     # game pipeline (ambiguous dialog / ConfirmedMove); monitor (physical tsumego) →
                     # our move_event dict, no ambiguous dialog (the tsumego frontend consumes move_confirmed).
-                    if should_detect_moves(
-                        self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                    if (
+                        should_detect_moves(
+                            self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                        )
+                        and self._sync.has_confirmed_move is not True
                     ):
                         conf_map = self._state_extractor.cell_confidences(detections, img_w=w, img_h=h)
                         pending_before = self._move_detector.pending_move
@@ -505,11 +510,17 @@ class _VisionWorkerLoop:
                                         candidate_sightings + 1,
                                         self._move_detector.suspicion_of(row, col),
                                     )
-                                    self._event_queue.put(
-                                        ConfirmedMove(
-                                            col=col, row=row, color=color, observation_seq=self._observation_seq
-                                        )
+                                    confirmed = ConfirmedMove(
+                                        col=col,
+                                        row=row,
+                                        color=color,
+                                        observation_seq=self._observation_seq,
+                                        binding_epoch=getattr(self, "_binding_epoch", 0),
+                                        expected_revision=getattr(self, "_expected_revision", 0),
                                     )
+                                    if not self._monitor:
+                                        self._sync.claim_confirmed_move(confirmed, self._last_stable_board)
+                                    self._event_queue.put(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
@@ -576,7 +587,13 @@ class _VisionWorkerLoop:
                     # arm doesn't diff against a stale baseline.
                     self._move_detector.force_sync(observed_board)
                 for evt in events:
-                    self._event_queue.put({"type": evt.type.value, "data": evt.data})
+                    self._event_queue.put(
+                        {
+                            "type": evt.type.value,
+                            "data": evt.data,
+                            "binding_epoch": getattr(self, "_binding_epoch", 0),
+                        }
+                    )
 
             self._maybe_publish_status()
             # No throttle — processing runs as fast as inference allows
@@ -674,11 +691,18 @@ class _VisionWorkerLoop:
 
             if cmd.action == CommandType.SHUTDOWN:
                 self._running = False
+            elif cmd.action == CommandType.RELEASE_CONFIRMED_MOVE:
+                self._sync.release_confirmed_move(tuple(cmd.data["token"]))
             elif cmd.action == CommandType.BIND:
+                self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
+                self._expected_revision = 0
+                self._sync.invalidate_confirmed_move()
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
+                self._binding_epoch = 0
+                self._expected_revision = 0
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
                 self._reset_motion_region()
@@ -690,12 +714,22 @@ class _VisionWorkerLoop:
                 self._promoter.reset()
                 self._move_detector.reset_suspicion()  # a new session starts every cell at zero
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
+                self._sync.invalidate_confirmed_move()
                 self._board_locked = True
                 self._reset_motion_region()
                 logger.info("Board pose locked — reusing transform for subsequent frames")
                 self._sync.confirm_pose_lock()
                 self._averager.reset()  # warp switches to the frozen transform
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
+                epoch = int(cmd.data.get("binding_epoch", 0))
+                revision = int(cmd.data.get("expected_revision", 0))
+                if epoch and epoch != getattr(self, "_binding_epoch", 0):
+                    continue
+                if revision and revision < getattr(self, "_expected_revision", 0):
+                    continue
+                if revision and revision != getattr(self, "_expected_revision", 0):
+                    self._sync.invalidate_confirmed_move()
+                self._expected_revision = revision
                 board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
@@ -716,8 +750,9 @@ class _VisionWorkerLoop:
                 # rejected downstream) still force_syncs — that is the poller's re-arm.
             elif cmd.action == CommandType.ENTER_SETUP_MODE:
                 target = np.array(cmd.data["target_board"], dtype=int)
-                self._sync.enter_setup_mode(target)
+                self._sync.enter_setup_mode(target, setup_id=cmd.data.get("setup_id"))
             elif cmd.action == CommandType.RESET_SYNC:
+                self._sync.invalidate_confirmed_move()
                 self._board_locked = False
                 self._board_finder.is_first = True  # Reset corner baseline
                 self._reset_motion_region()
@@ -748,7 +783,10 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_MONITOR:
-                self._monitor = cmd.data.get("active", False)
+                active = cmd.data.get("active", False)
+                if active != self._monitor:
+                    self._sync.invalidate_confirmed_move()
+                self._monitor = active
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False

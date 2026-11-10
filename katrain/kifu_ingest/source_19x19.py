@@ -11,9 +11,11 @@ import httpx
 
 
 class SourceError(Exception):
-    def __init__(self, message, *, retryable=True):
+    def __init__(self, message, *, retryable=True, code=None, source_message=None):
         super().__init__(message)
         self.retryable = retryable
+        self.code = code
+        self.source_message = source_message
 
 
 class SourceBudgetExceeded(SourceError):
@@ -93,9 +95,15 @@ class Source19x19:
             self.requests += 1
             self._last_request = self.clock()
             try:
-                response = await self.client.request(
-                    method, self.base_url + path, headers=headers, timeout=30, **kwargs
+                remaining = self._remaining()
+                response = await asyncio.wait_for(
+                    self.client.request(
+                        method, self.base_url + path, headers=headers, timeout=min(30, remaining), **kwargs
+                    ),
+                    timeout=remaining,
                 )
+            except asyncio.TimeoutError as exc:
+                raise SourceBudgetExceeded("source time budget exhausted during request") from exc
             except httpx.RequestError as exc:
                 error = SourceError(f"network error: {exc}")
                 if attempt == self.max_retries:
@@ -104,10 +112,8 @@ class Source19x19:
                 continue
             if response.status_code == 429:
                 delay = self._retry_after(response)
-                if attempt == self.max_retries or delay > self.retry_after_cap or delay >= self._remaining():
-                    raise SourceRateLimited(delay)
-                await self._pause(delay)
-                continue
+                # Retry-After applies to the whole source, including other IDs.
+                raise SourceRateLimited(delay)
             if response.status_code >= 500:
                 error = SourceError(f"HTTP {response.status_code}")
                 if attempt == self.max_retries:
@@ -121,8 +127,13 @@ class Source19x19:
             except ValueError as exc:
                 raise SourceError("invalid JSON response") from exc
             if not isinstance(body, dict) or body.get("code") not in ("0", 0):
+                code = body.get("code") if isinstance(body, dict) else "invalid body"
+                message = str(body.get("msg") or body.get("message") or "")[:512] if isinstance(body, dict) else ""
                 raise SourceError(
-                    f"source business error: {body.get('code') if isinstance(body, dict) else 'invalid body'}"
+                    f"source business error: {code}",
+                    retryable=not (path.startswith("/games/shared/") and str(code) == "7004"),
+                    code=code,
+                    source_message=message,
                 )
             return body.get("data")
         raise SourceError("source retries exhausted")
@@ -139,6 +150,8 @@ class Source19x19:
         if not isinstance(data, dict) or not isinstance(data.get("gameMetaList"), list):
             raise SourceError("missing gameMetaList")
         games = data["gameMetaList"]
+        if len(games) > 20:
+            raise SourceError("gameMetaList exceeds requested 20 rows")
         if any(not isinstance(item, dict) or not re.fullmatch(r"[0-9]+", str(item.get("id", ""))) for item in games):
             raise SourceError("invalid game metadata")
         return games
@@ -154,4 +167,7 @@ class Source19x19:
         )
         if not isinstance(data, dict) or not isinstance(data.get("sgf"), str) or not data["sgf"]:
             raise SourceError("missing SGF")
+        # Match the existing finite publication artifact limit (16 MiB).
+        if len(data["sgf"].encode("utf-8")) > 16 * 1024 * 1024:
+            raise SourceError("SGF exceeds 16 MiB limit", retryable=False)
         return data["sgf"]

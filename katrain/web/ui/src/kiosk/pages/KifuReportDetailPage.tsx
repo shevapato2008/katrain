@@ -1,3 +1,4 @@
+import { interpolate } from '../utils/interpolate';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -10,6 +11,7 @@ import { gradedMoves, isBad } from '../../features/analysis/moveGrade';
 import type { WinratePoint } from '../../features/report/reportStats';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
+import { formatKifuRank } from '../../utils/rank';
 import { useSound } from '../../hooks/useSound';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -142,7 +144,7 @@ export default function KifuReportDetailPage() {
 
       {!album || !parsed ? (
         <div className="kiosk-rail" data-testid="kifu-report-detail-shell">
-          <KioskPagebar backLabel={t('kifu:back_kifu', '棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title} />
+          <KioskPagebar backLabel={t('kifu:back_kifu_full', '返回棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title} />
           <div className="empty" data-testid="kifu-report-loading">
             <h4>{loadError || id === null ? t('kifu:report_load_failed', '职业棋局暂时无法读取') : album ? t('report:no_sgf', '没有可用于复盘展示的 SGF 数据。') : t('kifu:report_loading', '正在读取职业棋局报告')}</h4>
             {(loadError || album) && <button type="button" className="kiosk-btn" onClick={retryLoad}>{t('report:retry_load', '重试加载')}</button>}
@@ -153,8 +155,8 @@ export default function KifuReportDetailPage() {
           key={id} testId="kifu-report" shellTestId="kifu-report-detail-shell"
           players={[album.display_player_black ?? album.player_black, album.display_player_white ?? album.player_white]}
           pagebar={(<KioskPagebar
-            backLabel={t('kifu:back_kifu', '棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title}
-            sub={`${album.date_played ?? ''} · ${at} / ${totalMoves} ${t('kifu:moves_unit', '手')}`}
+            backLabel={t('kifu:back_kifu_full', '返回棋谱')} onBack={() => navigate('/kiosk/kifu')} title={title}
+            sub={interpolate(t("{value1} · {at} / {totalMoves} {value4}", "{value1} · {at} / {totalMoves} {value4}"), { value1: album.date_played ?? '', at: at, totalMoves: totalMoves, value4: t('kifu:moves_unit', '手') })}
           />)}
           analysis={currentAnalysis} analysisByMove={analysisByMove}
           playerToMove={playerToMove} actualMove={parsed.moves[boardCursor]}
@@ -166,7 +168,7 @@ export default function KifuReportDetailPage() {
           }}
           status={(<div className="report-analysis-rail__status" data-testid="kifu-report-head">
             <span>{status}</span>
-            <span>{detail?.requested_visits != null ? `${detail.requested_visits} visits · ${album.move_count} ${t('kifu:moves_unit', '手')}` : '—'}</span>
+            <span>{detail?.requested_visits != null ? interpolate(t("{requested_visits} visits · {move_count} {value3}", "{requested_visits} visits · {move_count} {value3}"), { requested_visits: detail.requested_visits, move_count: album.move_count, value3: t('kifu:moves_unit', '手') }) : '—'}</span>
           </div>)}
           statusVisible={detail?.status !== 'completed' || !kifuAnalysisParametersValid(detail) || detail.moves.length === 0 || analysisError}
           metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">
@@ -174,8 +176,8 @@ export default function KifuReportDetailPage() {
             <span>{kifuRulesLabel(eventRules, t, analysisParameters)}</span><span>{t('report:komi_label', '贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
           </div>)}
           details={[
-            [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
-            [t('review:white', '白'), [album.display_player_white ?? album.player_white, album.display_white_rank ?? album.white_rank].filter(Boolean).join(' · ')],
+            [t('review:black', '黑'), [album.display_player_black ?? album.player_black, formatKifuRank(album.display_black_rank, album.black_rank, t, lang)].filter(Boolean).join(' · ')],
+            [t('review:white', '白'), [album.display_player_white ?? album.player_white, formatKifuRank(album.display_white_rank, album.white_rank, t, lang)].filter(Boolean).join(' · ')],
             [t('report:event', '赛事'), [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ')],
             [t('report:date', '日期'), album.date_played],
             [t('report:result', '结果'), album.result],

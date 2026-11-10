@@ -173,7 +173,7 @@ for (const scenario of [
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: referencePath });
 
-    await page.goto('/galaxy/play/ai?mode=rated');
+    await page.goto('/play/ai?mode=rated');
     await page.evaluate(() => document.fonts.ready);
     await expect(page.getByRole('heading', { name: '升降级对弈' })).toBeVisible();
     await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
@@ -212,7 +212,7 @@ for (const scenario of [
 test('Galaxy 待结算状态仅允许刷新', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 880 });
   await routeGalaxyRuntime(page, 'pending_settlement', 'current_device');
-  await page.goto('/galaxy/play/ai?mode=rated');
+  await page.goto('/play/ai?mode=rated');
   await expect(page.getByRole('heading', { name: '升降级对弈' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
   await expect(page.getByText('本局已结束，成绩正在结算中。')).toBeVisible();

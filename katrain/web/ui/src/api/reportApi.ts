@@ -18,6 +18,12 @@ export interface ReportQueueSummary {
 }
 
 export interface ReportTaskSummary {
+  operation_id?: number | null;
+  authorization_operation_id?: number | null;
+  source?: string | null;
+  wallet_credits?: number;
+  wallet_display_points?: string;
+  billing_version?: string | null;
   id: number;
   user_game_id: string;
   status: ReportStatus;
@@ -109,7 +115,7 @@ export const ReportsAPI = {
 
   create: (
     token: string | null | undefined,
-    params: { user_game_id: string; report_type?: ReportType; force?: boolean },
+    params: { user_game_id: string; report_type?: ReportType; force?: boolean; quote_token?: string; idempotency_key?: string },
   ): Promise<ReportTaskSummary> => {
     return authFetch('/api/v1/reports/', token, {
       method: 'POST',
@@ -117,8 +123,8 @@ export const ReportsAPI = {
     });
   },
 
-  retry: (token: string | null | undefined, taskId: number): Promise<ReportTaskSummary> => {
-    return authFetch(`/api/v1/reports/${taskId}/retry`, token, { method: 'POST' });
+  retry: (token: string | null | undefined, taskId: number, authorization?: { quote_token: string; idempotency_key: string }): Promise<ReportTaskSummary> => {
+    return authFetch(`/api/v1/reports/${taskId}/retry`, token, { method: 'POST', ...(authorization ? { body: JSON.stringify(authorization) } : {}) });
   },
 
   getMoves: (token: string | null | undefined, taskId: number): Promise<ReportTaskMove[]> => {

@@ -1,0 +1,174 @@
+/* Platform and online lobby proposals. All content below the shared 56px top bar is redrawn. */
+#stage .u-p-body{position:absolute;inset:56px 0 0;background:#0d1415;color:#edf4ed;font:18px/1.3 "SmartBox Kai",serif;overflow:hidden}
+#stage .u-p-body *{box-sizing:border-box}
+#stage .u-p-body button,#stage .u-p-body input,#stage .u-p-body select{font-family:"SmartBox Kai",serif}
+#stage .u-p-body button{cursor:pointer}
+#stage .u-p-body button:disabled{cursor:default}
+#stage .u-p-body button:focus-visible,#stage .u-p-body input:focus-visible,#stage .u-p-body label:focus-visible{outline:2px solid #a7efbf;outline-offset:2px}
+.u-p-icon{width:24px;height:24px;flex:none}
+.u-p-bar{position:absolute;left:16px;right:16px;top:14px;height:44px;display:flex;align-items:center;gap:14px}
+.u-p-bar h1{margin:0;display:flex;align-items:center;gap:9px;font-size:22px;font-weight:500;white-space:nowrap}
+.u-p-back{height:44px;display:flex;align-items:center;gap:7px;padding:0 14px;border:1px solid #385245;border-radius:9px;background:#1e2d25;color:#e9f3ea;font-size:22px;white-space:nowrap}
+.u-p-back .ic{width:22px;height:22px}
+.u-p-bar-status{display:flex;align-items:center;gap:15px;margin-left:auto;color:#bed3c1;font-size:18px;white-space:nowrap}
+.u-p-online{color:#78d69a}
+.u-p-live-dot{display:inline-block;width:12px;height:12px;margin-right:8px;border-radius:50%;background:#79d69a}
+.u-p-help{width:44px;height:44px;flex:none;display:grid;place-items:center;border:1px solid #456c50;border-radius:50%;background:#203629;color:#9ee5b4;padding:0}
+.u-p-help .u-p-icon{width:24px;height:24px}
+.u-p-section-title{height:42px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #32483c;color:#eaf4ec}
+.u-p-section-title strong{font-size:22px;font-weight:500}
+.u-p-section-title .u-p-help{width:44px;height:44px;border:0;background:transparent}
+.u-p-mode{position:relative;min-width:0;border:1px solid #355144;border-radius:11px;background:#1b2a24;overflow:hidden}
+.u-p-mode-action{width:100%;height:100%;display:flex;align-items:center;gap:12px;padding:0 56px 0 16px;border:0;background:transparent;color:#eef5ed;text-align:left;font-size:22px;white-space:nowrap}
+.u-p-mode-action .u-p-icon{color:#70cf91}
+.u-p-mode-action em{margin-left:auto;color:#d2e2d5;font-size:18px;font-style:normal}
+.u-p-mode-action:disabled{opacity:.65}
+.u-p-mode>.u-p-help{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:transparent}
+.u-p-btn{min-height:48px;border-radius:9px;padding:0 15px;font-size:22px}
+.u-p-primary{background:#59b980;border:1px solid #59b980;color:#102119}
+.u-p-secondary{background:#1d2c25;border:1px solid #3c5b47;color:#eaf2e9}
+.u-p-disabled{background:#344b3e;border:1px solid #344b3e;color:#b7c8ba;opacity:.75}
+
+/* The self-owned online lobby: two start cards and captured live rooms. */
+.u-p-lobby-main{position:absolute;left:16px;right:16px;top:69px;bottom:14px}
+.u-p-lobby-main>.u-p-section-title:first-child{height:33px}
+.u-p-lobby-actions{display:grid;grid-template-columns:repeat(2,220px);gap:8px;height:54px;margin:7px 0 6px}
+.u-p-lobby-actions .u-p-mode{border:0;border-radius:17px;background:transparent;overflow:visible}
+.u-p-lobby-actions .u-p-mode-action{gap:10px;padding:0 14px;border:1px solid #355144;border-radius:17px;background:#1b2a24}
+.u-p-lobby-panel{position:relative;height:306px;border:1px solid #355144;border-radius:11px;background:#15231c;overflow:hidden}
+.u-p-lobby-panel>input[type=radio],.u-p-lobby-players-panel .u-p-filter input{position:absolute;opacity:0;width:1px;height:1px}
+.u-p-lobby-tabs{height:50px;display:flex;align-items:center;padding:0 7px;border-bottom:1px solid #354c3f}
+.u-p-lobby-tabs label,.u-p-filter label{display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #385245;border-radius:8px;background:#1a2922;color:#d0dfd2;font-size:22px;cursor:pointer}
+#u-p-lobby-games:checked~.u-p-lobby-tabs label[for=u-p-lobby-games],#u-p-lobby-players:checked~.u-p-lobby-tabs label[for=u-p-lobby-players],#u-p-peer-all:checked~label[for=u-p-peer-all],#u-p-peer-rank:checked~label[for=u-p-peer-rank]{background-color:#2a513a;border-color:#70c98d;color:#f1f9f0}
+.u-p-lobby-tab-capsule{width:448px;height:44px;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;border:1px solid #52715c;border-radius:15px;background:#1a2922;box-shadow:inset 0 1px 0 #ffffff26,0 2px 0 #0c1912,0 4px 7px #0005}
+.u-p-lobby-tab-capsule>label{min-height:0;height:100%;border:0;border-radius:0;background:transparent;box-shadow:none;transition:background-color 130ms ease,box-shadow 130ms ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.u-p-lobby-tab-capsule>label+label{border-left:1px solid #52715c}
+#u-p-lobby-games:checked~.u-p-lobby-tabs .u-p-lobby-tab-capsule>label[for=u-p-lobby-games],#u-p-lobby-players:checked~.u-p-lobby-tabs .u-p-lobby-tab-capsule>label[for=u-p-lobby-players]{background-color:#2a513a}
+#stage .proposal-overlay .u-p-lobby-tab-capsule>label:is(:active,.is-pressing){background-image:linear-gradient(180deg,#0000001b,transparent 70%);box-shadow:inset 0 3px 7px #0008,inset 0 1px 0 #ffffff14}
+@media (prefers-reduced-motion:reduce){.u-p-lobby-tab-capsule>label{transition:none}}
+.u-p-lobby-games-panel,.u-p-lobby-players-panel{display:none;padding:8px}
+#u-p-lobby-games:checked~.u-p-lobby-games-panel,#u-p-lobby-players:checked~.u-p-lobby-players-panel{display:block}
+.u-p-game-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.u-p-game{display:block;width:100%;height:112px;border:1px solid #3c5847;border-radius:9px;background:#1b2b24;color:#edf4ed;text-align:left;padding:8px 11px;overflow:hidden}
+.u-p-game:hover{background:#254034}
+.u-p-game-head{height:25px;display:flex;align-items:center;gap:12px;color:#c7d8c8;font-size:18px}
+.u-p-game-head b{font-size:22px;font-weight:500;color:#f0f6ef}
+.u-p-game-head span:last-child{margin-left:auto}
+.u-p-game-players{height:70px;display:grid;grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr);align-items:center;text-align:center;gap:4px}
+.u-p-game-players>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.u-p-game-players strong{display:flex;align-items:center;justify-content:center;gap:5px;font-size:22px;font-weight:500;white-space:nowrap}
+.u-p-stone{display:inline-block;width:20px;height:20px;flex:none;border-radius:50%}
+.u-p-stone-black{background:linear-gradient(#515955,#070a08);border:1px solid #8ca798}
+.u-p-stone-white{background:linear-gradient(#fff,#d2d9d3);border:1px solid #f8fff9}
+.u-p-game-players small{font-size:18px;color:#afd1b9;white-space:nowrap}
+.u-p-game-players>b{font-size:22px;color:#e1bf81;font-weight:500}
+.u-p-lobby-players-panel .u-p-filter{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.u-p-lobby-players-panel p{font-size:22px;margin:28px 4px 12px}
+
+/* Login pages keep the exact QR image box; explanatory copy is in info dialogs. */
+.u-p-login-card{position:absolute;left:16px;top:70px;width:992px;height:460px;display:grid;grid-template-columns:300px 1fr;border:1px solid #437a55;border-radius:12px;background:#1a2923;overflow:hidden}
+.u-p-login-aside{position:relative;padding:31px 22px;background:#1e3027;border-right:1px solid #354b40}
+.u-p-login-brand{display:flex;align-items:center;gap:13px;height:70px}
+.u-p-mark{display:block;width:40px;height:40px;object-fit:contain;flex:none;border-radius:9px}
+.u-p-login-brand strong{display:block;font-size:22px;font-weight:500}
+.u-p-login-brand span{display:block;font-size:18px;color:#b8cabe}
+.u-p-login-aside p{margin:36px 0 18px;font-size:22px;line-height:1.45}
+.u-p-disconnected{position:absolute;left:22px;bottom:27px;font-size:18px;color:#dfbd86}
+.u-p-login-main{position:relative;padding:69px 52px 0 85px}
+.u-p-form-title{height:42px;display:flex;align-items:center;gap:14px;font-size:22px;white-space:nowrap}
+.u-p-form-title span{font-size:18px;color:#9fddad;margin-left:auto}
+.u-p-form-title .u-p-help{margin-left:auto}
+.u-p-form-title span+.u-p-help{margin-left:0}
+.u-p-login-tabs{height:52px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:3px;border:1px solid #3a5244;border-radius:11px}
+.u-p-login-tabs button{border:0;border-radius:8px;background:transparent;color:#c7d9cb;font-size:22px}
+.u-p-login-tabs button.is-active{background:#254f35;color:#8ae0a6}
+.u-p-qr{position:absolute;left:85px;top:185px;width:188px;height:188px;border-radius:12px;overflow:hidden;background:#fff}
+.u-p-qr img{position:absolute;width:1024px;height:600px;max-width:none;left:-402px;top:-312px}
+.u-p-qr-side{position:absolute;left:295px;top:184px;width:325px}
+.u-p-qr-side b{font-size:22px;font-weight:500}
+.u-p-qr-side p{font-size:18px;margin:8px 0 21px;color:#c6d4c8}
+.u-p-await{height:44px;display:flex;align-items:center;color:#b9e4c5;font-size:22px}
+.u-p-await:before{content:"";width:11px;height:11px;border-radius:50%;background:#6bd396;margin-right:9px}
+.u-p-qr-side .u-p-btn{margin-top:5px}
+.u-p-login-fields{position:relative;height:270px;margin-top:15px}
+.u-p-login-fields label{height:69px;display:flex;align-items:center;gap:11px;color:#d0ddd1;font-size:18px;white-space:nowrap}
+.u-p-field-caption{width:54px;flex:none}
+.u-p-login-fields label>.u-p-field{height:56px;min-width:0;flex:1;display:flex;align-items:center;border:1px solid #3a5145;border-radius:10px;background:#14231d;overflow:hidden}
+.u-p-phone-area{width:163px;height:54px;flex:none;padding:0 11px;border:0;border-right:1px solid #3a5145;background:#14231d;color:#dce9dc;font:22px "SmartBox Kai",serif;cursor:pointer}
+.u-p-field input{width:100%;height:100%;min-width:0;border:0;background:transparent;color:#eaf4ea;font-size:22px;padding:0 13px;outline:none}
+.u-p-field input::placeholder{color:#b8cbbd;opacity:1}
+.u-p-login-submit{position:absolute;left:65px;right:0;top:151px;height:56px}
+.u-p-send-code{position:absolute;right:0;top:77px;min-height:48px;font-size:22px}
+.u-p-login-fields:has(.u-p-send-code) label:nth-child(2){padding-right:155px}
+.u-p-login-fields:has(.u-p-send-code) .u-p-send-code{top:80px}
+
+/* Star platform setup retains the captured board's x/y/size. */
+.u-p-setup-title{position:absolute;left:16px;top:63px;height:47px;display:flex;align-items:baseline;gap:17px}
+.u-p-setup .u-p-bar .u-p-mark{width:28px;height:28px}
+.u-p-setup-title strong{font-size:28px;font-weight:500}
+.u-p-setup-title span{font-size:18px;color:#bfcfbe}
+.u-p-board{position:absolute;left:16px;top:117px;width:489px;height:420px;border:1px solid #355144;border-radius:11px;background:#17251e}
+.u-p-board-crop{position:absolute;left:66px;top:20px;width:356px;height:356px;overflow:hidden;border-radius:5px;background:#b8874d}
+.u-p-board-crop img{position:absolute;width:1024px;height:600px;max-width:none;left:-83px;top:-194px}
+.u-p-board-label{position:absolute;bottom:7px;left:0;right:0;text-align:center;color:#e5d1ac;font-size:18px}
+.u-p-setup-panel{position:absolute;left:519px;top:117px;width:489px;height:420px;border:1px solid #355144;border-radius:11px;background:#17251e;padding:14px 16px}
+.u-p-input{height:54px;display:flex;align-items:center;gap:12px;font-size:18px}
+.u-p-input>span{width:50px;flex:none}
+.u-p-segment{height:54px;display:grid;grid-template-columns:1fr 1fr;gap:4px;flex:1;border:1px solid #375144;border-radius:9px;padding:3px;background:#1b2b24}
+.u-p-segment input{position:absolute;width:1px;height:1px;opacity:0}
+.u-p-segment label{display:flex;align-items:center;justify-content:center;border-radius:7px;color:#cbd9cd;font-size:22px;cursor:pointer}
+.u-p-segment input:checked+label{background:#2d503c;color:#f1f7ef}
+.u-p-match-head{height:38px;margin-top:12px;border-bottom:1px solid #334b3d;display:flex;align-items:center;justify-content:space-between;font-size:22px}
+.u-p-match-head .u-p-help{border:0;background:transparent}
+.u-p-time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px}
+.u-p-time{height:94px;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px;border:1px solid #70c68e;border-radius:9px;background:#2b4e39;cursor:pointer}
+.u-p-time input{position:absolute;align-self:flex-end;accent-color:#72d796;width:19px;height:19px;margin:-57px 0 0}
+.u-p-time strong{font-size:22px;font-weight:500}
+.u-p-time span{font-size:18px;line-height:1.12;white-space:normal}
+.u-p-time:has(input:not(:checked)){background:#1b2a23;border-color:#375143}
+.u-p-ai{height:51px;margin-top:8px;display:flex;align-items:center;gap:8px;border:1px solid #354f40;border-radius:8px;background:#203126;padding:0 9px;font-size:18px}
+.u-p-ai strong{font-size:18px;color:#e0bd80;font-weight:400;margin-left:auto}
+.u-p-ai .u-p-help{border:0;background:transparent}
+.u-p-room-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px;height:48px}
+.u-p-room-tabs button{border:1px solid #3b5847;border-radius:8px;background:#1c2b24;color:#d1dfd3;font-size:22px}
+.u-p-room-tabs button.is-active{background:#2e563f;border-color:#6ccb8d;color:#f0f8ee}
+.u-p-room-content{position:relative;height:158px;border:1px solid #385443;border-radius:9px;margin-top:6px;padding:12px;background:#1a2a22}
+.u-p-room-content>strong{display:block;font-size:22px;font-weight:500}
+.u-p-room-content p{font-size:18px;margin:8px 0;color:#cbdacd}
+.u-p-room-content .u-p-room-risk{color:#e8c487;max-width:400px}
+.u-p-room-content>.u-p-help{position:absolute;right:8px;top:7px;border:0;background:transparent}
+.u-p-room-empty{height:57px;margin-top:8px;display:grid;place-items:center;border:1px dashed #51735a;border-radius:7px;color:#dfbd86;font-size:22px}
+.u-p-room-content label{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:18px}
+.u-p-room-content input{height:47px;flex:1;min-width:0;padding:0 11px;border:1px solid #567c5f;border-radius:7px;background:#12231c;color:#eef5eb;font-size:22px}
+.u-p-room-content input::placeholder{color:#a8bdaa}
+.u-p-setup-warning{position:absolute;left:16px;right:16px;bottom:68px;height:44px;display:flex;align-items:center;justify-content:space-between;color:#e8c487;font-size:18px}
+.u-p-setup-warning .u-p-help{border:0;background:transparent}
+.u-p-submit{position:absolute;left:16px;right:16px;bottom:15px;height:48px}
+
+/* Disconnected star landing and OGS lobby preserve their actual connection state. */
+.u-p-golaxy .u-p-bar .u-p-mark,.u-p-ogs .u-p-bar .u-p-mark{width:28px;height:28px}
+.u-p-golaxy-state{position:absolute;left:36px;top:100px;width:550px;padding:22px 24px;border:1px solid #3c5f48;border-radius:12px;background:#1b2d23}
+.u-p-golaxy-state strong{font-size:28px;font-weight:500}
+.u-p-golaxy-state p{font-size:22px;color:#c6d8c8;margin:10px 0 21px}
+.u-p-golaxy-state .u-p-btn{min-width:220px}
+.u-p-ogs-notice{position:absolute;left:16px;right:16px;top:74px;height:56px;display:flex;align-items:center;gap:18px;color:#e8c990;font-size:22px}
+.u-p-ogs-notice .u-p-btn{margin-left:auto}
+.u-p-ogs-input{position:absolute;left:16px;right:16px;top:132px;height:74px;padding:8px 14px;display:flex;align-items:center;gap:12px;border:1px solid #4eaf6c;border-radius:11px;background:#182720}
+.u-p-ogs-input .u-p-input{width:490px}
+.u-p-ogs-input>span{margin-left:auto;font-size:22px}
+.u-p-ogs-input .u-p-help{border:0;background:transparent}
+.u-p-ogs>.u-p-section-title{position:absolute;left:16px;right:16px;top:208px}
+.u-p-ogs-cards{position:absolute;left:16px;right:16px;top:256px;height:89px;display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.u-p-ogs-cards .u-p-mode-action{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px}
+.u-p-ogs-cards .u-p-mode-action .u-p-icon{position:absolute;left:12px;top:15px}
+.u-p-ogs-cards .u-p-mode-action span,.u-p-ogs-cards .u-p-mode-action em{margin-left:38px}
+.u-p-ogs-cards .u-p-mode-action em{font-size:18px;margin-left:38px}
+.u-p-ogs-cards+.u-p-section-title{top:354px}
+.u-p-ogs-filter{position:absolute;left:16px;right:16px;top:403px;height:51px;display:flex;gap:7px}
+.u-p-ogs-filter>input[type=radio]{position:absolute;opacity:0;width:1px;height:1px}
+.u-p-ogs-filter label{display:grid;place-items:center;min-width:154px;border:1px solid #355041;border-radius:8px;background:#1b2b23;color:#d0dfd0;font-size:22px;cursor:pointer}
+#u-p-ogs-all:checked+label,#u-p-ogs-19:checked+label{border-color:#68bd83;background:#2b4d39;color:#f1f7ee}
+.u-p-ogs-search{flex:1;min-width:0;padding:0 16px;border:1px solid #375143;border-radius:8px;background:#1b2b24;color:#e9f3ea;font-size:22px}
+.u-p-ogs-search::placeholder{color:#a7bda9}
+.u-p-ogs-filter button{width:52px;display:grid;place-items:center}
+.u-p-ogs-empty{position:absolute;left:16px;right:16px;top:468px;height:56px;padding:10px 3px;font-size:22px;color:#c2d3c4}

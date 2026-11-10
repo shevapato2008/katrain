@@ -8,6 +8,7 @@ P2 and degrades gracefully if the LED service isn't running.
 
 import asyncio
 import logging
+import time
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -30,6 +31,8 @@ _ACTIVE_CALIBRATION_PHASES = frozenset(
 )
 _STREAM_INTERVAL_ACTIVE_S = 0.5
 _STREAM_INTERVAL_IDLE_S = 0.2
+_SNAPSHOT_FRAME_WAIT_S = 0.2
+_SNAPSHOT_RETRY_INTERVAL_S = 0.025
 
 
 def _stream_interval_s(phase: str) -> float:
@@ -254,7 +257,30 @@ async def geometry_snapshot(request: Request, view: str = "raw", scale: int = 1,
             raise HTTPException(status_code=409, detail="geometry_not_available")
 
     def encode_latest() -> bytes | None:
-        frame = capture.read_frame()
+        # Hub preview reads are nonblocking while a fresh capture owns its lifecycle.
+        # Bound retry waiting here; the existing capture call itself may still block.
+        deadline = time.monotonic() + _SNAPSHOT_FRAME_WAIT_S
+        while True:
+            connected = getattr(capture, "is_connected", None)
+            if connected is not None and not (connected() if callable(connected) else connected):
+                frame = None
+                break
+            frame = capture.read_frame()
+            if frame is not None:
+                break
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(_SNAPSHOT_RETRY_INTERVAL_S, remaining))
+
+        if lock is not None:
+            latest_lock, latest_phase, latest_revision = _geometry_snapshot(request)
+            if (
+                latest_lock is not lock
+                or latest_phase in _ACTIVE_CALIBRATION_PHASES
+                or latest_revision != current_revision
+            ):
+                raise HTTPException(status_code=409, detail="geometry_not_available")
         if frame is None:
             return None
         if lock is not None:

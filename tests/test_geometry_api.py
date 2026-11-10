@@ -1,9 +1,12 @@
 """HTTP-layer tests for the geometry lock endpoint (web env). No camera/board."""
 
+import threading
+import uuid
+from types import SimpleNamespace
+
 import cv2
 import numpy as np
 import pytest
-from types import SimpleNamespace
 
 pytest.importorskip("fastapi")
 from fastapi import FastAPI
@@ -22,6 +25,55 @@ class FakeCapture:
 
     def read_frame(self):
         return self._frames[-1].copy() if self._frames else None
+
+
+class SnapshotCapture:
+    """A cached-frame source without the optional connection capability."""
+
+    def __init__(self, frames):
+        self.frames = list(frames)
+        self.read_calls = 0
+
+    def read_frame(self):
+        self.read_calls += 1
+        return self.frames.pop(0) if self.frames else None
+
+
+@pytest.fixture
+def snapshot_clock(monkeypatch):
+    class Clock:
+        now = 10.0
+
+        def __init__(self):
+            self.sleeps = []
+            self.on_sleep = lambda: None
+
+        def monotonic(self):
+            return self.now
+
+        def sleep(self, delay):
+            self.sleeps.append(delay)
+            self.now += delay
+            self.on_sleep()
+
+    clock = Clock()
+    monkeypatch.setattr(geometry, "time", clock, raising=False)
+    return clock
+
+
+class SnapshotCamera(FakeCapture):
+    def __init__(self):
+        super().__init__([np.full((60, 90, 3), 175, np.uint8)])
+        self.is_connected = False
+        self.open_calls = 0
+
+    def open(self):
+        self.open_calls += 1
+        self.is_connected = True
+        return True
+
+    def close(self):
+        self.is_connected = False
 
 
 class FakeLed:
@@ -77,6 +129,159 @@ class TestGeometryEndpoint:
     def test_snapshot_warped_requires_geometry(self):
         _, c = _client(capture=FakeCapture([np.zeros((60, 90, 3), np.uint8)]))
         assert c.get("/geometry/snapshot?view=warped&scale=2").status_code == 409
+
+    def test_snapshot_retries_busy_frames_and_encodes_latest_once(self, monkeypatch, snapshot_clock):
+        latest = np.full((60, 90, 3), 175, np.uint8)
+        capture = SnapshotCapture([None, None, latest])
+        _, c = _client(capture=capture)
+        encode_calls = []
+        real_encode = cv2.imencode
+
+        def encode(extension, frame, options):
+            encode_calls.append((extension, frame.shape, options))
+            return real_encode(extension, frame, options)
+
+        monkeypatch.setattr(cv2, "imencode", encode)
+
+        response = c.get("/geometry/snapshot?view=raw&scale=3")
+
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-store"
+        image = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
+        assert image.shape[:2] == (20, 30)
+        assert abs(float(np.median(image)) - 175) < 3
+        assert capture.read_calls == 3
+        assert snapshot_clock.sleeps == pytest.approx([0.025, 0.025])
+        assert encode_calls == [(".jpg", (20, 30, 3), [cv2.IMWRITE_JPEG_QUALITY, 65])]
+
+    def test_snapshot_permanent_unavailability_has_one_bounded_retry_budget(self, snapshot_clock):
+        capture = SnapshotCapture([])
+        _, c = _client(capture=capture)
+
+        response = c.get("/geometry/snapshot")
+
+        assert response.status_code == 503
+        assert response.json()["detail"] == "camera_frame_not_available"
+        assert sum(snapshot_clock.sleeps) == pytest.approx(0.2)
+        assert all(0 < delay <= 0.025 for delay in snapshot_clock.sleeps)
+        assert 2 <= capture.read_calls <= 10
+
+    @pytest.mark.parametrize("connection_is_method", [False, True])
+    def test_snapshot_known_disconnect_never_reads_or_reopens(self, connection_is_method, snapshot_clock):
+        camera = SnapshotCamera()
+        capture = SimpleNamespace(
+            is_connected=(lambda: False) if connection_is_method else False,
+            # A disconnected camera's cached-frame API can reopen internally.
+            read_frame=lambda: camera.open() and camera.read_frame(),
+        )
+        _, c = _client(capture=capture)
+
+        response = c.get("/geometry/snapshot")
+
+        assert response.status_code == 503
+        assert camera.open_calls == 0
+        assert snapshot_clock.sleeps == []
+
+    def test_snapshot_retries_real_hub_while_fresh_capture_is_busy(self, snapshot_clock):
+        from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+        entered, release = threading.Event(), threading.Event()
+
+        class BusyCamera(SnapshotCamera):
+            def grab_fresh(self, **kwargs):
+                entered.set()
+                assert release.wait(2)
+                return self.read_frame(), 7, 123.0
+
+        camera = BusyCamera()
+        hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+        hub.start()
+        results = []
+        fresh = threading.Thread(target=lambda: results.append(hub.grab_fresh()))
+
+        def finish_fresh_capture():
+            release.set()
+            fresh.join(1)
+            assert not fresh.is_alive()
+
+        snapshot_clock.on_sleep = finish_fresh_capture
+        try:
+            fresh.start()
+            assert entered.wait(1)
+            _, c = _client(capture=hub)
+
+            response = c.get("/geometry/snapshot?scale=3")
+
+            assert response.status_code == 200
+            image = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
+            assert image.shape[:2] == (20, 30)
+            assert abs(float(np.median(image)) - 175) < 3
+            assert snapshot_clock.sleeps == pytest.approx([0.025])
+            assert results[0][1:] == (7, 123.0)
+            assert camera.open_calls == 1
+        finally:
+            release.set()
+            fresh.join(2)
+            hub.stop()
+
+    def test_snapshot_usb_paused_hub_is_not_read_or_reopened(self, monkeypatch, snapshot_clock):
+        from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+
+        camera = SnapshotCamera()
+        hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+        hub.start()
+        reads = []
+        read_frame = hub.read_frame
+        monkeypatch.setattr(hub, "read_frame", lambda: reads.append(True) or read_frame())
+        try:
+            assert hub.begin_usb_recovery(timeout=0.5)
+            _, c = _client(capture=hub)
+
+            response = c.get("/geometry/snapshot")
+
+            assert response.status_code == 503
+            assert reads == []
+            assert camera.open_calls == 1
+            assert snapshot_clock.sleeps == []
+        finally:
+            hub.stop()
+
+    @pytest.mark.parametrize("change", ["lock", "phase", "revision"])
+    @pytest.mark.parametrize("acquisition_exit", ["frame", "unavailable", "disconnected"])
+    def test_snapshot_warped_revalidates_geometry_on_every_acquisition_exit(
+        self, change, acquisition_exit, monkeypatch, snapshot_clock
+    ):
+        calibration = SimpleNamespace(current_lock=_ok_lock(), phase="ready", revision=7)
+        calibration.status = lambda: {
+            "phase": calibration.phase,
+            "geometry_revision": calibration.revision,
+        }
+
+        def invalidate():
+            if change == "lock":
+                calibration.current_lock = _ok_lock()
+            elif change == "phase":
+                calibration.phase = "flashing_corners"
+            else:
+                calibration.revision += 1
+
+        frames = [None, np.zeros((60, 90, 3), np.uint8)] if acquisition_exit == "frame" else []
+        capture = SnapshotCapture(frames)
+        if acquisition_exit == "disconnected":
+            capture.is_connected = lambda: invalidate() or False
+        else:
+            snapshot_clock.on_sleep = invalidate
+        app, c = _client(capture=capture)
+        app.state.geometry_calibration = calibration
+        encoded = []
+        monkeypatch.setattr(geometry, "_encode_warped_frame", lambda *args: encoded.append(True) or b"jpeg")
+
+        response = c.get("/geometry/snapshot?view=warped&revision=7")
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "geometry_not_available"
+        assert encoded == []
+
     def test_preflight_requires_camera_model_and_recognition_capabilities(self):
         class Calibration:
             def preflight(self):

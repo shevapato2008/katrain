@@ -295,12 +295,22 @@ async def lifespan(app: FastAPI):
         # ── Server mode startup (existing logic, unchanged) ──
         await _lifespan_server(app, log)
 
-    yield
+    try:
+        yield
+    finally:
+        await _shutdown_app(app)
+
+
+async def _shutdown_app(app):
 
     # ── Shutdown ──
     kifu_search = getattr(app.state, "kifu_search_client", None)
     if kifu_search is not None:
         await kifu_search.aclose()
+    # Stop new reset submissions before any owner is torn down.
+    recovery = getattr(app.state, "usb_hub_recovery", None)
+    if recovery is not None:
+        await asyncio.to_thread(recovery.stop)
     geometry_calibration = getattr(app.state, "geometry_calibration", None)
     if geometry_calibration:
         geometry_calibration.stop()
@@ -611,6 +621,29 @@ def _init_platform_manager(app, session_manager, log):
 
 
 async def _lifespan_board(app: FastAPI, log):
+    try:
+        await _initialize_board(app, log)
+    except BaseException:
+        await _stop_board_hardware(app)
+        raise
+
+
+async def _stop_board_hardware(app):
+    """Partial startup must not strand an owner or start a late reset."""
+    for name in ("vision_poller_task", "vision_pump_task", "led_failsafe_task"):
+        task = getattr(app.state, name, None)
+        if task is not None:
+            task.cancel()
+    for name in ("usb_hub_recovery", "geometry_calibration", "vision", "capture", "led", "camera_hub"):
+        owner = getattr(app.state, name, None)
+        if owner is not None:
+            try:
+                await asyncio.to_thread(owner.stop)
+            except Exception:
+                logging.getLogger("katrain_web").exception("Could not stop %s after partial board startup", name)
+
+
+async def _initialize_board(app: FastAPI, log):
     """Board mode initialization — design.md Section 4.9."""
     from functools import partial
 
@@ -832,6 +865,7 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.hardware_vision_store = None
     app.state.physical_play = None
     app.state.physical_play_config = None
+    usb_startup_check = _prepare_usb_hub_recovery(app)
 
     # One physical camera owner shared by capture, calibration, and recognition.
     from katrain.web.core.device_lease import DeviceBusy
@@ -902,8 +936,9 @@ async def _lifespan_board(app: FastAPI, log):
                 lock_awb=False,
             )
         camera_hub = CameraHub(hub_config)
+        app.state.camera_hub = camera_hub
         try:
-            camera_hub.start(allow_unavailable=True)
+            _start_hardware_owner(camera_hub, usb_startup_check, allow_unavailable=True)
         except DeviceBusy as exc:
             log.warning("Camera occupied; continuing without vision, capture, calibration, or physical play: %s", exc)
             camera_hub = None
@@ -938,7 +973,9 @@ async def _lifespan_board(app: FastAPI, log):
         )
         log.log(parallax_level, parallax_message)
 
-        vision = VisionService(vision_config, frame_source=camera_hub)
+        vision = VisionService(vision_config, frame_source=camera_hub,
+            recovery_gate=app.state.hardware_recovery_gate)
+        app.state.vision = vision
         vision.start()
         app.state.vision = vision
         app.state.vision_ws_clients = {}
@@ -955,8 +992,9 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.core.led_service import LedService
 
         led = LedService(led_config)
+        app.state.led = led
         try:
-            led.start()
+            _start_hardware_owner(led, usb_startup_check)
         except DeviceBusy as exc:
             log.warning("LED occupied; continuing without LED guidance: %s", exc)
             app.state.led = None
@@ -1000,6 +1038,7 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.core.capture_service import CaptureService
 
         capture = CaptureService(capture_config, hub=camera_hub)
+        app.state.capture = capture
         capture.start()
         app.state.capture = capture
         # P12: default "auto" = no-LED outer-corner per-move geometry (passive, zero LED for
@@ -1089,6 +1128,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_resume=resume_vision,
             drift_needed=lambda: _vision_needs_frames(app),
             restore_auto_exposure_on_success=runtime_hardware_ae,
+            recovery_gate=app.state.hardware_recovery_gate,
         )
     else:
         app.state.geometry_calibration = None
@@ -1103,7 +1143,77 @@ async def _lifespan_board(app: FastAPI, log):
     # Platform manager for cross-platform online play (shared init)
     _init_platform_manager(app, manager, log)
 
+    _attach_usb_hub_recovery(app, log)
     log.info("Board mode initialization complete")
+
+
+def _prepare_usb_hub_recovery(app):
+    import sys
+
+    app.state.usb_hub_recovery = None
+    app.state.hardware_recovery_gate = None
+    if not (
+        getattr(settings, "KATRAIN_USB_HUB_RECOVERY", False)
+        and settings.KATRAIN_MODE == "board"
+        and sys.platform == "linux"
+    ):
+        return None
+    from katrain.vision.hardware_recovery_gate import HardwareRecoveryGate
+    from katrain.web.core.usb_hub_recovery import UsbHubRecovery
+
+    app.state.hardware_recovery_gate = HardwareRecoveryGate()
+    state_path = "/var/lib/smartbox/usb-hub-recovery/state.json"
+    return lambda: UsbHubRecovery.startup_allowed(state_path)
+
+
+def _start_hardware_owner(owner, startup_check, **kwargs):
+    if startup_check is not None:
+        owner.set_usb_startup_check(startup_check)
+    owner.start(**kwargs)
+
+
+def _attach_usb_hub_recovery(app, log):
+    gate = getattr(app.state, "hardware_recovery_gate", None)
+    camera, led, vision = (getattr(app.state, name, None) for name in ("camera_hub", "led", "vision"))
+    if gate is None or camera is None or led is None or vision is None:
+        return
+    from katrain.web.core.linux_usb_hub import LinuxUsbHub
+    from katrain.web.core.usb_hub_recovery import UsbHubRecovery
+
+    if (camera.config.device_id, led.config.serial_port) != ("/dev/smartbox-cam", "/dev/smartbox-led"):
+        log.warning("USB hub recovery disabled: owners must use the verified smartbox aliases")
+        return
+    adapter = LinuxUsbHub()
+    if not adapter.snapshot().valid:
+        log.warning("USB hub recovery disabled: topology could not be verified")
+        return
+    loop = asyncio.get_running_loop()
+
+    def retire_queues(timeout):
+        import threading
+
+        done = threading.Event()
+        generation = gate.generation
+
+        def clear():
+            for queue in list(app.state.vision_ws_clients.values()) + [app.state.vision_move_queue]:
+                if queue is not None:
+                    retained = []
+                    while not queue.empty():
+                        item = queue.get_nowait()
+                        if isinstance(item, tuple) and len(item) == 2 and item[0] >= generation:
+                            retained.append(item)
+                    for item in retained:
+                        queue.put_nowait(item)
+            done.set()
+
+        loop.call_soon_threadsafe(clear)
+        return done.wait(timeout)
+
+    vision.set_usb_recovery_callback(retire_queues)
+    recovery = UsbHubRecovery(adapter, camera, led, vision, gate, "/var/lib/smartbox/usb-hub-recovery/state.json")
+    app.state.usb_hub_recovery = recovery
+    camera.set_device_recovery(recovery)
 
 
 def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
@@ -4314,7 +4424,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             while True:
                 while not queue.empty():
-                    await websocket.send_json(_json_safe(queue.get_nowait()))
+                    await _send_vision_generation_item(app, websocket, queue.get_nowait())
 
                 vision.refresh_status()
                 await websocket.send_json(
@@ -5206,50 +5316,82 @@ async def _vision_event_pump(app: FastAPI):
         try:
             vision = getattr(app.state, "vision", None)
             if vision:
-                for evt in vision.poll_events():
-                    if (
-                        isinstance(evt, dict)
-                        and evt.get("type") in {"illegal_change", "ambiguous_stone", "capture_pending", "move_pending"}
-                        and vision.bound_session_id
-                    ):
-                        try:
-                            local_state = (
-                                app.state.session_manager.get_session(vision.bound_session_id).last_state or {}
+                gate = getattr(app.state, "hardware_recovery_gate", None)
+                use = gate.try_use() if gate is not None else nullcontext()
+                if use is not None:
+                    with use:
+                        for evt in vision.poll_events():
+                            if (
+                                isinstance(evt, dict)
+                                and evt.get("type") in {"illegal_change", "ambiguous_stone", "capture_pending", "move_pending"}
+                                and vision.bound_session_id
+                            ):
+                                try:
+                                    local_state = (
+                                        app.state.session_manager.get_session(vision.bound_session_id).last_state or {}
+                                    )
+                                except KeyError:
+                                    local_state = {}
+                                if local_state.get("game_type") == "pvp_local" and not local_state.get("awaiting_count"):
+                                    continue
+                            if isinstance(evt, dict) and evt.get("type") == "led_glow":
+                                _adjust_led_brightness(app, evt.get("data") or {}, log)
+                                continue
+                            if isinstance(evt, dict) and evt.get("type") == "illegal_change" and vision.bound_session_id:
+                                try:
+                                    state = app.state.session_manager.get_session(vision.bound_session_id).last_state
+                                except KeyError:
+                                    state = None
+                                if is_stale_illegal_change(evt, state):
+                                    log.info("Suppressed stale vision mismatch already present in game: %s", evt.get("data"))
+                                    continue
+                            if isinstance(evt, dict):
+                                _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
+                                route_vision_attention(
+                                    evt,
+                                    getattr(app.state, "physical_play", None),
+                                    bound=bool(vision.bound_session_id),
+                                )
+                            gate = getattr(app.state, "hardware_recovery_gate", None)
+                            if gate is not None and gate.active:
+                                continue
+                            route_vision_event(
+                                evt,
+                                [_VisionGenerationQueue(queue, gate) for queue in app.state.vision_ws_clients.values()],
+                                app.state.vision_move_queue,
+                                bound=bool(vision.bound_session_id),
                             )
-                        except KeyError:
-                            local_state = {}
-                        if local_state.get("game_type") == "pvp_local" and not local_state.get("awaiting_count"):
-                            continue
-                    if isinstance(evt, dict) and evt.get("type") == "led_glow":
-                        _adjust_led_brightness(app, evt.get("data") or {}, log)
-                        continue
-                    if isinstance(evt, dict) and evt.get("type") == "illegal_change" and vision.bound_session_id:
-                        try:
-                            state = app.state.session_manager.get_session(vision.bound_session_id).last_state
-                        except KeyError:
-                            state = None
-                        if is_stale_illegal_change(evt, state):
-                            log.info("Suppressed stale vision mismatch already present in game: %s", evt.get("data"))
-                            continue
-                    if isinstance(evt, dict):
-                        _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
-                        route_vision_attention(
-                            evt,
-                            getattr(app.state, "physical_play", None),
-                            bound=bool(vision.bound_session_id),
-                        )
-                    route_vision_event(
-                        evt,
-                        list(app.state.vision_ws_clients.values()),
-                        app.state.vision_move_queue,
-                        bound=bool(vision.bound_session_id),
-                    )
             await asyncio.sleep(0.1)
         except asyncio.CancelledError:
             raise
         except Exception:
             log.exception("vision event pump error")
             await asyncio.sleep(1.0)
+
+
+class _VisionGenerationQueue:
+    def __init__(self, queue, gate):
+        self.queue, self.gate = queue, gate
+
+    def put_nowait(self, payload):
+        self.queue.put_nowait((self.gate.generation, payload) if self.gate is not None else payload)
+
+
+async def _send_vision_generation_item(app, websocket, item):
+    gate = getattr(app.state, "hardware_recovery_gate", None)
+    if gate is None:
+        await websocket.send_json(_json_safe(item))
+        return
+    if not isinstance(item, tuple) or len(item) != 2:
+        return
+    generation, payload = item
+    use = gate.try_use() if gate is not None else nullcontext()
+    if use is None:
+        return
+    with use:
+        if gate is not None and generation != gate.generation:
+            return
+        await websocket.send_json(_json_safe(payload))
 
 
 def _session_owner(app: FastAPI, session):
@@ -5772,9 +5914,16 @@ async def _vision_move_poller(app: FastAPI):
         try:
             vision = getattr(app.state, "vision", None)
             if vision and vision.bound_session_id:
-                move_data = vision.get_confirmed_move()
-                if move_data and isinstance(move_data, ConfirmedMove):
-                    retry_delay = await _handle_confirmed_move(app, vision, vision.bound_session_id, move_data, log)
+                gate = getattr(app.state, "hardware_recovery_gate", None)
+                use = gate.try_use() if gate is not None else nullcontext()
+                if use is not None:
+                    with use:
+                        move_data = vision.get_confirmed_move()
+                        retry_delay = 0
+                        if move_data and isinstance(move_data, ConfirmedMove):
+                            retry_delay = await _handle_confirmed_move(
+                                app, vision, vision.bound_session_id, move_data, log
+                            )
                     if retry_delay:
                         await asyncio.sleep(retry_delay)
                         continue

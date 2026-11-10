@@ -96,6 +96,7 @@ class LedServiceConfig:
 
 
 _SENTINEL = object()
+_USB_WAKE = object()
 _LINK_TIMEOUT = 0.2
 _LINK_INTERVAL = 2.0
 _LINK_RETRY_INTERVAL = 10.0
@@ -119,6 +120,7 @@ class _Batch:
         "cancelled",
         "generation",
         "guidance_revision",
+        "finished",
     )
 
     def __init__(self, commands: List[str], strict: bool):
@@ -131,6 +133,7 @@ class _Batch:
         self.cancelled = False
         self.generation = None
         self.guidance_revision = None
+        self.finished = False
 
 
 class LedService:
@@ -178,6 +181,99 @@ class LedService:
         self._intent_lock = threading.RLock()
         self._guidance_revision = 0
         self._recovery_needed = False
+        self._usb_lock = threading.RLock()
+        self._usb_request = None
+        self._usb_close_failed = False
+        self._usb_wake = threading.Event()
+        self._usb_startup_check = None
+        self._current_batch = None
+
+    def set_usb_startup_check(self, callback) -> None:
+        self._usb_startup_check = callback
+
+    def _usb_paused(self) -> bool:
+        with self._usb_lock:
+            return self._usb_request is not None or self._usb_close_failed
+
+    def _startup_allowed(self) -> bool:
+        try:
+            return self._usb_startup_check is None or bool(self._usb_startup_check())
+        except Exception:
+            log.exception("LED USB startup check failed")
+            return False
+
+    def begin_usb_recovery(self, timeout=2.0) -> bool:
+        deadline = time.monotonic() + max(0.0, timeout)
+        with self._intent_lock, self._usb_lock:
+            if self._usb_close_failed or self._stop.is_set() or self._thread is None or not self._thread.is_alive():
+                return False
+            if self._usb_request is not None:
+                return self._usb_request["acked"]
+            request = {"event": threading.Event(), "deadline": deadline, "acked": False}
+            self._usb_request = request
+            self._generation += 1
+            self._guidance_revision += 1
+            self._last_guidance = None
+            self._recovery_needed = False
+            # Wake strict callers immediately, even when a native serial call
+            # still prevents the worker from acknowledging quiescence.
+            if self._current_batch is not None:
+                self._current_batch.cancelled = True
+                self._finish(self._current_batch, ok=False, shown_at=None, errors=["USB recovery"])
+            while True:
+                try:
+                    batch = self._queue.get_nowait()
+                except queue.Empty:
+                    break
+                if isinstance(batch, _Batch):
+                    batch.cancelled = True
+                    self._finish(batch, ok=False, shown_at=None, errors=["USB recovery"])
+            try:
+                self._queue.put_nowait(_USB_WAKE)
+            except queue.Full:
+                # A pre-request submit can finish queueing during the drain.
+                # A full queue already wakes the worker, which checks the pause
+                # before taking its next item.
+                pass
+        request["event"].wait(max(0.0, deadline - time.monotonic()))
+        with self._usb_lock:
+            if self._usb_request is request and request["acked"]:
+                return True
+            if self._usb_request is request:
+                self._usb_request = None
+        self._usb_wake.set()
+        return False
+
+    def end_usb_recovery(self) -> None:
+        with self._usb_lock:
+            request, self._usb_request = self._usb_request, None
+            if request is not None:
+                request["event"].set()
+            self._last_reconnect = float("-inf")
+        self._usb_wake.set()
+
+    def _quiesce_usb(self) -> bool:
+        with self._usb_lock:
+            request = self._usb_request
+        if request is None:
+            return False
+        if not request["acked"]:
+            # Serial close remains on this worker. Keep the existing lease
+            # throughout the pause so another owner cannot open during reset.
+            closed = self._close_serial(release_lease=False, require_closed=True)
+            with self._usb_lock:
+                if self._usb_request is request:
+                    request["acked"] = bool(
+                        closed and not self._stop.is_set() and time.monotonic() <= request["deadline"]
+                    )
+                    if not request["acked"]:
+                        self._usb_request = None
+                request["event"].set()
+        if self._usb_paused():
+            self._usb_wake.wait(0.2)
+            self._usb_wake.clear()
+            return True
+        return False
 
     # -- LUT --------------------------------------------------------------- #
     def _load_lut(self, lut_path: Optional[str]) -> Callable[[int, int], int]:
@@ -217,6 +313,8 @@ class LedService:
         )
 
     def start(self) -> None:
+        if self._usb_close_failed:
+            raise RuntimeError("LED USB close remains unconfirmed")
         if self._thread is not None and self._thread.is_alive():
             return
         if self._thread is not None or self._stop.is_set():
@@ -236,15 +334,18 @@ class LedService:
 
     def stop(self) -> None:
         if self._thread is None:
-            self._close_serial()
+            if not self._usb_close_failed:
+                self._close_serial()
             return
         # Blackout via the WORKER (strict) so all serial I/O stays on one thread,
         # then tear down. No post-join serial access → no main/worker race.
-        try:
-            self.clear(strict=True)
-        except Exception:
-            pass
+        if not self._usb_paused():
+            try:
+                self.clear(strict=True)
+            except Exception:
+                pass
         self._stop.set()
+        self.end_usb_recovery()
         self._connected = False
         try:
             self._queue.put_nowait(_SENTINEL)
@@ -256,7 +357,8 @@ class LedService:
                 # A blocked open still owns the device. The worker closes any
                 # late result and releases its lease before it exits.
                 return
-        self._close_serial()
+        if not self._usb_close_failed:
+            self._close_serial()
         self._thread = None
 
     def is_connected(self) -> bool:
@@ -295,6 +397,8 @@ class LedService:
         only enqueue success; for strict=True it reflects the actual SHOW ack.
         """
         with self._intent_lock:
+            if self._usb_paused():
+                return self._usb_rejected()
             self._guidance_revision += 1
             self._last_guidance = [dict(point) for point in points] if not strict else None
             self._recovery_needed = bool(self._last_guidance)
@@ -357,9 +461,13 @@ class LedService:
 
     # -- queue plumbing ---------------------------------------------------- #
     def _submit(self, commands: List[str], *, strict: bool, guidance_revision=None) -> Dict:
+        with self._usb_lock:
+            if self._usb_request is not None or self._usb_close_failed or self._stop.is_set():
+                return self._usb_rejected()
+            generation = self._generation
         log.info("[DIAG-LED] submit %d leds", sum(1 for c in commands if c.startswith("SETI")))
         batch = _Batch(commands, strict)
-        batch.generation = self._generation
+        batch.generation = generation
         batch.guidance_revision = guidance_revision
         if strict:
             batch.deadline = self._clock() + _STRICT_TIMEOUT
@@ -368,6 +476,10 @@ class LedService:
                 self._queue.put(batch, timeout=min(3.0, self._batch_remaining(batch)))
             except queue.Full:
                 return {"ok": False, "connected": self._connected, "shown_at": None, "errors": ["queue full"]}
+            with self._usb_lock:
+                if self._usb_request is not None or batch.generation != self._generation:
+                    batch.cancelled = True
+                    self._finish(batch, ok=False, shown_at=None, errors=["USB recovery"])
             if not batch.event.wait(timeout=max(0.0, self._batch_remaining(batch))):
                 batch.cancelled = True
                 return {"ok": False, "connected": self._connected, "shown_at": None, "errors": ["timeout"]}
@@ -387,10 +499,15 @@ class LedService:
                 pass
         return {"ok": True, "connected": self._connected, "shown_at": None, "errors": []}
 
+    def _usb_rejected(self) -> Dict:
+        return {"ok": False, "connected": self._connected, "shown_at": None, "errors": ["USB recovery"]}
+
     # -- worker ------------------------------------------------------------ #
     def _worker(self) -> None:
         try:
             while not self._stop.is_set():
+                if self._quiesce_usb():
+                    continue
                 try:
                     item = self._queue.get(timeout=0.2)
                 except queue.Empty:
@@ -400,6 +517,14 @@ class LedService:
                     continue
                 if item is _SENTINEL:
                     break
+                if item is _USB_WAKE:
+                    continue
+                with self._usb_lock:
+                    self._current_batch = item
+                    paused = self._usb_request is not None
+                if paused:
+                    self._finish(item, ok=False, shown_at=None, errors=["USB recovery"])
+                    continue
                 if item.cancelled or (item.deadline is not None and self._batch_remaining(item) <= 0):
                     self._finish(item, ok=False, shown_at=None, errors=["timeout"])
                     self._maybe_poll_board_link()
@@ -424,7 +549,8 @@ class LedService:
                     self._finish(item, ok=False, shown_at=None, errors=[str(e)])
                 self._maybe_poll_board_link()
         finally:
-            self._close_serial()
+            if not self._usb_close_failed:
+                self._close_serial(release_lease=True)
 
     def _run_batch(self, batch: _Batch) -> None:
         errors: List[str] = []
@@ -434,6 +560,9 @@ class LedService:
             batch.deadline = self._clock() + _STRICT_TIMEOUT
             batch.real_deadline = time.monotonic() + _STRICT_TIMEOUT
         for cmd in batch.commands:
+            if self._usb_paused():
+                errors.append("USB recovery")
+                break
             if batch.generation is not None and batch.generation != self._generation:
                 errors.append("connection changed")
                 break
@@ -542,7 +671,7 @@ class LedService:
 
     def _maybe_poll_board_link(self) -> None:
         # Called only between complete batches, including when the queue is busy.
-        if self._stop.is_set() or self._serial is None:
+        if self._stop.is_set() or self._usb_paused() or self._serial is None:
             return
         if self._clock() < self._next_link_poll:
             return
@@ -665,10 +794,16 @@ class LedService:
         # (It used to be set only in _run_batch's own call site, which meant a
         # serial exception left last_errors — and /led/status — stuck on
         # whatever the previous batch reported.)
-        self._last_errors = list(errors)
-        batch.result = {"ok": ok, "connected": self._connected, "shown_at": shown_at, "errors": errors}
-        if batch.event is not None:
-            batch.event.set()
+        with self._usb_lock:
+            if batch.finished:
+                return
+            batch.finished = True
+            if self._current_batch is batch:
+                self._current_batch = None
+            self._last_errors = list(errors)
+            batch.result = {"ok": ok, "connected": self._connected, "shown_at": shown_at, "errors": errors}
+            if batch.event is not None:
+                batch.event.set()
 
     # -- serial helpers ---------------------------------------------------- #
     def _wait_for_boot_ready(self, *, deadline=None, real_deadline=None) -> None:
@@ -715,6 +850,8 @@ class LedService:
             self._serial.timeout = previous_timeout
 
     def _open_serial(self, *, batch=None) -> None:
+        if self._usb_paused() or not self._startup_allowed():
+            return
         if self._linux_alias_absent():
             return
         self._generation += 1
@@ -732,9 +869,13 @@ class LedService:
         try:
             self._serial = self._serial_factory()
             self._connected = False
-            if self._stop.is_set() or (
-                batch is not None
-                and (batch.cancelled or (batch.deadline is not None and self._batch_remaining(batch) <= 0))
+            if (
+                self._stop.is_set()
+                or self._usb_paused()
+                or (
+                    batch is not None
+                    and (batch.cancelled or (batch.deadline is not None and self._batch_remaining(batch) <= 0))
+                )
             ):
                 self._close_serial()
                 return
@@ -754,7 +895,7 @@ class LedService:
             # BRIGHT renders the retained MCU buffer. Clear and SHOW must each
             # receive a fresh ACK before brightness can expose that buffer.
             for command in ("CLEAR", "SHOW", f"BRIGHT {self.config.max_bright}"):
-                if self._stop.is_set():
+                if self._stop.is_set() or self._usb_paused():
                     break
                 # Each command needs its own response; buffered boot input or
                 # an extra prior ACK must never authenticate this step.
@@ -763,7 +904,7 @@ class LedService:
                 if not ok:
                     break
             else:
-                if not self._stop.is_set():
+                if not self._stop.is_set() and not self._usb_paused():
                     self._connected = True
                     self._recovery_needed = bool(self._last_guidance)
                     log.info("LED serial opened on %s", self.config.serial_port)
@@ -785,7 +926,7 @@ class LedService:
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self, *, batch=None) -> None:
-        if self._stop.is_set() or self._serial_unavailable or self._reconnect_blocked:
+        if self._stop.is_set() or self._usb_paused() or self._serial_unavailable or self._reconnect_blocked:
             return  # Missing pyserial is permanent; a lease conflict requires explicit stop/start.
         was_missing = self._alias_missing
         if self._linux_alias_absent():
@@ -811,20 +952,32 @@ class LedService:
             self._close_serial()
         return self._alias_missing
 
-    def _close_serial(self) -> None:
+    def _close_serial(self, *, release_lease=None, require_closed=False) -> bool:
         if self._serial is not None:
             self._generation += 1
         self._recovery_needed = bool(self._last_guidance)
         self._board_link = None
         self._link_response_pending = False
         self._link_partial_line = False
+        self._connected = False
         if self._serial is not None:
             try:
                 self._serial.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                if require_closed:
+                    # A failed USB quiescence must keep ownership of the live
+                    # handle. Neither end() nor stop() may open a second handle
+                    # or let another owner take the lease after this failure.
+                    with self._usb_lock:
+                        self._usb_close_failed = True
+                    self._last_errors = [f"USB close failed: {exc}"]
+                    log.warning("LED USB close failed; retaining device ownership: %s", exc)
+                    return False
         self._serial = None
         self._connected = False
-        if self._device_lease is not None:
+        if release_lease is None:
+            release_lease = not self._usb_paused()
+        if release_lease and self._device_lease is not None:
             self._device_lease.release()
             self._device_lease = None
+        return True

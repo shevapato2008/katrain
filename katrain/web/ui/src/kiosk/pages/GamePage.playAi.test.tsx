@@ -54,7 +54,7 @@ vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
     visionStatus: {
       enabled: vision.enabled, cameraConnected: true, poseLocked: vision.poseLocked,
-      syncState: 'idle', boundSessionId: null, ledConnected: null,
+      syncState: 'idle', boundSessionId: null, recognitionReady: true, ledConnected: null,
     },
     isVisionEnabled: vision.enabled,
     refreshStatus: vi.fn(),

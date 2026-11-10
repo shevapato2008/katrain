@@ -214,7 +214,7 @@ export default function MembershipPage() {
           <div className="km-amounts" role="group" aria-label={t('membership:kiosk_select_topup', '选择API充值金额')}>{catalog?.topups.map(option => <button key={option.sku} type="button" aria-label={t('membership:kiosk_topup_option', '{amount} {points}积分', { amount: money(option.amount_fen), points: points(option.credits) })} aria-pressed={selected?.sku === option.sku} onClick={() => setSelectedSku(option.sku)}><strong><Num>{money(option.amount_fen)}</Num></strong><span>{t('membership:kiosk_topup_points', '{points}积分', { points: points(option.credits) })}</span></button>)}</div>
           <p className="km-selected">{t('membership:kiosk_credited_points', '到账 {points} 积分', { points: points(selected?.credits) })}</p>
           <button type="button" className="km-primary" disabled={!paymentReady || !selected || checkout.creating} onClick={() => selected && buy(selected.sku, false)}>{selected ? t('membership:kiosk_topup_amount', '充值 {amount}', { amount: money(selected.amount_fen) }) : t('membership:kiosk_topup', '充值')}</button>
-          <p className="km-footnote" role="status">{paymentReason ?? (isTest ? t('membership:kiosk_test_order', 'TEST模拟订单 · 不会真实收款') : t('membership:kiosk_check_order_amount', '付款前核对订单金额'))}</p>
+          <p className="km-footnote" role="status">{paymentReason ?? (catalog?.payments_mode === 'mock' ? t('membership:kiosk_test_order', 'TEST模拟订单 · 不会真实收款') : t('membership:kiosk_check_order_amount', '付款前核对订单金额'))}</p>
         </aside></section>}
       </section>
     </KioskScrollZone>

@@ -171,6 +171,23 @@ describe('Kiosk membership', () => {
     expect(api.createOrder).not.toHaveBeenCalled();
   });
 
+  it.each(['live', 'mock'] as const)('labels the TEST top-up footnote by payment mode: %s', async paymentsMode => {
+    api.getCatalog.mockResolvedValue({ ...catalog(), payments_mode: paymentsMode });
+    api.getUsage.mockResolvedValue({ ...usage(), payments_mode: paymentsMode });
+    mount();
+    await flush();
+    openTopup();
+    expect(screen.getByText('TEST · 测试环境')).toBeInTheDocument();
+    if (paymentsMode === 'live') {
+      expect(screen.queryByText('TEST模拟订单 · 不会真实收款')).not.toBeInTheDocument();
+      expect(screen.getByText('付款前核对订单金额')).toBeInTheDocument();
+    } else {
+      expect(screen.getByText('TEST模拟订单 · 不会真实收款')).toBeInTheDocument();
+      expect(screen.queryByText('付款前核对订单金额')).not.toBeInTheDocument();
+    }
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+
   it('keeps Max unavailable while a catalog-approved TEST plan is purchasable', async () => {
     const serviceCatalog = catalog();
     serviceCatalog.plans[0].term_days = 28;

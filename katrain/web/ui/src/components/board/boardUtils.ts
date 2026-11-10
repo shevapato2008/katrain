@@ -114,7 +114,7 @@ export async function loadBoardImages(
     const resolvedBoardStyle = getActiveBoardStyle();
     const entries = await Promise.all(
       Object.entries(boardStyleOrAssets).map(async ([key, src]) => {
-        if (key === "board" && src === BOARD_ASSETS.board) {
+        if (key === "board") {
           const veneerBoard = await loadBoardVeneerImage(resolvedBoardStyle);
           if (veneerBoard) return [key, veneerBoard] as const;
         }

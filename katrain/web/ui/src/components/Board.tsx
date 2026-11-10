@@ -1,5 +1,5 @@
-import { BOARD_ASSETS, drawStoneSprite, loadBoardImages, stoneImage } from './board/boardUtils';
-import { getBoardStylePalette, getBoardTextureDataUrl, useBoardAppearance } from './board/stoneAppearance';
+import { drawStoneSprite, loadBoardImages, stoneImage } from './board/boardUtils';
+import { getBoardStylePalette, useBoardAppearance } from './board/stoneAppearance';
 import React, { useEffect, useRef, useState } from 'react';
 import { type GameState } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
@@ -99,7 +99,7 @@ const Board: React.FC<BoardProps> = ({
 
   useEffect(() => {
     let cancelled = false;
-    loadBoardImages({ ...BOARD_ASSETS, board: getBoardTextureDataUrl(boardStyle) }, stoneStyle).then(images => {
+    loadBoardImages(boardStyle, stoneStyle).then(images => {
       if (!cancelled) {
         imagesRef.current = images;
         setImagesReady(true);

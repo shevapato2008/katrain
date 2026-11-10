@@ -35,54 +35,80 @@ const BOARD_3D_STYLE_CONFIG: Record<
     topColor: string;
     sideColor: string;
     bottomColor: string;
-    grainColor: [number, number, number];
-    bandColor: [number, number, number];
-    grainCount: number;
   }
 > = {
   kaya: {
-    topColor: '#DBA85A',
-    sideColor: '#C89848',
-    bottomColor: '#B08040',
-    grainColor: [120, 75, 30],
-    bandColor: [180, 140, 70],
-    grainCount: 150,
+    topColor: '#e5ba70',
+    sideColor: '#cc9c52',
+    bottomColor: '#b08040',
   },
   'shin-kaya': {
-    topColor: '#EDD39C',
-    sideColor: '#DFC184',
-    bottomColor: '#B89B62',
-    grainColor: [140, 102, 48],
-    bandColor: [210, 175, 115],
-    grainCount: 180,
+    topColor: '#e5c687',
+    sideColor: '#cca666',
+    bottomColor: '#b89b62',
   },
   bamboo: {
-    topColor: '#C88C46',
-    sideColor: '#B57835',
-    bottomColor: '#8C5820',
-    grainColor: [85, 48, 16],
-    bandColor: [150, 95, 40],
-    grainCount: 140,
+    topColor: '#c78c46',
+    sideColor: '#b07634',
+    bottomColor: '#8c5820',
   },
   walnut: {
-    topColor: '#5C402C',
-    sideColor: '#4A3221',
-    bottomColor: '#2E1D11',
-    grainColor: [24, 14, 7],
-    bandColor: [42, 26, 15],
-    grainCount: 160,
+    topColor: '#876244',
+    sideColor: '#6b472e',
+    bottomColor: '#4a3221',
   },
 };
+
+function drawBakedGridOnTopCanvas(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  boardSize: number,
+  dims: ReturnType<typeof getBoardDimensions>,
+  starPoints: [number, number][],
+  gridColor: string,
+  starColor: string,
+) {
+  const scale = size / dims.boardWidth;
+  const halfExtent = dims.boardExtent / 2;
+  const origin = (dims.boardWidth / 2 - halfExtent) * scale;
+  const step = dims.gridSpacing * scale;
+  const extentPx = dims.boardExtent * scale;
+
+  ctx.save();
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = Math.max(2.2, size * 0.0014);
+  for (let i = 0; i < boardSize; i++) {
+    const pos = origin + i * step;
+    ctx.beginPath();
+    ctx.moveTo(pos, origin);
+    ctx.lineTo(pos, origin + extentPx);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(origin, pos);
+    ctx.lineTo(origin + extentPx, pos);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = starColor;
+  const starRadius = Math.max(5.5, size * 0.0036);
+  for (const [col, row] of starPoints) {
+    const x = origin + col * step;
+    const y = origin + row * step;
+    ctx.beginPath();
+    ctx.arc(x, y, starRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
 /** Real 2K wood-veneer texture with stripe-free canvas fallback supporting all 4 board styles. */
 function createWoodTexture(
   width: number,
   height: number,
   baseColor: string,
-  grainColor: [number, number, number],
-  _bandColor: [number, number, number],
-  grainCount: number,
   boardStyle: BoardStyleId = 'kaya',
+  onPaintOverlay?: (ctx: CanvasRenderingContext2D) => void,
   onLoad?: () => void,
 ): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
@@ -90,77 +116,23 @@ function createWoodTexture(
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  if (ctx && typeof ctx.createLinearGradient === 'function') {
+  if (ctx) {
     ctx.fillStyle = baseColor;
     ctx.fillRect(0, 0, width, height);
-
-    if (boardStyle === 'bamboo') {
-      // Subtle bamboo strip seams without dark node blocks
-      const stripCount = 12;
-      const stripH = height / stripCount;
-      for (let s = 0; s < stripCount; s++) {
-        const y0 = s * stripH;
-        ctx.strokeStyle = 'rgba(68, 36, 10, 0.14)';
-        ctx.lineWidth = 1.0;
-        ctx.beginPath();
-        ctx.moveTo(0, y0);
-        ctx.lineTo(width, y0);
-        ctx.stroke();
-      }
-    }
-
-    for (let i = 0; i < grainCount; i++) {
-      const y = Math.random() * height;
-      const alpha = boardStyle === 'shin-kaya' ? 0.03 + Math.random() * 0.07 : 0.04 + Math.random() * 0.1;
-      ctx.strokeStyle = `rgba(${grainColor[0]}, ${grainColor[1]}, ${grainColor[2]}, ${alpha})`;
-      ctx.lineWidth = boardStyle === 'shin-kaya' ? 0.4 + Math.random() * 1.4 : 0.5 + Math.random() * 2.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      const freq = 0.01 + Math.random() * 0.03;
-      const amp = boardStyle === 'shin-kaya' || boardStyle === 'bamboo' ? 1 + Math.random() * 4 : 3 + Math.random() * 12;
-      for (let x = 0; x < width; x += 8) {
-        ctx.lineTo(x, y + Math.sin(x * freq) * amp + Math.sin(x * 0.005) * 3 + (Math.random() - 0.5) * 1.5);
-      }
-      ctx.stroke();
-    }
-
-    for (let i = 0; i < grainCount / 3; i++) {
-      const y = Math.random() * height;
-      ctx.strokeStyle = `rgba(${grainColor[0]}, ${grainColor[1]}, ${grainColor[2]}, ${0.03 + Math.random() * 0.05})`;
-      ctx.lineWidth = 2 + Math.random() * 4;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      for (let x = 0; x < width; x += 15) {
-        ctx.lineTo(x, y + Math.sin(x * 0.015) * 8 + (Math.random() - 0.5) * 2);
-      }
-      ctx.stroke();
-    }
-
-    if (typeof ctx.getImageData === 'function' && typeof ctx.putImageData === 'function') {
-      const imgData = ctx.getImageData(0, 0, width, height);
-      const pixels = imgData.data;
-      const noiseCount = width * height * 0.3;
-      for (let i = 0; i < noiseCount; i++) {
-        const idx = Math.floor(Math.random() * width * height) * 4;
-        const noise = (Math.random() - 0.5) * 14;
-        pixels[idx] = Math.max(0, Math.min(255, pixels[idx] + noise));
-        pixels[idx + 1] = Math.max(0, Math.min(255, pixels[idx + 1] + noise));
-        pixels[idx + 2] = Math.max(0, Math.min(255, pixels[idx + 2] + noise * 0.5));
-      }
-      ctx.putImageData(imgData, 0, 0);
-    }
+    onPaintOverlay?.(ctx);
   }
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 16;
+  tex.generateMipmaps = true;
 
   if (typeof Image !== 'undefined' && ctx) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       ctx.drawImage(img, 0, 0, width, height);
+      onPaintOverlay?.(ctx);
       tex.needsUpdate = true;
       onLoad?.();
     };
@@ -200,17 +172,35 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
     }
     const cfg = BOARD_3D_STYLE_CONFIG[resolvedBoardStyle];
     const handleTextureLoaded = () => invalidate?.();
-    const topTex = createWoodTexture(1024, 1024, cfg.topColor, cfg.grainColor, cfg.bandColor, cfg.grainCount, resolvedBoardStyle, handleTextureLoaded);
-    const sideTex = createWoodTexture(1024, 256, cfg.sideColor, cfg.grainColor, cfg.bandColor, Math.round(cfg.grainCount * 0.8), resolvedBoardStyle, handleTextureLoaded);
+    const topTex = createWoodTexture(
+      2048,
+      2048,
+      cfg.topColor,
+      resolvedBoardStyle,
+      (ctx) => drawBakedGridOnTopCanvas(ctx, 2048, boardSize, dims, starPoints, palette.gridColor, palette.starColor),
+      handleTextureLoaded,
+    );
+    const sideTex = createWoodTexture(1024, 256, cfg.sideColor, resolvedBoardStyle, undefined, handleTextureLoaded);
 
-    const topMat = new THREE.MeshStandardMaterial({
-      map: topTex, roughness: 0.4, metalness: 0.02, color: cfg.topColor,
+    // Do NOT multiply map by cfg.topColor (keep color #ffffff) so 2K wood veneer preserves 100% natural brightness
+    const topMat = new THREE.MeshPhysicalMaterial({
+      map: topTex,
+      color: '#ffffff',
+      roughness: 0.36,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.28,
+      metalness: 0.0,
     });
-    const sideMat = new THREE.MeshStandardMaterial({
-      map: sideTex, roughness: 0.5, metalness: 0.03, color: cfg.sideColor,
+    const sideMat = new THREE.MeshPhysicalMaterial({
+      map: sideTex,
+      color: '#ffffff',
+      roughness: 0.52,
+      metalness: 0.0,
     });
     const bottomMat = new THREE.MeshStandardMaterial({
-      color: cfg.bottomColor, roughness: 0.7, metalness: 0.02,
+      color: cfg.bottomColor,
+      roughness: 0.7,
+      metalness: 0.02,
     });
 
     // BoxGeometry face order: +x, -x, +y, -y, +z, -z
@@ -219,7 +209,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
       textures: [topTex, sideTex],
       allMaterials: [topMat, sideMat, bottomMat],
     };
-  }, [boardSize, solidWood, resolvedBoardStyle]);
+  }, [boardSize, solidWood, resolvedBoardStyle, dims, starPoints, palette.gridColor, palette.starColor]);
 
   // Dispose textures and materials whenever resources change or on unmount (Finding C-1)
   useEffect(() => {
@@ -285,7 +275,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
 
       {/* Grid lines — single LineSegments for efficiency (1 draw call) */}
       <lineSegments geometry={gridGeometry}>
-        <lineBasicMaterial color={palette.gridColor} transparent opacity={0.78} />
+        <lineBasicMaterial color={palette.gridColor} transparent opacity={0.95} />
       </lineSegments>
 
       {/* Star points */}
@@ -295,7 +285,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
         return (
           <mesh key={`star-${i}`} position={[x, BOARD_SURFACE_Y + SURFACE_EPSILON, z]} rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[0.08, 16]} />
-            <meshBasicMaterial color={palette.starColor} opacity={0.88} transparent />
+            <meshBasicMaterial color={palette.starColor} opacity={0.95} transparent />
           </mesh>
         );
       })}
@@ -303,7 +293,7 @@ const BoardMesh = ({ boardSize, showCoordinates, solidWood = false }: BoardMeshP
       {/* Coordinate labels — lazy-loaded to avoid troika CDN dependency in headless mode */}
       {showCoordinates && (
         <Suspense fallback={null}>
-          <CoordinateLabels labels={coordLabels} />
+          <CoordinateLabels labels={coordLabels} color={palette.coordColor} />
         </Suspense>
       )}
     </group>

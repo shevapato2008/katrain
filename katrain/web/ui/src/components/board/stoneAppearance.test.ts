@@ -133,8 +133,9 @@ describe('publishable stone appearance and board style store', () => {
   it('returns distinct palettes and valid data URLs for all 4 board styles', () => {
     const palettes = BOARD_STYLE_IDS.map(id => getBoardStylePalette(id));
     expect(new Set(palettes.map(p => p.woodFill)).size).toBe(4);
-    expect(getBoardStylePalette('walnut').woodFill).toBe('#5c402c');
-    expect(getBoardStylePalette('walnut').coordColor).toBe('#d9c3ac');
+    expect(getBoardStylePalette('walnut').woodFill).toBe('#876244');
+    expect(getBoardStylePalette('walnut').gridColor).toBe('#e6c896');
+    expect(getBoardStylePalette('walnut').coordColor).toBe('#eedcb0');
 
     const textures = BOARD_STYLE_IDS.map(id => getBoardTextureDataUrl(id));
     expect(textures.every(url => url.startsWith('data:image/'))).toBe(true);

@@ -243,27 +243,36 @@ export function createStoneMaterial(
   if (resolvedStyle === 'jade-agate') {
     if (color === 'B') {
       return new THREE.MeshPhysicalMaterial({
-        color: '#0e1116',
+        color: '#090b0d',
         roughness: 0.06,
-        metalness: 0.02,
+        metalness: 0.0,
+        ior: 1.544,
         clearcoat: 1.0,
         clearcoatRoughness: 0.04,
+        envMapIntensity: 1.1,
       });
     }
+    const isWarm = variant % 3 === 1;
+    const map = plain ? null : getJadeAgateWhiteTexture(variant, textureSize);
     return new THREE.MeshPhysicalMaterial({
-      color: '#f6faf9',
-      map: plain ? null : getJadeAgateWhiteTexture(variant, textureSize),
+      color: isWarm ? '#fffaf0' : '#ffffff',
+      map,
       transmission: 0.52,
       ior: 1.544,
-      thickness: 1.8,
+      thickness: 1.35,
       roughness: 0.07,
-      metalness: 0,
+      metalness: 0.0,
+      attenuationColor: new THREE.Color(isWarm ? '#f8e3be' : '#fcf8f0'),
+      attenuationDistance: 2.1,
       clearcoat: 0.98,
-      clearcoatRoughness: 0.05,
-      transparent: true,
-      opacity: 0.9,
-      attenuationColor: new THREE.Color('#fff6e0'),
-      attenuationDistance: 1.6,
+      clearcoatRoughness: 0.04,
+      sheen: 0.35,
+      sheenColor: new THREE.Color(0xffffff),
+      sheenRoughness: 0.25,
+      emissive: new THREE.Color(isWarm ? '#fcefd8' : '#f7f8fa'),
+      emissiveMap: map,
+      emissiveIntensity: 0.20,
+      envMapIntensity: 1.2,
     });
   }
 

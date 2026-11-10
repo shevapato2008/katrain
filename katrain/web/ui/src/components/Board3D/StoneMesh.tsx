@@ -33,21 +33,44 @@ const sharedSpriteGeometry = new THREE.PlaneGeometry(STONE_RADIUS * 2, STONE_RAD
 // Noop raycast — prevents stones from intercepting pointer events
 const noopRaycast = () => {};
 
-/** Local contact shadow for the overhead still; shared by its stones only. */
+/** Local contact shadow beneath 3D stones (eliminates need for receiveShadow on the flat board surface). */
 let contactTexture: THREE.CanvasTexture | null = null;
 function getContactTexture() {
   if (contactTexture) return contactTexture;
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 64;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createRadialGradient(32, 32, 18, 32, 32, 32);
-  gradient.addColorStop(0, 'rgba(0,0,0,.32)');
-  gradient.addColorStop(.55, 'rgba(0,0,0,.16)');
-  gradient.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 64, 64);
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx && typeof ctx.createRadialGradient === 'function') {
+    const gradient = ctx.createRadialGradient(64, 64, 12, 64, 64, 60);
+    gradient.addColorStop(0, 'rgba(12, 8, 3, 0.36)');
+    gradient.addColorStop(0.55, 'rgba(12, 8, 3, 0.16)');
+    gradient.addColorStop(1, 'rgba(12, 8, 3, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+  }
   contactTexture = new THREE.CanvasTexture(canvas);
+  contactTexture.colorSpace = THREE.SRGBColorSpace;
   return contactTexture;
+}
+
+/** Warm lower-right refractive caustic glow decal for translucent white jade-agate stones. */
+let causticTexture: THREE.CanvasTexture | null = null;
+function getCausticTexture() {
+  if (causticTexture) return causticTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx && typeof ctx.createRadialGradient === 'function') {
+    const g = ctx.createRadialGradient(74, 76, 4, 64, 64, 58);
+    g.addColorStop(0, 'rgba(255, 244, 214, 0.58)');
+    g.addColorStop(0.45, 'rgba(255, 232, 185, 0.24)');
+    g.addColorStop(1, 'rgba(255, 232, 185, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+  causticTexture = new THREE.CanvasTexture(canvas);
+  causticTexture.colorSpace = THREE.SRGBColorSpace;
+  return causticTexture;
 }
 
 const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity = 1, variant = 0, angle = 0, scale = 1, satinFinish = false, contactOpacity = 1, spriteTexture, diameterRatio = 1 }, ref) => {
@@ -82,13 +105,8 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
       return mat;
     }
     const mat = createStoneMaterial(color, variant % 8, false, 256, stoneStyle);
-    if (stoneStyle === 'jade-agate' && color === 'W') {
-      mat.transparent = true;
-      mat.opacity = opacity * 0.9;
-    } else {
-      mat.transparent = opacity < 1;
-      mat.opacity = opacity;
-    }
+    mat.transparent = opacity < 1;
+    mat.opacity = opacity;
     return mat;
   }, [color, opacity, variant, satinFinish, spriteTexture, stoneStyle]);
 
@@ -97,11 +115,18 @@ const StoneMesh = forwardRef<Mesh, StoneMeshProps>(({ color, position, opacity =
     return () => { material.dispose(); };
   }, [material]);
 
+  const showContactDisc = !spriteTexture && opacity >= 0.85;
+  const showJadeCaustic = !spriteTexture && !satinFinish && stoneStyle === 'jade-agate' && color === 'W' && opacity >= 0.85;
+
   return (
     <>
-      {satinFinish && <mesh position={[position[0] + .035, BOARD_SURFACE_Y + .009, position[2] + .035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
-        <planeGeometry args={[1.06, 1.06]} />
-        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity} transparent depthWrite={false} />
+      {showContactDisc && <mesh position={[position[0] + 0.035, BOARD_SURFACE_Y + 0.008, position[2] + 0.035]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[1.08 * scale, 1.08 * scale]} />
+        <meshBasicMaterial map={getContactTexture()} opacity={contactOpacity * opacity} transparent depthWrite={false} />
+      </mesh>}
+      {showJadeCaustic && <mesh position={[position[0] + 0.06, BOARD_SURFACE_Y + 0.009, position[2] + 0.06]} rotation={[-Math.PI / 2, 0, 0]} raycast={noopRaycast}>
+        <planeGeometry args={[0.96 * scale, 0.96 * scale]} />
+        <meshBasicMaterial map={getCausticTexture()} opacity={0.85 * opacity} transparent depthWrite={false} />
       </mesh>}
       <mesh
         ref={ref}

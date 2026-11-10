@@ -14,8 +14,10 @@ import { clearActiveSession, readActiveSession, writeActiveSession } from '../ut
  */
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: null, isAuthenticated: true, user: { id: 1, username: 'box-user' } }),
+  useAuth: () => ({ token: null, isAuthenticated: true, status: 'authenticated', identityKey: 'box-user', isGuest: false, user: { id: 1, username: 'box-user' } }),
 }));
+const paidApi = vi.hoisted(() => ({ getCatalog: vi.fn(), createQuote: vi.fn(), createPosition: vi.fn() }));
+vi.mock('../../api/membershipApi', () => ({ membershipApi: paidApi }));
 // 棋盘桩是一颗按钮:点它 = 在 (3,3) 落子。Task 2 用它证「终局之后点盘不发落子」。
 vi.mock('../../components/Board', () => ({
   default: (p: { onMove?: (x: number, y: number) => void }) => (
@@ -23,7 +25,7 @@ vi.mock('../../components/Board', () => ({
   ),
 }));
 
-interface MockPanelProps { onAction: (a: string) => void; onTimeout?: (c: 'B' | 'W') => void; isGameOver?: boolean }
+interface MockPanelProps { onAction: (a: string) => void; onTimeout?: (c: 'B' | 'W') => void; isGameOver?: boolean; onHint?: () => void; hintEnabled?: boolean; onToggleAnalysis: (key: string) => void; analysisRequiresLogin?: boolean; gameState: GameState }
 vi.mock('../components/game/GameControlPanel', () => ({
   default: (p: MockPanelProps) => (
     <div data-testid="game-control-panel">
@@ -32,6 +34,10 @@ vi.mock('../components/game/GameControlPanel', () => ({
       <button onClick={() => p.onTimeout?.('B')}>MOCK_TIMEOUT_B</button>
       {/* Task 2:右栏拿到的「本局已结束」 */}
       <span data-testid="panel-over">{String(p.isGameOver)}</span>
+      <button disabled={!p.hintEnabled || p.analysisRequiresLogin} onClick={p.onHint}>MOCK_HINT</button>
+      <button onClick={() => p.onToggleAnalysis('ownership')}>MOCK_TERRITORY</button>
+      <button onClick={() => p.onToggleAnalysis('score')}>MOCK_SCORE</button>
+      <span data-testid="private-score">{String(p.gameState.analysis?.score)}</span>
     </div>
   ),
 }));
@@ -142,6 +148,30 @@ const pageTree = (sessionLinks = false) => (
 );
 
 const renderPage = () => render(pageTree());
+
+it('lets a screen-only free player confirm one private analysis and never auto-buys the next move', async () => {
+  const automatic = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
+  paidApi.getCatalog.mockResolvedValue({ membership_mode: 'enabled', capabilities: { quotes: true, positions: true } });
+  paidApi.createQuote.mockResolvedValue({ token: 'q', fingerprint: 'position-a', kind: 'position', source: 'wallet', wallet_max_display_points: '0.01' });
+  paidApi.createPosition.mockResolvedValue({ operation_id: 'op', state: 'succeeded', result: { ownership: [], moves: [{ move: 'D4', visits: 500, winrate: 0.6, score_lead: 2.5 }], rootInfo: { visits: 500, scoreLead: 2.5, winrate: 0.6 } } });
+  sessionMock.gameState = makeState({ analysis_delivered: false, analysis_allowed: true, expected_position_key: 'position-a' });
+  const { rerender } = renderPage();
+  expect(screen.getByRole('button', { name: 'MOCK_HINT' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'MOCK_HINT' }));
+  await screen.findByTestId('consumption-quote');
+  expect(paidApi.createPosition).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '使用API积分，最多扣0.01' }));
+  await waitFor(() => expect(screen.getByTestId('private-score')).toHaveTextContent('2.5'));
+  fireEvent.click(screen.getByRole('button', { name: 'MOCK_TERRITORY' }));
+  fireEvent.click(screen.getByRole('button', { name: 'MOCK_SCORE' }));
+  expect(paidApi.createPosition).toHaveBeenCalledTimes(1);
+  expect(sessionMock.setGameState).not.toHaveBeenCalled();
+  sessionMock.gameState = makeState({ analysis_delivered: false, analysis_allowed: true, expected_position_key: 'position-b', current_node_id: 6 });
+  rerender(pageTree());
+  expect(screen.getByTestId('private-score')).toHaveTextContent('undefined');
+  expect(automatic).not.toHaveBeenCalled();
+  expect(paidApi.createQuote).toHaveBeenCalledTimes(1);
+});
 
 describe('N25 · 对局屏错误条与断线出口', () => {
   it('一次性操作失败说人话，不印后端原文，× 能关', () => {
@@ -570,22 +600,22 @@ describe('A18 · 时间耗尽判超时', () => {
 
 });
 
-describe('A9 · 对局分析按实际用途请求', () => {
-  it('本地对局不显示胜率块，但继续请求后台分析供数子使用', () => {
+describe('A9 · 对局分析必须主动授权', () => {
+  it('本地对局不因默认图表开关自动请求分析', () => {
     const spy = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
     sessionMock.gameState = makeState({
       game_type: 'pvp_local',
       players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
     });
     renderPage();
-    expect(spy).toHaveBeenCalledWith('play-ai-s1');
+    expect(spy).not.toHaveBeenCalled();
   });
 
-  it('人机自由对弈照旧请求(默认开还是关等 Fan 定,本轮不动)', () => {
+  it('人机自由对弈不因默认图表开关自动请求分析', () => {
     const spy = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
     sessionMock.gameState = makeState();
     renderPage();
-    expect(spy).toHaveBeenCalledWith('play-ai-s1');
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 

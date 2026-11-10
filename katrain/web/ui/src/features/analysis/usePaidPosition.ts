@@ -5,8 +5,8 @@ import type { BillingQuote, BillingQuoteRequest, MembershipProfile, PositionAnal
 import { useMembershipI18n } from '../membership/useMembershipI18n';
 import { membershipErrorCode, membershipErrorText, type MembershipErrorCode } from '../membership/presentation';
 
-type View = 'hints' | 'ownership';
-type PositionInput = Pick<BillingQuoteRequest, 'sgf' | 'game_id' | 'session_id'>;
+type View = 'hints' | 'ownership' | 'score';
+type PositionInput = Pick<BillingQuoteRequest, 'sgf' | 'game_id' | 'session_id' | 'expected_position_key'>;
 interface Options {
   identityKey: string | null | undefined;
   status: string;
@@ -21,11 +21,13 @@ interface Snapshot {
   result: PositionAnalysis['result'] | null;
   hints: boolean;
   ownership: boolean;
+  score: boolean;
   pending: { quote: BillingQuote; key: string } | null;
   busy: boolean;
   error: MembershipErrorCode | null;
 }
-const blank = (scope: string): Snapshot => ({ scope, result: null, hints: false, ownership: false, pending: null, busy: false, error: null });
+const hiddenViews = { hints: false, ownership: false, score: false };
+const blank = (scope: string): Snapshot => ({ scope, result: null, ...hiddenViews, pending: null, busy: false, error: null });
 
 /** A result belongs to one authenticated full position, never to the shared WS state. */
 export function usePaidPosition({ identityKey, status, token, snapshotKey, input, profile = 'normal', enabled = true }: Options) {
@@ -64,10 +66,15 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
     const catalog = await membershipApi.getCatalog(token);
     if (!current()) return;
     if (catalog.membership_mode !== 'enabled' || !catalog.capabilities.quotes || !catalog.capabilities.positions) {
-      update({ hints: false, ownership: false, error: catalog.membership_mode === 'paused' ? 'service_paused' : 'position_unavailable' });
+      update({ ...hiddenViews, error: catalog.membership_mode === 'paused' ? 'service_paused' : 'position_unavailable' });
       return;
     }
     const response = await membershipApi.createQuote({ ...JSON.parse(inputKey) as PositionInput, kind: 'position', profile }, token);
+    const expected = (JSON.parse(inputKey) as PositionInput).expected_position_key;
+    if (expected && response.fingerprint !== expected) {
+      if (current()) update({ ...hiddenViews, pending: null, error: 'position_changed' });
+      return;
+    }
     if (current()) update({ pending: { quote: response, key: crypto.randomUUID() }, error: null });
   }, [inputKey, profile, scope, token, update]);
 
@@ -81,7 +88,7 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
     update({ busy: true });
     const generation = generationRef.current;
     const request = quote().catch((error: unknown) => {
-      if (generationRef.current === generation) update({ hints: false, ownership: false, error: membershipErrorCode(error, 'quote_failed') });
+      if (generationRef.current === generation) update({ ...hiddenViews, pending: null, error: membershipErrorCode(error, 'quote_failed') });
     }).finally(() => {
       if (generationRef.current === generation) { update({ busy: false }); quoteRequest.current = null; }
     });
@@ -115,17 +122,22 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
         if (!current()) return;
         if (receipt.state === 'succeeded' && receipt.result) update({ result: receipt.result, pending: null });
         else if (receipt.state === 'reserved' || receipt.state === 'running') update({ error: 'operation_running' });
-        else update({ result: null, pending: null, hints: false, ownership: false, error: receipt.state === 'result_expired'
+        else update({ result: null, pending: null, ...hiddenViews, error: receipt.state === 'result_expired'
           ? 'result_expired' : receipt.state === 'refunded' ? 'position_refunded' : 'position_failed' });
         notifyMembershipChanged();
       } catch (error) {
         if (!current()) return;
         const carrier = error as { detail?: { code?: string }; body?: string; status?: number };
+        const errorCode = membershipErrorCode(error, 'position_failed');
+        if (errorCode === 'position_changed') {
+          update({ result: null, pending: null, ...hiddenViews, error: errorCode });
+          return;
+        }
         if (/quote/.test(carrier.detail?.code ?? carrier.body ?? String(error)) || carrier.status === 409) {
           update({ pending: null });
           await quote().catch(() => {});
         }
-        update({ result: null, error: membershipErrorCode(error, 'position_failed') });
+        update({ result: null, error: errorCode });
       } finally {
         if (current()) { execution.current = null; update({ busy: false }); }
       }
@@ -133,8 +145,9 @@ export function usePaidPosition({ identityKey, status, token, snapshotKey, input
     execution.current = request;
     return request;
   }, [authenticated, inputKey, profile, quote, scope, token, update]);
-  const cancel = useCallback(() => { if (!execution.current) update({ pending: null, hints: false, ownership: false }); }, [update]);
+  const cancel = useCallback(() => { if (!execution.current) update({ pending: null, ...hiddenViews }); }, [update]);
+  const hideHints = useCallback(() => update({ hints: false }), [update]);
   const current = authenticated && snapshot.scope === scope ? snapshot : blank(scope);
   return { result: current.result, pendingQuote: current.pending?.quote ?? null, busy: current.busy, error: current.error ? membershipErrorText(current.error, t) : null,
-    showHints: current.hints, showOwnership: current.ownership, toggle, confirm, cancel };
+    showHints: current.hints, showOwnership: current.ownership, showScore: current.score, toggle, confirm, cancel, hideHints };
 }

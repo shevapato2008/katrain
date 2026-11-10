@@ -1361,12 +1361,12 @@ describe('GamePage', () => {
       } finally { rc.mockRestore(); }
     });
 
-    it('本地对局后台分析照跑(数子读这份分数)—— 不许把 pvp_local 排除出 analyzeCurrent', () => {
+    it('本地对局不因页面默认开关自动请求分析，数子由自身操作授权', () => {
       mockGameState = local();
       const an = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({} as never);
       try {
         renderPage();
-        expect(an).toHaveBeenCalledWith('test-session');
+        expect(an).not.toHaveBeenCalled();
       } finally { an.mockRestore(); }
     });
 

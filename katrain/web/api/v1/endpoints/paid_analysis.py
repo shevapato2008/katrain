@@ -29,6 +29,7 @@ class CreatePositionAnalysis(BaseModel):
     sgf: str | None = Field(default=None, max_length=262144)
     game_id: str | None = Field(default=None, max_length=64)
     session_id: str | None = Field(default=None, max_length=128)
+    expected_position_key: str | None = Field(default=None, max_length=64)
     quote_token: str = Field(max_length=8192)
     idempotency_key: str = Field(min_length=1, max_length=128)
 
@@ -43,7 +44,9 @@ def _position_input(request, body, user):
             session = request.app.state.session_manager.get_session(body.session_id)
         except KeyError:
             raise HTTPException(404, detail="Session not found") from None
-        sgf = session_position_sgf(session, user)
+        sgf = session_position_sgf(
+            session, user, profile=body.profile, expected_position_key=body.expected_position_key
+        )
         if body.game_id:
             raise HTTPException(422, detail="A local session cannot be a cloud game")
         if body.sgf:
@@ -53,8 +56,8 @@ def _position_input(request, body, user):
                 canonical_analysis_input(sgf, "position", body.profile)["fingerprint"]
                 != canonical_analysis_input(body.sgf, "position", body.profile)["fingerprint"]
             ):
-                raise HTTPException(409, detail="Session position changed")
-        return body.model_copy(update={"sgf": sgf, "session_id": None})
+                raise HTTPException(409, detail={"code": "position_changed", "message": "Session position changed"})
+        return body.model_copy(update={"sgf": sgf, "session_id": None, "expected_position_key": None})
     return body
 
 

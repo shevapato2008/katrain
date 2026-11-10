@@ -37,15 +37,9 @@ interface Props {
    * 上一版前端只是 `isRankedGameType` 早退不去请求,面板照样渲染,画出来是一条全 `—` 的空图。
    */
   isRanked?: boolean;
-  /**
-   * 这一局的分析**服务端根本不交付** —— 无人认领的会话(未登录游客建的那种)。
-   * 判据取服务端那一句(`get_state` 的 `analysis_delivered`),不是本地有没有 token:
-   * 决定交不交付的是「这个会话有没有主人」,而一个登录用户照样可能打开一个无主会话。
-   *
-   * 与 `isRanked` 分开:后者连悔棋一起禁(反作弊),而游客的悔棋是通的,
-   * 只有三个分析键点了没用。合在一起就会为了关掉分析顺手把能用的也关掉。
-   */
+  /** Authentication restriction for analysis; does not disable ordinary game actions. */
   analysisRequiresLogin?: boolean;
+  analysisUnavailable?: boolean;
   /** Golaxy 人机对弈: replace the local analysis toggles with star阵 tunnel controls. */
   engineMode?: boolean;
   activeEngineKind?: 'area' | 'options' | 'judge' | 'variation' | null;
@@ -321,7 +315,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, p
  */
 const GameControlPanel = ({
   gameState, playerRanks, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
-  isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
+  isGameOver = false, isRanked = false, analysisRequiresLogin = false, analysisUnavailable = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
   onTimeout, counting = false, statusSlot = null, territory, platformClock = null, platformPhase = null,
   onlineScoringPending = false,
@@ -344,7 +338,7 @@ const GameControlPanel = ({
   const canCount = !isGameOver && !counting && (!lobbyCountStopped || lobbyCountRetry) && (awaitingCount || moves >= countMin);
 
   // 本地对局(两个人面对面)。v2 D1:**不接引擎辅助** ——「领地」「AI 支招」整颗撤掉(不是灰着:
-  // 开局就定死没有,永久不可用 → 撤掉)。后台分析照跑、只给数子用,见 `GamePage` 的 `wantAnalysis`。
+  // 开局就定死没有,永久不可用 → 撤掉)。数子由独立计数操作处理。
   const localGame = gameState.game_type === 'pvp_local';
   const ogsGame = gameState.game_type === 'pvp_online';
   const onlineGame = ogsGame || gameState.game_type === 'pvp_lobby';
@@ -361,7 +355,7 @@ const GameControlPanel = ({
 
   // 胜率块:自由对弈可开;升降级 / 本地两人 / 在线大厅 / 星阵人机一律**整块不渲染**。
   const evalAllowed = freeVsAi;
-  const showScore = evalAllowed && !analysisRequiresLogin && !!analysisToggles.score;
+  const showScore = evalAllowed && !analysisRequiresLogin && !analysisUnavailable && !!analysisToggles.score;
 
   /** 本地局只有人机自由对弈允许悔棋；星阵机器人页在 engineMode 分支中单独保留灰色平台按钮。 */
   const undoAllowed = freeVsAi;
@@ -487,29 +481,32 @@ const GameControlPanel = ({
      稿子骂的是「一排点不动的键」——那说的是终局时**四个键同时死掉且不可恢复**,
      这里三个键灰着但**去登录就能用**,原因说得出来。 */
   const guestAnalysisReason = t('play:analysis_requires_login', '登录后可用');
+  const analysisDisabled = analysisRequiresLogin || analysisUnavailable;
+  const analysisReason = analysisRequiresLogin ? guestAnalysisReason : analysisUnavailable
+    ? t('membership:error_position_unavailable', '当前服务未开放单局面分析') : undefined;
 
   // N14:升降级局整块不渲染「领地」「AI支招」;按需分析已由页面与服务端禁止。
   const analysisActions: KioskAction[] = engineMode || localGame || onlineGame || rankedGame ? [] : [
     {
       key: 'ownership', icon: 'map-trifold', label: t('Territory', '领地'),
-      pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
+      pressed: !analysisDisabled && !!analysisToggles.ownership,
       onClick: () => onToggleAnalysis('ownership'),
-      disabled: analysisRequiresLogin,
-      reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
+      disabled: analysisDisabled,
+      reason: analysisReason,
     },
     {
       // AI 支招 = 一次性动作(顶部 N 个候选点,实体盘上白闪),**不是开关** ——
       // 所以它没有 `pressed`。原来那个独立的顶栏支招键在 kiosk-ui-redesign 里已经并进来了。
       key: 'hint', icon: 'lightbulb', label: t('Suggest', '支招'),
-      onClick: () => onHint?.(), disabled: !hintEnabled || analysisRequiresLogin,
-      reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
+      onClick: () => onHint?.(), disabled: !hintEnabled || analysisDisabled,
+      reason: analysisReason,
     },
     ...(evalAllowed ? [{
       key: 'score', icon: 'trend-up' as const, label: t('Chart', '图表'),
-      pressed: !analysisRequiresLogin && showScore,
+      pressed: !analysisDisabled && showScore,
       onClick: () => onToggleAnalysis('score'),
-      disabled: analysisRequiresLogin,
-      reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
+      disabled: analysisDisabled,
+      reason: analysisReason,
     }] : []),
   ];
 

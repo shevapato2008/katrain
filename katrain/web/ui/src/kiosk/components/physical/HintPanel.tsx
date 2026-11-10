@@ -7,10 +7,11 @@ interface Props {
   moves: HintMove[];
   timeoutS: number;
   onClose: () => void; // 关闭/超时 → API.hintDismiss()
+  physicalLamps?: boolean;
 }
 
 /** 白灯闪烁期间的屏幕同步面板：各选点胜率/目差（PRD §3.3）。 */
-const HintPanel = ({ moves, timeoutS, onClose }: Props) => {
+const HintPanel = ({ moves, timeoutS, onClose, physicalLamps = true }: Props) => {
   const { t } = useTranslation();
   useEffect(() => {
     const timer = setTimeout(onClose, timeoutS * 1000);
@@ -19,7 +20,7 @@ const HintPanel = ({ moves, timeoutS, onClose }: Props) => {
   return (
     <Card sx={{ position: 'absolute', top: 56, right: 8, zIndex: 130, minWidth: 240 }}>
       <CardContent>
-        <Typography variant="subtitle1">{t('AI suggestions (white lamps)', 'AI 支招（白灯闪烁处）')}</Typography>
+        <Typography variant="subtitle1">{physicalLamps ? t('AI suggestions (white lamps)', 'AI 支招（白灯闪烁处）') : t('Suggest', '支招')}</Typography>
         <Stack spacing={0.5} sx={{ mt: 1 }}>
           {moves.map((m) => (
             <Typography key={m.gtp} variant="body2">

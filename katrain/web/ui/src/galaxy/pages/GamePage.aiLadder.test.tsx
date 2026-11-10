@@ -7,12 +7,15 @@ import GamePage from './GamePage';
 
 const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(), getGameStatus: vi.fn(), onMove: vi.fn(), handleAction: vi.fn(), railToggle: vi.fn(), gameState: null as GameState | null,
+  createQuote: vi.fn(), createPosition: vi.fn(), getCatalog: vi.fn(), setGameState: vi.fn(), authenticated: true,
 }));
+vi.mock('../../api/membershipApi', () => ({ membershipApi: { getCatalog: mocks.getCatalog, createQuote: mocks.createQuote, createPosition: mocks.createPosition } }));
 vi.mock('../../features/aiLadder/api', () => ({
   getAiLadderStatus: mocks.getStatus,
   getAiLadderGameStatus: mocks.getGameStatus,
 }));
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: undefined, user: { username: 'fan' } }) }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: undefined, user: mocks.authenticated ? { username: 'fan' } : null,
+  status: mocks.authenticated ? 'authenticated' : 'guest', identityKey: mocks.authenticated ? 'fan' : null, isGuest: !mocks.authenticated }) }));
 vi.mock('../../context/SettingsContext', () => ({ useSettings: () => ({}) }));
 vi.mock('../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_en: string, zh: string) => zh }) }));
 vi.mock('../context/GameNavigationContext', () => ({ useGameNavigation: () => ({ registerActiveGame: vi.fn(), unregisterActiveGame: vi.fn() }) }));
@@ -20,14 +23,17 @@ vi.mock('../../components/Board', () => ({ default: ({ onMove, gameState }: { on
   <button disabled={Boolean(gameState.end_result)} onClick={() => onMove(3, 3)}>board</button>
 ) }));
 vi.mock('../components/game/RightSidebarPanel', () => ({
-  default: ({ embedded, gameState, onAction, onToggleChange }: { embedded?: boolean; gameState: GameState; onAction: (action: string) => void; onToggleChange: (setting: string) => void }) => (
+  default: ({ embedded, gameState, onAction, onToggleChange, analysisRequiresLogin, analysisUnavailable }: { embedded?: boolean; gameState: GameState; onAction: (action: string) => void; onToggleChange: (setting: string) => void; analysisRequiresLogin?: boolean; analysisUnavailable?: boolean }) => (
     <div data-testid="game-controls" data-embedded={String(Boolean(embedded))} data-end-result={String(gameState.end_result)}>
       <button disabled={Boolean(gameState.end_result)} onClick={() => onAction('pass')}>pass</button>
       <button onClick={() => onAction('resign')}>resign action</button>
       <button onClick={() => { mocks.railToggle(); onToggleChange('coords'); }}>toggle coords</button>
       <button onClick={() => onToggleChange('view3d')}>toggle 3d</button>
       <button onClick={() => onToggleChange('stoneDropEffect')}>toggle drop</button>
-      <button onClick={() => onToggleChange('hints')}>toggle hints</button>
+      <button disabled={analysisRequiresLogin || analysisUnavailable} onClick={() => onToggleChange('hints')}>toggle hints</button>
+      <button disabled={analysisRequiresLogin || analysisUnavailable} onClick={() => onToggleChange('ownership')}>toggle ownership</button>
+      <button disabled={analysisRequiresLogin || analysisUnavailable} onClick={() => onToggleChange('score')}>toggle score</button>
+      <span data-testid="private-score">{String(gameState.analysis?.score)}</span>
     </div>
   ),
   /* 翻手那六个键搬到了动作区（`board-rail-actions`，不跟着滚），
@@ -68,7 +74,7 @@ const gameState = {
 } satisfies GameState;
 
 vi.mock('../../hooks/useGameSession', () => ({ useGameSession: () => ({
-  sessionId: 's1', setSessionId: vi.fn(), gameState: mocks.gameState, setGameState: vi.fn(), error: null, onMove: mocks.onMove,
+  sessionId: 's1', setSessionId: vi.fn(), gameState: mocks.gameState, setGameState: mocks.setGameState, error: null, onMove: mocks.onMove,
   onNavigate: vi.fn(), handleAction: mocks.handleAction, initNewSession: vi.fn(), lastLog: null, chatMessages: [], sendChat: vi.fn(),
 }) }));
 
@@ -81,8 +87,44 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.handleAction.mockReset();
     mocks.railToggle.mockReset();
     mocks.gameState = gameState;
+    mocks.authenticated = true;
+    mocks.getCatalog.mockResolvedValue({ membership_mode: 'enabled', capabilities: { quotes: true, positions: true } });
+    mocks.createQuote.mockReset().mockResolvedValue({ token: 'q', fingerprint: 'position-a', kind: 'position', source: 'membership', wallet_max_display_points: '0.01' });
+    mocks.createPosition.mockReset().mockResolvedValue({ operation_id: 'op', state: 'succeeded', result: { ownership: [], moves: [], rootInfo: { visits: 500, scoreLead: 2.5, winrate: 0.6 } } });
+    mocks.setGameState.mockReset();
   });
   afterEach(() => vi.useRealTimers());
+
+  it('quotes an authenticated free position privately and reuses it across views without buying after a move', async () => {
+    mocks.gameState = { ...gameState, game_type: 'free', end_result: null, analysis_delivered: false, analysis_allowed: true, expected_position_key: 'position-a' };
+    const tree = <MemoryRouter initialEntries={['/play/game/s1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>;
+    const { rerender } = render(tree);
+    expect(mocks.createQuote).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'toggle hints' }));
+    await screen.findByTestId('consumption-quote');
+    expect(mocks.createQuote).toHaveBeenCalledWith({ kind: 'position', profile: 'normal', session_id: 's1', expected_position_key: 'position-a' }, undefined);
+    fireEvent.click(screen.getByRole('button', { name: '确认并开始' }));
+    await waitFor(() => expect(screen.getByTestId('private-score')).toHaveTextContent('2.5'));
+    fireEvent.click(screen.getByRole('button', { name: 'toggle ownership' }));
+    fireEvent.click(screen.getByRole('button', { name: 'toggle score' }));
+    expect(mocks.createPosition).toHaveBeenCalledTimes(1);
+    expect(mocks.setGameState).not.toHaveBeenCalled();
+    expect(mocks.gameState.analysis).toBeNull();
+    mocks.gameState = { ...mocks.gameState, current_node_id: 2, current_node_index: 2, expected_position_key: 'position-b' };
+    rerender(<MemoryRouter initialEntries={['/play/game/s1']}><Routes><Route path="/play/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+    expect(screen.getByTestId('private-score')).toHaveTextContent('undefined');
+    expect(mocks.createQuote).toHaveBeenCalledTimes(1);
+  });
+  it('keeps unauthenticated and analysis-forbidden free sessions disabled', () => {
+    mocks.gameState = { ...gameState, game_type: 'free', end_result: null, analysis_delivered: false, analysis_allowed: true, expected_position_key: 'position-a' };
+    mocks.authenticated = false;
+    const { rerender } = render(<MemoryRouter><GamePage /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'toggle hints' })).toBeDisabled();
+    mocks.authenticated = true;
+    mocks.gameState = { ...mocks.gameState, analysis_allowed: false };
+    rerender(<MemoryRouter><GamePage /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'toggle hints' })).toBeDisabled();
+  });
 
   /* 升降级模式下棋盘只接非分析的开关。这一条同时守两个方向：
      纯外观的「落子特效」必须**能**到棋盘（修之前到不了 —— 空按钮），

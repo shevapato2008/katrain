@@ -13424,3 +13424,6 @@ msgstr "QR 코드 유효 시간 {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "WeChat Pay 결제 확인 대기 중"
+
+msgid "membership:error_position_changed"
+msgstr "국면이 바뀌었습니다. 분석을 다시 누르고 새 견적을 확인해 주세요."

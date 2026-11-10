@@ -167,8 +167,8 @@ describe('GamePage', () => {
 
   it('does not enable stone navigation on the live board', () => {
     renderPage();
-    expect(boardProps).toHaveLength(1);
-    expect(boardProps[0]).not.toHaveProperty('onNavigate');
+    expect(boardProps.length).toBeGreaterThan(0);
+    for (const props of boardProps) expect(props).not.toHaveProperty('onNavigate');
   });
 
   it('renders player cards with names and ranks', () => {

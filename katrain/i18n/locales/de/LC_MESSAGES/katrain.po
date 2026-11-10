@@ -8629,3 +8629,8 @@ msgstr "QR-Code noch {time} gültig"
 
 msgid "membership:wechat_waiting"
 msgstr "Warten auf die Zahlungsbestätigung von WeChat Pay"
+
+msgid "membership:error_position_changed"
+msgstr ""
+"Die Stellung hat sich geändert. Klicke erneut auf Analyse und bestätige ein "
+"neues Angebot."

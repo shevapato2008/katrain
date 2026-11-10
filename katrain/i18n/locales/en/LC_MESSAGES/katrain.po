@@ -14088,3 +14088,6 @@ msgstr "QR code valid for {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "Waiting for WeChat Pay confirmation"
+
+msgid "membership:error_position_changed"
+msgstr "The position changed. Click analysis again and confirm a new quote."

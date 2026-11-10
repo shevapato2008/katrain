@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import sessionmaker
 
 from tests.web_ui.membership_test_support import membership_pg_engine
+from tests.web_ui.test_paid_analysis_guards import real_runtime
 from katrain.web.core import models_db as m
 from katrain.web.core.billing_catalog import MODEL_SHA256
 from katrain.web.core.billing_input import canonical_analysis_input
@@ -31,7 +32,7 @@ def result(request_id, size=9, visits=500):
 
 @pytest.fixture
 def service(membership_pg_engine, monkeypatch):
-    from katrain.web.api.v1.endpoints import paid_analysis
+    from katrain.web.api.v1.endpoints import billing, paid_analysis
     from katrain.web.api.v1.endpoints.auth import require_writable_user, get_current_user
     from katrain.web.core.config import settings
     from katrain.web.core.db import get_db
@@ -48,6 +49,7 @@ def service(membership_pg_engine, monkeypatch):
         uid, other_id = user.id, other.id
     app = FastAPI()
     app.include_router(paid_analysis.router, prefix="/api/v1/analysis")
+    app.include_router(billing.router, prefix="/api/v1/billing")
     active_user = SimpleNamespace(id=uid)
     app.dependency_overrides[require_writable_user] = lambda: active_user
     app.dependency_overrides[get_current_user] = lambda: active_user
@@ -83,6 +85,86 @@ def service(membership_pg_engine, monkeypatch):
         return {"sgf": sgf, "profile": profile, "quote_token": token, "idempotency_key": key}
 
     return app, Session, uid, other_id, active_user, calls, payload
+
+
+@pytest.fixture
+def session_service(service, real_runtime):
+    from katrain.core.sgf_parser import Move
+    from katrain.web.session import SessionManager
+
+    app, _, uid, _, _, _, _ = service
+    app.state.session_manager = SessionManager(enable_engine=False)
+    session = app.state.session_manager.create_session(user_id=uid, skip_initial_analysis=True)
+    runtime = session.katrain
+    runtime._do_new_game(size=9, komi=7.5, rules="chinese", skip_initial_analysis=True)
+    runtime.game.play(Move.from_gtp("A9", player="B"), analyze=False)
+    runtime.game.play(Move.from_gtp("B8", player="W"), analyze=False)
+    return service, session
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode,profile,visits", [("play", "normal", 500), ("research", "advanced", 2000)])
+async def test_session_quote_execute_uses_bound_profile_and_reuses_paid_result(session_service, mode, profile, visits):
+    service, session = session_service
+    app, Session, uid, _, _, calls, _ = service
+    session.mode = mode
+    state = session.katrain.get_state()
+    body = {"session_id": session.session_id, "profile": profile}
+    if mode == "play":
+        body["expected_position_key"] = state["expected_position_key"]
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        quote = await client.post("/api/v1/billing/quotes", json={**body, "kind": "position"})
+        assert quote.status_code == 200, quote.text
+        if mode == "play":
+            assert quote.json()["fingerprint"] == state["expected_position_key"]
+        execute = {**body, "quote_token": quote.json()["token"], "idempotency_key": "session-position"}
+        first = await client.post("/api/v1/analysis/positions", json=execute)
+        assert first.status_code == 200 and first.json()["state"] == "succeeded", first.text
+        assert (await client.post("/api/v1/analysis/positions", json=execute)).json() == first.json()
+        execute["idempotency_key"] = "another-view"
+        reused = await client.post("/api/v1/analysis/positions", json=execute)
+        assert reused.status_code == 200, reused.text
+        assert reused.json()["state"] == "succeeded" and reused.json()["source"] == "owned"
+        assert reused.json()["wallet_credits"] == 0
+        assert reused.json()["result"] == first.json()["result"]
+        assert (await client.post("/api/v1/analysis/positions", json=execute)).json() == reused.json()
+    assert len(calls) == 1 and calls[0]["max_visits"] == visits
+    assert calls[0]["moves"] == [["B", "A9"], ["W", "B8"]]
+    assert calls[0]["expected_model_sha256"] == MODEL_SHA256
+    with Session() as db:
+        assert db.get(m.User, uid).credits == 10 - (1 if profile == "normal" else 4)
+        assert db.query(m.BillingOperation).filter_by(source="wallet").count() == 1
+        assert db.query(m.BillingOperation).filter_by(source="owned").count() == 1
+        ledger = db.query(m.CreditTransaction).one()
+        assert ledger.status == "committed" and ledger.delta == -(1 if profile == "normal" else 4)
+
+
+@pytest.mark.asyncio
+async def test_play_quote_then_move_rejects_execute_without_reservation(session_service):
+    from katrain.core.sgf_parser import Move
+
+    service, session = session_service
+    app, Session, uid, _, _, calls, _ = service
+    body = {
+        "session_id": session.session_id,
+        "profile": "normal",
+        "expected_position_key": session.katrain.get_state()["expected_position_key"],
+    }
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        quote = await client.post("/api/v1/billing/quotes", json={**body, "kind": "position"})
+        assert quote.status_code == 200, quote.text
+        session.katrain.game.play(Move.from_gtp("C7", player="B"), analyze=False)
+        denied = await client.post(
+            "/api/v1/analysis/positions",
+            json={**body, "quote_token": quote.json()["token"], "idempotency_key": "stale-confirmation"},
+        )
+    assert denied.status_code == 409 and denied.json()["detail"]["code"] == "position_changed"
+    assert calls == []
+    with Session() as db:
+        assert db.query(m.BillingOperation).count() == 0
+        assert db.query(m.QuotaBucket).count() == 0
+        assert db.query(m.CreditTransaction).count() == 0
+        assert db.get(m.User, uid).credits == 10
 
 
 @pytest.mark.asyncio

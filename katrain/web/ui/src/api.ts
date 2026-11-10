@@ -48,6 +48,8 @@ export interface LocalConfirmRequest {
 
 export interface GameState {
   game_id: string;
+  /** Opaque full-path fingerprint captured in the same frame as this board. */
+  expected_position_key?: string | null;
   board_size: [number, number];
   komi: number;
   handicap: number;
@@ -143,12 +145,9 @@ export interface GameState {
   local_confirmation?: LocalConfirmationState;
   analysis_allowed?: boolean;
   /**
-   * 服务端这一局**交付不交付**分析结果。与 `analysis_allowed` 是两件事，别合并：
-   *   analysis_allowed  = 这一局允不允许分析（升降级反作弊；服务端连算都不算）
-   *   analysis_delivered = 算了，但交不交给你（无人认领的会话 —— 未登录游客建的那种 ——
-   *                        拿不到胜率/候选点/领地，AI 走子照常）
-   * 为 false 时 UI 要把三个分析键置灰并说明「登录后可用」，而不是留着一个点了没反应的键。
-   * 老服务端不带这个字段 ⇒ undefined ⇒ 一切照旧。
+   * Whether shared state delivers analysis. False also covers membership mode,
+   * where an eligible authenticated player obtains a private paid receipt.
+   * This flag alone does not establish login or session participation.
    */
   analysis_delivered?: boolean;
   // True once an ai:ladder player refused to move because the engine cannot serve the

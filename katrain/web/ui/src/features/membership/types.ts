@@ -76,6 +76,7 @@ export interface BillingQuoteRequest {
   sgf?: string;
   game_id?: string;
   session_id?: string;
+  expected_position_key?: string;
 }
 
 export interface BillingQuote {
@@ -126,6 +127,7 @@ export interface CreatePositionAnalysis {
   sgf?: string;
   game_id?: string;
   session_id?: string;
+  expected_position_key?: string;
   quote_token: string;
   idempotency_key: string;
 }

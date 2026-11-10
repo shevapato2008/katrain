@@ -8556,3 +8556,6 @@ msgstr "QR kodunun kalan süresi {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "WeChat Pay onayı bekleniyor"
+
+msgid "membership:error_position_changed"
+msgstr "Konum değişti. Analize yeniden tıklayın ve yeni fiyatı onaylayın."

@@ -581,7 +581,10 @@ class WebKaTrain(KaTrainBase):
         **分析照常在服务端跑**（AI 走子要用：PolicyStrategy 一族靠 `wait_for_analysis`
         等的就是节点上这份分析，关掉生成会让 AI 永远不落子），只是不交付给调用方。
         """
+        with self.ai_ladder_commit_lock:
+            return self._get_state_locked()
 
+    def _get_state_locked(self):
         if not self.game:
             return {"error": "No game active"}
 
@@ -807,7 +810,17 @@ class WebKaTrain(KaTrainBase):
             state["end_result"] = remote_result
             state["terminal_result"] = remote_result
             state["awaiting_count"] = False
-        from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
+        from katrain.web.core.billing_input import canonical_analysis_input
+        from katrain.web.core.paid_analysis import current_position_sgf, legacy_analysis_allowed, strip_private_analysis
+
+        # The opaque key and visible board come from this same AI-commit snapshot.
+        # Unsupported/overlong positions still have a usable game state.
+        try:
+            state["expected_position_key"] = canonical_analysis_input(current_position_sgf(self), "position", "normal")[
+                "fingerprint"
+            ]
+        except ValueError:
+            state["expected_position_key"] = None
 
         if not legacy_analysis_allowed(runtime=self):
             return strip_private_analysis(state)

@@ -46,6 +46,8 @@ import { countErrorMessage } from '../utils/countErrors';
 import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 import { useGameCelebration } from '../hooks/useGameCelebration';
 import { isStrictBoxKiosk } from '../shell/boxUrls';
+import { usePaidPlayPosition } from '../../features/analysis/usePaidPlayPosition';
+import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
 type EngineTerritoryResult = { ownership: OwnershipPoint[]; winrate: number; delta: number };
@@ -191,7 +193,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { token, user, isAuthenticated, isGuest } = useAuth();
+  const { token, user, isAuthenticated, isGuest, identityKey, status } = useAuth();
   const { pathname } = useLocation();
   const centralRoom = pathname.includes('/play/pvp/room/');
   const [centralUserId, setCentralUserId] = useState<number | null>(isStrictBoxKiosk ? null : user?.id ?? null);
@@ -244,6 +246,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }, [centralRoom]);
   const session = useGameSession({ token: token ?? undefined, centralRoom, deferMoveSoundUntilPaint: true,
     onCountRequest, onCountRejected, onCountTimeout });
+  const paid = usePaidPlayPosition({ gameState: session.gameState, sessionId, identityKey, status, token, isGuest, engineMode });
   useEffect(() => {
     const result = session.gameEndData?.result;
     if (!centralRoom || !result) return;
@@ -262,6 +265,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     coords: true,
     score: true,
   }));
+  const displayAnalysisToggles = paid.active ? { ...analysisToggles,
+    hints: paid.showHints, ownership: paid.showOwnership, score: paid.showScore,
+  } : analysisToggles;
 
   const [showResignConfirm, setShowResignConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -744,14 +750,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   }, [activeEngineKind, engineMode, physicalPlay]);
 
-  // Local free-play on-demand analysis for 领地(ownership)/图表(winrate/score). Board mode
-  // suppresses per-move auto-eval, so the current position has no analysis until we ask.
-  // Trigger when either toggle is on, and re-trigger when the current node changes. The
-  // result streams back over the game WebSocket (get_state broadcast). Ranked/rated games
-  // block this server-side (analysis_allowed). Not used in engineMode (star阵 tunnel instead).
-  // 本地双人局虽然不展示分析控件，数子仍读取同一份后台分析结果；因此图表默认开启时
-  // 也继续请求当前手分析。界面是否展示胜率块由 GameControlPanel 独立决定。
-  const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
+  // Analysis is authorized by a tool click. Position changes never purchase an analysis.
   const gs = session.gameState;
   const lobbyTerritory = useLobbyTerritory({
     sessionId, gameId: gs?.game_id, nodeId: gs?.current_node_id,
@@ -759,16 +758,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     enabled: gs?.game_type === 'pvp_lobby' && !!(gs.platform_my_color ?? gs.my_color) && session.connected === true && !session.connectionLost
       && !endResultOf(gs) && !gs.awaiting_count && !countPending && !countRequest && !counting,
   });
-  useEffect(() => {
-    if (engineMode || !wantAnalysis || !sessionId || !gs) return;
-    if (gs.game_type === 'pvp_online' || gs.game_type === 'pvp_lobby') return;
-    if (isRankedGameType(gs.game_type)) return;
-    // 无人认领的会话:服务端**算了但不交付**(`analysis_delivered`)。开关那边已经灰了,
-    // 这里再早退一次是因为**这条 `.catch(() => undefined)` 会把失败整个吞掉** ——
-    // 不早退的话,每换一手就往一个注定拿不回结果的端点打一发,屏上和日志里都没有痕迹。
-    if (gs.analysis_delivered === false) return;
-    API.analyzeCurrent(sessionId).catch(() => undefined);
-  }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type, gs?.analysis_delivered]);
 
   // 双 pass 之后自动数子(v2-design §3.4)。只给本地对局与人机自由对弈(`autoCountEligible`);
   // 判据取服务端下发的 `awaiting_count`,前端不自己数 pass。
@@ -781,8 +770,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const closeHint = useCallback(() => {
     setHint(null);
+    if (paid.active) { paid.hideHints(); return; }
     API.hintDismiss().catch(() => undefined);
-  }, []);
+  }, [paid.active, paid.hideHints]);
 
   // Remaining-道具 counts for the button badges. Account-level (not per-game),
   // so it's safe to fetch once on mount and re-fetch after each analysis settles
@@ -860,7 +850,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     );
   }
 
-  const gameState = session.gameState;
+  const gameState = paid.gameState!;
   const isGameOver = !!endResultOf(gameState) && !gameState.awaiting_count;
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
@@ -1058,7 +1048,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
-  const boardAnalysisToggles = isGameOver && !onlineGame ? { ...analysisToggles, ownership: true } : analysisToggles;
+  const boardAnalysisToggles = isGameOver && !onlineGame && !paid.active ? { ...displayAnalysisToggles, ownership: true } : displayAnalysisToggles;
 
   // 刻度带的字。`坐标` 关掉时给空数组 —— **带还在,只是没字**(撤了带落子区会从 460 跳成 516)。
   const rulerCols = analysisToggles.coords ? colsFor(boardSize) : [];
@@ -1244,19 +1234,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     } catch (e) { console.error(e); setReviewError(true); }
   };
 
-  /* 三个操作数,各挡各的:`physicalPlay` 是「实体盘在不在」,`analysis_allowed` 是
-     「这一局允不允许分析」(升降级反作弊),`analysis_delivered` 是「算了交不交给你」
-     (无人认领的会话)。少了最后一条,游客的支招键是亮的,按下去 401 ——
-     而 `handleHint` 的 catch 只认得 `ranked_forbidden`/`disabled`/`insufficient`,
-     401 会落到那句「支招失败,请稍后再试」上,把一个**登录就能解决**的事说成了故障。 */
+  // Screen-only free play supports the same private paid tools as a physical board.
+  // Eligibility uses authentication and the current key; participation remains server-enforced.
   const hintVisible =
-    physicalPlay &&
     gameState.game_type === 'free' &&
     gameState.analysis_allowed !== false &&
-    gameState.analysis_delivered !== false;
+    (paid.active ? paid.eligible : gameState.analysis_delivered !== false);
 
   const handleHint = async () => {
     if (!sessionId) return;
+    if (paid.active) {
+      if (paid.eligible) void paid.toggle('hints');
+      return;
+    }
     try {
       setHint(await API.hint(sessionId));
     } catch (e) {
@@ -1467,6 +1457,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     </div>
   ) : null;
 
+  const visibleHint = paid.active ? paid.showHints && paid.result ? {
+    timeout_s: 30,
+    moves: paid.result.moves.filter((move) => move.move.toLowerCase() !== 'pass').slice(0, 3).map((move) => {
+      const col = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'.indexOf(move.move[0]);
+      const row = Number(move.move.slice(1)) - 1;
+      return { gtp: move.move, coords: [col, row] as [number, number], vision_rc: [boardSize - 1 - row, col] as [number, number],
+        winrate: move.winrate, score_lead: move.score_lead, visits: move.visits };
+    }),
+  } : null : hint;
+
   // Only visible content switches; the session hook, SGF and game identity remain mounted.
   if (localPhysicalGame && localRecovery.calibration) return <GeometryCalibrationScreen
       t={t}
@@ -1673,14 +1673,21 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             gameState={gameState}
             onAction={handleAction}
             onNavigate={session.onNavigate}
-            analysisToggles={analysisToggles}
-            onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+            analysisToggles={displayAnalysisToggles}
+            onToggleAnalysis={(key) => {
+              if (paid.active && (key === 'ownership' || key === 'score')) {
+                if (paid.eligible) void paid.toggle(key);
+              } else {
+                setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }));
+                if ((key === 'ownership' || key === 'score') && !analysisToggles[key] && sessionId && gameState.analysis_delivered !== false) {
+                  API.analyzeCurrent(sessionId).catch(() => undefined);
+                }
+              }
+            }}
             onHint={handleHint}
             hintEnabled={hintVisible}
-            /* 判据取**服务端说的那一句**,不是本地有没有 token:决定交不交付的是
-               「这个会话有没有主人」,而一个登录用户照样可能打开一个无主会话。
-               老服务端不带这个字段 ⇒ undefined ⇒ `=== false` 为假 ⇒ 一切照旧。 */
-            analysisRequiresLogin={gameState.analysis_delivered === false}
+            analysisRequiresLogin={paid.requiresLogin}
+            analysisUnavailable={paid.unavailable}
             isGameOver={isGameOver}
             isRanked={isRanked}
             territory={isRanked && !isGameOver ? {
@@ -1959,7 +1966,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       )}
 
       {/* AI hint panel + error */}
-      {hint && <HintPanel moves={hint.moves} timeoutS={hint.timeout_s} onClose={closeHint} />}
+      {visibleHint && <HintPanel moves={visibleHint.moves} timeoutS={visibleHint.timeout_s} onClose={closeHint} physicalLamps={!paid.active && physicalPlay} />}
+      <ConsumptionQuoteDialog kiosk quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onConfirm={() => void paid.confirm()} onCancel={paid.cancel} />
+      <Snackbar className="kiosk-game-toast" open={!!paid.error && !paid.pendingQuote} anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={paid.error} />
       <Snackbar className="kiosk-game-toast" open={!!hintError} autoHideDuration={5000} onClose={() => setHintError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={hintError} />
 

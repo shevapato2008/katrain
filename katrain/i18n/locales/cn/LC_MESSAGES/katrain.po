@@ -13285,3 +13285,6 @@ msgstr "二维码剩余 {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "等待微信支付确认"
+
+msgid "membership:error_position_changed"
+msgstr "局面已变化，请重新点击分析并确认报价"

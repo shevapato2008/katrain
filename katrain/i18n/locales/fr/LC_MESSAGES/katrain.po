@@ -8616,3 +8616,7 @@ msgstr "Code QR valable encore {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "En attente de la confirmation de WeChat Pay"
+
+msgid "membership:error_position_changed"
+msgstr ""
+"La position a changé. Relancez l’analyse et confirmez un nouveau devis."

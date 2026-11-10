@@ -13427,3 +13427,6 @@ msgstr "QRコードの有効期限まで {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "WeChat Payの支払い確認を待っています"
+
+msgid "membership:error_position_changed"
+msgstr "局面が変わりました。もう一度分析を選び、新しい見積もりを確認してください。"

@@ -8457,3 +8457,7 @@ msgstr "QR-код действителен ещё {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "Ожидаем подтверждения от WeChat Pay"
+
+msgid "membership:error_position_changed"
+msgstr ""
+"Позиция изменилась. Снова нажмите анализ и подтвердите новую стоимость."

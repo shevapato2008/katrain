@@ -13392,3 +13392,6 @@ msgstr "二維碼剩餘 {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "等待微信支付確認"
+
+msgid "membership:error_position_changed"
+msgstr "局面已變化，請重新點擊分析並確認報價"

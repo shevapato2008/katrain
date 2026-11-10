@@ -50,10 +50,33 @@ def strip_private_analysis(state):
     return clean
 
 
-def session_position_sgf(session, user):
+def current_position_sgf(runtime):
+    """Serialize the full cursor path while the caller holds the runtime commit lock."""
+    nodes = runtime.game.current_node.nodes_from_root
+    if len(nodes) > 501:
+        raise ValueError("Analysis supports at most 500 moves")
+    allowed = {"GM", "FF", "CA", "SZ", "RU", "KM", "HA", "PL", "AB", "AW", "AE", "B", "W"}
+    chunks, byte_count = [], 2  # outer parentheses
+    for node in nodes:
+        chunk = ";" + "".join(
+            key + "".join("[" + node._escape_value(str(v)) + "]" for v in values)
+            for key, values in node.properties.items()
+            if key in allowed and values
+        )
+        byte_count += len(chunk.encode("utf-8"))
+        if byte_count > 262144:
+            raise ValueError("SGF exceeds 256 KiB")
+        chunks.append(chunk)
+    return "(" + "".join(chunks) + ")"
+
+
+def session_position_sgf(session, user, *, profile=None, expected_position_key=None):
+    from katrain.web.core.billing_input import canonical_analysis_input
     from katrain.web.core.ranked_session_guard import guard_ai_ladder_ranked_session
 
-    with session.lock:
+    # Preserve the request-side session -> runtime lock order. AI commits and
+    # navigation use the latter; session.lock alone cannot freeze the cursor.
+    with session.lock, session.katrain.ai_ladder_commit_lock:
         owners = {getattr(session, key, None) for key in ("owner_user_id", "user_id", "player_b_id", "player_w_id")}
         if user is None or user.id not in owners:
             raise HTTPException(403, detail="Position analysis is restricted to a session participant")
@@ -66,25 +89,28 @@ def session_position_sgf(session, user):
             or getattr(runtime, "pvp_bot_session", False) is True
         ):
             raise HTTPException(403, detail="Position analysis is unavailable in this game")
-        # Serialize only the full path to the cursor; sibling branches and future moves
-        # must not change the scope or leak saved analysis properties.
-        nodes = runtime.game.current_node.nodes_from_root
-        if len(nodes) > 501:
-            raise ValueError("Analysis supports at most 500 moves")
-        allowed = {"GM", "FF", "CA", "SZ", "RU", "KM", "HA", "PL", "AB", "AW", "AE", "B", "W"}
-        chunks = []
-        for node in nodes:
-            chunks.append(
-                ";"
-                + "".join(
-                    key + "".join("[" + node._escape_value(v) + "]" for v in values)
-                    for key, values in node.properties.items()
-                    if key in allowed and values
-                )
+        play_request = profile is not None and getattr(session, "mode", "play") == "play"
+        if play_request and profile != "normal":
+            raise HTTPException(
+                403,
+                detail={"code": "position_profile_unavailable", "message": "Play analysis requires the normal profile"},
             )
-            if sum(len(chunk.encode("utf-8")) for chunk in chunks) > 262142:
-                raise ValueError("SGF exceeds 256 KiB")
-        return "(" + "".join(chunks) + ")"
+        if play_request and not expected_position_key:
+            raise HTTPException(409, detail={"code": "position_changed", "message": "Session position changed"})
+        # Capture immutable input in the same snapshot as eligibility and key.
+        try:
+            sgf = current_position_sgf(runtime)
+            if play_request:
+                position_key = canonical_analysis_input(sgf, "position", "normal")["fingerprint"]
+        except ValueError:
+            if play_request:
+                raise HTTPException(
+                    409, detail={"code": "position_changed", "message": "Session position changed"}
+                ) from None
+            raise
+        if play_request and position_key != expected_position_key:
+            raise HTTPException(409, detail={"code": "position_changed", "message": "Session position changed"})
+        return sgf
 
 
 def paid_engine_client():

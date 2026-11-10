@@ -22,6 +22,19 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    "membership:error_position_changed": {
+        "en": "The position changed. Click analysis again and confirm a new quote.",
+        "cn": "局面已变化，请重新点击分析并确认报价",
+        "tw": "局面已變化，請重新點擊分析並確認報價",
+        "jp": "局面が変わりました。もう一度分析を選び、新しい見積もりを確認してください。",
+        "ko": "국면이 바뀌었습니다. 분석을 다시 누르고 새 견적을 확인해 주세요.",
+        "de": "Die Stellung hat sich geändert. Klicke erneut auf Analyse und bestätige ein neues Angebot.",
+        "es": "La posición ha cambiado. Vuelve a pulsar análisis y confirma una nueva cotización.",
+        "fr": "La position a changé. Relancez l’analyse et confirmez un nouveau devis.",
+        "ru": "Позиция изменилась. Снова нажмите анализ и подтвердите новую стоимость.",
+        "tr": "Konum değişti. Analize yeniden tıklayın ve yeni fiyatı onaylayın.",
+        "ua": "Позиція змінилася. Знову натисніть аналіз і підтвердьте нову вартість.",
+    },
     # ── 智能棋盘：棋子摆偏与复盘快捷分析 ────────────────────────────────
     "vision:offcenter_at": {
         "en": ": stone is off-center", "cn": " 子没放正", "tw": " 子沒放正",

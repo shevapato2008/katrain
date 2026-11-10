@@ -10,7 +10,7 @@ export const planReportCopy = (weeklyReports: number, t?: MembershipTranslate, n
 
 export type MembershipErrorCode = 'insufficient' | 'quote_expired' | 'service_paused' | 'service_unavailable'
   | 'verification_required' | 'operation_running' | 'busy' | 'result_expired' | 'quote_failed'
-  | 'position_failed' | 'position_refunded' | 'position_unavailable' | 'analysis_login_required'
+  | 'position_failed' | 'position_refunded' | 'position_unavailable' | 'position_changed' | 'analysis_login_required'
   | 'report_login_required' | 'report_failed' | 'report_missing';
 
 /** Read only known billing codes; arbitrary server exception messages are never UI copy. */
@@ -22,6 +22,7 @@ export function membershipErrorCode(error: unknown, fallback: MembershipErrorCod
   }
   const code = typeof detail === 'string' ? detail : detail && typeof detail === 'object' && 'code' in detail ? detail.code : carrier.message;
   switch (code) {
+    case 'position_changed': return 'position_changed';
     case 'insufficient_credits': case 'wallet_cap_exceeded': return 'insufficient';
     case 'invalid_or_expired_quote': case 'quote_mismatch': case 'quote_and_idempotency_required': return 'quote_expired';
     case 'membership_paused': return 'service_paused';
@@ -41,6 +42,7 @@ export function membershipErrorCode(error: unknown, fallback: MembershipErrorCod
 
 export function membershipErrorText(code: MembershipErrorCode, t: MembershipTranslate): string {
   switch (code) {
+    case 'position_changed': return t('membership:error_position_changed', '局面已变化，请重新点击分析并确认报价');
     case 'insufficient': return t('membership:error_insufficient', '会员额度和API积分不足，请前往会员页查看');
     case 'quote_expired': return t('membership:error_quote_expired', '报价已过期或与当前请求不一致，请确认最新报价后重试');
     case 'service_paused': return t('membership:error_service_paused', '分析服务暂停，请稍后重试');

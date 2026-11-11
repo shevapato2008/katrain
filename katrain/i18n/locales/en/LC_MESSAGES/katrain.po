@@ -14175,3 +14175,65 @@ msgstr "The sign-in identity changed. Start again."
 
 msgid "auth:otp_verification_required"
 msgstr "Register using an SMS verification code."
+
+msgid "auth:bind_title"
+msgstr "Bind phone"
+
+msgid "auth:bind_password"
+msgstr "Current account password"
+
+msgid "auth:bind_policy"
+msgstr ""
+"After binding, you can sign in with an SMS code. Your balance and membership"
+" are retained; binding does not award repeat points."
+
+msgid "auth:bind_submit"
+msgstr "Confirm binding"
+
+msgid "auth:bind_submitting"
+msgstr "Binding…"
+
+msgid "auth:bind_success"
+msgstr "Phone bound successfully"
+
+msgid "auth:bind_bound_label"
+msgstr "Bound phone"
+
+msgid "auth:bind_load_error"
+msgstr "Phone binding status could not be loaded."
+
+msgid "auth:bind_loading"
+msgstr "Checking phone binding…"
+
+msgid "auth:bind_retry"
+msgstr "Retry"
+
+msgid "auth:bind_not_allowed"
+msgstr "This account cannot bind a phone."
+
+msgid "auth:bind_auth_required"
+msgstr "Sign in again before binding your phone."
+
+msgid "auth:bind_phone_in_use"
+msgstr "This phone is bound to another account. Use a different phone."
+
+msgid "auth:bind_reauth_failed"
+msgstr "The current account password is incorrect. Enter it again."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Too many password attempts. Try again in {seconds}s."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS service is unavailable. Try again later."
+
+msgid "auth:bind_sms_rejected"
+msgstr "The SMS request was rejected. Try again later."
+
+msgid "auth:bind_failed"
+msgstr "Binding was not completed. Try again later."
+
+msgid "auth:bind_done"
+msgstr "Done"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Manage phone on home page"

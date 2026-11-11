@@ -13363,3 +13363,63 @@ msgstr "登录身份已变化，请重新开始"
 
 msgid "auth:otp_verification_required"
 msgstr "请使用短信验证码完成注册"
+
+msgid "auth:bind_title"
+msgstr "绑定手机号"
+
+msgid "auth:bind_password"
+msgstr "当前账号密码"
+
+msgid "auth:bind_policy"
+msgstr "绑定后可用短信验证码登录，原有余额和会员保留；绑定不重复赠送积分。"
+
+msgid "auth:bind_submit"
+msgstr "确认绑定"
+
+msgid "auth:bind_submitting"
+msgstr "绑定中…"
+
+msgid "auth:bind_success"
+msgstr "手机号绑定成功"
+
+msgid "auth:bind_bound_label"
+msgstr "已绑定手机号"
+
+msgid "auth:bind_load_error"
+msgstr "暂时无法读取手机号绑定状态"
+
+msgid "auth:bind_loading"
+msgstr "正在核对绑定状态…"
+
+msgid "auth:bind_retry"
+msgstr "重试"
+
+msgid "auth:bind_not_allowed"
+msgstr "当前账号暂不支持绑定手机号"
+
+msgid "auth:bind_auth_required"
+msgstr "请重新登录后绑定手机号"
+
+msgid "auth:bind_phone_in_use"
+msgstr "此手机号已绑定其他账号，请使用其他手机号"
+
+msgid "auth:bind_reauth_failed"
+msgstr "当前账号密码不正确，请重新输入"
+
+msgid "auth:bind_reauth_locked"
+msgstr "密码验证次数过多，请{seconds}秒后再试"
+
+msgid "auth:bind_sms_unavailable"
+msgstr "短信服务暂不可用，请稍后重试"
+
+msgid "auth:bind_sms_rejected"
+msgstr "短信发送被拒绝，请稍后重试"
+
+msgid "auth:bind_failed"
+msgstr "绑定未完成，请稍后重试"
+
+msgid "auth:bind_done"
+msgstr "完成"
+
+msgid "auth:bind_manage_at_home"
+msgstr "在主页管理手机号"

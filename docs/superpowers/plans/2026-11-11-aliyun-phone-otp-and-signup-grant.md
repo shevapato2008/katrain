@@ -8,7 +8,7 @@
 
 **Tech Stack:** 现有 FastAPI、SQLAlchemy、PostgreSQL、httpx、React/Vite、Vitest/Playwright、11 语 gettext；不引入 Redis、支付系统或新部署平台。
 
-**执行状态（2026-11-11）：** B1–B4 首次注册/再次登录已实现并通过独立视觉、规格和代码复审；B1 Fixture 已退出产品源码。真实隔离 PG 接口已验证首次 5000 credits 与回登零重复赠额。B5 旧账号绑定、B6 launcher、两云发布及本人短信送达验收继续执行；目前运行服务器仍为此前发布版本。
+**执行状态（2026-11-11）：** B1–B5 首次注册/再次登录及旧账号绑定已实现，并通过独立视觉、规格和代码复审；对应 Fixture 已退出产品源码。真实隔离 PG 接口已验证首次 5000 credits、回登零重复赠额，以及旧账号绑定后资产不变。B6 launcher 与两云发布继续执行；目前运行服务器仍为此前发布版本。本人短信送达由用户部署后在网页自行验收，代理不发送真实短信。
 
 ---
 
@@ -32,7 +32,7 @@
 **Create:** `katrain/web/core/phone.py`（仅大陆规范化）、`sms.py`（唯一 Aliyun sender）、`phone_otp.py`（事务/风控）。
 **Modify:** `katrain/web/core/models_db.py`、`migrations.py`、`auth.py:init_db`、`config.py`；`katrain/web/api/v1/endpoints/auth.py`；`katrain/web/core/remote_client.py`。公共 `web/models.py:User/OnlineUser` 不加手机号。
 **Create UI:** `katrain/web/ui/src/features/auth/PhoneOtpForm.tsx`、`PhoneBindDialog.tsx`、各自测试；临时 `PhoneOtpFixture.tsx` 与仅本机 dev 入口（最终删除）。
-**Modify UI:** `context/AuthContext.tsx`、`api.ts`、`galaxy/components/auth/LoginModal.tsx`、`galaxy/components/layout/GalaxySidebar.tsx`、`kiosk/pages/LoginPage.tsx`、`kiosk/components/settings/AccountSection.tsx`、旧 `components/LoginDialog.tsx` / `RegisterDialog.tsx` 统一导向相同流程。
+**Modify UI:** `context/AuthContext.tsx`、`api.ts`、`galaxy/components/auth/LoginModal.tsx`、`galaxy/components/layout/GalaxySidebar.tsx`、`kiosk/pages/LoginPage.tsx`、`kiosk/pages/membership/MembershipPage.tsx`、旧 `components/LoginDialog.tsx` / `RegisterDialog.tsx` 统一导向相同流程。
 
 - [ ] 将以下 DTO/错误码写进实现类型与测试；输入严格长度限制，手机号只接受大陆 11 位 `1[0-9]{10}` 与明确 +86/0086 前缀的等价写法，拒绝其他地区、全角数字及模糊格式。
 
@@ -104,7 +104,7 @@
 
 ### Task B5：旧账号已登录绑定（无赠额）
 
-**UI:** GalaxySidebar现有账户区一个入口；非strict Kiosk AccountSection一行，使用共享 `PhoneBindDialog`。strict Kiosk仍导向launcher账户入口。
+**UI:** GalaxySidebar现有账户区一个入口；非strict Kiosk 在现有 `/kiosk/membership` 账户落点增加一行，使用共享 `PhoneBindDialog`。strict Kiosk仍导向launcher账户入口。现场读取确认 `AccountSection` 已无生产引用，因此不恢复整个旧设置模块及其无关查询；从真实顶栏账户入口验收绑定可达性。
 **Tests:** 新 `tests/web_ui/test_phone_bind_pg.py`、`features/auth/PhoneBindDialog.test.tsx`；扩展账户组件测试。
 
 - [ ] 先Fixture预览同尺寸“未绑定→获取验证码→输入当前账号密码→绑定成功”及占用/再认证失败/锁等待文案，复用B1已确认样式；仅绑定表单增加current_password，OTP登录仍只phone+code。独立视觉确认后才做绑定后端，不同时铺开另一个未闭环旅程。

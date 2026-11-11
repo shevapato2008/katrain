@@ -8719,3 +8719,67 @@ msgstr "Die Anmeldeidentität hat sich geändert. Neu beginnen."
 
 msgid "auth:otp_verification_required"
 msgstr "Mit einem SMS-Bestätigungscode registrieren."
+
+msgid "auth:bind_title"
+msgstr "Mobilnummer verknüpfen"
+
+msgid "auth:bind_password"
+msgstr "Aktuelles Kontopasswort"
+
+msgid "auth:bind_policy"
+msgstr ""
+"Nach der Verknüpfung kannst du dich per SMS-Code anmelden. Guthaben und "
+"Mitgliedschaft bleiben erhalten; es gibt keine erneute Punktegutschrift."
+
+msgid "auth:bind_submit"
+msgstr "Verknüpfung bestätigen"
+
+msgid "auth:bind_submitting"
+msgstr "Wird verknüpft…"
+
+msgid "auth:bind_success"
+msgstr "Mobilnummer erfolgreich verknüpft"
+
+msgid "auth:bind_bound_label"
+msgstr "Verknüpfte Mobilnummer"
+
+msgid "auth:bind_load_error"
+msgstr "Der Verknüpfungsstatus konnte nicht geladen werden."
+
+msgid "auth:bind_loading"
+msgstr "Verknüpfung wird geprüft…"
+
+msgid "auth:bind_retry"
+msgstr "Erneut versuchen"
+
+msgid "auth:bind_not_allowed"
+msgstr "Dieses Konto kann keine Mobilnummer verknüpfen."
+
+msgid "auth:bind_auth_required"
+msgstr "Melde dich vor der Verknüpfung erneut an."
+
+msgid "auth:bind_phone_in_use"
+msgstr ""
+"Diese Nummer ist mit einem anderen Konto verknüpft. Verwende eine andere "
+"Nummer."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Das aktuelle Kontopasswort ist falsch. Erneut eingeben."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Zu viele Passwortversuche. In {seconds}s erneut versuchen."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS-Dienst nicht verfügbar. Später erneut versuchen."
+
+msgid "auth:bind_sms_rejected"
+msgstr "SMS-Anfrage abgelehnt. Später erneut versuchen."
+
+msgid "auth:bind_failed"
+msgstr "Verknüpfung nicht abgeschlossen. Später erneut versuchen."
+
+msgid "auth:bind_done"
+msgstr "Fertig"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Mobilnummer auf Startseite verwalten"

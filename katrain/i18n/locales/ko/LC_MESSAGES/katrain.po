@@ -13504,3 +13504,63 @@ msgstr "로그인 대상이 바뀌었습니다. 다시 시작하세요"
 
 msgid "auth:otp_verification_required"
 msgstr "문자 인증번호로 가입을 완료하세요"
+
+msgid "auth:bind_title"
+msgstr "휴대폰 번호 연결"
+
+msgid "auth:bind_password"
+msgstr "현재 계정 비밀번호"
+
+msgid "auth:bind_policy"
+msgstr "연결 후 문자 인증번호로 로그인할 수 있습니다. 기존 잔액과 멤버십은 유지되며, 연결 시 포인트를 중복 지급하지 않습니다."
+
+msgid "auth:bind_submit"
+msgstr "연결 확인"
+
+msgid "auth:bind_submitting"
+msgstr "연결 중…"
+
+msgid "auth:bind_success"
+msgstr "휴대폰 번호가 연결되었습니다"
+
+msgid "auth:bind_bound_label"
+msgstr "연결된 휴대폰 번호"
+
+msgid "auth:bind_load_error"
+msgstr "휴대폰 연결 상태를 불러올 수 없습니다"
+
+msgid "auth:bind_loading"
+msgstr "연결 상태 확인 중…"
+
+msgid "auth:bind_retry"
+msgstr "다시 시도"
+
+msgid "auth:bind_not_allowed"
+msgstr "이 계정은 휴대폰 번호를 연결할 수 없습니다"
+
+msgid "auth:bind_auth_required"
+msgstr "다시 로그인한 후 휴대폰 번호를 연결하세요"
+
+msgid "auth:bind_phone_in_use"
+msgstr "다른 계정에 연결된 번호입니다. 다른 번호를 사용하세요"
+
+msgid "auth:bind_reauth_failed"
+msgstr "현재 계정 비밀번호가 올바르지 않습니다. 다시 입력하세요"
+
+msgid "auth:bind_reauth_locked"
+msgstr "비밀번호 시도가 너무 많습니다. {seconds}초 후 다시 시도하세요"
+
+msgid "auth:bind_sms_unavailable"
+msgstr "문자 서비스를 사용할 수 없습니다. 나중에 다시 시도하세요"
+
+msgid "auth:bind_sms_rejected"
+msgstr "문자 요청이 거부되었습니다. 나중에 다시 시도하세요"
+
+msgid "auth:bind_failed"
+msgstr "연결이 완료되지 않았습니다. 나중에 다시 시도하세요"
+
+msgid "auth:bind_done"
+msgstr "완료"
+
+msgid "auth:bind_manage_at_home"
+msgstr "홈에서 휴대폰 번호 관리"

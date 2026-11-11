@@ -7,7 +7,8 @@ import { i18n } from '../../../i18n';
 import MembershipPage from './MembershipPage';
 
 const { auth, api } = vi.hoisted(() => ({
-  auth: { identityKey: 'account-a' as string | null, status: 'authenticated', token: null as string | null },
+  auth: { identityKey: 'account-a' as string | null, status: 'authenticated', token: null as string | null,
+    user: null as { username: string; is_admin: boolean } | null, isGuest: false, isStrictBoxKiosk: false },
   api: { getCatalog: vi.fn(), getUsage: vi.fn(), createOrder: vi.fn(), getOrder: vi.fn(), getOrders: vi.fn(), cancelOrder: vi.fn() },
 }));
 vi.mock('../../../context/AuthContext', () => ({ useAuth: () => auth }));
@@ -45,7 +46,7 @@ const openTopup = () => fireEvent.click(screen.getByRole('tab', { name: 'API充�
 
 beforeEach(async () => {
   vi.useFakeTimers();
-  Object.assign(auth, { identityKey: 'account-a', status: 'authenticated', token: null });
+  Object.assign(auth, { identityKey: 'account-a', status: 'authenticated', token: null, user: null, isGuest: false, isStrictBoxKiosk: false });
   Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
   for (const fn of Object.values(api)) fn.mockReset();
   api.getCatalog.mockResolvedValue(catalog());
@@ -60,6 +61,24 @@ beforeEach(async () => {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('Kiosk membership', () => {
+  it('opens binding from the existing account area without touching the membership balance', async () => {
+    auth.user = { username: 'existing-player', is_admin: false };
+    const phoneStatus = vi.spyOn(API, 'phoneStatus').mockResolvedValue({ bound: false });
+    mount(); await flush();
+    fireEvent.click(screen.getByRole('button', { name: '绑定手机号' })); await flush();
+    expect(screen.getByLabelText('当前账号密码')).toBeInTheDocument();
+    expect(phoneStatus).toHaveBeenCalledWith(null, expect.any(AbortSignal));
+    expect(api.getUsage).toHaveBeenCalledTimes(1);
+    expect(api.createOrder).not.toHaveBeenCalled();
+  });
+  it('sends a strict kiosk account to launcher management instead of a local binding form', async () => {
+    auth.user = { username: 'existing-player', is_admin: false }; auth.isStrictBoxKiosk = true;
+    const phoneStatus = vi.spyOn(API, 'phoneStatus');
+    mount(); await flush();
+    expect(screen.getByRole('button', { name: '在主页管理手机号' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '绑定手机号' })).not.toBeInTheDocument();
+    expect(phoneStatus).not.toHaveBeenCalled();
+  });
   const switchLanguage = async (lang: string, translations: Record<string, string>) => {
     vi.mocked(API.getTranslations).mockResolvedValue({ lang, translations });
     await act(async () => { await i18n.loadTranslations(lang); });

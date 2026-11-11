@@ -8706,3 +8706,66 @@ msgstr "L’identité de connexion a changé. Recommencez."
 
 msgid "auth:otp_verification_required"
 msgstr "Inscrivez-vous avec un code de vérification SMS."
+
+msgid "auth:bind_title"
+msgstr "Associer un téléphone"
+
+msgid "auth:bind_password"
+msgstr "Mot de passe actuel du compte"
+
+msgid "auth:bind_policy"
+msgstr ""
+"Après association, vous pourrez vous connecter par code SMS. Votre solde et "
+"votre adhésion sont conservés ; l’association n’offre pas de points "
+"supplémentaires."
+
+msgid "auth:bind_submit"
+msgstr "Confirmer l’association"
+
+msgid "auth:bind_submitting"
+msgstr "Association…"
+
+msgid "auth:bind_success"
+msgstr "Téléphone associé avec succès"
+
+msgid "auth:bind_bound_label"
+msgstr "Téléphone associé"
+
+msgid "auth:bind_load_error"
+msgstr "Impossible de charger l’état de l’association."
+
+msgid "auth:bind_loading"
+msgstr "Vérification de l’association…"
+
+msgid "auth:bind_retry"
+msgstr "Réessayer"
+
+msgid "auth:bind_not_allowed"
+msgstr "Ce compte ne peut pas associer de téléphone."
+
+msgid "auth:bind_auth_required"
+msgstr "Reconnectez-vous avant d’associer votre téléphone."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Ce numéro est associé à un autre compte. Utilisez un autre numéro."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Le mot de passe actuel est incorrect. Saisissez-le à nouveau."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Trop de tentatives de mot de passe. Réessayez dans {seconds}s."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "Service SMS indisponible. Réessayez plus tard."
+
+msgid "auth:bind_sms_rejected"
+msgstr "La demande SMS a été refusée. Réessayez plus tard."
+
+msgid "auth:bind_failed"
+msgstr "L’association n’a pas abouti. Réessayez plus tard."
+
+msgid "auth:bind_done"
+msgstr "Terminé"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Gérer le téléphone depuis l’accueil"

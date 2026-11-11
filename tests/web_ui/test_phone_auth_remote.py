@@ -97,7 +97,7 @@ async def test_phone_candidate_posts_only_opaque_challenge_and_confirms_me():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("operation", ["status", "bind_challenge"])
+@pytest.mark.parametrize("operation", ["status", "bind_challenge", "bind"])
 async def test_private_phone_request_never_changes_to_new_users_bearer(operation):
     entered, release = asyncio.Event(), asyncio.Event()
     seen = []
@@ -111,13 +111,29 @@ async def test_private_phone_request_never_changes_to_new_users_bearer(operation
     remote = await client_with_handler(handler)
     remote.set_tokens("token-a", "refresh-a", user_id=7)
     try:
-        method = getattr(remote, "phone_status" if operation == "status" else "phone_challenge", None)
+        method = getattr(
+            remote,
+            {"status": "phone_status", "bind_challenge": "phone_challenge", "bind": "phone_bind"}[operation],
+            None,
+        )
         assert callable(method), "identity-bound phone adapter is missing"
         if operation == "status":
             pending = asyncio.create_task(method(expected_user_id=7))
-        else:
+        elif operation == "bind_challenge":
             pending = asyncio.create_task(
                 method({"phone": "13800138000", "purpose": "bind", "flow_id": "f" * 32}, expected_user_id=7)
+            )
+        else:
+            pending = asyncio.create_task(
+                method(
+                    {
+                        "challenge_id": "a" * 48,
+                        "code": "123456",
+                        "flow_id": "f" * 32,
+                        "current_password": "private-password",
+                    },
+                    expected_user_id=7,
+                )
             )
         await asyncio.wait_for(entered.wait(), 2)
         remote.set_tokens("token-b", "refresh-b", user_id=8)
@@ -128,4 +144,63 @@ async def test_private_phone_request_never_changes_to_new_users_bearer(operation
         assert remote.cloud_session_is(8)
     finally:
         release.set()
+        await remote.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("password", [None, "wrong-private-password"])
+async def test_bind_password_refusal_spends_one_attempt_without_refresh_or_replay(password):
+    seen = []
+
+    async def handle(request):
+        seen.append(request)
+        if request.url.path.endswith("/refresh"):
+            return httpx.Response(200, json={"access_token": "refreshed-a"})
+        return httpx.Response(401, json={"detail": {"code": "bind_reauth_failed"}})
+
+    remote = await client_with_handler(handle)
+    remote.set_tokens("token-a", "refresh-a", user_id=7)
+    payload = {"challenge_id": "a" * 48, "code": "123456", "flow_id": "f" * 32}
+    if password is not None:
+        payload["current_password"] = password
+    try:
+        with pytest.raises(httpx.HTTPStatusError) as caught:
+            await remote.phone_bind(payload, expected_user_id=7)
+        assert caught.value.response.json() == {"detail": {"code": "bind_reauth_failed"}}
+        assert len(seen) == 1 and seen[0].url.path == "/api/v1/auth/phone/bind"
+        assert remote.cloud_session_is(7) and not remote.auth_required
+        assert remote._access_token == "token-a"
+    finally:
+        await remote.close()
+
+
+@pytest.mark.asyncio
+async def test_bind_expired_bearer_still_refreshes_once_with_original_identity():
+    seen = []
+
+    async def handle(request):
+        seen.append(request)
+        if request.url.path.endswith("/refresh"):
+            assert json.loads(request.content) == {"refresh_token": "refresh-a"}
+            return httpx.Response(200, json={"access_token": "refreshed-a"})
+        if request.headers["authorization"] == "Bearer token-a":
+            return httpx.Response(401, json={"detail": {"code": "authentication_required"}})
+        assert request.headers["authorization"] == "Bearer refreshed-a"
+        return httpx.Response(200, json={"bound": True, "masked_phone": "+86 138****8000"})
+
+    remote = await client_with_handler(handle)
+    remote.set_tokens("token-a", "refresh-a", user_id=7)
+    try:
+        result = await remote.phone_bind(
+            {"challenge_id": "a" * 48, "code": "123456", "flow_id": "f" * 32, "current_password": "private-password"},
+            expected_user_id=7,
+        )
+        assert result == {"bound": True, "masked_phone": "+86 138****8000"}
+        assert [request.url.path for request in seen] == [
+            "/api/v1/auth/phone/bind",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/phone/bind",
+        ]
+        assert remote.cloud_session_is(7) and not remote.auth_required
+    finally:
         await remote.close()

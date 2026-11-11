@@ -13,7 +13,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from . import billing, models_db, sms
-from .auth import get_password_hash
+from .auth import get_password_hash, verify_password
 from .config import INSECURE_DEFAULT_SECRET_KEY
 from .phone import mask_phone, normalize_phone
 
@@ -109,7 +109,7 @@ class PhoneOtpService:
         state.blocked_until = None
 
     @staticmethod
-    def _bind_actor(db, actor_id):
+    def _bind_actor(db, actor_id, *, require_unbound=True):
         user = db.get(models_db.User, actor_id) if type(actor_id) is int else None
         username = (user.username if user else "").strip().lower()
         if (
@@ -117,10 +117,10 @@ class PhoneOtpService:
             or user.is_admin
             or username in {"guest", "admin"}
             or username.startswith("admin:")
-            or not user.hashed_password.startswith(("$2a$", "$2b$", "$2y$"))
+            or user.hashed_password == "SHADOW_USER_NO_LOCAL_AUTH"
         ):
             raise PhoneOtpError("bind_not_allowed", 403)
-        if (
+        if require_unbound and (
             db.execute(
                 select(models_db.PhoneIdentity).where(models_db.PhoneIdentity.user_id == actor_id)
             ).scalar_one_or_none()
@@ -129,7 +129,7 @@ class PhoneOtpService:
             raise PhoneOtpError("phone_in_use", 409)
         return user
 
-    def _reserve_bucket(self, db, *, kind, key, start, end, limit, now):
+    def _reserve_bucket(self, db, *, kind, key, start, end, limit, now, error_code="sms_limited"):
         values = {"kind": kind, "key": key, "window_start": start, "count": 0}
         self._upsert(db, models_db.SmsSendBucket, values)
         result = db.execute(
@@ -143,7 +143,7 @@ class PhoneOtpService:
             .values(count=models_db.SmsSendBucket.count + 1)
         )
         if result.rowcount != 1:
-            raise PhoneOtpError("sms_limited", 429, _retry_until(end, now))
+            raise PhoneOtpError(error_code, 429, _retry_until(end, now))
 
     async def request_challenge(self, *, phone, purpose, flow_id, client_ip, actor_id=None):
         try:
@@ -237,7 +237,9 @@ class PhoneOtpService:
             raise PhoneOtpError("sms_rejected", 503)
         return {"challenge_id": challenge_id, "retry_after": _COOLDOWN, "expires_in": _TTL, "delivery": delivery}
 
-    def _locked_login_challenge(self, db, challenge_id, flow_digest, now):
+    def _locked_challenge(
+        self, db, challenge_id, flow_digest, now, *, purpose="login", actor_id=None, allow_consumed=False
+    ):
         if not isinstance(challenge_id, str) or not _CHALLENGE_ID.fullmatch(challenge_id):
             raise PhoneOtpError("challenge_invalid", 400)
         phone = db.execute(
@@ -250,15 +252,15 @@ class PhoneOtpService:
         challenge = db.execute(
             select(models_db.SmsChallenge).where(models_db.SmsChallenge.id == challenge_id).with_for_update()
         ).scalar_one()
-        if challenge.state == "consumed":
+        if challenge.state == "consumed" and not allow_consumed:
             raise PhoneOtpError("challenge_used", 400)
         if _utc(challenge.expires_at) <= now:
             raise PhoneOtpError("challenge_expired", 400)
         if (
             state.active_challenge_id != challenge.id
-            or challenge.state not in {"sent", "unknown"}
-            or challenge.purpose != "login"
-            or challenge.bind_user_id is not None
+            or challenge.state not in ({"sent", "unknown", "consumed"} if allow_consumed else {"sent", "unknown"})
+            or challenge.purpose != purpose
+            or challenge.bind_user_id != actor_id
             or not hmac.compare_digest(challenge.flow_digest, flow_digest)
         ):
             raise PhoneOtpError("challenge_invalid", 400)
@@ -307,7 +309,7 @@ class PhoneOtpService:
         result = None
         with self.session_factory() as db:
             with db.begin():
-                state, challenge = self._locked_login_challenge(db, challenge_id, flow_digest, now)
+                state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
                 candidate = code if isinstance(code, str) and _CODE.fullmatch(code) else ""
                 digest = self._code_digest(
                     challenge.id, challenge.purpose, challenge.phone_e164, flow_digest, candidate
@@ -354,6 +356,103 @@ class PhoneOtpService:
                     result = self._public_user(user)
             # The error is deliberately raised after committing the wrong-code
             # transaction, so an HTTP exception cannot erase the phone counter.
+        if error:
+            raise error
+        return result
+
+    def _bind_reauthentication(self, user_id, current_password, now):
+        start = now.replace(minute=(now.minute // 15) * 15, second=0, microsecond=0)
+        with self.session_factory() as db, db.begin():
+            user = self._bind_actor(db, user_id, require_unbound=False)
+            self._reserve_bucket(
+                db,
+                kind="bind_reauth",
+                key=str(user_id),
+                start=start,
+                end=start + timedelta(minutes=15),
+                limit=5,
+                now=now,
+                error_code="bind_reauth_locked",
+            )
+            password_hash = user.hashed_password
+        # Both the failed password and every later OTP/DB failure retain the
+        # committed per-user attempt. No password check holds database locks.
+        valid_password = False
+        if isinstance(current_password, str) and current_password:
+            try:
+                valid_password = verify_password(current_password, password_hash)
+            except (TypeError, ValueError):
+                pass
+        if not valid_password:
+            raise PhoneOtpError("bind_reauth_failed", 401)
+        return password_hash
+
+    def bind(self, *, user_id, challenge_id, code, flow_id, current_password=None):
+        self._ensure_available()
+        now = _now()
+        password_hash = self._bind_reauthentication(user_id, current_password, now)
+        now = _now()
+        flow_digest = self._flow_digest(flow_id)
+        error = None
+        result = None
+        try:
+            with self.session_factory() as db, db.begin():
+                state, challenge = self._locked_challenge(
+                    db, challenge_id, flow_digest, now, purpose="bind", actor_id=user_id, allow_consumed=True
+                )
+                candidate = code if isinstance(code, str) and _CODE.fullmatch(code) else ""
+                digest = self._code_digest(
+                    challenge.id, challenge.purpose, challenge.phone_e164, flow_digest, candidate
+                )
+                if not hmac.compare_digest(challenge.code_digest, digest):
+                    state.error_count += 1
+                    if state.error_count >= _ERROR_LIMIT:
+                        state.blocked_until = now + timedelta(seconds=_LOCK_SECONDS)
+                        error = PhoneOtpError("otp_locked", 429, _LOCK_SECONDS)
+                    else:
+                        error = PhoneOtpError("invalid_code", 400)
+                else:
+                    # A cloud user's row serializes different phones targeting
+                    # the same account. Always lock after phone -> challenge.
+                    db.execute(
+                        select(models_db.User).where(models_db.User.id == user_id).with_for_update()
+                    ).scalar_one_or_none()
+                    user = self._bind_actor(db, user_id, require_unbound=False)
+                    if not hmac.compare_digest(user.hashed_password, password_hash):
+                        raise PhoneOtpError("bind_reauth_failed", 401)
+                    target = db.execute(
+                        select(models_db.PhoneIdentity).where(
+                            models_db.PhoneIdentity.phone_e164 == challenge.phone_e164
+                        )
+                    ).scalar_one_or_none()
+                    own = db.execute(
+                        select(models_db.PhoneIdentity).where(models_db.PhoneIdentity.user_id == user_id)
+                    ).scalar_one_or_none()
+                    if (target is not None and target.user_id != user_id) or (
+                        own is not None and own.phone_e164 != challenge.phone_e164
+                    ):
+                        raise PhoneOtpError("phone_in_use", 409)
+                    if own is None:
+                        if challenge.state == "consumed":
+                            raise PhoneOtpError("challenge_used", 400)
+                        db.add(
+                            models_db.PhoneIdentity(phone_e164=challenge.phone_e164, user_id=user_id, verified_at=now)
+                        )
+                    if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
+                        db.add(
+                            models_db.PhoneSignupClaim(
+                                phone_e164=challenge.phone_e164, claim_type="bound_existing", user_id=user_id
+                            )
+                        )
+                    challenge.state = "consumed"
+                    challenge.consumed_at = challenge.consumed_at or now
+                    db.flush()
+                    result = {"bound": True, "masked_phone": mask_phone(challenge.phone_e164)}
+        except IntegrityError as integrity_error:
+            constraint = getattr(getattr(integrity_error.orig, "diag", None), "constraint_name", None)
+            if constraint in {"uq_phone_identity_phone", "uq_phone_identity_user"}:
+                raise PhoneOtpError("phone_in_use", 409) from None
+            raise
         if error:
             raise error
         return result

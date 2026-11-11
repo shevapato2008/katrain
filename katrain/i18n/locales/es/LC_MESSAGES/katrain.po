@@ -8528,3 +8528,65 @@ msgstr "La identidad de acceso ha cambiado. Empieza de nuevo."
 
 msgid "auth:otp_verification_required"
 msgstr "Regístrate con un código de verificación SMS."
+
+msgid "auth:bind_title"
+msgstr "Vincular teléfono"
+
+msgid "auth:bind_password"
+msgstr "Contraseña actual de la cuenta"
+
+msgid "auth:bind_policy"
+msgstr ""
+"Tras vincularlo, podrás acceder con un código SMS. Se conservan tu saldo y "
+"membresía; vincular no concede puntos repetidos."
+
+msgid "auth:bind_submit"
+msgstr "Confirmar vínculo"
+
+msgid "auth:bind_submitting"
+msgstr "Vinculando…"
+
+msgid "auth:bind_success"
+msgstr "Teléfono vinculado correctamente"
+
+msgid "auth:bind_bound_label"
+msgstr "Teléfono vinculado"
+
+msgid "auth:bind_load_error"
+msgstr "No se pudo cargar el estado del vínculo."
+
+msgid "auth:bind_loading"
+msgstr "Comprobando el vínculo…"
+
+msgid "auth:bind_retry"
+msgstr "Reintentar"
+
+msgid "auth:bind_not_allowed"
+msgstr "Esta cuenta no puede vincular un teléfono."
+
+msgid "auth:bind_auth_required"
+msgstr "Vuelve a iniciar sesión antes de vincular el teléfono."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Este teléfono está vinculado a otra cuenta. Usa otro número."
+
+msgid "auth:bind_reauth_failed"
+msgstr "La contraseña actual es incorrecta. Introdúcela de nuevo."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Demasiados intentos de contraseña. Reintenta en {seconds}s."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "Servicio SMS no disponible. Inténtalo más tarde."
+
+msgid "auth:bind_sms_rejected"
+msgstr "La solicitud SMS fue rechazada. Inténtalo más tarde."
+
+msgid "auth:bind_failed"
+msgstr "No se completó el vínculo. Inténtalo más tarde."
+
+msgid "auth:bind_done"
+msgstr "Listo"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Gestionar teléfono en el inicio"

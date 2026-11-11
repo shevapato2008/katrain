@@ -150,3 +150,8 @@
 
 .km-order-summary--native { padding-block: 8px; }
 .km-order-summary--native > div { gap: 4px; }
+
+/* Private phone binding stays in the existing account area. */
+.km-phone-binding { min-width: 0; }
+.km-phone-binding .MuiTypography-root { font: 18px/1.4 var(--font-serif); overflow-wrap: anywhere; }
+.kiosk .km-page .km-phone-binding-action { width: 100%; min-height: 44px; font-size: 18px; }

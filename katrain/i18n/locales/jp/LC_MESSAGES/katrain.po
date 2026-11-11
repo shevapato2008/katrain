@@ -13506,3 +13506,63 @@ msgstr "ログイン対象が変わりました。やり直してください"
 
 msgid "auth:otp_verification_required"
 msgstr "SMS認証コードで登録してください"
+
+msgid "auth:bind_title"
+msgstr "携帯番号を連携"
+
+msgid "auth:bind_password"
+msgstr "現在のアカウントのパスワード"
+
+msgid "auth:bind_policy"
+msgstr "連携後はSMSコードでログインできます。既存の残高と会員資格は維持され、連携によるポイントの再付与はありません。"
+
+msgid "auth:bind_submit"
+msgstr "連携を確認"
+
+msgid "auth:bind_submitting"
+msgstr "連携中…"
+
+msgid "auth:bind_success"
+msgstr "携帯番号を連携しました"
+
+msgid "auth:bind_bound_label"
+msgstr "連携済みの携帯番号"
+
+msgid "auth:bind_load_error"
+msgstr "携帯番号の連携状態を取得できません"
+
+msgid "auth:bind_loading"
+msgstr "連携状態を確認中…"
+
+msgid "auth:bind_retry"
+msgstr "再試行"
+
+msgid "auth:bind_not_allowed"
+msgstr "このアカウントは携帯番号を連携できません"
+
+msgid "auth:bind_auth_required"
+msgstr "再ログインしてから携帯番号を連携してください"
+
+msgid "auth:bind_phone_in_use"
+msgstr "この番号は別のアカウントに連携済みです。別の番号を使ってください"
+
+msgid "auth:bind_reauth_failed"
+msgstr "現在のアカウントのパスワードが違います。入力し直してください"
+
+msgid "auth:bind_reauth_locked"
+msgstr "パスワードの試行回数が多すぎます。{seconds}秒後に再試行してください"
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMSサービスを利用できません。後で再試行してください"
+
+msgid "auth:bind_sms_rejected"
+msgstr "SMS送信が拒否されました。後で再試行してください"
+
+msgid "auth:bind_failed"
+msgstr "連携が完了しませんでした。後で再試行してください"
+
+msgid "auth:bind_done"
+msgstr "完了"
+
+msgid "auth:bind_manage_at_home"
+msgstr "ホームで携帯番号を管理"

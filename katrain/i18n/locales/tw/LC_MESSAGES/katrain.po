@@ -13470,3 +13470,63 @@ msgstr "登入身分已變更，請重新開始"
 
 msgid "auth:otp_verification_required"
 msgstr "請使用簡訊驗證碼完成註冊"
+
+msgid "auth:bind_title"
+msgstr "綁定手機號碼"
+
+msgid "auth:bind_password"
+msgstr "目前帳號密碼"
+
+msgid "auth:bind_policy"
+msgstr "綁定後可用簡訊驗證碼登入，原有餘額和會員保留；綁定不重複贈送積分。"
+
+msgid "auth:bind_submit"
+msgstr "確認綁定"
+
+msgid "auth:bind_submitting"
+msgstr "綁定中…"
+
+msgid "auth:bind_success"
+msgstr "手機號碼綁定成功"
+
+msgid "auth:bind_bound_label"
+msgstr "已綁定手機號碼"
+
+msgid "auth:bind_load_error"
+msgstr "暫時無法讀取手機綁定狀態"
+
+msgid "auth:bind_loading"
+msgstr "正在核對綁定狀態…"
+
+msgid "auth:bind_retry"
+msgstr "重試"
+
+msgid "auth:bind_not_allowed"
+msgstr "目前帳號暫不支援綁定手機號碼"
+
+msgid "auth:bind_auth_required"
+msgstr "請重新登入後綁定手機號碼"
+
+msgid "auth:bind_phone_in_use"
+msgstr "此手機號碼已綁定其他帳號，請使用其他號碼"
+
+msgid "auth:bind_reauth_failed"
+msgstr "目前帳號密碼不正確，請重新輸入"
+
+msgid "auth:bind_reauth_locked"
+msgstr "密碼驗證次數過多，請{seconds}秒後再試"
+
+msgid "auth:bind_sms_unavailable"
+msgstr "簡訊服務暫時無法使用，請稍後重試"
+
+msgid "auth:bind_sms_rejected"
+msgstr "簡訊傳送被拒絕，請稍後重試"
+
+msgid "auth:bind_failed"
+msgstr "綁定未完成，請稍後重試"
+
+msgid "auth:bind_done"
+msgstr "完成"
+
+msgid "auth:bind_manage_at_home"
+msgstr "在主頁管理手機號碼"

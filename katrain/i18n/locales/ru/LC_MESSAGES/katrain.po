@@ -8541,3 +8541,65 @@ msgstr "Аккаунт для входа изменился. Начните за
 
 msgid "auth:otp_verification_required"
 msgstr "Зарегистрируйтесь с помощью кода из SMS."
+
+msgid "auth:bind_title"
+msgstr "Привязать телефон"
+
+msgid "auth:bind_password"
+msgstr "Текущий пароль аккаунта"
+
+msgid "auth:bind_policy"
+msgstr ""
+"После привязки можно входить по коду из SMS. Баланс и подписка сохраняются; "
+"повторные бонусные баллы не начисляются."
+
+msgid "auth:bind_submit"
+msgstr "Подтвердить привязку"
+
+msgid "auth:bind_submitting"
+msgstr "Привязка…"
+
+msgid "auth:bind_success"
+msgstr "Телефон успешно привязан"
+
+msgid "auth:bind_bound_label"
+msgstr "Привязанный телефон"
+
+msgid "auth:bind_load_error"
+msgstr "Не удалось загрузить статус привязки."
+
+msgid "auth:bind_loading"
+msgstr "Проверка привязки…"
+
+msgid "auth:bind_retry"
+msgstr "Повторить"
+
+msgid "auth:bind_not_allowed"
+msgstr "К этому аккаунту нельзя привязать телефон."
+
+msgid "auth:bind_auth_required"
+msgstr "Войдите заново перед привязкой телефона."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Номер привязан к другому аккаунту. Используйте другой номер."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Текущий пароль неверен. Введите его снова."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Слишком много попыток ввода пароля. Повторите через {seconds}с."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS-сервис недоступен. Повторите позже."
+
+msgid "auth:bind_sms_rejected"
+msgstr "Запрос SMS отклонён. Повторите позже."
+
+msgid "auth:bind_failed"
+msgstr "Привязка не завершена. Повторите позже."
+
+msgid "auth:bind_done"
+msgstr "Готово"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Управлять телефоном на главной"

@@ -80,6 +80,12 @@ class PhoneLoginRequest(BaseModel):
     flow_id: str = Field(strict=True, min_length=22, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
 
 
+class PhoneBindRequest(PhoneLoginRequest):
+    # Missing/empty passwords must reach the service's independently committed
+    # reauthentication counter instead of bypassing it in request validation.
+    current_password: str | None = Field(default=None, strict=True, max_length=1024)
+
+
 class PhoneChallengeResponse(BaseModel):
     challenge_id: str
     retry_after: int
@@ -227,5 +233,22 @@ async def phone_status(request: Request, user: User = Depends(_phone_user)):
             _raise_remote_error(error)
     try:
         return get_phone_otp_service(request).status(user_id=user.id)
+    except PhoneOtpError as error:
+        _raise_service_error(error)
+
+
+@router.post("/bind", response_model=PhoneStatusResponse, response_model_exclude_none=True)
+async def phone_bind(request: Request, body: PhoneBindRequest, user: User = Depends(_phone_user)):
+    from katrain.web.core.phone_otp import PhoneOtpError
+
+    _require_bind_actor(user)
+    remote = getattr(request.app.state, "remote_client", None)
+    if remote is not None:
+        try:
+            return await remote.phone_bind(body.model_dump(), expected_user_id=user.id)
+        except (httpx.HTTPError, ValueError) as error:
+            _raise_remote_error(error)
+    try:
+        return get_phone_otp_service(request).bind(user_id=user.id, **body.model_dump())
     except PhoneOtpError as error:
         _raise_service_error(error)

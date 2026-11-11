@@ -466,8 +466,12 @@ export interface AuthToken {
 export interface PhoneChallengeRequest { phone: string; purpose: 'login'; flow_id: string; }
 export interface PhoneChallenge { challenge_id: string; retry_after: number; expires_in: number; delivery: 'sent' | 'unknown'; }
 export interface PhoneLoginRequest { challenge_id: string; code: string; flow_id: string; }
+export interface PhoneBindChallengeRequest { phone: string; purpose: 'bind'; flow_id: string; }
+export interface PhoneBindRequest extends PhoneLoginRequest { current_password: string; }
+export type PhoneBindingStatus = { bound: false } | { bound: true; masked_phone: string };
 export type PhoneAuthErrorCode = 'invalid_phone' | 'invalid_code' | 'challenge_invalid' | 'challenge_expired' |
-  'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required';
+  'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required' |
+  'authentication_required' | 'bind_not_allowed' | 'phone_in_use' | 'bind_reauth_failed' | 'bind_reauth_locked';
 export interface PhoneAuthErrorDetail { code: PhoneAuthErrorCode; retry_after?: number; }
 
 // Auth errors carry only structured classifications, never raw upstream bodies
@@ -481,6 +485,23 @@ async function phoneAuthPost<T>(path: string, payload: PhoneChallengeRequest | P
     let detail: unknown;
     try { detail = (await response.json()).detail; } catch { /* safe generic error below */ }
     throw new ApiError(response.status, 'Phone authentication failed', detail);
+  }
+  return response.json();
+}
+
+// Private operations use the caller's captured credential, with no mutable
+// localStorage fallback. Cookie-only sessions retain same-origin credentials.
+async function privatePhoneRequest<T>(path: string, token: string | null, signal?: AbortSignal, payload?: PhoneBindChallengeRequest | PhoneBindRequest): Promise<T> {
+  if (isStrictBoxKiosk) throw new ApiError(403, 'Use launcher account', { code: 'bind_not_allowed' });
+  const response = await fetch(`/api/v1/auth/phone/${path}`, {
+    method: payload ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store', signal,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(payload ? { 'Content-Type': 'application/json' } : {}) },
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
+  });
+  if (!response.ok) {
+    let detail: unknown;
+    try { detail = (await response.json()).detail; } catch { /* safe classification only */ }
+    throw new ApiError(response.status, 'Phone binding failed', detail);
   }
   return response.json();
 }
@@ -546,6 +567,9 @@ export async function apiPost(path: string, payload: any, token?: string | null)
 export const API = {
   createPhoneChallenge: (payload: PhoneChallengeRequest, signal?: AbortSignal): Promise<PhoneChallenge> => phoneAuthPost('challenges', payload, signal),
   phoneLogin: (payload: PhoneLoginRequest, signal?: AbortSignal): Promise<AuthToken> => phoneAuthPost('login', payload, signal),
+  phoneStatus: (token: string | null, signal?: AbortSignal): Promise<PhoneBindingStatus> => privatePhoneRequest('status', token, signal),
+  createPhoneBindChallenge: (payload: PhoneBindChallengeRequest, token: string | null, signal?: AbortSignal): Promise<PhoneChallenge> => privatePhoneRequest('challenges', token, signal, payload),
+  phoneBind: (payload: PhoneBindRequest, token: string | null, signal?: AbortSignal): Promise<{ bound: true; masked_phone: string }> => privatePhoneRequest('bind', token, signal, payload),
   engineHealth: async (): Promise<EngineHealthResponse> => {
     const response = await fetch('/api/v1/health');
     if (!response.ok) throw new Error(`Failed to get engine health (${response.status})`);

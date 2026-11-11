@@ -370,3 +370,134 @@ async def test_board_provider_error_drops_arbitrary_messages_and_fields(app):
         }
     finally:
         await remote.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "password_payload", [{}, {"current_password": ""}, {"current_password": "wrong-private-password"}]
+)
+async def test_bind_missing_empty_and_wrong_password_reach_core_reauth_budget(app, monkeypatch, password_payload):
+    from unittest.mock import Mock
+    from katrain.web.api.v1.endpoints import phone_auth
+    from katrain.web.core.phone_otp import PhoneOtpError
+
+    user = app.state.user_repo.create_user("legacy-bind", "hidden-hash")
+    service = SimpleNamespace(bind=Mock(side_effect=PhoneOtpError("bind_reauth_failed", 401)))
+    monkeypatch.setattr(phone_auth, "get_phone_otp_service", lambda request: service)
+    payload = {"challenge_id": "a" * 48, "code": "123456", "flow_id": "f" * 32, **password_payload}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/auth/phone/bind",
+            json=payload,
+            headers={"Authorization": f"Bearer {create_access_token({'sub': user['username']})}"},
+        )
+    assert response.status_code == 401 and response.json() == {"detail": {"code": "bind_reauth_failed"}}
+    assert response.headers["cache-control"] == "no-store"
+    service.bind.assert_called_once_with(
+        user_id=user["id"],
+        challenge_id="a" * 48,
+        code="123456",
+        flow_id="f" * 32,
+        current_password=password_payload.get("current_password"),
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("username,is_admin", [("guest", False), ("admin", False), ("ordinary-admin", True)])
+async def test_bind_rejects_guest_and_admin_before_service(app, monkeypatch, username, is_admin):
+    from unittest.mock import Mock
+    from katrain.web.api.v1.endpoints import phone_auth
+
+    user = app.state.user_repo.create_user(username, "hidden-hash")
+    if is_admin:
+        with app.state.user_repo.session_factory() as db:
+            db.get(models_db.User, user["id"]).is_admin = True
+            db.commit()
+    factory = Mock()
+    monkeypatch.setattr(phone_auth, "get_phone_otp_service", factory)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/auth/phone/bind",
+            json={
+                "challenge_id": "a" * 48,
+                "code": "123456",
+                "flow_id": "f" * 32,
+                "current_password": "private-password",
+            },
+            headers={"Authorization": f"Bearer {create_access_token({'sub': username})}"},
+        )
+    assert response.status_code == 403 and response.json() == {"detail": {"code": "bind_not_allowed"}}
+    factory.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "extra", [{"current_password": 123456}, {"current_password": "private-value-" * 100}, {"user_id": 999}]
+)
+async def test_bind_strict_password_limits_and_server_owned_user_id_do_not_echo_input(app, monkeypatch, extra):
+    from unittest.mock import Mock
+    from katrain.web.api.v1.endpoints import phone_auth
+
+    user = app.state.user_repo.create_user("bind-validator", "hidden-hash")
+    factory = Mock()
+    monkeypatch.setattr(phone_auth, "get_phone_otp_service", factory)
+    payload = {
+        "challenge_id": "a" * 48,
+        "code": "123456",
+        "flow_id": "f" * 32,
+        "current_password": "private-password",
+        **extra,
+    }
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/auth/phone/bind",
+            json=payload,
+            headers={"Authorization": f"Bearer {create_access_token({'sub': user['username']})}"},
+        )
+    assert response.status_code == 400 and response.json() == {"detail": {"code": "challenge_invalid"}}
+    assert response.headers["cache-control"] == "no-store"
+    factory.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_board_bind_late_result_is_discarded_without_using_new_bearer(app):
+    entered, release = asyncio.Event(), asyncio.Event()
+    seen = []
+    user = app.state.user_repo.create_user("legacy-a", "hidden-hash")
+
+    async def handle(request):
+        seen.append(request)
+        entered.set()
+        await release.wait()
+        return httpx.Response(200, json={"bound": True, "masked_phone": "+86 138****8000"})
+
+    remote = RemoteAPIClient("http://cloud.test", "bind-box")
+    await remote._client.aclose()
+    remote._client = httpx.AsyncClient(base_url="http://cloud.test", transport=httpx.MockTransport(handle))
+    remote.set_tokens("token-a", "refresh-a", user_id=user["id"])
+    app.state.remote_client = remote
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            pending = asyncio.create_task(
+                client.post(
+                    "/api/v1/auth/phone/bind",
+                    json={
+                        "challenge_id": "a" * 48,
+                        "code": "123456",
+                        "flow_id": "f" * 32,
+                        "current_password": "private-password",
+                    },
+                    headers={"Authorization": f"Bearer {create_access_token({'sub': user['username']})}"},
+                )
+            )
+            await asyncio.wait_for(entered.wait(), 2)
+            remote.set_tokens("token-b", "refresh-b", user_id=8)
+            release.set()
+            response = await pending
+        assert response.status_code == 409 and response.json() == {"detail": {"code": "identity_changed"}}
+        assert len(seen) == 1 and seen[0].headers["authorization"] == "Bearer token-a"
+        assert not seen[0].url.query and seen[0].url.path == "/api/v1/auth/phone/bind"
+        assert remote.cloud_session_is(8)
+    finally:
+        release.set()
+        await remote.close()

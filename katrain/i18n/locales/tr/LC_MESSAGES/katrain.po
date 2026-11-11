@@ -8644,3 +8644,65 @@ msgstr "Giriş kimliği değişti. Yeniden başlayın."
 
 msgid "auth:otp_verification_required"
 msgstr "SMS doğrulama koduyla kaydolun."
+
+msgid "auth:bind_title"
+msgstr "Telefon bağla"
+
+msgid "auth:bind_password"
+msgstr "Geçerli hesap parolası"
+
+msgid "auth:bind_policy"
+msgstr ""
+"Bağladıktan sonra SMS koduyla giriş yapabilirsiniz. Bakiyeniz ve üyeliğiniz "
+"korunur; bağlama işlemi tekrar puan kazandırmaz."
+
+msgid "auth:bind_submit"
+msgstr "Bağlamayı onayla"
+
+msgid "auth:bind_submitting"
+msgstr "Bağlanıyor…"
+
+msgid "auth:bind_success"
+msgstr "Telefon başarıyla bağlandı"
+
+msgid "auth:bind_bound_label"
+msgstr "Bağlı telefon"
+
+msgid "auth:bind_load_error"
+msgstr "Telefon bağlama durumu yüklenemedi."
+
+msgid "auth:bind_loading"
+msgstr "Bağlama kontrol ediliyor…"
+
+msgid "auth:bind_retry"
+msgstr "Yeniden dene"
+
+msgid "auth:bind_not_allowed"
+msgstr "Bu hesaba telefon bağlanamaz."
+
+msgid "auth:bind_auth_required"
+msgstr "Telefon bağlamadan önce yeniden giriş yapın."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Bu numara başka bir hesaba bağlı. Başka bir numara kullanın."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Geçerli hesap parolası yanlış. Yeniden girin."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Çok fazla parola denemesi. {seconds}sn sonra yeniden deneyin."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS hizmeti kullanılamıyor. Daha sonra deneyin."
+
+msgid "auth:bind_sms_rejected"
+msgstr "SMS isteği reddedildi. Daha sonra deneyin."
+
+msgid "auth:bind_failed"
+msgstr "Bağlama tamamlanamadı. Daha sonra deneyin."
+
+msgid "auth:bind_done"
+msgstr "Tamam"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Ana sayfada telefonu yönet"

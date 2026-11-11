@@ -8621,3 +8621,66 @@ msgstr "Обліковий запис для входу змінився. Поч
 
 msgid "auth:otp_verification_required"
 msgstr "Зареєструйтеся за допомогою коду із SMS."
+
+msgid "auth:bind_title"
+msgstr "Прив’язати телефон"
+
+msgid "auth:bind_password"
+msgstr "Поточний пароль облікового запису"
+
+msgid "auth:bind_policy"
+msgstr ""
+"Після прив’язки можна входити за кодом із SMS. Баланс і членство "
+"зберігаються; повторні бонусні бали не нараховуються."
+
+msgid "auth:bind_submit"
+msgstr "Підтвердити прив’язку"
+
+msgid "auth:bind_submitting"
+msgstr "Прив’язування…"
+
+msgid "auth:bind_success"
+msgstr "Телефон успішно прив’язано"
+
+msgid "auth:bind_bound_label"
+msgstr "Прив’язаний телефон"
+
+msgid "auth:bind_load_error"
+msgstr "Не вдалося завантажити стан прив’язки."
+
+msgid "auth:bind_loading"
+msgstr "Перевірка прив’язки…"
+
+msgid "auth:bind_retry"
+msgstr "Повторити"
+
+msgid "auth:bind_not_allowed"
+msgstr "До цього облікового запису не можна прив’язати телефон."
+
+msgid "auth:bind_auth_required"
+msgstr "Увійдіть знову перед прив’язкою телефона."
+
+msgid "auth:bind_phone_in_use"
+msgstr ""
+"Номер прив’язаний до іншого облікового запису. Використайте інший номер."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Поточний пароль неправильний. Введіть його знову."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Забагато спроб введення пароля. Повторіть через {seconds}с."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS-сервіс недоступний. Спробуйте пізніше."
+
+msgid "auth:bind_sms_rejected"
+msgstr "Запит SMS відхилено. Спробуйте пізніше."
+
+msgid "auth:bind_failed"
+msgstr "Прив’язку не завершено. Спробуйте пізніше."
+
+msgid "auth:bind_done"
+msgstr "Готово"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Керувати телефоном на головній"

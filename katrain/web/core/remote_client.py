@@ -307,7 +307,17 @@ class RemoteAPIClient:
             return response
 
         response = await send(identity.access_token)
-        if response.status_code == 401 and identity.refresh_token:
+        bind_reauth_refused = False
+        if response.status_code == 401 and path == "/api/v1/auth/phone/bind":
+            try:
+                body = response.json()
+                detail = body.get("detail") if isinstance(body, dict) else None
+                bind_reauth_refused = isinstance(detail, dict) and detail.get("code") == "bind_reauth_failed"
+            except ValueError:
+                pass
+        # A wrong current password is a completed business attempt, not an
+        # expired bearer. Replaying it would spend the user's budget twice.
+        if response.status_code == 401 and identity.refresh_token and not bind_reauth_refused:
             refreshed = await self._identity_bound_refresh(identity)
             self._assert_cloud_identity(identity)
             if refreshed:
@@ -431,6 +441,11 @@ class RemoteAPIClient:
 
     async def phone_status(self, *, expected_user_id) -> Dict:
         return await self._identity_bound_request("GET", "/api/v1/auth/phone/status", expected_user_id=expected_user_id)
+
+    async def phone_bind(self, data: Dict[str, Any], *, expected_user_id) -> Dict:
+        return await self._identity_bound_request(
+            "POST", "/api/v1/auth/phone/bind", json=data, expected_user_id=expected_user_id
+        )
 
     async def register(self, username: str, password: str) -> Dict[str, Any]:
         resp = await self._request(

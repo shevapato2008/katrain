@@ -68,16 +68,28 @@ def test_camera_hub_forwards_exact_metadata_pair_only_through_existing_read_gate
         return pair
 
     camera.read_frame_with_metadata = read_metadata
+    validated = []
+
+    def validate_metadata(stamp):
+        validated.append(stamp)
+        return stamp is metadata
+
+    camera.is_frame_metadata_current = validate_metadata
     camera.read_frame = lambda: pytest.fail("metadata forwarding must not read an extra frame")
     hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
     assert hub.read_frame_with_metadata() == (None, None)
+    assert hub.is_frame_metadata_current(metadata) is False
     hub._started = True
     camera.is_connected = True
     assert hub.read_frame_with_metadata() is pair
+    assert hub.is_frame_metadata_current(metadata) is True
+    assert validated == [metadata]
+    assert hub.is_frame_metadata_current(None) is False
     assert calls == [1]
     with hub._usb_lock:
         hub._usb_request = object()
     assert hub.read_frame_with_metadata() == (None, None)
+    assert hub.is_frame_metadata_current(metadata) is False
     with hub._usb_lock:
         hub._usb_request = None
 
@@ -93,16 +105,21 @@ def test_camera_hub_forwards_exact_metadata_pair_only_through_existing_read_gate
         holder.start()
         assert owned.wait(1)
         assert hub.read_frame_with_metadata() == (None, None)
+        assert hub.is_frame_metadata_current(metadata) is False
     finally:
         release.set()
         holder.join(1)
     camera.is_connected = False
     hub.set_usb_startup_check(lambda: False)
     assert hub.read_frame_with_metadata() == (None, None)
+    assert hub.is_frame_metadata_current(metadata) is False
     assert calls == [1]
+    assert validated == [metadata, None]
     camera.is_connected = True
     del camera.read_frame_with_metadata
+    del camera.is_frame_metadata_current
     assert hub.read_frame_with_metadata() == (None, None)
+    assert hub.is_frame_metadata_current(metadata) is False
 
 
 @pytest.mark.parametrize("timeout", [None, 0.5])

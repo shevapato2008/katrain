@@ -78,28 +78,35 @@ def test_frame_metadata_keeps_completed_control_and_reopen_identity(monkeypatch)
         assert before.controls_completed_at <= before.camera_read_monotonic
         assert before.ownership_known is True
         assert before.advisory is False
+        assert camera.is_frame_metadata_current(before) is True
         with pytest.raises(FrozenInstanceError):
             before.frame_seq = 100
 
         camera.request_controls(exposure=200.0)
+        assert camera.is_frame_metadata_current(before) is False
         camera._apply_pending_controls()
         unchanged_image, unchanged = camera.read_frame_with_metadata()
         assert unchanged is before, "new global controls must not relabel the cached old image"
         assert np.array_equal(unchanged_image, original)
+        assert camera.controls_effective is True
+        assert camera.is_frame_metadata_current(unchanged) is False
         publish_metadata_frame(camera, first, value=23)
         changed_image, changed = camera.read_frame_with_metadata()
         assert int(changed_image[0, 0, 0]) == 23
         assert changed.controls_requested_generation == changed.controls_applied_generation == 1
         assert changed.controls_completed_at > before.controls_completed_at
         assert changed.frame_seq == before.frame_seq + 1
+        assert camera.is_frame_metadata_current(changed) is True
 
         assert camera.open()
+        assert camera.is_frame_metadata_current(changed) is False
         assert camera.read_frame_with_metadata() == (None, None)
         publish_metadata_frame(camera, reopened, value=42)
         new_image, new = camera.read_frame_with_metadata()
         assert int(new_image[0, 0, 0]) == 42
         assert new.stream_generation == before.stream_generation + 1
         assert new.controls_requested_generation == new.controls_applied_generation == 1
+        assert camera.is_frame_metadata_current(new) is True
         assert before.stream_generation == 1
 
         # The established APIs keep their array and three-value result contracts.
@@ -113,6 +120,7 @@ def test_frame_metadata_keeps_completed_control_and_reopen_identity(monkeypatch)
         camera.close()
     camera._last_reconnect_attempt = camera_module.time.monotonic()
     assert camera.read_frame_with_metadata() == (None, None)
+    assert camera.is_frame_metadata_current(new) is False
 
 
 @pytest.mark.parametrize("transition", ["pending", "completed", "stream"])
@@ -137,6 +145,7 @@ def test_frame_metadata_marks_ownership_unknown_when_owner_changes_during_read(t
     image, metadata = camera.read_frame_with_metadata()
     assert image is not None
     assert metadata.ownership_known is False
+    assert camera.is_frame_metadata_current(metadata) is False
     assert metadata.controls_requested_generation == 1
     assert metadata.controls_applied_generation == 1
 
@@ -158,6 +167,7 @@ def test_frame_metadata_advisory_requires_explicit_backend_and_completed_control
     assert completed.controls_completed_at is not None
     assert completed.ownership_known is True
     assert completed.advisory is advisory
+    assert camera.is_frame_metadata_current(completed) is True
 
     camera.request_controls(exposure=300.0)
     # Preserve a pending request through this read instead of applying it first.
@@ -168,6 +178,7 @@ def test_frame_metadata_advisory_requires_explicit_backend_and_completed_control
     assert pending.controls_effective is None
     assert pending.controls_requested_generation != pending.controls_applied_generation
     assert pending.advisory is False
+    assert camera.is_frame_metadata_current(pending) is False
     monkeypatch.setattr(camera, "_apply_pending_controls", original_apply)
 
 

@@ -331,6 +331,18 @@ class CameraHub:
         finally:
             self._lifecycle_lock.release()
 
+    def is_frame_metadata_current(self, metadata) -> bool:
+        """Validate with the camera owner only while the existing read gates allow it."""
+        if not self._lifecycle_lock.acquire(blocking=False):
+            return False
+        try:
+            if not self._can_read():
+                return False
+            validate = getattr(self._camera, "is_frame_metadata_current", None)
+            return validate(metadata) if callable(validate) else False
+        finally:
+            self._lifecycle_lock.release()
+
     def grab_fresh(self, after_ts=None, settle_ms: float = 150.0, timeout: float | None = None):
         # Lifecycle access and the frame wait share CameraManager's default budget.
         timeout = 2.0 if timeout is None else max(0.0, timeout)

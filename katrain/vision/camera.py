@@ -500,6 +500,33 @@ class CameraManager:
                 return None, None
             return self._latest_frame.copy(), self._latest_metadata
 
+    def is_frame_metadata_current(self, metadata: FrameMetadata) -> bool:
+        """Check live ownership without changing the historical frame's stamp."""
+        if not isinstance(metadata, FrameMetadata):
+            return False
+        with self._controls_lock, self._frame_lock:
+            return bool(
+                metadata.ownership_known
+                and self._connected
+                and self._cap is not None
+                and self._cap.isOpened()
+                and self._latest_frame is not None
+                and not self._stop_event.is_set()
+                and not self._pending_controls
+                and metadata.controls_requested_generation == metadata.controls_applied_generation
+                and metadata.controls_effective is not None
+                and metadata.controls_completed_at is not None
+                and metadata.stream_generation == self._stream_generation
+                and self._controls_snapshot_locked()
+                == (
+                    metadata.controls_requested_generation,
+                    metadata.controls_applied_generation,
+                    metadata.controls_effective,
+                    metadata.controls_completed_at,
+                    metadata.advisory,
+                )
+            )
+
     # ------------------------------------------------------------------
     # Background reader
     # ------------------------------------------------------------------

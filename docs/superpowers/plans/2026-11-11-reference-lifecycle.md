@@ -38,6 +38,8 @@ advisory: bool = False
 
 `CameraHub.read_frame_with_metadata()` uses its existing nonblocking lifecycle lock and _can_read/USB gates and forwards the manager pair unchanged; unavailable is `(None, None)`. Hub never reconstructs generations. Normal free worker consumes this method regardless of tracing. A camera without this interface keeps normal recognition but cannot gain new reference/retention privileges.
 
+Fresh T1 spec review closed a necessary current-owner gap: Manager and Hub also expose `is_frame_metadata_current(metadata: FrameMetadata) -> bool`. It compares the frozen historical stream/control stamp with the current owner under established locks; pending/new completed controls, reopen, unavailable/unknown reject it without restamping/capturing. T4 requires this public validator before/after witness, before historical comparison/retention and promotion. A pre-inference False consumes no attempt and never blocks ordinary recognition. Do not call camera or hold another owner lock inside the LED local_commit callback.
+
 ### C2. Lighting owner gate (T2; T3 wiring; T4 consumer)
 
 Define immutable `ReferenceLightingSnapshot` in `katrain/web/core/led_service.py`:

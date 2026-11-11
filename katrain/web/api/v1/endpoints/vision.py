@@ -390,12 +390,16 @@ async def unbind_session(request: Request):
 
 @router.post("/sync/reset")
 async def reset_sync(request: Request, body: ResetSyncRequest | None = None):
-    """Reset vision sync. adopt='digital' (default; kiosk 重置识别 / escalation '已按指示恢复')
-    delegates to the physical-play orchestrator — re-baseline to the DIGITAL game, discard
-    camera phantoms, and release any stuck removal/pause so play continues. adopt='physical'
-    (ambiguous-stone 忽略) accepts the current camera board as baseline so the ignored stone
-    doesn't re-fire. Falls back to a plain physical-adopt reset with no orchestrator
-    (research mode)."""
+    """Recover vision sync using scoped authority or the legacy reset behavior.
+
+    With session_id and game_id, adopt='digital' republishes the current bound game's
+    fresh authority and waits for an exact physical-board acknowledgement. It reconciles
+    planner removal/lag state while preserving unrelated pause reasons.
+
+    Without identity fields, digital recovery delegates to the orchestrator's legacy
+    digital reset. adopt='physical', or no orchestrator, uses the legacy physical-adopt
+    reset so an ignored camera stone remains in the detector baseline.
+    """
     orchestrator = getattr(request.app.state, "physical_play", None)
     adopt = body.adopt if body else "digital"
     if body is not None and {"session_id", "game_id"}.intersection(body.model_fields_set):

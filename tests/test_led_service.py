@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import uuid
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -1927,3 +1928,204 @@ def test_usb_close_failure_never_acks_or_loses_handle_and_lease():
         svc.stop()
         peer.stop()
         lease.release()
+
+
+def _reference_dark_service():
+    svc, serial, clock = _link_service(_link_line())
+    svc.clear()
+    svc._run_batch(svc._queue.get_nowait())
+    return svc, serial, clock
+
+
+def test_reference_lighting_snapshot_requires_final_dark_show_ack_and_is_immutable():
+    svc, serial, clock = _link_service(_link_line())
+    assert not svc.reference_lighting_snapshot().all_dark
+    svc.clear()
+    pending = svc.reference_lighting_snapshot()
+    assert pending.request_revision == 1 and not pending.all_dark
+    svc._run_batch(svc._queue.get_nowait())
+    token = svc.reference_lighting_snapshot()
+    assert isinstance(token, _led_service.ReferenceLightingSnapshot)
+    assert token.available and token.all_dark
+    assert token.request_revision == token.shown_revision == 1
+    assert token.shown_at == clock()
+    assert token.connection_generation == svc._generation
+    with pytest.raises(FrozenInstanceError):
+        token.all_dark = False
+    svc._close_serial()
+
+
+@pytest.mark.parametrize("request_kind", ["points", "rgb", "clear", "raw"])
+def test_reference_lighting_new_request_revokes_dark_before_queueing_without_tick(request_kind):
+    svc, serial, _ = _reference_dark_service()
+    old = svc.reference_lighting_snapshot()
+    observed = []
+    original_put = svc._queue.put_nowait
+
+    def put(batch):
+        observed.append(svc.reference_lighting_snapshot())
+        return original_put(batch)
+
+    svc._queue.put_nowait = put
+    if request_kind == "points":
+        svc.set_points([{"row": 1, "col": 1}])
+    elif request_kind == "rgb":
+        svc.set_rgb_points([{"row": 1, "col": 1, "rgb": [1, 2, 3]}])
+    elif request_kind == "clear":
+        svc.clear()
+    else:
+        svc._submit(["UNKNOWN"], strict=False)
+    assert observed and observed[0].request_revision == old.request_revision + 1
+    assert not observed[0].all_dark
+    assert not svc.try_commit_reference_lighting(old, lambda: pytest.fail("stale commit"))
+    svc._close_serial()
+
+
+def test_reference_lighting_old_dark_ack_cannot_revive_new_bright_intent():
+    svc, serial, _ = _link_service(_link_line())
+    svc.clear()
+    old = svc._queue.get_nowait()
+    original_write = serial.write
+
+    def write(data):
+        original_write(data)
+        if data == b"SHOW\n":
+            svc.set_points([{"row": 1, "col": 1}])
+
+    serial.write = write
+    svc._run_batch(old)
+    snapshot = svc.reference_lighting_snapshot()
+    assert old.result["ok"]
+    assert snapshot.request_revision == 2 and not snapshot.all_dark
+    assert snapshot.shown_revision != snapshot.request_revision
+    svc._close_serial()
+
+
+@pytest.mark.parametrize(
+    "commands, expected_dark",
+    [
+        (["CLEAR", "SHOW", "CLEAR", "SETI 0 1 0 0", "SHOW"], False),
+        (["CLEAR", "SETI 0 0 0 0", "SHOW"], True),
+        (["CLEAR", "SETI 0 1 0 0", "SETI 0 0 0 0", "SHOW"], True),
+        (["CLEAR", "SHOW", "SETI 0 1 0 0"], False),
+        (["CLEAR", "UNKNOWN", "SHOW"], False),
+    ],
+)
+def test_reference_lighting_uses_final_display_not_intermediate_blackout(commands, expected_dark):
+    svc, serial, _ = _link_service(_link_line())
+    svc._submit(commands, strict=False)
+    svc._run_batch(svc._queue.get_nowait())
+    assert svc.reference_lighting_snapshot().all_dark is expected_dark
+    svc._close_serial()
+
+
+@pytest.mark.parametrize("failure", ["firmware", "drop", "timeout"])
+def test_reference_lighting_failed_or_dropped_clear_never_restores_dark(failure):
+    svc, serial, _ = _reference_dark_service()
+    svc.clear()
+    batch = svc._queue.get_nowait()
+    if failure == "firmware":
+        original_write = serial.write
+
+        def write(data):
+            original_write(data)
+            serial._buf[-1] = b"ERR clear\n"
+
+        serial.write = write
+        svc._run_batch(batch)
+    else:
+        svc._finish(batch, ok=False, shown_at=None, errors=[failure])
+    assert not svc.reference_lighting_snapshot().all_dark
+    svc._close_serial()
+
+
+@pytest.mark.parametrize("lifecycle", ["close", "open", "usb", "usb_failed", "stop"])
+def test_reference_lighting_lifecycle_revokes_token_before_serial_work(lifecycle):
+    svc, serial, _ = _reference_dark_service()
+    token = svc.reference_lighting_snapshot()
+    observed = []
+
+    def observe():
+        observed.append(svc.reference_lighting_snapshot())
+        assert not svc.try_commit_reference_lighting(token, lambda: pytest.fail("lifecycle commit"))
+
+    if lifecycle == "open":
+        replacement = FakeSerial()
+        svc._serial_factory = lambda: observe() or replacement
+        svc._open_serial()
+    elif lifecycle in ("usb", "usb_failed"):
+        svc._thread = SimpleNamespace(is_alive=lambda: True)
+        original_close = serial.close
+
+        def close():
+            observe()
+            if lifecycle == "usb_failed":
+                raise OSError("still open")
+            original_close()
+
+        serial.close = close
+        recovery = threading.Thread(target=lambda: svc.begin_usb_recovery(timeout=0.5))
+        recovery.start()
+        deadline = time.monotonic() + 0.5
+        while svc._usb_request is None and time.monotonic() < deadline:
+            time.sleep(0.001)
+        assert svc._usb_request is not None
+        svc._quiesce_usb()
+        svc.end_usb_recovery()
+        recovery.join(1)
+        assert not recovery.is_alive()
+        svc._thread = None
+    else:
+        original_close = serial.close
+        serial.close = lambda: observe() or original_close()
+        getattr(svc, "stop" if lifecycle == "stop" else "_close_serial")()
+    assert observed and all(not item.all_dark and not item.available for item in observed)
+    assert not svc.reference_lighting_snapshot().all_dark or lifecycle == "open"
+    svc._close_serial()
+
+
+def test_reference_lighting_commit_uses_same_lock_as_new_requests():
+    svc, serial, _ = _reference_dark_service()
+    token = svc.reference_lighting_snapshot()
+    entered, release, submitted = threading.Event(), threading.Event(), threading.Event()
+    commits, results = [], []
+
+    def commit():
+        entered.set()
+        assert release.wait(1)
+        commits.append("adopted")
+
+    adopter = threading.Thread(target=lambda: results.append(svc.try_commit_reference_lighting(token, commit)))
+    submitter = threading.Thread(target=lambda: (svc.set_points([{"row": 1, "col": 1}]), submitted.set()))
+    try:
+        adopter.start()
+        assert entered.wait(0.5)
+        submitter.start()
+        assert not submitted.wait(0.02)
+        release.set()
+        adopter.join(1)
+        submitter.join(1)
+        assert results == [True] and commits == ["adopted"]
+        assert submitted.is_set() and not svc.reference_lighting_snapshot().all_dark
+        assert not svc.try_commit_reference_lighting(token, lambda: commits.append("stale"))
+        assert commits == ["adopted"]
+    finally:
+        release.set()
+        adopter.join(1)
+        if submitter.ident is not None:
+            submitter.join(1)
+        svc._close_serial()
+
+
+def test_reference_lighting_superseded_raw_batch_cannot_change_new_dark_display():
+    svc, serial, _ = _link_service(_link_line())
+    svc.set_rgb_points([{"row": 1, "col": 1, "rgb": [1, 2, 3]}])
+    stale = svc._queue.get_nowait()
+    svc.clear()
+    svc._run_batch(svc._queue.get_nowait())
+    assert svc.reference_lighting_snapshot().all_dark
+    serial.written.clear()
+    svc._run_batch(stale)
+    assert serial.written == []
+    assert stale.result["ok"] is False
+    svc._close_serial()

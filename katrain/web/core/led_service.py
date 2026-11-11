@@ -95,6 +95,16 @@ class LedServiceConfig:
     lut_path: Optional[str] = None
 
 
+@dataclass(frozen=True)
+class ReferenceLightingSnapshot:
+    request_revision: int
+    shown_revision: Optional[int]
+    connection_generation: int
+    all_dark: bool
+    shown_at: Optional[float]
+    available: bool
+
+
 _SENTINEL = object()
 _USB_WAKE = object()
 _LINK_TIMEOUT = 0.2
@@ -121,6 +131,8 @@ class _Batch:
         "generation",
         "guidance_revision",
         "finished",
+        "request_revision",
+        "final_dark",
     )
 
     def __init__(self, commands: List[str], strict: bool):
@@ -134,6 +146,32 @@ class _Batch:
         self.generation = None
         self.guidance_revision = None
         self.finished = False
+        self.request_revision = None
+        # Only a known, completely dark frame followed by a final SHOW can
+        # authenticate reference capture. An intermediate blackout cannot.
+        lit = None
+        known = True
+        for command in commands:
+            parts = command.split()
+            if command == "CLEAR":
+                lit = set()
+            elif command == "SHOW":
+                pass
+            elif len(parts) == 5 and parts[0] == "SETI":
+                try:
+                    index, red, green, blue = map(int, parts[1:])
+                    if not (0 <= index <= 360 and all(0 <= value <= 255 for value in (red, green, blue))):
+                        known = False
+                    elif lit is not None:
+                        if red or green or blue:
+                            lit.add(index)
+                        else:
+                            lit.discard(index)
+                except ValueError:
+                    known = False
+            else:
+                known = False
+        self.final_dark = bool(known and lit == set() and commands and commands[-1] == "SHOW")
 
 
 class LedService:
@@ -187,6 +225,64 @@ class LedService:
         self._usb_wake = threading.Event()
         self._usb_startup_check = None
         self._current_batch = None
+        self._reference_request_revision = 0
+        self._reference_shown_revision = None
+        self._reference_shown_at = None
+        self._reference_all_dark = False
+        self._reference_stopping = False
+
+    def _invalidate_reference_lighting(self) -> None:
+        """Caller holds _usb_lock; revoke ACK authority without doing I/O."""
+        self._reference_all_dark = False
+        self._reference_shown_revision = None
+        self._reference_shown_at = None
+
+    def reference_lighting_snapshot(self) -> ReferenceLightingSnapshot:
+        """Return the live LED owner's immutable reference-capture authority."""
+        with self._usb_lock:
+            available = bool(
+                self._connected
+                and self._serial is not None
+                and self._usb_request is None
+                and not self._usb_close_failed
+                and not self._stop.is_set()
+                and not self._reference_stopping
+            )
+            return ReferenceLightingSnapshot(
+                request_revision=self._reference_request_revision,
+                shown_revision=self._reference_shown_revision,
+                connection_generation=self._generation,
+                all_dark=available and self._reference_all_dark,
+                shown_at=self._reference_shown_at,
+                available=available,
+            )
+
+    def try_commit_reference_lighting(self, token: ReferenceLightingSnapshot, local_commit: Callable[[], None]) -> bool:
+        """Adopt worker-local state while the token is still the live dark ACK.
+
+        The callback must only perform short local assignments. It must not do
+        I/O, image/model work, callbacks into other owners, or acquire their locks.
+        """
+        with self._usb_lock:
+            current = self.reference_lighting_snapshot()
+            if (
+                not isinstance(token, ReferenceLightingSnapshot)
+                or token != current
+                or not current.available
+                or not current.all_dark
+                or current.shown_revision != current.request_revision
+                or current.shown_at is None
+            ):
+                return False
+            local_commit()
+            return True
+
+    def _register_reference_request(self, batch: _Batch) -> None:
+        """Caller holds _usb_lock, before a display batch can run or enqueue."""
+        self._reference_request_revision += 1
+        self._invalidate_reference_lighting()
+        batch.request_revision = self._reference_request_revision
+        batch.generation = self._generation
 
     def set_usb_startup_check(self, callback) -> None:
         self._usb_startup_check = callback
@@ -212,6 +308,7 @@ class LedService:
             request = {"event": threading.Event(), "deadline": deadline, "acked": False}
             self._usb_request = request
             self._generation += 1
+            self._invalidate_reference_lighting()
             self._guidance_revision += 1
             self._last_guidance = None
             self._recovery_needed = False
@@ -246,6 +343,7 @@ class LedService:
 
     def end_usb_recovery(self) -> None:
         with self._usb_lock:
+            self._invalidate_reference_lighting()
             request, self._usb_request = self._usb_request, None
             if request is not None:
                 request["event"].set()
@@ -321,7 +419,10 @@ class LedService:
             # The previous worker is finished: discard its stop sentinel and
             # queued commands rather than handing them to the new lifecycle.
             self._queue = queue.Queue(maxsize=10)
-        self._stop.clear()
+        with self._usb_lock:
+            self._reference_stopping = False
+            self._invalidate_reference_lighting()
+            self._stop.clear()
         self._reconnect_blocked = False
         self._open_serial()
         self._thread = threading.Thread(target=self._worker, name="led-serial", daemon=True)
@@ -333,6 +434,9 @@ class LedService:
             raise
 
     def stop(self) -> None:
+        with self._usb_lock:
+            self._reference_stopping = True
+            self._invalidate_reference_lighting()
         if self._thread is None:
             if not self._usb_close_failed:
                 self._close_serial()
@@ -344,9 +448,10 @@ class LedService:
                 self.clear(strict=True)
             except Exception:
                 pass
-        self._stop.set()
+        with self._usb_lock:
+            self._stop.set()
+            self._connected = False
         self.end_usb_recovery()
-        self._connected = False
         try:
             self._queue.put_nowait(_SENTINEL)
         except queue.Full:
@@ -461,13 +566,12 @@ class LedService:
 
     # -- queue plumbing ---------------------------------------------------- #
     def _submit(self, commands: List[str], *, strict: bool, guidance_revision=None) -> Dict:
+        batch = _Batch(commands, strict)
         with self._usb_lock:
+            self._register_reference_request(batch)
             if self._usb_request is not None or self._usb_close_failed or self._stop.is_set():
                 return self._usb_rejected()
-            generation = self._generation
         log.info("[DIAG-LED] submit %d leds", sum(1 for c in commands if c.startswith("SETI")))
-        batch = _Batch(commands, strict)
-        batch.generation = generation
         batch.guidance_revision = guidance_revision
         if strict:
             batch.deadline = self._clock() + _STRICT_TIMEOUT
@@ -481,7 +585,9 @@ class LedService:
                     batch.cancelled = True
                     self._finish(batch, ok=False, shown_at=None, errors=["USB recovery"])
             if not batch.event.wait(timeout=max(0.0, self._batch_remaining(batch))):
-                batch.cancelled = True
+                with self._usb_lock:
+                    batch.cancelled = True
+                    self._invalidate_reference_lighting()
                 return {"ok": False, "connected": self._connected, "shown_at": None, "errors": ["timeout"]}
             return batch.result
         # UI-tolerant: enqueue, dropping the oldest item if the queue is full.
@@ -544,7 +650,6 @@ class LedService:
                     self._run_batch(item)
                 except Exception as e:
                     log.warning("LED serial error: %s", e)
-                    self._connected = False
                     self._close_serial()
                     self._finish(item, ok=False, shown_at=None, errors=[str(e)])
                 self._maybe_poll_board_link()
@@ -562,6 +667,13 @@ class LedService:
         for cmd in batch.commands:
             if self._usb_paused():
                 errors.append("USB recovery")
+                break
+            with self._usb_lock:
+                superseded = (
+                    batch.request_revision is not None and batch.request_revision != self._reference_request_revision
+                )
+            if superseded:
+                errors.append("display request replaced")
                 break
             if batch.generation is not None and batch.generation != self._generation:
                 errors.append("connection changed")
@@ -743,7 +855,8 @@ class LedService:
             if not self._recovery_needed or not self._last_guidance:
                 return
             batch = _Batch(self._guidance_commands(self._last_guidance), strict=False)
-            batch.generation = self._generation
+            with self._usb_lock:
+                self._register_reference_request(batch)
             batch.guidance_revision = self._guidance_revision
         self._run_batch(batch)
 
@@ -798,6 +911,16 @@ class LedService:
             if batch.finished:
                 return
             batch.finished = True
+            if not ok:
+                self._invalidate_reference_lighting()
+            elif (
+                batch.request_revision == self._reference_request_revision
+                and batch.generation == self._generation
+                and self.reference_lighting_snapshot().available
+            ):
+                self._reference_shown_revision = batch.request_revision if shown_at is not None else None
+                self._reference_shown_at = shown_at
+                self._reference_all_dark = batch.final_dark and shown_at is not None
             if self._current_batch is batch:
                 self._current_batch = None
             self._last_errors = list(errors)
@@ -854,7 +977,12 @@ class LedService:
             return
         if self._linux_alias_absent():
             return
-        self._generation += 1
+        with self._usb_lock:
+            if self._usb_request is not None or self._usb_close_failed or self._stop.is_set():
+                return
+            self._generation += 1
+            self._connected = False
+            self._invalidate_reference_lighting()
         self._board_link = None
         self._next_link_poll = 0.0
         self._link_response_pending = False
@@ -868,7 +996,6 @@ class LedService:
             self._device_lease = DeviceLease.acquire("led", self.config.serial_port)
         try:
             self._serial = self._serial_factory()
-            self._connected = False
             if (
                 self._stop.is_set()
                 or self._usb_paused()
@@ -904,11 +1031,12 @@ class LedService:
                 if not ok:
                     break
             else:
-                if not self._stop.is_set() and not self._usb_paused():
-                    self._connected = True
-                    self._recovery_needed = bool(self._last_guidance)
-                    log.info("LED serial opened on %s", self.config.serial_port)
-                    return
+                with self._usb_lock:
+                    if not self._stop.is_set() and not self._usb_paused():
+                        self._connected = True
+                        self._recovery_needed = bool(self._last_guidance)
+                        log.info("LED serial opened on %s", self.config.serial_port)
+                        return
 
             self._close_serial()
             log.warning("LED serial handshake failed (%s)", self.config.serial_port)
@@ -953,13 +1081,15 @@ class LedService:
         return self._alias_missing
 
     def _close_serial(self, *, release_lease=None, require_closed=False) -> bool:
-        if self._serial is not None:
-            self._generation += 1
+        with self._usb_lock:
+            if self._serial is not None:
+                self._generation += 1
+            self._connected = False
+            self._invalidate_reference_lighting()
         self._recovery_needed = bool(self._last_guidance)
         self._board_link = None
         self._link_response_pending = False
         self._link_partial_line = False
-        self._connected = False
         if self._serial is not None:
             try:
                 self._serial.close()
@@ -974,7 +1104,6 @@ class LedService:
                     log.warning("LED USB close failed; retaining device ownership: %s", exc)
                     return False
         self._serial = None
-        self._connected = False
         if release_lease is None:
             release_lease = not self._usb_paused()
         if release_lease and self._device_lease is not None:

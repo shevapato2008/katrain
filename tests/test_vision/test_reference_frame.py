@@ -1589,3 +1589,34 @@ def test_candidate_feature_preparation_failure_does_not_drop_the_confirmed_move(
     moves = [event for event in events if isinstance(event, ConfirmedMove)]
     assert len(moves) == 1 and worker._sync._confirmed_move is moves[0]
     assert worker._reference_candidate is None and worker._candidate_attempted_token == moves[0].token
+
+
+@pytest.mark.parametrize("path", ["ordinary", "refresh"])
+def test_optional_reference_preparation_failure_keeps_old_photo_and_recognition_running(path, monkeypatch):
+    clock, old = [100.0], []
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+
+    def fail_prepare(*args, **kwargs):
+        clock[0] = 104.0
+        raise RuntimeError("reference feature preparation")
+
+    prepare = MagicMock(side_effect=fail_prepare)
+
+    def inject_after_initial_capture(worker, remaining):
+        if remaining == 3:
+            old.append(worker._reference)
+            assert old[0] is not None
+            clock[0] = 102.0
+            if path == "ordinary":
+                _target(worker, _empty_board(), 2, 11)
+            else:
+                worker._ref_taken_at -= REFERENCE_REFRESH_S + 1
+            monkeypatch.setattr("katrain.vision.worker_inprocess.ReferenceFrame", prepare)
+
+    worker = _run_loop("on", [_board_frame()], [[]] * 6, _empty_board(), on_read=inject_after_initial_capture)
+    assert worker._reference is old[0] and worker._observation_seq == 6
+    assert prepare.call_count == 1
+    if path == "ordinary":
+        assert worker._reference_attempt.spent == 1 and worker._reference_attempt.not_before >= 105.0
+    else:
+        assert worker._reference_refresh_attempt_at == 102.0

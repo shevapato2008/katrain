@@ -1035,6 +1035,9 @@ class InProcessAdapter:
                 )
                 if not adopted:
                     self._reference_reason = "owner changed before adoption"
+        except Exception:
+            self._reference_reason = "reference preparation failed"
+            logger.warning("optional reference preparation failed", exc_info=True)
         finally:
             if not adopted and attempt.spent > spent_before:
                 attempt.not_before = max(attempt.not_before, time.monotonic() + 1.0)
@@ -1053,21 +1056,25 @@ class InProcessAdapter:
         def started():
             self._reference_refresh_attempt_at = now
 
-        with self._time_reference_witness("refresh"):
-            witnessed = self._witness_reference(source, target, started)
-            if witnessed is None or not np.array_equal(witnessed, self._reference.board):
-                self._reference_reason = "refresh witness mismatch"
-                return
-            reference = ReferenceFrame(self._reference.sampler, source.gray, witnessed)
-            # Refresh never resurrects disputed/released authority on the same map.
-            if self._commit_reference(
-                source,
-                lambda: self._install_reference(reference, source, target, now, reset_permissions=False),
-                target=target,
-            ):
-                logger.info("refcheck refreshed: qualified unaveraged witness")
-            else:
-                self._reference_reason = "refresh owner gate rejected"
+        try:
+            with self._time_reference_witness("refresh"):
+                witnessed = self._witness_reference(source, target, started)
+                if witnessed is None or not np.array_equal(witnessed, self._reference.board):
+                    self._reference_reason = "refresh witness mismatch"
+                    return
+                reference = ReferenceFrame(self._reference.sampler, source.gray, witnessed)
+                # Refresh never resurrects disputed/released authority on the same map.
+                if self._commit_reference(
+                    source,
+                    lambda: self._install_reference(reference, source, target, now, reset_permissions=False),
+                    target=target,
+                ):
+                    logger.info("refcheck refreshed: qualified unaveraged witness")
+                else:
+                    self._reference_reason = "refresh owner gate rejected"
+        except Exception:
+            self._reference_reason = "refresh preparation failed"
+            logger.warning("optional reference refresh preparation failed", exc_info=True)
 
     def _stage_reference_candidate(self, move, board, observed, gray):
         target, source = self._reference_target, self._reference_source
@@ -2107,7 +2114,8 @@ class InProcessAdapter:
             reference_status = "unavailable"
         elif (
             self._ref_disputed.any()
-            or self._reference_reason in ("refresh witness mismatch", "refresh owner gate rejected")
+            or self._reference_reason
+            in ("refresh witness mismatch", "refresh owner gate rejected", "refresh preparation failed")
             or (self._reference_attempt is not None and self._reference_attempt.spent >= 2)
         ):
             reference_status = "limited"

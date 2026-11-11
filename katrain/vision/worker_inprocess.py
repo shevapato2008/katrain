@@ -723,6 +723,8 @@ class InProcessAdapter:
                 self._ref_compare_failed = True
                 logger.warning("refcheck comparison failed; skipping this frame, keeping the reference", exc_info=True)
             return board
+        if not self._reference_live():
+            return board
         valid = reference.board == self._expected_np
         for row, col in self._lit_points:
             valid[row, col] = False
@@ -732,8 +734,9 @@ class InProcessAdapter:
             for (row, col), confidence in confidences.items():
                 confidence_backed[row, col] = confidence >= self._add_threshold
             evidence &= confidence_backed
-            self._ref_evidence[evidence] += 1
-            conflict = evidence & (self._ref_evidence >= self._move_detector.consistency_frames)
+            next_evidence = self._ref_evidence.copy()
+            next_evidence[evidence] += 1
+            conflict = evidence & (next_evidence >= self._move_detector.consistency_frames)
             if conflict.any():
                 witnessed = None
                 if not self._reference_conflict_attempted:
@@ -746,10 +749,13 @@ class InProcessAdapter:
                             accepted = [False]
                             if self._commit_reference(source, lambda: accepted.__setitem__(0, True)) and accepted[0]:
                                 witnessed = result
+                if not self._reference_live():
+                    return board
                 resolved = conflict & (witnessed == raw_observed) if witnessed is not None else np.zeros_like(conflict)
                 self._ref_released |= conflict
                 self._ref_disputed |= conflict & ~resolved
                 self._reference_reason = "reference empty label disputed"
+            self._ref_evidence[:] = next_evidence
         disagree = unchanged & valid & (board != reference.board) & ~self._ref_released
         self._ref_hold[disagree] += 1
         missing = (reference.board != EMPTY) & (board == EMPTY)
@@ -769,6 +775,10 @@ class InProcessAdapter:
                 len(rows),
                 ", ".join(f"({r},{c}) zncc={sim[r,c]:.2f}" for r, c in zip(rows[:4], cols[:4])),
             )
+        if not self._reference_live():
+            self._ref_vetoing = False
+            self._ref_disagree = None
+            return board
         if self._ref_mode != "on" and not (self._monitor and self._ref_mode == "shadow"):
             return board
         effective = board.copy()
@@ -932,11 +942,10 @@ class InProcessAdapter:
         if target != self._reference_target:
             return None
         try:
-            started = time.perf_counter()
-            image = enhance_for_inference(source.bgr.copy(), self._enhance_mode)
-            self._reference_witness_started_at = started
+            self._reference_witness_started_at = time.perf_counter()
             if on_start is not None:
                 on_start()
+            image = enhance_for_inference(source.bgr.copy(), self._enhance_mode)
             detections = self._detector.detect(image)
             if any(d.class_id not in (0, 1) for d in detections):
                 return None
@@ -1012,16 +1021,23 @@ class InProcessAdapter:
             attempt.failed_stream = source.metadata.stream_generation
             attempt.failed_seq = source.metadata.frame_seq
 
-        with self._time_reference_witness("ordinary"):
-            witnessed = self._witness_reference(source, target, started)
-            if witnessed is None or not np.array_equal(witnessed, expected):
-                self._reference_reason = "unaveraged witness mismatch"
-                return
-            reference = ReferenceFrame(self._sampler_for(source.gray), source.gray, expected)
-            if not self._commit_reference(
-                source, lambda: self._install_reference(reference, source, target, now), target=target
-            ):
-                self._reference_reason = "owner changed before adoption"
+        spent_before = attempt.spent
+        adopted = False
+        try:
+            with self._time_reference_witness("ordinary"):
+                witnessed = self._witness_reference(source, target, started)
+                if witnessed is None or not np.array_equal(witnessed, expected):
+                    self._reference_reason = "unaveraged witness mismatch"
+                    return
+                reference = ReferenceFrame(self._sampler_for(source.gray), source.gray, expected)
+                adopted = self._commit_reference(
+                    source, lambda: self._install_reference(reference, source, target, now), target=target
+                )
+                if not adopted:
+                    self._reference_reason = "owner changed before adoption"
+        finally:
+            if not adopted and attempt.spent > spent_before:
+                attempt.not_before = max(attempt.not_before, time.monotonic() + 1.0)
 
     def _refresh_reference(self, gray, now):
         source, target = self._reference_source, self._reference_target
@@ -1073,15 +1089,22 @@ class InProcessAdapter:
         def started():
             self._candidate_attempted_token = move.token
 
-        with self._time_reference_witness("candidate"):
-            witnessed = self._witness_reference(source, target, started)
-            if witnessed is None or not np.array_equal(witnessed, board):
-                return
-            reference = ReferenceFrame(self._sampler_for(source.gray), source.gray, board)
-            candidate = _ReferenceCandidate(
-                move.token, target, reference, source.metadata, source.lighting, source.geometry, time.monotonic()
-            )
-            self._commit_reference(source, lambda: setattr(self, "_reference_candidate", candidate), target=target)
+        try:
+            with self._time_reference_witness("candidate"):
+                witnessed = self._witness_reference(source, target, started)
+                if witnessed is None or not np.array_equal(witnessed, board):
+                    return
+                reference = ReferenceFrame(self._sampler_for(source.gray), source.gray, board)
+                candidate = _ReferenceCandidate(
+                    move.token, target, reference, source.metadata, source.lighting, source.geometry, time.monotonic()
+                )
+                if not self._commit_reference(
+                    source, lambda: setattr(self, "_reference_candidate", candidate), target=target
+                ):
+                    self._reference_candidate = None
+        except Exception:
+            self._reference_candidate = None
+            logger.warning("optional reference candidate preparation failed", exc_info=True)
 
     def _observe_candidate_board(self, board, observed):
         candidate, source = self._reference_candidate, self._reference_source

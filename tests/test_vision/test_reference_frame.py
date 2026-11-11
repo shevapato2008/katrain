@@ -1484,3 +1484,108 @@ def test_stale_source_expected_publication_cannot_release_a_current_move():
     )
     worker._drain_commands()
     assert worker._reference_target is current and worker._sync._confirmed_move is move
+
+
+@pytest.mark.parametrize("phase", ["comparison", "conflict_witness"])
+def test_reference_owner_change_during_expensive_check_keeps_raw_board_and_permissions(phase):
+    worker, camera, _ = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    raw = _empty_board()
+    raw[9, 9] = WHITE
+    gray = _source(worker, 3)
+    if phase == "comparison":
+        unchanged = worker._reference.unchanged
+
+        def compare(image, threshold):
+            result = unchanged(image, threshold)
+            camera.current = False
+            return result
+
+        worker._reference.unchanged = compare
+    else:
+        worker._ref_evidence[9, 9] = worker._move_detector.consistency_frames - 1
+
+        def detect(image):
+            camera.current = False
+            return []
+
+        worker._detector.detect.side_effect = detect
+    before = (
+        worker._ref_evidence.copy(),
+        worker._ref_released.copy(),
+        worker._ref_disputed.copy(),
+        worker._ref_hold.copy(),
+    )
+    result = worker._reference_check(raw, gray, raw_observed=raw, confidences={(9, 9): 0.99})
+    assert result is raw and not worker._ref_vetoing and worker._ref_disagree is None
+    for actual, expected in zip(
+        (worker._ref_evidence, worker._ref_released, worker._ref_disputed, worker._ref_hold), before
+    ):
+        assert np.array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("failure", ["mismatch", "exception", "light", "enhance"])
+def test_retry_cooldown_starts_after_all_failed_witness_work_finishes(failure, monkeypatch, caplog):
+    worker, _, light = _lifecycle_worker()
+    clock, starts = [10.0], []
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+
+    def detect(image):
+        starts.append(clock[0])
+        if len(starts) == 1 and failure in ("mismatch", "exception"):
+            clock[0] = 12.0
+            if failure == "exception":
+                raise RuntimeError("inference failed")
+            if failure == "mismatch":
+                return [_det(9, 9, 1)]
+        return []
+
+    worker._detector.detect.side_effect = detect
+    original_gate = light.try_commit_reference_lighting
+    if failure == "light":
+
+        def gate(token, commit):
+            if len(starts) == 1:
+                clock[0] = 12.0
+                return False
+            return original_gate(token, commit)
+
+        light.try_commit_reference_lighting = gate
+    if failure == "enhance":
+        from katrain.vision.worker_inprocess import enhance_for_inference as enhance
+
+        enhancements = []
+
+        def preprocess(image, mode):
+            enhancements.append(True)
+            if len(enhancements) == 1:
+                clock[0] = 12.0
+                raise RuntimeError("enhancement failed")
+            return enhance(image, mode)
+
+        monkeypatch.setattr("katrain.vision.worker_inprocess.enhance_for_inference", preprocess)
+    with caplog.at_level("INFO"):
+        _capture(worker, 1)
+        _capture(worker, 2)
+    assert worker._reference is None and worker._reference_attempt.spent == 1
+    assert worker._reference_attempt.not_before >= 13.0
+    assert "reference witness ordinary elapsed_ms=" in caplog.text
+    _capture(worker, 3)
+    _capture(worker, 4)
+    assert worker._reference_attempt.spent == 1
+    clock[0] = 13.0
+    _capture(worker, 5)
+    assert worker._reference is not None and worker._reference_attempt.spent == 2
+
+
+def test_candidate_feature_preparation_failure_does_not_drop_the_confirmed_move():
+    physical = _board_frame([(9, 9, WHITE)])
+    with mock_patch("katrain.vision.worker_inprocess.ReferenceFrame", side_effect=RuntimeError("feature preparation")):
+        worker = _run_loop("on", [physical], [[_det(9, 9, 1)]] * 4, _empty_board())
+    events = []
+    while (event := worker.get_event()) is not None:
+        events.append(event)
+    moves = [event for event in events if isinstance(event, ConfirmedMove)]
+    assert len(moves) == 1 and worker._sync._confirmed_move is moves[0]
+    assert worker._reference_candidate is None and worker._candidate_attempted_token == moves[0].token

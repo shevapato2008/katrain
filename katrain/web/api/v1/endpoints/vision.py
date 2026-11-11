@@ -47,6 +47,8 @@ class ResetSyncRequest(BaseModel):
     # (ambiguous-stone 忽略): keep the ignored stone in the detector baseline so it doesn't
     # re-fire.
     adopt: str = "digital"
+    session_id: str | None = None
+    game_id: str | None = None
 
 
 # -- Helpers -----------------------------------------------------------------
@@ -394,9 +396,17 @@ async def reset_sync(request: Request, body: ResetSyncRequest | None = None):
     (ambiguous-stone 忽略) accepts the current camera board as baseline so the ignored stone
     doesn't re-fire. Falls back to a plain physical-adopt reset with no orchestrator
     (research mode)."""
-    vision = _get_vision(request)
     orchestrator = getattr(request.app.state, "physical_play", None)
     adopt = body.adopt if body else "digital"
+    if body is not None and {"session_id", "game_id"}.intersection(body.model_fields_set):
+        if not body.session_id or not body.game_id or adopt != "digital":
+            raise HTTPException(status_code=422, detail="Scoped digital recovery requires session_id and game_id")
+        if getattr(request.app.state, "vision", None) is None:
+            raise HTTPException(status_code=503, detail="Vision worker is unavailable")
+        if orchestrator is None:
+            raise HTTPException(status_code=409, detail="No bound physical game")
+        return await orchestrator.restore_scoped(body.session_id, body.game_id)
+    vision = _get_vision(request)
     if orchestrator is not None and adopt != "physical":
         orchestrator.resync()
     else:

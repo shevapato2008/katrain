@@ -1544,3 +1544,66 @@ def test_stale_local_mode_command_cannot_release_current_confirmation():
     )
     worker._drain_commands()
     assert worker._sync.has_confirmed_move
+
+
+@pytest.mark.parametrize("inprocess", [True, False])
+def test_scoped_expected_command_preserves_b17_token_and_carries_recovery_ack(inprocess):
+    from katrain.vision.move_detector import MoveDetector
+    from katrain.vision.sync import SyncStateMachine
+    from katrain.vision.worker import _VisionWorkerLoop
+
+    if inprocess:
+        w = _inprocess_worker()
+        drain = w._drain_commands
+    else:
+        w = _VisionWorkerLoop.__new__(_VisionWorkerLoop)
+        w._cmd_queue = queue.Queue()
+        w._running = True
+        drain = w._process_commands
+    expected = np.zeros((19, 19), dtype=int)
+    expected[1, 4] = 2  # W E18 already belongs to node16
+    physical = expected.copy()
+    physical[1, 5] = BLACK  # legitimate next B17 is already physically present
+    w._sync = SyncStateMachine()
+    w._sync.reset(expected)
+    w._sync.set_expected_board(expected, expected_node_id=16)
+    w._sync.update(expected)
+    w._move_detector = MoveDetector(consistency_frames=3)
+    w._move_detector.force_sync(physical)
+    w._expected_np = expected.copy()
+    w._binding_epoch, w._expected_revision = 1, 1
+    move = ConfirmedMove(row=1, col=5, color=BLACK, observation_seq=7, binding_epoch=1, expected_revision=1)
+    assert w._sync.claim_confirmed_move(move, physical)
+    w._cmd_queue.put(
+        WorkerCommand(
+            CommandType.SET_EXPECTED_BOARD,
+            {
+                "board": expected.tolist(),
+                "expected_node_id": 16,
+                "binding_epoch": 1,
+                "expected_revision": 1,
+                "recovery_id": "restore",
+                "force_rearm": True,
+            },
+        )
+    )
+    drain()
+    assert w._sync._confirmed_move is move
+    assert w._move_detector.prev_board[1, 5] == EMPTY  # never union-adopt B17
+    assert not any(e.data.get("recovery_id") for e in w._sync.update(physical))
+    # Ordinary authority publication after accepting B17 retains the recovery identity.
+    w._cmd_queue.put(
+        WorkerCommand(
+            CommandType.SET_EXPECTED_BOARD,
+            {
+                "board": physical.tolist(),
+                "expected_node_id": 17,
+                "binding_epoch": 1,
+                "expected_revision": 2,
+                "recovery_id": "restore",
+            },
+        )
+    )
+    drain()
+    events = w._sync.update(physical)
+    assert any(e.data == {"expected_node_id": 17, "recovery_id": "restore"} for e in events)

@@ -1024,3 +1024,42 @@ class TestMissingStoneHold:
         for i in range(4):
             seen += sm.update(observed_board=gone, timestamp=9.0 + (i + 1) * 0.05)
         assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]
+
+
+def test_recovery_id_rearms_unchanged_exact_ack_without_invalidating_confirmed_token():
+    sm = SyncStateMachine(board_size=19)
+    sm.reset(empty_board())
+    sm.set_expected_board(empty_board(), expected_node_id=16)
+    sm.update(empty_board())
+    from katrain.vision.ipc import ConfirmedMove
+
+    marker = ConfirmedMove(row=0, col=0, color=BLACK)
+    sm._confirmed_move = marker
+    sm.set_expected_board(empty_board(), expected_node_id=16, recovery_id="restore")
+    assert sm._confirmed_move is marker
+    assert sm.update(empty_board()) == [
+        SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 16, "recovery_id": "restore"})
+    ]
+    assert sm.update(empty_board()) == []
+
+
+def test_recovery_ack_excludes_placement_pending_and_tracks_new_target():
+    sm = SyncStateMachine(board_size=19)
+    sm.reset(empty_board())
+    expected = board_with({(3, 3): BLACK})
+    sm.set_expected_board(expected, expected_node_id=16, recovery_id="restore")
+    assert not any(e.data.get("recovery_id") for e in sm.update(empty_board()))
+    expected[4, 4] = WHITE
+    sm.set_expected_board(expected, expected_node_id=17, recovery_id="restore")
+    assert sm.update(expected) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 17, "recovery_id": "restore"})]
+
+
+def test_recovery_rearms_exact_ack_for_changed_board_at_same_node():
+    sm = SyncStateMachine(board_size=19)
+    expected = empty_board()
+    sm.reset(expected)
+    sm.set_expected_board(expected, expected_node_id=16, recovery_id="restore")
+    assert sm.update(expected)[0].data["recovery_id"] == "restore"
+    expected = board_with({(3, 3): BLACK})
+    sm.set_expected_board(expected, expected_node_id=16, recovery_id="restore")
+    assert sm.update(expected) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 16, "recovery_id": "restore"})]

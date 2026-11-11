@@ -100,6 +100,7 @@ class PhysicalPlayOrchestrator:
         self._loop = None
         self._orig_callback = None
         self._latest_state: Optional[Dict] = None
+        self._scoped_restore_state: Optional[Dict] = None
         self._task: Optional[asyncio.Task] = None
         self._last_points: Optional[List[Dict]] = None
         self._caught_up = True
@@ -219,6 +220,11 @@ class PhysicalPlayOrchestrator:
         with lock:
             if not self.source_is_current(source):
                 return
+            if self._scoped_restore_state is not None:
+                # The guarded recovery callback publishes this exact snapshot to the
+                # runtime/UI. It must not dismiss unrelated pause reasons as a side effect.
+                self._latest_state = self._scoped_restore_state
+                return
             if self._session is not None:
                 state = (
                     self._session.last_state
@@ -323,6 +329,91 @@ class PhysicalPlayOrchestrator:
         # Force the next tick to re-emit lamps (the dedupe would otherwise suppress the
         # now-changed plan) so a stale blue lamp clears.
         self._last_points = None
+
+    async def restore_scoped(self, session_id: str, game_id: str, *, timeout: float = 8.0) -> Dict:
+        """Republish fresh bound authority and await its exact physical equality.
+
+        Unlike legacy resync this never adopts the observed board or plays a move.
+        No thread lock is held across the worker acknowledgement wait.
+        """
+        from fastapi import HTTPException
+
+        vision, source, session = self._vision, self._binding_source, self._session
+        if not isinstance(vision, VisionService) or vision._worker is None:
+            raise HTTPException(status_code=503, detail="Vision worker is unavailable")
+        if session is None or source is None or session_id != self._session_id:
+            raise HTTPException(status_code=409, detail="Vision binding changed")
+        deadline = asyncio.get_running_loop().time() + timeout
+        recovery = None
+        published = None
+        try:
+            while True:
+                with getattr(session.katrain, "ai_ladder_commit_lock", nullcontext()):
+                    if vision._worker is None:
+                        raise HTTPException(status_code=503, detail="Vision worker is unavailable")
+                    if not self.source_is_current(source) or (recovery is not None and recovery.invalidated):
+                        raise HTTPException(status_code=409, detail="Vision binding or game changed")
+                    state = (
+                        session.last_state
+                        if getattr(session, "game_type", None) == "pvp_lobby"
+                        else session.katrain.get_state()
+                    )
+                    if not state or state.get("game_id") != game_id:
+                        raise HTTPException(status_code=409, detail="Vision game changed")
+                    if recovery is None:
+                        try:
+                            recovery = vision.begin_expected_recovery(source)
+                        except ValueError as exc:
+                            raise HTTPException(status_code=409, detail=str(exc)) from exc
+                    expected = game_state_stones_to_board(state["stones"], state["board_size"][0])
+                    target = (state.get("current_node_id"), expected.shape, expected.tobytes())
+                    if target != published:
+                        # Current runtime callback owns canonical and client publication.
+                        # Its orchestrator wrapper must use this same captured snapshot.
+                        if not self.source_is_current(source):
+                            raise HTTPException(status_code=409, detail="Vision binding or game changed")
+                        self._scoped_restore_state = state
+                        try:
+                            callback = session.katrain.update_state_callback
+                            if callable(callback):
+                                callback(state)
+                        finally:
+                            self._scoped_restore_state = None
+                        if not self.source_is_current(source):
+                            raise HTTPException(status_code=409, detail="Vision binding or game changed")
+                        self._latest_state = state
+                        vision.publish_expected_from_stones(
+                            source,
+                            state["stones"],
+                            state["board_size"][0],
+                            expected_node_id=state.get("current_node_id"),
+                            force_rearm=True,
+                        )
+                        self._planner.reconcile(expected)
+                        self._set_caught_up(True)
+                        self._behind_since = None
+                        self._reminded = self._escalated = False
+                        self._last_points = None
+                        published = target
+                    if vision.recovery_acknowledged(recovery, state.get("current_node_id")):
+                        return {
+                            "ok": True,
+                            "recovery_id": recovery.recovery_id,
+                            "session_id": session_id,
+                            "game_id": game_id,
+                            "current_node_id": state.get("current_node_id"),
+                        }
+                    recovery.wake.clear()
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise HTTPException(status_code=504, detail="Vision recovery timed out")
+                try:
+                    await asyncio.wait_for(recovery.wake.wait(), remaining)
+                except asyncio.TimeoutError as exc:
+                    raise HTTPException(status_code=504, detail="Vision recovery timed out") from exc
+        finally:
+            if recovery is not None:
+                vision.finish_expected_recovery(recovery)
 
     def enter_engine_error(self, coords: Tuple[int, int], recovery_token: str) -> None:
         """Task 7 hand-off: the poller's engine_recovery episode tripped its

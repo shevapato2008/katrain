@@ -173,3 +173,38 @@ def test_setup_mode_forwards_optional_identity(setup_id):
     args, kwargs = app.state.vision.enter_setup_mode.call_args
     assert args[0].tolist() == [[0]]
     assert kwargs == ({"setup_id": setup_id} if setup_id is not None else {})
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"session_id": "s"},
+        {"game_id": "g"},
+        {"session_id": None, "game_id": "g"},
+        {"session_id": "s", "game_id": "g", "adopt": "physical"},
+    ],
+)
+def test_scoped_sync_reset_partial_identity_never_falls_back(body):
+    app = _reset_app(with_orch=True)
+    response = TestClient(app).post("/vision/sync/reset", json=body)
+    assert response.status_code in (400, 422)
+    assert app.state.physical_play.resynced == app.state.vision.reset_calls == 0
+
+
+def test_scoped_sync_reset_routes_identity_and_returns_only_recovery_identity():
+    from unittest.mock import AsyncMock
+
+    app = _reset_app(with_orch=True)
+    result = {"ok": True, "recovery_id": "r", "session_id": "s", "game_id": "g", "current_node_id": 16}
+    app.state.physical_play.restore_scoped = AsyncMock(return_value=result)
+    response = TestClient(app).post("/vision/sync/reset", json={"adopt": "digital", "session_id": "s", "game_id": "g"})
+    assert response.status_code == 200 and response.json() == result
+    app.state.physical_play.restore_scoped.assert_awaited_once_with("s", "g")
+    assert app.state.physical_play.resynced == app.state.vision.reset_calls == 0
+
+
+def test_scoped_sync_reset_without_vision_service_is_unavailable():
+    app = FastAPI()
+    app.include_router(vision.router, prefix="/vision")
+    response = TestClient(app).post("/vision/sync/reset", json={"session_id": "s", "game_id": "g"})
+    assert response.status_code == 503

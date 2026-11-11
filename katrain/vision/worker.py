@@ -592,6 +592,7 @@ class _VisionWorkerLoop:
                             "type": evt.type.value,
                             "data": evt.data,
                             "binding_epoch": getattr(self, "_binding_epoch", 0),
+                            "expected_revision": getattr(self, "_expected_revision", 0),
                         }
                     )
 
@@ -738,6 +739,7 @@ class _VisionWorkerLoop:
                 self._sync.set_expected_board(
                     board,
                     expected_node_id=cmd.data.get("expected_node_id"),
+                    **({"recovery_id": cmd.data["recovery_id"]} if "recovery_id" in cmd.data else {}),
                 )
                 if not (unchanged and baseline_ok):
                     self._move_detector.force_sync(board)

@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import uuid
 from collections import deque
 from dataclasses import dataclass, replace
 from threading import RLock
@@ -39,6 +40,16 @@ class VisionBindingSource:
     binding_epoch: int
 
 
+@dataclass
+class ExpectedRecovery:
+    source: VisionBindingSource
+    recovery_id: str
+    loop: Any
+    wake: asyncio.Event
+    ack: tuple | None = None  # binding epoch, expected revision, expected node
+    invalidated: bool = False
+
+
 class VisionService:
     """Main-process controller for the vision worker."""
 
@@ -52,6 +63,7 @@ class VisionService:
         self._binding_epoch = 0
         self._expected_revision = 0
         self._published_expected = None
+        self._expected_recovery: ExpectedRecovery | None = None
         self._metadata_lock = RLock()
         self._event_callbacks: list[Callable] = []
         self._latest_status: WorkerStatus = WorkerStatus()
@@ -133,6 +145,8 @@ class VisionService:
 
     def stop(self) -> None:
         """Stop the vision worker."""
+        with self._metadata_lock:
+            self._invalidate_expected_recovery()
         if self._worker:
             self._worker.stop()
             self._worker = None
@@ -212,6 +226,44 @@ class VisionService:
                 and source.game_identity == self._bound_game_identity == identity
             )
 
+    @staticmethod
+    def _wake_expected_recovery(recovery: ExpectedRecovery) -> None:
+        if not recovery.loop.is_closed():
+            try:
+                recovery.loop.call_soon_threadsafe(recovery.wake.set)
+            except RuntimeError:
+                # The request's loop may close between the check and a worker-thread wake.
+                pass
+
+    def _invalidate_expected_recovery(self) -> None:
+        recovery = self._expected_recovery
+        self._expected_recovery = None
+        if recovery is not None:
+            recovery.invalidated = True
+            self._wake_expected_recovery(recovery)
+
+    def begin_expected_recovery(self, source: VisionBindingSource) -> ExpectedRecovery:
+        """Register before publishing; callers already hold the authority commit lock."""
+        with self._metadata_lock:
+            if self._expected_recovery is not None:
+                raise ValueError("A vision recovery is already active")
+            recovery = ExpectedRecovery(source, uuid.uuid4().hex, asyncio.get_running_loop(), asyncio.Event())
+            self._expected_recovery = recovery
+            return recovery
+
+    def finish_expected_recovery(self, recovery: ExpectedRecovery) -> None:
+        with self._metadata_lock:
+            if self._expected_recovery is recovery:
+                self._expected_recovery = None
+
+    def recovery_acknowledged(self, recovery: ExpectedRecovery, expected_node_id) -> bool:
+        with self._metadata_lock:
+            return (
+                self._expected_recovery is recovery
+                and not recovery.invalidated
+                and recovery.ack == (self._binding_epoch, self._expected_revision, expected_node_id)
+            )
+
     def publish_expected_from_stones(
         self, source: VisionBindingSource, stones, board_size=19, *, expected_node_id=None, force_rearm=False
     ) -> bool:
@@ -235,6 +287,13 @@ class VisionService:
             if changed:
                 self._expected_revision += 1
                 self._published_expected = key
+            recovery = self._expected_recovery
+            recovery_data = {}
+            if recovery is not None and recovery.source == source:
+                recovery_data["recovery_id"] = recovery.recovery_id
+                self._wake_expected_recovery(recovery)
+            if force_rearm:
+                recovery_data["force_rearm"] = True
             if self._worker:
                 self._worker.send_command(
                     WorkerCommand(
@@ -244,6 +303,7 @@ class VisionService:
                             "expected_node_id": expected_node_id,
                             "binding_epoch": source.binding_epoch,
                             "expected_revision": self._expected_revision,
+                            **recovery_data,
                         },
                     )
                 )
@@ -337,6 +397,7 @@ class VisionService:
         ):
             return
         with self._metadata_lock:
+            self._invalidate_expected_recovery()
             self._binding_epoch += 1
             self._expected_revision = 0
             self._published_expected = None
@@ -356,6 +417,7 @@ class VisionService:
         a move confirmed just before unbind can't leak into whatever session binds
         next."""
         with self._metadata_lock:
+            self._invalidate_expected_recovery()
             self._binding_epoch += 1
             self._expected_revision = 0
             self._published_expected = None
@@ -608,6 +670,20 @@ class VisionService:
                     self._pending_moves.append(evt)
             else:
                 epoch = evt.get("binding_epoch", 0) if isinstance(evt, dict) else 0
+                recovery = self._expected_recovery
+                if recovery is not None and isinstance(evt, dict) and evt.get("type") == "synced":
+                    data = evt.get("data") or {}
+                    revision = evt.get("expected_revision")
+                    if (
+                        epoch == recovery.source.binding_epoch
+                        and data.get("recovery_id") == recovery.recovery_id
+                        and data.get("expected_node_id") is not None
+                        and isinstance(revision, int)
+                        and revision == self._expected_revision
+                        and (recovery.ack is None or revision >= recovery.ack[1])
+                    ):
+                        recovery.ack = (epoch, revision, data["expected_node_id"])
+                        self._wake_expected_recovery(recovery)
                 if not epoch or epoch == self._binding_epoch:
                     self._pending_events.append(evt)
 

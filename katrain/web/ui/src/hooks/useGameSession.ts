@@ -1,7 +1,7 @@
 import { uiMessage, renderUiMessage, type UiMessage } from '../kiosk/utils/uiMessage';
 import { useTranslation } from './useTranslation';
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { API, verifiedSpectatorCount, type EndGameResponse, type GameState, type PhysicalEngineErrorState, type PlatformClockState } from '../api';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, type SetStateAction } from 'react';
+import { API, verifiedSpectatorCount, type EndGameResponse, type GameState, type PhysicalEngineErrorState, type PlatformClockState, type VisionRecoveryIdentity, type RecoveryRefreshResult } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 import { readAudioPref } from '../utils/audioPrefs';
 import { requestFailureKind } from '../utils/requestFailure';
@@ -36,8 +36,30 @@ type QueuedSound = { sound: string; afterNodeId: number };
 
 export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const { token, centralRoom = false, deferMoveSoundUntilPaint = false, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
-    const [sessionId, setSessionId] = useState<string | null>(null);
-    const [gameState, setGameState] = useState<GameState | null>(null);
+    const [sessionId, commitSessionId] = useState<string | null>(null);
+    const [gameState, commitGameState] = useState<GameState | null>(null);
+    const sessionIdRef = useRef<string | null>(null);
+    const gameStateRef = useRef<GameState | null>(null);
+    const receiveGenerationRef = useRef(0);
+    const bindingGenerationRef = useRef(0);
+    // These refs advance at acceptance, before React can batch a render/effect.
+    // Recovery GETs must not overwrite a newer move, undo, or direct state update.
+    const setSessionId = useCallback((action: SetStateAction<string | null>) => {
+        const next = typeof action === 'function' ? action(sessionIdRef.current) : action;
+        if (next !== sessionIdRef.current) {
+            receiveGenerationRef.current += 1;
+            bindingGenerationRef.current += 1;
+        }
+        sessionIdRef.current = next;
+        commitSessionId(next);
+    }, []);
+    const setGameState = useCallback((action: SetStateAction<GameState | null>) => {
+        const next = typeof action === 'function' ? action(gameStateRef.current) : action;
+        receiveGenerationRef.current += 1;
+        if (next?.game_id !== gameStateRef.current?.game_id) bindingGenerationRef.current += 1;
+        gameStateRef.current = next;
+        commitGameState(next);
+    }, []);
     const { t } = useTranslation();
     const [error, setError] = useState<UiMessage | string | null>(null);
     // 断线是持续状态，与一次性操作失败分开；保留 error 的既有文案供其它调用方使用。
@@ -360,6 +382,35 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         }
     }, [sessionId, token, centralRoom, retryEpoch, playSound, clearQueuedSounds, flushQueuedSounds]);
 
+    const refreshStateForRecovery = useCallback(async (verified: VisionRecoveryIdentity): Promise<RecoveryRefreshResult> => {
+        const expectedSession = sessionIdRef.current;
+        if (!expectedSession || verified.session_id !== expectedSession
+            || gameStateRef.current?.game_id !== verified.game_id) return 'superseded';
+        const generation = receiveGenerationRef.current;
+        const bindingGeneration = bindingGenerationRef.current;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+            const response = await Promise.race([
+                API.getState(expectedSession, token),
+                new Promise<never>((_, reject) => {
+                    timer = setTimeout(() => reject(new Error('对局刷新超时，请重试')), 2_000);
+                }),
+            ]);
+            const current = gameStateRef.current;
+            if (sessionIdRef.current !== expectedSession || current?.game_id !== verified.game_id
+                || bindingGenerationRef.current !== bindingGeneration) return 'superseded';
+            if (receiveGenerationRef.current !== generation) {
+                return current.current_node_id === verified.current_node_id ? 'already-current' : 'superseded';
+            }
+            if (response.session_id !== expectedSession || response.state.game_id !== verified.game_id
+                || response.state.current_node_id !== verified.current_node_id) return 'superseded';
+            setGameState(response.state);
+            return 'applied';
+        } finally {
+            clearTimeout(timer);
+        }
+    }, [token, setGameState]);
+
     const reconnect = useCallback(() => {
         if (!sessionId) return;
         setReconnecting(true);
@@ -474,7 +525,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
         sessionId, setSessionId, gameState, setGameState, error: renderUiMessage(error, t) || null, connectionLost, connected, reconnecting, reconnect,
-        clearError, reportSessionGone, onMove, onNavigate, handleAction,
+        clearError, reportSessionGone, onMove, onNavigate, handleAction, refreshStateForRecovery,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
         platformPendingMove,

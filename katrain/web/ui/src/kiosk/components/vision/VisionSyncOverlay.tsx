@@ -13,7 +13,7 @@ import { Warning as WarningIcon, CheckCircle as CheckIcon } from '@mui/icons-mat
 import CaptureGuide from './CaptureGuide';
 import BoardMismatchDialog from '../physical/BoardMismatchDialog';
 import AmbiguousMoveCard from '../physical/AmbiguousMoveCard';
-import { API } from '../../../api';
+import { API, type VisionRecoveryIdentity, type RecoveryRefreshResult } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { VisionSyncEvent, SyncEventType } from '../../hooks/useVisionSync';
 import { useVoice, type VoiceName } from '../../hooks/useVoice';
@@ -32,6 +32,8 @@ interface VisionSyncOverlayProps {
   syncEvents: VisionSyncEvent[];
   onDismiss?: () => void;
   sessionId: string | null;
+  gameId?: string | null;
+  onRefreshState?: (verified: VisionRecoveryIdentity) => Promise<RecoveryRefreshResult>;
   boardSize: number;
   playerToMove: string | null;
   currentNodeId: number | null;
@@ -78,7 +80,7 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId, boardSize, playerToMove, currentNodeId, platformPendingStone = null, suppressBoardLost = false }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId, gameId = null, onRefreshState, boardSize, playerToMove, currentNodeId, platformPendingStone = null, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
   const { speak, stop } = useVoice();
 
@@ -86,7 +88,22 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
   const [toastOpen, setToastOpen] = useState(false);
   const [toastConfig, setToastConfig] = useState<ToastConfig | null>(null);
 
-  const [recovery, setRecovery] = useState<RecoveryState>(initialRecoveryState);
+  const [recovery, commitRecovery] = useState<RecoveryState>(initialRecoveryState);
+  const recoveryRef = useRef(recovery);
+  const setRecovery = useCallback((action: RecoveryState | ((state: RecoveryState) => RecoveryState)) => {
+    const next = typeof action === 'function' ? action(recoveryRef.current) : action;
+    recoveryRef.current = next;
+    commitRecovery(next);
+  }, []);
+  const [checkState, setCheckState] = useState<{ pending: boolean; error: string | null }>({ pending: false, error: null });
+  const bindingKey = JSON.stringify([sessionId, gameId]);
+  const bindingRef = useRef({ key: bindingKey, sessionId, gameId, onRefreshState });
+  bindingRef.current = { key: bindingKey, sessionId, gameId, onRefreshState };
+  const previousBindingRef = useRef(bindingKey);
+  const mountedRef = useRef(true);
+  const activeCheckRef = useRef<{ binding: string; mismatch: string } | null>(null);
+  const automaticCheckRef = useRef<string | null>(null);
+  const resolvedMismatchRef = useRef<string | null>(null);
   const spokenRecoveryRef = useRef<string | null>(null);
   const deniedMismatchRef = useRef<{ key: string; until: number } | null>(null);
   const stoneRecovery = recovery.blocking?.kind === 'stone' ? recovery.blocking : null;
@@ -127,10 +144,52 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
     setRecovery((state) => ({ ...state, blocking: null }));
   }, [sessionId]);
 
-  const handleMismatchRestored = useCallback(() => {
-    API.visionResetSync().catch(() => undefined);
-    setRecovery((state) => ({ ...state, blocking: null }));
-  }, []);
+  const handleMismatchRestored = useCallback(async (automatic = false) => {
+    const mismatch = recoveryRef.current.blocking;
+    if (mismatch?.kind !== 'mismatch') return;
+    const key = JSON.stringify([mismatch.positions, mismatch.missing]);
+    const binding = bindingRef.current;
+    const automaticKey = `${binding.key}:${key}`;
+    if (activeCheckRef.current?.binding === binding.key && activeCheckRef.current.mismatch === key) return;
+    if (automatic && automaticCheckRef.current === automaticKey) return;
+    automaticCheckRef.current = automaticKey;
+    const attempt = { binding: binding.key, mismatch: key };
+    activeCheckRef.current = attempt;
+    const isCurrent = () => {
+      const current = recoveryRef.current.blocking;
+      return mountedRef.current && activeCheckRef.current === attempt && bindingRef.current.key === attempt.binding
+        && current?.kind === 'mismatch' && JSON.stringify([current.positions, current.missing]) === key;
+    };
+    setCheckState({ pending: true, error: null });
+    try {
+      if (!binding.sessionId || !binding.gameId || !binding.onRefreshState) throw new Error('Unavailable recovery scope');
+      const verified = await API.visionVerifySync(binding.sessionId, binding.gameId);
+      if (!isCurrent()) return;
+      // HTTP 200 and placement-only acknowledgements cannot establish identity.
+      if (!verified || verified.ok !== true || typeof verified.recovery_id !== 'string' || !verified.recovery_id.trim()
+        || verified.session_id !== binding.sessionId || verified.game_id !== binding.gameId
+        || !Number.isSafeInteger(verified.current_node_id) || verified.current_node_id < 0) {
+        throw new Error('Invalid recovery acknowledgement');
+      }
+      const result = await binding.onRefreshState(verified);
+      if (!isCurrent()) return;
+      if (result !== 'applied' && result !== 'already-current') {
+        activeCheckRef.current = null;
+        setCheckState({ pending: false, error: t('game:recovery_position_changed', '对局位置已变化，请重试核对盘面') });
+        return;
+      }
+      resolvedMismatchRef.current = key;
+      activeCheckRef.current = null;
+      setCheckState({ pending: false, error: null });
+      setRecovery(state => ({ ...state, blocking: null }));
+    } catch (error) {
+      if (!isCurrent()) return;
+      activeCheckRef.current = null;
+      setCheckState({ pending: false, error: error instanceof Error && error.message.includes('超时')
+        ? t('game:recovery_timeout', '盘面核对超时，请重试')
+        : t('game:recovery_failed', '盘面核对失败，请重试') });
+    }
+  }, [setRecovery, t]);
 
   const handleMismatchNotStone = useCallback((row: number, col: number) => {
     if (mismatchRecovery) {
@@ -166,6 +225,19 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
   }, [recovery.blocking]);
 
   useEffect(() => {
+    if (previousBindingRef.current === bindingKey) return;
+    previousBindingRef.current = bindingKey;
+    activeCheckRef.current = null;
+    automaticCheckRef.current = null;
+    resolvedMismatchRef.current = null;
+    deniedMismatchRef.current = null;
+    // Ignore the old binding's retained event history.
+    lastProcessedSeqRef.current = Math.max(-1, ...syncEvents.map(event => event.seq));
+    setCheckState({ pending: false, error: null });
+    setRecovery(initialRecoveryState);
+  }, [bindingKey, syncEvents, setRecovery]);
+
+  useEffect(() => {
     if (currentNodeIdRef.current === currentNodeId) return;
     currentNodeIdRef.current = currentNodeId;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- node change clears an in-flight recognition candidate
@@ -190,15 +262,31 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
     if (newEvents.length === 0) return;
 
     const nowMs = Date.now();
-    setRecovery((state) => newEvents.reduce((next, event) => {
+    let shouldVerify = false;
+    const nextRecovery = newEvents.reduce((next, event) => {
       if (event.type === 'synced' || event.type === 'move_pending') deniedMismatchRef.current = null;
+      if (event.type === 'move_pending') resolvedMismatchRef.current = null;
+      if (event.type === 'synced' && next.blocking?.kind === 'mismatch') shouldVerify = true;
+      if (event.type === 'illegal_change') {
+        const key = JSON.stringify([event.data.positions ?? [], event.data.missing ?? []]);
+        if (resolvedMismatchRef.current === key) return next;
+        resolvedMismatchRef.current = null;
+      }
       if (event.type === 'illegal_change' && deniedMismatchRef.current) {
         const key = JSON.stringify([event.data.positions ?? [], event.data.missing ?? []]);
         if (key === deniedMismatchRef.current.key && nowMs < deniedMismatchRef.current.until) return next;
         deniedMismatchRef.current = null;
       }
       return reduceRecoveryState(next, { kind: 'vision_event', event, nowMs, platformPendingStone });
-    }, state));
+    }, recoveryRef.current);
+    setRecovery(nextRecovery);
+    const active = activeCheckRef.current;
+    if (active && (nextRecovery.blocking?.kind !== 'mismatch'
+      || JSON.stringify([nextRecovery.blocking.positions, nextRecovery.blocking.missing]) !== active.mismatch)) {
+      activeCheckRef.current = null;
+      setCheckState({ pending: false, error: null });
+    }
+    if (shouldVerify) void handleMismatchRestored(true);
 
     for (const event of newEvents) {
       const eventType = event.type;
@@ -243,7 +331,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
     }
 
     lastProcessedSeqRef.current = Math.max(...newEvents.map((event) => event.seq));
-  }, [syncEvents, platformPendingStone]);
+  }, [syncEvents, platformPendingStone, setRecovery, handleMismatchRestored]);
 
   useEffect(() => {
     if (!recovery.pending) return;
@@ -259,7 +347,9 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
 
   // Cleanup timer on unmount.
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (boardLostTimerRef.current) clearTimeout(boardLostTimerRef.current);
     };
   }, []);
@@ -300,7 +390,9 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
           boardSize={boardSize}
           playerToMove={playerToMove}
           onAdoptObserved={handleAdoptObserved}
-          onRestored={handleMismatchRestored}
+          onRestored={() => void handleMismatchRestored()}
+          pending={checkState.pending}
+          error={checkState.error}
           onNotStone={handleMismatchNotStone}
         />
       )}

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- shared coordinate helpers are also used by AmbiguousMoveCard */
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 type Pos = [number, number, number]; // [row, col, color] 1=黑 2=白
@@ -23,11 +23,13 @@ interface Props {
   onAdoptObserved: (x: number, y: number) => void; // 采纳观测（单子且轮到该色时）
   onRestored: () => void; // 恢复完成 → visionResetSync
   onNotStone: (row: number, col: number) => void;
+  pending?: boolean;
+  error?: string | null;
 }
 
 
 
-const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove, onAdoptObserved, onRestored, onNotStone }: Props) => {
+const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove, onAdoptObserved, onRestored, onNotStone, pending = false, error = null }: Props) => {
   const { t } = useTranslation();
   const colorName = (c: number) => c === 1 ? t('Black', '黑') : t('White', '白');
   const adoptable =
@@ -58,17 +60,20 @@ const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove
             : t('game:mismatch_restore_hint', '按紫圈位置调整实体棋盘，识别恢复后会自动继续。')}
         </Typography>
         {adoptable && (
-          <Button size="small" sx={{ mt: 0.5, px: 0 }} onClick={() => { const { x, y } = rcToXy(positions[0][0], positions[0][1], boardSize); onAdoptObserved(x, y); }}>
+          <Button disabled={pending} size="small" sx={{ mt: 0.5, px: 0 }} onClick={() => { const { x, y } = rcToXy(positions[0][0], positions[0][1], boardSize); onAdoptObserved(x, y); }}>
             {t('Accept as my move', '确实落在这里？采纳为我的落子')}
           </Button>
         )}
+        {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'nowrap' }}>
         {positions.length === 1 && missing.length === 0 && (
-          <Button variant="contained" sx={{ flex: 1, bgcolor: '#b66cf2', color: '#201329', '&:hover': { bgcolor: '#c486f1' } }}
+          <Button disabled={pending} variant="contained" sx={{ flex: 1, bgcolor: '#b66cf2', color: '#201329', '&:hover': { bgcolor: '#c486f1' } }}
             onClick={() => onNotStone(positions[0][0], positions[0][1])}>{t('Not a move', '不是落子')}</Button>
         )}
-        <Button onClick={onRestored} variant="outlined" sx={{ flex: 1 }}>{t('Board restored', '已按提示调整')}</Button>
+        <Button disabled={pending} onClick={onRestored} variant="outlined" sx={{ flex: 1 }}>
+          {pending ? t('game:recovery_checking', '正在核对盘面…') : error ? t('game:recovery_retry', '重试核对') : t('Board restored', '已按提示调整')}
+        </Button>
       </DialogActions>
     </Dialog>
   );

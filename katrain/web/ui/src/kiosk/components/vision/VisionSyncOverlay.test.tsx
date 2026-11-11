@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -7,6 +8,8 @@ import VisionSyncOverlay from './VisionSyncOverlay';
 const mocks = vi.hoisted(() => ({
   playMove: vi.fn().mockResolvedValue(undefined),
   visionResetSync: vi.fn().mockResolvedValue(undefined),
+  visionVerifySync: vi.fn(),
+  refreshState: vi.fn(),
   visionDenyStone: vi.fn().mockResolvedValue(undefined),
   translate: vi.fn((_key: string, fallback?: string) => fallback ?? ''),
   voiceSpeak: vi.fn(),
@@ -28,6 +31,8 @@ const event = (seq: number, type: VisionSyncEvent['type'], data: Record<string, 
 const props = {
   onDismiss: vi.fn(),
   sessionId: 'session-1',
+  gameId: 'game-1',
+  onRefreshState: mocks.refreshState,
   boardSize: 19,
   playerToMove: 'B',
   currentNodeId: 10,
@@ -38,6 +43,8 @@ const dialogCount = () => screen.queryAllByRole('dialog').length;
 describe('VisionSyncOverlay recovery presentation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.visionVerifySync.mockResolvedValue({ ok: true, recovery_id: 'r1', session_id: 'session-1', game_id: 'game-1', current_node_id: 16 });
+    mocks.refreshState.mockResolvedValue('applied');
     mocks.translate.mockImplementation((_key: string, fallback?: string) => fallback ?? '');
   });
   afterEach(() => vi.useRealTimers());
@@ -424,7 +431,7 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(screen.queryByText('请提走棋子')).toBeNull();
   });
 
-  it('synced clears blocking recovery and a persistent board-loss dialog', () => {
+  it('synced verifies recovery and clears a persistent board-loss dialog', async () => {
     vi.useFakeTimers();
     const lost = event(1, 'board_lost');
     const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
@@ -437,7 +444,7 @@ describe('VisionSyncOverlay recovery presentation', () => {
         syncEvents={[lost, event(2, 'illegal_change', { positions: [[2, 2, 1]], missing: [] }), event(3, 'synced')]}
       />,
     );
-    act(() => vi.advanceTimersByTime(300));
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
 
     expect(screen.queryByText('棋盘检测异常')).toBeNull();
     expect(screen.queryByText('盘面与对局不一致')).toBeNull();
@@ -457,6 +464,121 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
     rerender(<VisionSyncOverlay {...props} currentNodeId={11} syncEvents={[pending, mismatch, event(3, 'synced')]}
       platformPendingStone={null} />);
+    await waitFor(() => expect(screen.queryByText('盘面与对局不一致')).toBeNull());
+  });
+});
+
+
+describe('scoped mismatch recovery', () => {
+  const verified = { ok: true, recovery_id: 'r1', session_id: 'session-1', game_id: 'game-1', current_node_id: 16 };
+  const mismatch = event(1, 'illegal_change', { positions: [], missing: [[1, 4, 2]] });
+  const deferred = <T,>() => {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>(done => { resolve = done; });
+    return { promise, resolve };
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.translate.mockImplementation((_key: string, fallback?: string) => fallback ?? '');
+    mocks.visionVerifySync.mockResolvedValue(verified);
+    mocks.refreshState.mockResolvedValue('applied');
+  });
+  afterEach(() => vi.useRealTimers());
+  it('keeps one pending dialog until verification and refresh both complete; never adopts missing E18', async () => {
+    const post = deferred<typeof verified>();
+    const get = deferred<string>();
+    mocks.visionVerifySync.mockReturnValue(post.promise);
+    mocks.refreshState.mockReturnValue(get.promise);
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    fireEvent.click(screen.getByRole('button', { name: '已按提示调整' }));
+    expect(screen.getByRole('button', { name: '正在核对盘面…' })).toBeDisabled();
+    expect(mocks.refreshState).not.toHaveBeenCalled();
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }, event(3, 'synced'), event(4, 'synced', { current_node_id: 15 })]} />);
+    expect(dialogCount()).toBe(1);
+    expect(mocks.visionVerifySync).toHaveBeenCalledTimes(1);
+    await act(async () => { post.resolve(verified); });
+    expect(mocks.refreshState).toHaveBeenCalledWith(verified);
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    await act(async () => { get.resolve('applied'); });
+    await waitFor(() => expect(screen.queryByText('盘面与对局不一致')).toBeNull());
+    expect(mocks.playMove).not.toHaveBeenCalled();
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }, event(3, 'synced'), event(4, 'synced'), { ...mismatch, seq: 5 }]} />);
     expect(screen.queryByText('盘面与对局不一致')).toBeNull();
   });
+  it.each([{}, { current_node_id: 15 }, { game_id: 'old', current_node_id: 16 }])('treats synced %j only as a scoped verification trigger', async data => {
+    const post = deferred<typeof verified>();
+    mocks.visionVerifySync.mockReturnValue(post.promise);
+    render(<VisionSyncOverlay {...props} syncEvents={[mismatch, event(2, 'synced', data)]} />);
+    expect(mocks.visionVerifySync).toHaveBeenCalledWith('session-1', 'game-1');
+    expect(mocks.refreshState).not.toHaveBeenCalled();
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    await act(async () => { post.resolve(verified); });
+    await waitFor(() => expect(screen.queryByText('盘面与对局不一致')).toBeNull());
+    expect(mocks.playMove).not.toHaveBeenCalled();
+  });
+  it('shows an explicit retry without looping automatically after failure', async () => {
+    mocks.visionVerifySync.mockRejectedValueOnce(new Error('camera unavailable'));
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[mismatch, event(2, 'synced')]} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/重试/);
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, event(2, 'synced'), event(3, 'synced')]} />);
+    expect(mocks.visionVerifySync).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '重试核对' }));
+    await waitFor(() => expect(screen.queryByText('盘面与对局不一致')).toBeNull());
+    expect(mocks.visionVerifySync).toHaveBeenCalledTimes(2);
+  });
+  it.each([undefined, { ok: true }, { ...verified, ok: false }, { ...verified, recovery_id: '' },
+    { ...verified, session_id: 'other' }, { ...verified, game_id: 'other' },
+    { ...verified, current_node_id: -1 }, { ...verified, current_node_id: 1.5 },
+  ])('does not refresh or complete for an incomplete response %j', async response => {
+    mocks.visionVerifySync.mockResolvedValue(response);
+    render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    fireEvent.click(screen.getByRole('button', { name: '已按提示调整' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/重试/);
+    expect(mocks.refreshState).not.toHaveBeenCalled();
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+  it.each(['superseded', 'error'])('keeps recovery retryable for a %s refresh', async outcome => {
+    if (outcome === 'error') mocks.refreshState.mockRejectedValue(new Error('network'));
+    else mocks.refreshState.mockResolvedValue(outcome);
+    render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    fireEvent.click(screen.getByRole('button', { name: '已按提示调整' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/重试/);
+  });
+  it.each(['session', 'game'])('ignores a late POST after %s changes', async kind => {
+    const post = deferred<typeof verified>();
+    mocks.visionVerifySync.mockReturnValue(post.promise);
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    fireEvent.click(screen.getByRole('button', { name: '已按提示调整' }));
+    rerender(<VisionSyncOverlay {...props} sessionId={kind === 'session' ? 'session-2' : props.sessionId} gameId={kind === 'game' ? 'game-2' : props.gameId} syncEvents={[]} />);
+    await act(async () => { post.resolve(verified); });
+    expect(mocks.refreshState).not.toHaveBeenCalled();
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+  });
+  it('keeps automatic recovery alive across effect cleanup/replay', async () => {
+    const post = deferred<typeof verified>();
+    mocks.visionVerifySync.mockReturnValue(post.promise);
+    render(<StrictMode><VisionSyncOverlay {...props} syncEvents={[mismatch, event(2, 'synced')]} /></StrictMode>);
+    await act(async () => { post.resolve(verified); });
+    await waitFor(() => expect(screen.queryByText('盘面与对局不一致')).toBeNull());
+    expect(mocks.refreshState).toHaveBeenCalledTimes(1);
+  });
+  it('shows a lost POST timeout, permits retry, and ignores the late original response', async () => {
+    const { API: actual } = await vi.importActual<typeof import('../../../api')>('../../../api');
+    const response = deferred<{ ok: boolean; json: () => Promise<typeof verified> }>();
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(response.promise));
+    vi.useFakeTimers();
+    mocks.visionVerifySync.mockImplementation(actual.visionVerifySync);
+    render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    fireEvent.click(screen.getByRole('button', { name: '已按提示调整' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(screen.getByRole('alert')).toHaveTextContent(/超时.*重试/);
+    await act(async () => { response.resolve({ ok: true, json: async () => verified }); });
+    expect(mocks.refreshState).not.toHaveBeenCalled();
+    mocks.visionVerifySync.mockResolvedValue(verified);
+    fireEvent.click(screen.getByRole('button', { name: '重试核对' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
 });

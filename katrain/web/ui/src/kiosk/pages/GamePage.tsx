@@ -1945,15 +1945,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Vision sync overlay — suppressBoardLost consolidates the board-loss surfaces
           (see the precedence comment above recalOpen): its own board_lost modal is
           suppressed whenever the escalation dialog OR the recalibration modal is up. */}
-      {/* 终局后整个卸掉,不只是「不再新弹」。`visionRecovery` 里**唯一**能清掉 blocking 的
-          路径是收到 `synced`(visionRecovery.ts:84),而终局后那 26 分钟里 `synced` 是 0 条
-          (RK3562 2026-09-20 实测) ⇒ 后端停止比对也清不掉已经开着的那个弹窗,只有卸载能。 */}
+      {/* 终局后卸载识别恢复界面；本地确认布局由其专属流程管理。 */}
       {physicalPlay && !isGameOver && !localConfirmationLayout && (
         <VisionSyncOverlay
           syncEvents={visionSync.syncEvents}
           sessionId={sessionId ?? null}
+          gameId={session.gameState?.game_id ?? null}
+          onRefreshState={session.refreshStateForRecovery}
           boardSize={session.gameState?.board_size?.[0] ?? 19}
-          playerToMove={session.gameState?.player_to_move ?? null}
+          playerToMove={humanColor && gameState.player_to_move !== humanColor ? null : gameState.player_to_move}
           currentNodeId={session.gameState?.current_node_id ?? null}
           platformPendingStone={engineMode && session.platformPendingMove ? {
             row: boardSize - 1 - session.platformPendingMove.row,

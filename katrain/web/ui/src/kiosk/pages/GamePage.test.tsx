@@ -113,6 +113,7 @@ const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
 const mockSetGameState = vi.fn();
+const mockRefreshStateForRecovery = vi.fn().mockResolvedValue('applied');
 const mockReconnect = vi.fn();
 const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => ({
   mockAcknowledgePaintedNode: vi.fn(),
@@ -135,6 +136,7 @@ vi.mock('../../hooks/useGameSession', () => ({
       setSessionId: mockSetSessionId,
       gameState: mockGameState,
       setGameState: mockSetGameState,
+      refreshStateForRecovery: mockRefreshStateForRecovery,
       error: mockSessionError,
       connectionLost: mockConnectionLost,
       connected: !mockConnectionLost,
@@ -1053,6 +1055,33 @@ describe('GamePage', () => {
       view.rerender(pageTree());
       expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
     });
+  });
+
+  it('delegates verified physical recovery to the session state owner with the active game scope', async () => {
+    mockIsVisionEnabled = true;
+    mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+    mockSyncEvents = [{ seq: 1, type: 'illegal_change', data: { positions: [], missing: [[1, 4, 2]] } }];
+    const verified = { ok: true as const, recovery_id: 'r1', session_id: 'test-session', game_id: 'test-game', current_node_id: 16 };
+    const verify = vi.spyOn(API, 'visionVerifySync').mockResolvedValue(verified);
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: '已按提示调整' }));
+    await waitFor(() => expect(verify).toHaveBeenCalledWith('test-session', 'test-game'));
+    expect(mockRefreshStateForRecovery).toHaveBeenCalledWith(verified);
+    await waitFor(() => expect(screen.queryByText('盘面与对局不一致')).toBeNull());
+    verify.mockRestore();
+  });
+
+  it('only offers physical adoption on the actual human turn', async () => {
+    mockIsVisionEnabled = true;
+    mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, player_to_move: 'W' });
+    mockSyncEvents = [{ seq: 1, type: 'illegal_change', data: { positions: [[1, 4, 2]], missing: [] } }];
+    const view = renderPage();
+    expect(await screen.findByText('盘面与对局不一致')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /采纳为我的落子/ })).toBeNull();
+    mockGameState = { ...mockGameState, current_node_id: 16, player_to_move: 'B' };
+    mockSyncEvents = [...mockSyncEvents, { seq: 2, type: 'illegal_change', data: { positions: [[2, 1, 1]], missing: [] } }];
+    view.rerender(pageTree());
+    expect(await screen.findByRole('button', { name: /采纳为我的落子/ })).toBeEnabled();
   });
 
   describe('Board-loss consolidation — escalation + board_lost never both render (B1.4)', () => {

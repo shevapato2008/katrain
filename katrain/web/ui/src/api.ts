@@ -516,6 +516,16 @@ export async function apiPost(path: string, payload: any, token?: string | null)
   return response.json();
 }
 
+export interface VisionRecoveryIdentity {
+  ok: true;
+  recovery_id: string;
+  session_id: string;
+  game_id: string;
+  current_node_id: number;
+}
+
+export type RecoveryRefreshResult = 'applied' | 'already-current' | 'superseded';
+
 export const API = {
   engineHealth: async (): Promise<EngineHealthResponse> => {
     const response = await fetch('/api/v1/health');
@@ -751,6 +761,34 @@ export const API = {
   // the ignored stone isn't re-detected.
   visionResetSync: (adopt: 'digital' | 'physical' = 'digital'): Promise<void> =>
     apiPost("/api/v1/vision/sync/reset", { adopt }),
+  // Scoped digital recovery waits for the worker's exact-frame acknowledgement.
+  // Bound the entire response (including JSON), since a lost response must stay retryable.
+  visionVerifySync: async (sessionId: string, gameId: string): Promise<VisionRecoveryIdentity> => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        (async () => {
+          const response = await fetch('/api/v1/vision/sync/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({ adopt: 'digital', session_id: sessionId, game_id: gameId }),
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new ApiError(response.status, 'Vision recovery failed');
+          return await response.json() as VisionRecoveryIdentity;
+        })(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error('盘面核对超时，请重试'));
+            controller.abort();
+          }, 10_000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  },
   // 「不是落子」:用户否认了疑似落子弹窗指的那一格。存下那一格此刻的像素,只要它还长成
   // 那样就不再被识别成子;像素一变标签自动失效。与 visionResetSync('physical') 相反 ——
   // 那条路是把假阳性收进基线当成现实。

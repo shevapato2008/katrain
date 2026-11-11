@@ -2151,3 +2151,54 @@ def test_reference_lighting_superseded_raw_batch_cannot_change_new_dark_display(
     assert svc.try_commit_reference_lighting(token, lambda: commits.append("current"))
     assert commits == ["current"]
     svc._close_serial()
+
+
+@pytest.mark.parametrize("old_finished", [False, True])
+def test_reference_lighting_obsolete_strict_timeout_preserves_new_dark_ack(monkeypatch, old_finished):
+    svc, serial, _ = _link_service(_link_line())
+    batches, tokens = [], []
+    original_lock = svc._usb_lock
+
+    def finish_before_timeout_lock():
+        batch = svc._queue.get_nowait()
+        batches.append(batch)
+        if old_finished:
+            svc._run_batch(batch)
+        svc.clear()
+        svc._run_batch(svc._queue.get_nowait())
+        tokens.append(svc.reference_lighting_snapshot())
+        assert tokens[-1].all_dark
+
+    class Lock:
+        before_acquire = staticmethod(finish_before_timeout_lock)
+
+        def __enter__(self):
+            callback = self.before_acquire
+            self.before_acquire = None
+            if callback is not None:
+                callback()
+            return original_lock.__enter__()
+
+        def __exit__(self, *args):
+            return original_lock.__exit__(*args)
+
+    class Event:
+        def wait(self, timeout):
+            # Worker completion happens after wait reports False, during the
+            # timeout caller's next USB lock acquisition. An outside finished
+            # check would still see the old unfinished batch.
+            svc._usb_lock = Lock()
+            return False
+
+        def set(self):
+            pass
+
+    monkeypatch.setattr(_led_service.threading, "Event", Event)
+    result = svc._submit(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    assert svc.reference_lighting_snapshot() == tokens[0]
+    assert result["ok"] is old_finished
+    assert batches[0].cancelled is not old_finished
+    commits = []
+    assert svc.try_commit_reference_lighting(tokens[0], lambda: commits.append("newer"))
+    assert commits == ["newer"]
+    svc._close_serial()

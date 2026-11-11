@@ -588,8 +588,13 @@ class LedService:
                     self._finish(batch, ok=False, shown_at=None, errors=["USB recovery"])
             if not batch.event.wait(timeout=max(0.0, self._batch_remaining(batch))):
                 with self._usb_lock:
+                    # Completion can win while this caller waits for the lock.
+                    # A finished old batch no longer owns the current display.
+                    if batch.finished:
+                        return batch.result
                     batch.cancelled = True
-                    self._invalidate_reference_lighting()
+                    if batch.io_started or batch.request_revision == self._reference_request_revision:
+                        self._invalidate_reference_lighting()
                 return {"ok": False, "connected": self._connected, "shown_at": None, "errors": ["timeout"]}
             return batch.result
         # UI-tolerant: enqueue, dropping the oldest item if the queue is full.

@@ -5876,7 +5876,7 @@ async def _submit_confirmed_move(
             if tracker is not None:
                 tracker.on_success()
     else:
-        # r1(S7):上面按 `last_state` 做的轮次检查读的是可能过期的广播帧;真正的判别在对局提交锁里
+        # 上面的本地预检查读取实时轮次;这里仍在对局提交锁内把最终判别与落子原子完成
         # (已终局 / 轮到 AI / 不是这颗子的颜色)。被拒时照「不轮到」那一支重新布防、节流 0.5 秒。
         # 与跨平台 N13 在同一函数相邻改动,合并时逐段对。
         try:

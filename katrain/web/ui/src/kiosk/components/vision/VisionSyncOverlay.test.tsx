@@ -505,6 +505,29 @@ describe('scoped mismatch recovery', () => {
     rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }, event(3, 'synced'), event(4, 'synced'), { ...mismatch, seq: 5 }]} />);
     expect(screen.queryByText('盘面与对局不一致')).toBeNull();
   });
+  it('shows the same missing point after the successful recovery duplicate grace expires', async () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    fireEvent.click(screen.getByRole('button', { name: '已按提示调整' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+
+    const immediateDuplicate = { ...mismatch, seq: 2 };
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, immediateDuplicate]} />);
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(7_000); });
+    const laterLoss = { ...mismatch, seq: 3 };
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, immediateDuplicate, laterLoss]} />);
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    expect(dialogCount()).toBe(1);
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, immediateDuplicate, laterLoss, event(4, 'synced')]} />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    expect(mocks.visionVerifySync).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+    expect(mocks.playMove).not.toHaveBeenCalled();
+  });
   it.each([{}, { current_node_id: 15 }, { game_id: 'old', current_node_id: 16 }])('treats synced %j only as a scoped verification trigger', async data => {
     const post = deferred<typeof verified>();
     mocks.visionVerifySync.mockReturnValue(post.promise);

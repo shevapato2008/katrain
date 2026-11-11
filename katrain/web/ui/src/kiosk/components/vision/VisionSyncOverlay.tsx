@@ -54,6 +54,7 @@ interface VisionSyncOverlayProps {
 
 const SNACKBAR_DURATION = 5000;
 const BOARD_LOST_THRESHOLD_MS = 10_000;
+const RESOLVED_MISMATCH_GRACE_MS = 4_000;
 
 type ToastSeverity = 'warning' | 'success' | 'info' | 'error';
 
@@ -103,7 +104,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
   const mountedRef = useRef(true);
   const activeCheckRef = useRef<{ binding: string; mismatch: string } | null>(null);
   const automaticCheckRef = useRef<string | null>(null);
-  const resolvedMismatchRef = useRef<string | null>(null);
+  const resolvedMismatchRef = useRef<{ key: string; until: number } | null>(null);
   const spokenRecoveryRef = useRef<string | null>(null);
   const deniedMismatchRef = useRef<{ key: string; until: number } | null>(null);
   const stoneRecovery = recovery.blocking?.kind === 'stone' ? recovery.blocking : null;
@@ -178,7 +179,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
         setCheckState({ pending: false, error: t('game:recovery_position_changed', '对局位置已变化，请重试核对盘面') });
         return;
       }
-      resolvedMismatchRef.current = key;
+      resolvedMismatchRef.current = { key, until: Date.now() + RESOLVED_MISMATCH_GRACE_MS };
       activeCheckRef.current = null;
       setCheckState({ pending: false, error: null });
       setRecovery(state => ({ ...state, blocking: null }));
@@ -265,11 +266,18 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId
     let shouldVerify = false;
     const nextRecovery = newEvents.reduce((next, event) => {
       if (event.type === 'synced' || event.type === 'move_pending') deniedMismatchRef.current = null;
-      if (event.type === 'move_pending') resolvedMismatchRef.current = null;
+      if (event.type === 'move_pending') {
+        resolvedMismatchRef.current = null;
+        automaticCheckRef.current = null;
+      }
       if (event.type === 'synced' && next.blocking?.kind === 'mismatch') shouldVerify = true;
       if (event.type === 'illegal_change') {
         const key = JSON.stringify([event.data.positions ?? [], event.data.missing ?? []]);
-        if (resolvedMismatchRef.current === key) return next;
+        const resolved = resolvedMismatchRef.current;
+        // Absorb queued duplicates briefly; a later loss at the same point is
+        // a new recovery episode even if the game has not advanced.
+        if (resolved?.key === key && nowMs < resolved.until) return next;
+        if (resolved) automaticCheckRef.current = null;
         resolvedMismatchRef.current = null;
       }
       if (event.type === 'illegal_change' && deniedMismatchRef.current) {

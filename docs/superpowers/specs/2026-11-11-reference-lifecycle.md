@@ -195,3 +195,10 @@ Event000006 only proves later reference creation at depth1; it does not prove sa
 ## Final qualified-frame clarification — user instruction, 2026-11-11
 
 Use the last frame in the consecutive stable owner-qualified sequence as the frozen candidate/reference source. That exact selected unaveraged image produces gray, the source-consistent witness and reference pixels; later acceptance/promotion never takes another photograph or selects a newer camera frame. Ordinary eight-frame recognition averaging is unchanged. Stability is not proof of no hands; this instruction adds no hand detector, segmentation or new class. Implementation acceptance includes one existing-framework cross-layer check: real local game commit → real service SET/ACCEPT → real worker promotion, with only camera/detector/LED faked; rejected or late receipts cannot adopt.
+
+
+## Performance and release timing clarification — user instruction, 2026-11-11
+
+The user accepts the bounded backup retry and asks whether its extra processing can fit50ms. No such hardware latency has been demonstrated. Record one bounded existing-log/trace duration for each actual witness attempt, including extra preprocessing, same-detector inference, stateless assignment, relevant feature preparation and final adoption gate; emit outside owner locks and distinguish this from the1s retry eligibility cooldown. Pre-inference rejected qualification uses no model call or attempt. Add no model instance, thread, photo archive or telemetry framework, and do not change the approved recognition algorithm to claim this threshold.
+
+The RK is unavailable to the user: finish local implementation, independent code review and code publication first; deployment and the single representative hardware/performance check are deferred to tomorrow. No SSH, install, real model experiment or device action in this phase. CPU fake tests prove limits/ordering only, not RK latency or<=50ms. Root owns publication and deferred deployment.

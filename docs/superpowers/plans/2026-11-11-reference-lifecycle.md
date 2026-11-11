@@ -115,7 +115,7 @@ Existing status chip receives referenceStatus/referenceReason (optional props) a
 
 The hand visible in event000004 was NOT adopted as a reference; do not claim it was, add hand segmentation/classes, or promise absolute absence of hands. Apply only approved motion/exposure/owner/witness qualifications. No new detector instance or background loop. Freeze the LAST frame in the consecutive stable owner-qualified sequence: its actual unaveraged BGR generates ref_gray before averager/enhancement. The selected image alone is reused for witness/reference; promotion never reads or reselects a newer photograph. One same-instance witness detect over an independently enhanced copy; BoardStateExtractor.detections_to_board uses no prior/stable/expected fill and does not mutate main extractor voting, hysteresis, detector counts or promoter. Deny adjustment follows existing user-denial policy, and no LED detection/invalid exposure may certify the picture. Pre-vote/voted only gate main-flow stability, never prove contents of raw pixels.
 
-At most TWO ordinary witness attempts per actual target/recovery generation; one candidate witness per ConfirmedMove.token; one refresh witness per60s; one conflict witness per actual reference. Promotion reuses an already-witnessed photo, no second infer. Debit ordinary attempt when inference starts (including exception/final owner rejection); pre-inference gate rejection consumes none. Retry requires>=1s monotonic cooldown and two distinct newer qualified stable frames, both newer than the failed frame in the same stream; a changed stream requires its own post-transition pair without replenishing spent count. Limited after5s retains an unused retry; attempt2 failure remains limited. No sleeps/background retries. One gray candidate (~1.1MiB) plus small boards; transient BGR (~3.3MiB); no model/GPU run during fake tests.
+At most TWO ordinary witness attempts per actual target/recovery generation; one candidate witness per ConfirmedMove.token; one refresh witness per60s; one conflict witness per actual reference. Promotion reuses an already-witnessed photo, no second infer. Debit ordinary attempt when inference starts (including exception/final owner rejection); pre-inference gate rejection consumes none. Retry requires>=1s monotonic cooldown and two distinct newer qualified stable frames, both newer than the failed frame in the same stream; a changed stream requires its own post-transition pair without replenishing spent count. Limited after5s retains an unused retry; attempt2 failure remains limited. No sleeps/background retries. One gray candidate (~1.1MiB) plus small boards; transient BGR (~3.3MiB); no model/GPU run during fake tests. Use one existing-log/trace total duration per actual witness including preprocessing/inference/stateless assignment/feature prep/final gate, emitted outside owner locks; no telemetry/photos/new model or thread. Separate actual processing from1s cooldown. User50ms target is unmeasured; do not claim it passes from CPU fakes.
 
 Ordinary budget is one small record, not image history: spent count, not_before, failed stream/seq, fresh-pair gate, and target/recovery ownership. Across redundant BIND preserve it pending the same source/game/mode/worker and actual node+canonical board SET_EXPECTED, remapping epoch/revision without refill. Genuine target advance/undo or new verified recovery_id changes owner; stream/control/LED changes only requalify. Force_rearm without a new recovery_id, status refresh, rename or duplicate receipt cannot refill or restore dispute permissions. A new successful current reference cancels obsolete ordinary retry.
 
@@ -131,23 +131,23 @@ Do not start implementation before root's quick contract check. Then use fresh i
 
 **Own:** katrain/vision/camera.py; katrain/web/core/camera_hub.py; tests/test_camera_hub.py; tests/test_vision/test_camera_recovery.py; tests/test_vision/test_shared_camera.py.
 
-- [ ] Step1: run focused existing baseline using root .venv: `python -m pytest -q tests/test_camera_hub.py tests/test_vision/test_camera_recovery.py tests/test_vision/test_shared_camera.py` (substitute the absolute executable specified above).
-- [ ] Step2 RED: add fake-reader cases where reopen or controls finish between observations, request changes across read, metadata and image share identity, Hub forwards unchanged and gate returnsNone. Existing 3-value APIs remain compatible.
-- [ ] Step3: rerun only new cases; expect missing metadata API/false ownership failures.
-- [ ] Step4 GREEN: implement C1 with no extra read and no later-property relabeling; explicit advisory vs unknown semantics.
-- [ ] Step5: rerun same focused files; expect all pass. Commit only owned changed files: `git commit --only <owned changed files> -m 'bind camera frames to owner metadata'`.
-- [ ] Step6: fresh spec then fresh quality review; resolve scoped findings before marking T1 done.
+- [x] Step1: run focused existing baseline using root .venv: `python -m pytest -q tests/test_camera_hub.py tests/test_vision/test_camera_recovery.py tests/test_vision/test_shared_camera.py` (substitute the absolute executable specified above).
+- [x] Step2 RED: add fake-reader cases where reopen or controls finish between observations, request changes across read, metadata and image share identity, Hub forwards unchanged and gate returnsNone. Existing 3-value APIs remain compatible.
+- [x] Step3: rerun only new cases; expect missing metadata API/false ownership failures.
+- [x] Step4 GREEN: implement C1 with no extra read and no later-property relabeling; explicit advisory vs unknown semantics.
+- [x] Step5: rerun same focused files; expect all pass. Commit only owned changed files: `git commit --only <owned changed files> -m 'bind camera frames to owner metadata'`.
+- [x] Step6: fresh spec then fresh quality review; resolve scoped findings before marking T1 done.
 
 ### T2 — Real lighting generation and atomic eligibility gate (parallel with T1)
 
 **Own:** katrain/web/core/led_service.py; tests/test_led_service.py. No orchestrator tick changes are needed for eligibility because C2 owner access is direct.
 
-- [ ] Step1: baseline `python -m pytest -q tests/test_led_service.py` with root .venv.
-- [ ] Step2 RED: fake ACK/request tests: queued new-on immediately invalidates old dark without tick; old ACK cannot revive; token change during witness makes final commitFalse; USB/open/close/failed batch invalidates; valid callback only assigns once under correct lock.
-- [ ] Step3: run new cases and confirm failure under absent API/stale-dark behavior.
-- [ ] Step4 GREEN: implement immutable C2 snapshot and final gate using existing_usb_lock; expensive operations/callback-to-owner remain outside. All display write routes share _submit revocation.
-- [ ] Step5: rerun single test file; commit owned changes only with `git commit --only ... -m 'guard reference capture with current lighting intent'`.
-- [ ] Step6: fresh spec then fresh quality review; deliver exact API names without asking T4 to infer private fields.
+- [x] Step1: baseline `python -m pytest -q tests/test_led_service.py` with root .venv.
+- [x] Step2 RED: fake ACK/request tests: queued new-on immediately invalidates old dark without tick; old ACK cannot revive; token change during witness makes final commitFalse; USB/open/close/failed batch invalidates; valid callback only assigns once under correct lock.
+- [x] Step3: run new cases and confirm failure under absent API/stale-dark behavior.
+- [x] Step4 GREEN: implement immutable C2 snapshot and final gate using existing_usb_lock; expensive operations/callback-to-owner remain outside. All display write routes share _submit revocation.
+- [x] Step5: rerun single test file; commit owned changes only with `git commit --only ... -m 'guard reference capture with current lighting intent'`.
+- [x] Step6: fresh spec then fresh quality review; deliver exact API names without asking T4 to infer private fields.
 
 ### T3 — Protocol, same-source binding, local receipt and wiring (can start after contracts; needs T1/T2 APIs for integration)
 
@@ -177,11 +177,11 @@ Do not start implementation before root's quick contract check. Then use fresh i
 
 **Own:** katrain/web/ui/src/api.ts; katrain/web/ui/src/kiosk/context/VisionContext.tsx; katrain/web/ui/src/kiosk/components/physical/PhysicalPlayStatusChip.tsx; katrain/web/ui/src/kiosk/pages/GamePage.tsx; katrain/web/ui/src/kiosk/__tests__/PhysicalPlayStatusChip.test.tsx; katrain/web/ui/src/kiosk/context/HardwareStatusContexts.test.tsx; minimal fixture type adjustments in existing UI tests only after controller assignment.
 
-- [ ] Step1: reuse ignored node_modules symlink if absent (`ln -s /Users/fan/Repositories/katrain-kiosk-debug/katrain/web/ui/node_modules katrain/web/ui/node_modules` after verifying ignored); no npm install. Baseline targeted existing Vitest files.
-- [ ] Step2 RED/GREEN: test optional status defaults; limited bound target shows one nonmodal message; pending/current do not repeatedly toast; move_pending and existing physical reminder/device states win. Do not trigger recognitionReady/recovery modal from reference status.
-- [ ] Step3: `npm test -- src/kiosk/__tests__/PhysicalPlayStatusChip.test.tsx src/kiosk/context/HardwareStatusContexts.test.tsx` from katrain/web/ui, then `./node_modules/.bin/tsc -b`. No broad screenshot matrix.
-- [ ] Step4: one 1024-wide genuine runtime preview using existing fixture/dev shell only (no production game/device); inspect existing status location and readable text. Record one image path for root, no style redesign. Backend remains free to proceed.
-- [ ] Step5: commit owned changed source/tests only: `git commit --only ... -m 'show limited reference evidence without blocking play'`; fresh spec then fresh quality review.
+- [x] Step1: reuse ignored node_modules symlink if absent (`ln -s /Users/fan/Repositories/katrain-kiosk-debug/katrain/web/ui/node_modules katrain/web/ui/node_modules` after verifying ignored); no npm install. Baseline targeted existing Vitest files.
+- [x] Step2 RED/GREEN: test optional status defaults; limited bound target shows one nonmodal message; pending/current do not repeatedly toast; move_pending and existing physical reminder/device states win. Do not trigger recognitionReady/recovery modal from reference status.
+- [x] Step3: `npm test -- src/kiosk/__tests__/PhysicalPlayStatusChip.test.tsx src/kiosk/context/HardwareStatusContexts.test.tsx` from katrain/web/ui, then `./node_modules/.bin/tsc -b`. No broad screenshot matrix.
+- [x] Step4: one 1024-wide genuine runtime preview using existing fixture/dev shell only (no production game/device); inspect existing status location and readable text. Record one image path for root, no style redesign. Backend remains free to proceed.
+- [x] Step5: commit owned changed source/tests only: `git commit --only ... -m 'show limited reference evidence without blocking play'`; fresh spec then fresh quality review.
 
 ## Chunk 3: Integration and independent review gate
 
@@ -189,7 +189,7 @@ Do not start implementation before root's quick contract check. Then use fresh i
 - [ ] Run focused Python checks over compatible task-listed files (same root .venv, CI=true if needed). Always run interface/privacy fixture files in separate interpreter processes from real-runtime integration to avoid sys.modules contamination; no combined all-file invocation. Run targeted Vitest+tsc, and current A E18 regressions: `tests/test_vision_move_poller.py`, `tests/test_vision_bind_state.py`, `tests/test_vision_api.py`, and `GamePage.playAi.test.tsx` when touched integration could affect it. Existing passing files do not need repeated GPU/model tests.
 - [ ] Inspect exact diff for cross-source/acceptance ordering, current18 protection, no stale-dark cache use, post-average/raw image qualification and disputed-auto-submit guard. Keep RK incremental inference unmeasured until root's authorized device acceptance; do not claim zero NPU cost.
 - [ ] Send exact branch SHA/diff/tests/preview to root. Root launches fresh independent Astra model Max whole-code review as explicitly requested; controller fixes only concrete findings and reruns their targeted regression until review passes. Task reviews are not a substitute for this final independent review.
-- [ ] Only after root's final acceptance does root integrate published latest develop, parent submodule and combined A+B deployment following repository workflow. Controller/subagents do not push, SSH, alter develop/parent, restore diagnostic overrides, stop services or interact with real games.
+- [ ] Only after root's final acceptance does root integrate/push latest develop and parent submodule following repository workflow. User explicitly defers combined A+B deployment and representative RK latency/model acceptance to tomorrow; no install/SSH/device/model work in this local phase. Controller/subagents do not push, SSH, alter develop/parent, restore diagnostic overrides, stop services or interact with real games.
 
 ## Execution handoff
 

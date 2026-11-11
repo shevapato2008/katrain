@@ -119,8 +119,17 @@ async def vision_status(request: Request):
     vision = getattr(request.app.state, "vision", None)
     led = getattr(request.app.state, "led", None)
     led_connected = led.is_board_connected() if led is not None else None
+    reference = {
+        "reference_status": "unavailable",
+        "reference_reason": None,
+        "reference_target_node_id": None,
+        "reference_target_revision": None,
+        "reference_source_node_id": None,
+        "reference_source_revision": None,
+    }
     if vision is None:
         return {
+            **reference,
             "enabled": False,
             "camera_connected": False,
             "pose_locked": False,
@@ -134,7 +143,9 @@ async def vision_status(request: Request):
         }
 
     vision.refresh_status()
+    reference = {key: getattr(vision._latest_status, key, default) for key, default in reference.items()}
     return {
+        **reference,
         "enabled": vision.enabled,
         "camera_connected": vision.camera_status == "connected",
         "pose_locked": vision.pose_lock_status == "locked",

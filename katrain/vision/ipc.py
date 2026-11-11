@@ -17,6 +17,7 @@ class CommandType(Enum):
 
     RELEASE_CONFIRMED_MOVE = "release_confirmed_move"
     SET_EXPECTED_BOARD = "set_expected_board"
+    ACCEPT_REFERENCE_CANDIDATE = "accept_reference_candidate"
     CONFIRM_POSE_LOCK = "confirm_pose_lock"
     RESET_SYNC = "reset_sync"
     ENTER_SETUP_MODE = "enter_setup_mode"
@@ -46,6 +47,18 @@ class WorkerCommand:
     data: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class ReferenceTargetKey:
+    """Exact digital target for one source and worker generation."""
+
+    source_nonce: str
+    worker_generation: str
+    binding_epoch: int
+    expected_revision: int
+    expected_node_id: int | None
+    board_digest: str
+
+
 @dataclass
 class WorkerStatus:
     """Periodically published by worker to main process."""
@@ -59,6 +72,12 @@ class WorkerStatus:
     geometry_ready: bool = False
     model_ready: bool = False
     recognition_ready: bool = False
+    reference_status: str = "unavailable"  # current | pending | limited | unavailable
+    reference_reason: str | None = None
+    reference_target_node_id: int | None = None
+    reference_target_revision: int | None = None
+    reference_source_node_id: int | None = None
+    reference_source_revision: int | None = None
     last_motion_at: float | None = None  # monotonic; lets hint lamps yield when a hand enters
     # Which board observation `detected_board` came from. Consumers compare it against a
     # ConfirmedMove's own observation_seq to tell "a genuinely newer look at the board"

@@ -7,6 +7,7 @@ and polls for events/moves. It does NOT run inference directly.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import time
 import uuid
@@ -18,7 +19,14 @@ from typing import Any, Callable
 import numpy as np
 
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
+from katrain.vision.ipc import (
+    CommandType,
+    ConfirmedMove,
+    LocalWindowObservation,
+    ReferenceTargetKey,
+    WorkerCommand,
+    WorkerStatus,
+)
 from katrain.vision.sync import game_state_stones_to_board
 
 logger = logging.getLogger(__name__)
@@ -53,9 +61,25 @@ class ExpectedRecovery:
 class VisionService:
     """Main-process controller for the vision worker."""
 
-    def __init__(self, config: VisionServiceConfig, frame_source=None, *, recovery_gate=None):
+    def __init__(
+        self,
+        config: VisionServiceConfig,
+        frame_source=None,
+        *,
+        recovery_gate=None,
+        lighting_owner=None,
+        lighting_disabled=False,
+    ):
         self._config = config
         self._frame_source = frame_source
+        self._lighting_owner = lighting_owner
+        self._lighting_disabled = lighting_disabled
+        self._worker_generation = uuid.uuid4().hex
+        self._source_nonce = uuid.uuid4().hex
+        self._bound_worker = None
+        self._bound_mode = None
+        self._reference_target: ReferenceTargetKey | None = None
+        self._previous_reference_target: ReferenceTargetKey | None = None
         self._worker = None  # VisionWorkerProcess | InProcessAdapter
         self._bound_session_id: str | None = None
         self._bound_session = None
@@ -130,11 +154,20 @@ class VisionService:
     def start(self) -> None:
         """Spawn the vision worker (subprocess or in-process thread)."""
         worker_config = self._config.to_worker_config()
+        with self._metadata_lock:
+            self._worker_generation = uuid.uuid4().hex
+            self._source_nonce = uuid.uuid4().hex
+            self._reference_target = self._previous_reference_target = None
 
         if self._config.process_mode == "inprocess" or self._frame_source is not None:
             from katrain.vision.worker_inprocess import InProcessAdapter
 
-            self._worker = InProcessAdapter(worker_config, camera=self._frame_source)
+            self._worker = InProcessAdapter(
+                worker_config,
+                camera=self._frame_source,
+                lighting_owner=self._lighting_owner,
+                lighting_disabled=self._lighting_disabled,
+            )
         else:
             from katrain.vision.worker import VisionWorkerProcess
 
@@ -216,15 +249,28 @@ class VisionService:
                 identity = self._bound_game_identity
             return VisionBindingSource(session_id, session, identity, self._binding_epoch)
 
+    def _binding_mode(self, session):
+        katrain = getattr(session, "katrain", None)
+        return (
+            getattr(session, "game_type", "free"),
+            getattr(katrain, "game_type", "free"),
+            self._local_confirmation_mode,
+        )
+
+    def _source_is_current_locked(self, source, identity) -> bool:
+        return (
+            source.binding_epoch == self._binding_epoch
+            and source.session_id == self._bound_session_id
+            and (self._bound_session is None or source.session is self._bound_session)
+            and source.game_identity == self._bound_game_identity == identity
+            and self._bound_worker is self._worker
+            and self._bound_mode == self._binding_mode(source.session)
+        )
+
     def source_is_current(self, source: VisionBindingSource) -> bool:
         identity = binding_game_identity(source.session)
         with self._metadata_lock:
-            return (
-                source.binding_epoch == self._binding_epoch
-                and source.session_id == self._bound_session_id
-                and (self._bound_session is None or source.session is self._bound_session)
-                and source.game_identity == self._bound_game_identity == identity
-            )
+            return self._source_is_current_locked(source, identity)
 
     @staticmethod
     def _wake_expected_recovery(recovery: ExpectedRecovery) -> None:
@@ -272,42 +318,114 @@ class VisionService:
         board = game_state_stones_to_board(stones, board_size)
         identity = binding_game_identity(source.session)
         with self._metadata_lock:
+            if not self._source_is_current_locked(source, identity):
+                return False
+            return self._publish_expected_locked(source, board, expected_node_id, force_rearm=force_rearm)
+
+    def _publish_expected_locked(self, source, board, expected_node_id, *, force_rearm=False) -> bool:
+        board = np.asarray(board, dtype=np.int8, order="C")
+        key = (expected_node_id, board.shape, board.tobytes())
+        changed = key != self._published_expected
+        if not changed and not force_rearm:
+            return False
+        if changed:
+            self._expected_revision += 1
+            self._published_expected = key
+            self._previous_reference_target = self._reference_target
+            self._reference_target = ReferenceTargetKey(
+                self._source_nonce,
+                self._worker_generation,
+                source.binding_epoch,
+                self._expected_revision,
+                expected_node_id,
+                hashlib.sha256(board.tobytes()).hexdigest(),
+            )
+        recovery = self._expected_recovery
+        recovery_data = {}
+        if recovery is not None and recovery.source == source:
+            recovery_data["recovery_id"] = recovery.recovery_id
+            self._wake_expected_recovery(recovery)
+        if force_rearm:
+            recovery_data["force_rearm"] = True
+        if self._worker:
+            self._worker.send_command(
+                WorkerCommand(
+                    CommandType.SET_EXPECTED_BOARD,
+                    {
+                        "board": board.tolist(),
+                        "expected_node_id": expected_node_id,
+                        "binding_epoch": source.binding_epoch,
+                        "expected_revision": self._expected_revision,
+                        "source_nonce": self._source_nonce,
+                        "worker_generation": self._worker_generation,
+                        "mode_generation": self._local_mode_generation,
+                        "board_digest": self._reference_target.board_digest,
+                        **recovery_data,
+                    },
+                )
+            )
+        return changed
+
+    def capture_reference_baseline(self, source: VisionBindingSource, move: ConfirmedMove) -> ReferenceTargetKey | None:
+        identity = binding_game_identity(source.session)
+        with self._metadata_lock:
+            target = self._reference_target
             if (
-                source.binding_epoch != self._binding_epoch
-                or source.session_id != self._bound_session_id
-                or (self._bound_session is not None and source.session is not self._bound_session)
-                or source.game_identity != self._bound_game_identity
-                or source.game_identity != identity
+                self._source_is_current_locked(source, identity)
+                and target is not None
+                and (move.binding_epoch, move.expected_revision) == (target.binding_epoch, target.expected_revision)
+            ):
+                return target
+            return None
+
+    def publish_accepted_reference(
+        self,
+        source: VisionBindingSource,
+        move: ConfirmedMove,
+        baseline: ReferenceTargetKey,
+        accepted_node_id,
+        accepted_parent_node_id,
+        accepted_board,
+    ) -> bool:
+        """Queue the real commit before callbacks can publish a later AI position.
+
+        Caller holds the game commit lock; the metadata lock preserves SET→ACCEPT FIFO.
+        Only the current target or its immediately preceding baseline may participate.
+        """
+        board = np.array(accepted_board, dtype=np.int8, order="C", copy=True)
+        if board.shape != (19, 19) or not np.isin(board, (0, 1, 2)).all():
+            return False
+        identity = binding_game_identity(source.session)
+        with self._metadata_lock:
+            target = self._reference_target
+            if (
+                baseline is None
+                or not self._worker
+                or not self._source_is_current_locked(source, identity)
+                or (move.binding_epoch, move.expected_revision) != (baseline.binding_epoch, baseline.expected_revision)
+                or baseline.source_nonce != self._source_nonce
+                or baseline.worker_generation != self._worker_generation
+                or baseline.expected_node_id != accepted_parent_node_id
             ):
                 return False
-            key = (expected_node_id, board.shape, board.tobytes())
-            changed = key != self._published_expected
-            if not changed and not force_rearm:
+            accepted_key = (accepted_node_id, board.shape, board.tobytes())
+            already_published = accepted_key == self._published_expected
+            if baseline != target and not (already_published and baseline == self._previous_reference_target):
                 return False
-            if changed:
-                self._expected_revision += 1
-                self._published_expected = key
-            recovery = self._expected_recovery
-            recovery_data = {}
-            if recovery is not None and recovery.source == source:
-                recovery_data["recovery_id"] = recovery.recovery_id
-                self._wake_expected_recovery(recovery)
-            if force_rearm:
-                recovery_data["force_rearm"] = True
-            if self._worker:
-                self._worker.send_command(
-                    WorkerCommand(
-                        CommandType.SET_EXPECTED_BOARD,
-                        {
-                            "board": board.tolist(),
-                            "expected_node_id": expected_node_id,
-                            "binding_epoch": source.binding_epoch,
-                            "expected_revision": self._expected_revision,
-                            **recovery_data,
-                        },
-                    )
+            self._publish_expected_locked(source, board, accepted_node_id)
+            self._worker.send_command(
+                WorkerCommand(
+                    CommandType.ACCEPT_REFERENCE_CANDIDATE,
+                    {
+                        "move_token": move.token,
+                        "baseline_target": baseline,
+                        "accepted_target": self._reference_target,
+                        "accepted_parent_node_id": accepted_parent_node_id,
+                        "accepted_board": board.tolist(),
+                    },
                 )
-            return changed
+            )
+            return True
 
     def invalidate_replaced_game(self, source: VisionBindingSource) -> int | None:
         """Retire only the binding whose anchored game was actually replaced."""
@@ -394,23 +512,47 @@ class VisionService:
             and session_id == self._bound_session_id
             and session is self._bound_session
             and identity == self._bound_game_identity
+            and self._worker is self._bound_worker
+            and self._binding_mode(session) == self._bound_mode
         ):
             return
         with self._metadata_lock:
+            mode = self._binding_mode(session)
+            preserve = (
+                session_id == self._bound_session_id
+                and session is self._bound_session
+                and identity == self._bound_game_identity
+                and mode == self._bound_mode
+                and self._worker is self._bound_worker
+            )
+            if not preserve:
+                self._source_nonce = uuid.uuid4().hex
+            self._bound_worker = self._worker
+            self._bound_mode = mode
             self._invalidate_expected_recovery()
             self._binding_epoch += 1
             self._expected_revision = 0
             self._published_expected = None
+            self._reference_target = self._previous_reference_target = None
             self._bound_session_id = session_id
             self._bound_session = session
             self._bound_game_identity = identity
-        self._pending_moves.clear()
-        self._pending_events.clear()
-        self._pending_local_observations.clear()
-        if self._worker:
-            self._worker.send_command(
-                WorkerCommand(action=CommandType.BIND, data={"binding_epoch": self._binding_epoch})
-            )
+            self._pending_moves.clear()
+            self._pending_events.clear()
+            self._pending_local_observations.clear()
+            if self._worker:
+                self._worker.send_command(
+                    WorkerCommand(
+                        CommandType.BIND,
+                        {
+                            "binding_epoch": self._binding_epoch,
+                            "source_nonce": self._source_nonce,
+                            "worker_generation": self._worker_generation,
+                            "mode_generation": self._local_mode_generation,
+                            "preserve_reference": preserve,
+                        },
+                    )
+                )
 
     def unbind_session(self) -> None:
         """Unbind from current session. Clears pending ConfirmedMove (review M1) so
@@ -421,6 +563,9 @@ class VisionService:
             self._binding_epoch += 1
             self._expected_revision = 0
             self._published_expected = None
+            self._source_nonce = uuid.uuid4().hex
+            self._reference_target = self._previous_reference_target = None
+            self._bound_worker = self._bound_mode = None
             self._bound_session_id = None
             self._bound_session = None
             self._bound_game_identity = None
@@ -476,33 +621,49 @@ class VisionService:
     def set_local_confirmation_mode(
         self, enabled: bool, *, session_id: str | None = None, game_id: str | None = None
     ) -> bool:
-        if not self.supports_local_confirmation:
-            return False
-        if (enabled, session_id, game_id) == (
-            self._local_confirmation_mode,
-            self._local_confirmation_session_id,
-            self._local_confirmation_game_id,
-        ):
-            return True
-        self._local_mode_generation += 1
-        self._local_confirmation_mode = enabled
-        self._local_confirmation_session_id = session_id
-        self._local_confirmation_game_id = game_id
-        self._local_window_token = None
-        self._pending_local_observations.clear()
-        self._pending_moves.clear()
-        self._worker.send_command(
-            WorkerCommand(
-                action=CommandType.SET_LOCAL_CONFIRMATION_MODE,
-                data={
-                    "enabled": enabled,
-                    "session_id": session_id,
-                    "game_id": game_id,
-                    "mode_generation": self._local_mode_generation,
-                },
+        with self._metadata_lock:
+            if not self.supports_local_confirmation:
+                return False
+            if (enabled, session_id, game_id) == (
+                self._local_confirmation_mode,
+                self._local_confirmation_session_id,
+                self._local_confirmation_game_id,
+            ):
+                return True
+            mode_changed = (
+                self._bound_mode != self._binding_mode(self._bound_session)
+                or enabled != self._local_confirmation_mode
+                or (
+                    enabled
+                    and (
+                        session_id != self._local_confirmation_session_id or game_id != self._local_confirmation_game_id
+                    )
+                )
             )
-        )
-        return True
+            if mode_changed:
+                self._source_nonce = uuid.uuid4().hex
+                self._reference_target = self._previous_reference_target = None
+                self._published_expected = None
+            self._local_mode_generation += 1
+            self._local_confirmation_mode = enabled
+            self._local_confirmation_session_id = session_id
+            self._local_confirmation_game_id = game_id
+            self._bound_mode = self._binding_mode(self._bound_session)
+            self._local_window_token = None
+            self._pending_local_observations.clear()
+            self._pending_moves.clear()
+            self._worker.send_command(
+                WorkerCommand(
+                    action=CommandType.SET_LOCAL_CONFIRMATION_MODE,
+                    data={
+                        "enabled": enabled,
+                        "session_id": session_id,
+                        "game_id": game_id,
+                        "mode_generation": self._local_mode_generation,
+                    },
+                )
+            )
+            return True
 
     def open_local_window(
         self,

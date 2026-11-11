@@ -985,3 +985,73 @@ def test_game_replacement_while_waiting_for_commit_lock_cannot_receive_old_move(
         await orch.shutdown()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("interleave", ["none", "ai", "source", "parent"])
+def test_local_reference_receipt_uses_actual_commit_before_later_publish_and_release(interleave):
+    from unittest.mock import MagicMock
+    from katrain.core.constants import PLAYER_HUMAN
+    from katrain.core.sgf_parser import Move
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+    from katrain.vision.service import VisionService
+    from katrain.web.interface import WebKaTrain
+
+    w = WebKaTrain(force_package_config=True, enable_engine=False)
+    w.save_config = lambda *args, **kwargs: None
+    w.message_callback = lambda *args, **kwargs: None
+    w.start()
+    for player in w.players_info.values():
+        player.update(player_type=PLAYER_HUMAN)
+    session = FakeSession()
+    session.katrain = w
+    manager = FakeSessionManager({"s1": session})
+    app = _app(manager)
+    vision = VisionService(VisionServiceConfig())
+    vision._worker = MagicMock()
+    vision.bind_session("s1", session=session)
+    source = vision.capture_binding_source("s1", session)
+    parent = w.game.current_node
+    vision.publish_expected_from_stones(source, [], expected_node_id=id(parent))
+    vision.get_board_observation = lambda: (None, 0)
+    move = ConfirmedMove(3, 3, 1, 8, vision.binding_epoch, vision.expected_revision)
+    if interleave == "parent":
+        # Authority changed twice without a state broadcast; live turn alone is insufficient.
+        w.game.play(Move((10, 10), player="B"))
+        w.game.play(Move((11, 11), player="W"))
+    published = []
+
+    def callback(*_):
+        if published:
+            return
+        published.append(True)
+        if interleave == "ai":
+            w.game.play(Move((4, 14), player="W"))
+            vision.publish_expected_from_stones(
+                source, w.get_state()["stones"], expected_node_id=id(w.game.current_node)
+            )
+        elif interleave == "source":
+            vision.bind_session("replacement", session=FakeSession())
+
+    w.update_state_callback = callback
+    vision._worker.send_command.reset_mock()
+    delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", move, log))
+    assert delay == 0.0
+    commands = [c.args[0] for c in vision._worker.send_command.call_args_list]
+    accepts = [c for c in commands if c.action == CommandType.ACCEPT_REFERENCE_CANDIDATE]
+    if interleave == "parent":
+        assert accepts == []
+        return
+    assert len(accepts) == 1
+    receipt = accepts[0]
+    index = commands.index(receipt)
+    assert commands[index - 1].action == CommandType.SET_EXPECTED_BOARD
+    assert receipt.data["accepted_parent_node_id"] == id(parent)
+    assert receipt.data["accepted_board"][3][3] == 1
+    assert receipt.data["accepted_board"][4][4] == 0
+    assert receipt.data["accepted_target"].expected_node_id == commands[index - 1].data["expected_node_id"]
+    if interleave != "source":
+        assert commands[-1].action == CommandType.RELEASE_CONFIRMED_MOVE
+    if interleave == "ai":
+        assert commands[-2].data["expected_node_id"] == id(w.game.current_node)
+        assert commands[-2].data["board"][4][4] == 2

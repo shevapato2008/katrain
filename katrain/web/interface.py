@@ -1604,7 +1604,7 @@ class WebKaTrain(KaTrainBase):
         node = game.current_node if game is not None else None
         return node.next_player if node is not None else None
 
-    def _do_play(self, coords, guard=False, expected_player=None):
+    def _do_play(self, coords, guard=False, expected_player=None, _reference_committed=None):
         """落一手。
 
         `guard=True` 是**本地对局路径**(`/api/move` 的非研究会话、视觉的两支):这一手所在的局面线已经结束过、
@@ -1654,6 +1654,17 @@ class WebKaTrain(KaTrainBase):
                     sound_name = self._stone_sound_name(game, node)
                     if guard:
                         self.game.record_two_pass_end(node)
+                    if _reference_committed is not None:
+                        try:
+                            from katrain.vision.sync import game_state_stones_to_board
+
+                            board = game_state_stones_to_board(
+                                [[stone.player, stone.coords] for stone in game.stones], game.board_size[0]
+                            )
+                            snapshot = tuple(tuple(int(cell) for cell in row) for row in board)
+                            _reference_committed(game, current_node, node, snapshot)
+                        except Exception:
+                            logger.exception("Accepted-position reference collector failed")
                 except IllegalMoveException as e:
                     # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
                     # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳

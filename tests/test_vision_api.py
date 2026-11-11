@@ -27,6 +27,12 @@ def test_status_reports_disabled_when_vision_service_is_not_configured():
         "model_ready": False,
         "recognition_ready": False,
         "led_connected": None,
+        "reference_status": "unavailable",
+        "reference_reason": None,
+        "reference_target_node_id": None,
+        "reference_target_revision": None,
+        "reference_source_node_id": None,
+        "reference_source_revision": None,
     }
 
 
@@ -208,3 +214,35 @@ def test_scoped_sync_reset_without_vision_service_is_unavailable():
     app.include_router(vision.router, prefix="/vision")
     response = TestClient(app).post("/vision/sync/reset", json={"session_id": "s", "game_id": "g"})
     assert response.status_code == 503
+
+
+@pytest.mark.parametrize("status", ["current", "pending", "limited", "unavailable"])
+def test_reference_status_fields_are_exposed_without_changing_readiness(status):
+    from types import SimpleNamespace
+    from katrain.vision.ipc import WorkerStatus
+
+    app = FastAPI()
+    app.include_router(vision.router, prefix="/vision")
+    worker_status = WorkerStatus(
+        recognition_ready=True,
+        reference_status=status,
+        reference_reason="test",
+        reference_target_node_id=18,
+        reference_target_revision=3,
+        reference_source_node_id=17,
+        reference_source_revision=2,
+    )
+    app.state.vision = SimpleNamespace(
+        refresh_status=lambda: None,
+        enabled=True,
+        camera_status="connected",
+        pose_lock_status="locked",
+        sync_state="synced",
+        bound_session_id="s",
+        _latest_status=worker_status,
+    )
+    payload = TestClient(app).get("/vision/status").json()
+    assert payload["reference_status"] == status
+    assert payload["reference_target_node_id"] == 18
+    assert payload["reference_source_revision"] == 2
+    assert payload["recognition_ready"] is True

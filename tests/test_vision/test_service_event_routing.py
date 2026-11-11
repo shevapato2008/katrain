@@ -140,3 +140,143 @@ def test_recapturing_source_cannot_upgrade_replaced_game_under_old_binding():
     assert not svc.source_is_current(recaptured)
     assert not svc.publish_expected_from_stones(recaptured, [["B", [3, 15], None, 1]], expected_node_id=2)
     assert svc.expected_revision == revision
+
+
+def _reference_service():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    svc = VisionService(VisionServiceConfig())
+    svc._worker = MagicMock()
+    svc._worker.get_event.return_value = None
+    session = SimpleNamespace(katrain=SimpleNamespace(game=object(), game_type="play_ai"))
+    svc.bind_session("s", session=session)
+    source = svc.capture_binding_source("s", session)
+    svc.publish_expected_from_stones(source, [], expected_node_id=16)
+    move = ConfirmedMove(3, 3, 1, 8, svc.binding_epoch, svc.expected_revision)
+    return svc, session, source, move
+
+
+def test_reference_source_survives_only_redundant_bind_and_keeps_epoch_fence():
+    from katrain.vision.ipc import CommandType
+
+    svc, session, source, move = _reference_service()
+    initial = svc.capture_reference_baseline(source, move)
+    svc._pending_moves.append(move)
+    svc.bind_session("s", session=session)
+    bind = svc._worker.send_command.call_args.args[0]
+    assert bind.action == CommandType.BIND
+    assert bind.data["source_nonce"] == initial.source_nonce
+    assert bind.data["worker_generation"] == initial.worker_generation
+    assert bind.data["preserve_reference"] is True
+    assert svc.binding_epoch != move.binding_epoch
+    assert svc.get_confirmed_move() is None
+    assert svc.capture_reference_baseline(source, move) is None
+    sid = "s"
+    for change in ("game", "session", "session_id", "mode", "worker"):
+        old = bind.data["source_nonce"]
+        if change == "game":
+            session.katrain.game = object()
+        elif change == "session":
+            from types import SimpleNamespace
+
+            session = SimpleNamespace(katrain=session.katrain)
+        elif change == "session_id":
+            sid = "other"
+        elif change == "mode":
+            session.katrain.game_type = "pvp_local"
+        elif change == "worker":
+            from unittest.mock import MagicMock
+
+            svc._worker = MagicMock()
+        svc.bind_session(sid, session=session)
+        bind = svc._worker.send_command.call_args.args[0]
+        assert bind.data["source_nonce"] != old
+        assert bind.data["preserve_reference"] is False
+
+
+def test_accepted_reference_publishes_exact_target_then_receipt_and_rejects_stale():
+    import hashlib
+    import numpy as np
+    from dataclasses import replace
+    from katrain.vision.ipc import CommandType
+
+    svc, session, source, move = _reference_service()
+    baseline = svc.capture_reference_baseline(source, move)
+    board = [[0] * 19 for _ in range(19)]
+    board[3][3] = 1
+    assert not svc.publish_accepted_reference(source, move, baseline, 17, 999, board)
+    assert not svc.publish_accepted_reference(source, move, replace(baseline, board_digest="wrong"), 17, 16, board)
+    svc._worker.send_command.reset_mock()
+    assert svc.publish_accepted_reference(source, move, baseline, 17, 16, board)
+    commands = [c.args[0] for c in svc._worker.send_command.call_args_list]
+    assert [c.action for c in commands] == [CommandType.SET_EXPECTED_BOARD, CommandType.ACCEPT_REFERENCE_CANDIDATE]
+    expected, receipt = commands
+    assert receipt.data["move_token"] == move.token
+    assert receipt.data["baseline_target"] == baseline
+    assert receipt.data["accepted_target"].expected_node_id == 17
+    assert receipt.data["accepted_target"].expected_revision == expected.data["expected_revision"]
+    assert expected.data["board_digest"] == hashlib.sha256(np.asarray(board, dtype=np.int8).tobytes()).hexdigest()
+    assert receipt.data["accepted_board"] == board
+    board[0][0] = 2
+    assert receipt.data["accepted_board"][0][0] == 0
+    # A newer AI target is authoritative even if no photograph exists for it yet.
+    svc.publish_expected_from_stones(source, [["B", [3, 15]], ["W", [4, 14]]], expected_node_id=18)
+    before = svc._worker.send_command.call_count
+    assert not svc.publish_accepted_reference(source, move, baseline, 17, 16, board)
+    assert svc._worker.send_command.call_count == before
+    session.katrain.game = object()
+    assert not svc.publish_accepted_reference(source, move, baseline, 17, 16, board)
+
+
+def test_reference_worker_start_rotates_generation_and_forwards_lighting(monkeypatch):
+    from unittest.mock import MagicMock
+    import katrain.vision.worker_inprocess as worker_module
+
+    owner = object()
+    factory = MagicMock()
+    monkeypatch.setattr(worker_module, "InProcessAdapter", factory)
+    svc = VisionService(VisionServiceConfig(process_mode="inprocess"), lighting_owner=owner, lighting_disabled=False)
+    svc.start()
+    first = svc._worker_generation
+    svc.stop()
+    svc.start()
+    assert svc._worker_generation != first
+    assert factory.call_args.kwargs["lighting_owner"] is owner
+    assert factory.call_args.kwargs["lighting_disabled"] is False
+
+
+def test_reference_receipt_reuses_exact_already_published_target_only():
+    from katrain.vision.ipc import CommandType
+
+    svc, session, source, move = _reference_service()
+    baseline = svc.capture_reference_baseline(source, move)
+    board = [[0] * 19 for _ in range(19)]
+    board[3][3] = 1
+    svc.publish_expected_from_stones(source, [["B", [3, 15]]], expected_node_id=17)
+    revision = svc.expected_revision
+    svc._worker.send_command.reset_mock()
+    assert svc.publish_accepted_reference(source, move, baseline, 17, 16, board)
+    assert svc.expected_revision == revision
+    assert svc._worker.send_command.call_count == 1
+    assert svc._worker.send_command.call_args.args[0].action == CommandType.ACCEPT_REFERENCE_CANDIDATE
+
+
+def test_reference_mode_change_rotates_nonce_and_force_rearm_keeps_target():
+    svc, session, source, move = _reference_service()
+    baseline = svc.capture_reference_baseline(source, move)
+    assert svc.capture_reference_baseline(source, ConfirmedMove(3, 3, 1, 8, move.binding_epoch, 999)) is None
+    assert not svc.publish_expected_from_stones(source, [], expected_node_id=16, force_rearm=True)
+    assert svc.capture_reference_baseline(source, move) == baseline
+    svc._worker.supports_local_confirmation = True
+    svc.set_local_confirmation_mode(True, session_id="s", game_id="g")
+    assert svc._source_nonce != baseline.source_nonce
+    assert svc.capture_reference_baseline(source, move) is None
+    svc.set_local_confirmation_mode(False, session_id="s", game_id="g")
+    assert svc.publish_expected_from_stones(source, [], expected_node_id=16)
+    fresh = ConfirmedMove(3, 3, 1, 9, svc.binding_epoch, svc.expected_revision)
+    assert svc.capture_reference_baseline(source, fresh).source_nonce != baseline.source_nonce
+    # Undo revisits a lower/earlier node through a new revision, without node ordering.
+    revision = svc.expected_revision
+    svc.publish_expected_from_stones(source, [], expected_node_id=1)
+    assert svc.expected_revision > revision

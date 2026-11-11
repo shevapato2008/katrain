@@ -78,6 +78,7 @@ class VisionService:
         self._source_nonce = uuid.uuid4().hex
         self._bound_worker = None
         self._bound_mode = None
+        self._reference_candidate_enabled = False
         self._reference_target: ReferenceTargetKey | None = None
         self._previous_reference_target: ReferenceTargetKey | None = None
         self._worker = None  # VisionWorkerProcess | InProcessAdapter
@@ -258,6 +259,7 @@ class VisionService:
             getattr(session, "game_type", "free"),
             getattr(katrain, "game_type", "free"),
             self._local_confirmation_mode,
+            self._reference_candidate_enabled,
         )
 
     def _source_is_current_locked(self, source, identity) -> bool:
@@ -502,7 +504,7 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.DENY_STONE, data={"row": row, "col": col}))
 
-    def bind_session(self, session_id: str, *, session=None) -> None:
+    def bind_session(self, session_id: str, *, session=None, reference_candidate_enabled=False) -> None:
         """Bind vision to a game session.
 
         Clears any pending ConfirmedMove left over from BEFORE this bind (review
@@ -517,9 +519,11 @@ class VisionService:
             and identity == self._bound_game_identity
             and self._worker is self._bound_worker
             and self._binding_mode(session) == self._bound_mode
+            and self._reference_candidate_enabled is (reference_candidate_enabled is True)
         ):
             return
         with self._metadata_lock:
+            self._reference_candidate_enabled = reference_candidate_enabled is True
             mode = self._binding_mode(session)
             preserve = (
                 session_id == self._bound_session_id
@@ -553,6 +557,8 @@ class VisionService:
                             "worker_generation": self._worker_generation,
                             "mode_generation": self._local_mode_generation,
                             "preserve_reference": preserve,
+                            "reference_candidate_enabled": self._reference_candidate_enabled
+                            and not self._local_confirmation_mode,
                         },
                     )
                 )
@@ -569,6 +575,7 @@ class VisionService:
             self._source_nonce = uuid.uuid4().hex
             self._reference_target = self._previous_reference_target = None
             self._bound_worker = self._bound_mode = None
+            self._reference_candidate_enabled = False
             self._bound_session_id = None
             self._bound_session = None
             self._bound_game_identity = None
@@ -667,6 +674,7 @@ class VisionService:
                         "mode_generation": self._local_mode_generation,
                         "source_nonce": self._source_nonce,
                         "worker_generation": self._worker_generation,
+                        "reference_candidate_enabled": self._reference_candidate_enabled and not enabled,
                     },
                 )
             )

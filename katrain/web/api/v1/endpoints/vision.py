@@ -54,6 +54,21 @@ class ResetSyncRequest(BaseModel):
 # -- Helpers -----------------------------------------------------------------
 
 
+def reference_candidate_enabled_for_session(app, session_id: str, session) -> bool:
+    """Only the ordinary local free route publishes accepted-reference receipts."""
+    from katrain.web.platforms.gateway import is_platform_engine_session
+
+    if (
+        is_ai_ladder_ranked_session(session)
+        or getattr(session, "game_type", "free") != "free"
+        or getattr(session.katrain, "game_type", "free") != "free"
+        or is_platform_engine_session(session)
+    ):
+        return False
+    gateway = getattr(app.state, "platform_gateway", None)
+    return not (gateway and gateway.is_platform_game(session_id))
+
+
 def _get_vision(request: Request):
     """Get VisionService from app state, raise 404 if not enabled."""
     vision = getattr(request.app.state, "vision", None)
@@ -283,7 +298,11 @@ async def bind_session(
             )
 
     if isinstance(vision, VisionService):
-        vision.bind_session(body.session_id, session=session)
+        vision.bind_session(
+            body.session_id,
+            session=session,
+            reference_candidate_enabled=reference_candidate_enabled_for_session(request.app, body.session_id, session),
+        )
     else:
         vision.bind_session(body.session_id)
     request.app.state.ranked_vision_binding = ranked_binding

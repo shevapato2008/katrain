@@ -5889,13 +5889,13 @@ async def _submit_confirmed_move(
                 if not current():
                     return 0.0
                 from katrain.vision.service import VisionService
+                from katrain.web.api.v1.endpoints.vision import reference_candidate_enabled_for_session
 
                 collector = None
                 if (
                     isinstance(vision, VisionService)
                     and source is not None
-                    and getattr(session, "game_type", "free") == "free"
-                    and getattr(session.katrain, "game_type", "free") == "free"
+                    and reference_candidate_enabled_for_session(app, session_id, session)
                 ):
                     with session.katrain.ai_ladder_commit_lock:
                         if not current():

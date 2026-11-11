@@ -533,3 +533,30 @@ def test_local_bind_republishes_authority_after_mode_enable_before_bootstrap_rea
     response = TestClient(c.app).post("/vision/bind", json={"session_id": "s"})
     assert response.status_code == 200, response.text
     assert calls == ["expected", "mode", "expected"]
+
+
+@pytest.mark.parametrize("platform", [False, True])
+def test_bind_routes_reference_candidate_flag_from_server_authority_only(platform):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+    from katrain.vision.service import VisionService
+
+    svc = VisionService(VisionServiceConfig())
+    svc._worker = MagicMock()
+    session = FakeSession()
+    session.game_type = session.katrain.game_type = "free"
+    c = _client(svc, SimpleNamespace(get_session=lambda sid: session))
+    c.app.state.platform_gateway = SimpleNamespace(is_platform_game=lambda sid: platform)
+    response = c.post("/vision/bind", json={"session_id": "s", "reference_candidate_enabled": True})
+    assert response.status_code == 200, response.text
+    bind = next(
+        call.args[0] for call in svc._worker.send_command.call_args_list if call.args[0].action == CommandType.BIND
+    )
+    assert bind.data["reference_candidate_enabled"] is (not platform)
+    svc._worker.supports_local_confirmation = True
+    svc.set_local_confirmation_mode(False, session_id="s", game_id="g")
+    assert svc._worker.send_command.call_args.args[0].data["reference_candidate_enabled"] is (not platform)
+    svc.set_local_confirmation_mode(True, session_id="s", game_id="g")
+    assert svc._worker.send_command.call_args.args[0].data["reference_candidate_enabled"] is False

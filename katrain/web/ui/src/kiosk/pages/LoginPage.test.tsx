@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -39,6 +39,7 @@ describe('LoginPage strict-box redirect (decision B)', () => {
   });
 
   afterEach(() => {
+    cleanup();
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: originalLocation,
@@ -53,6 +54,7 @@ describe('LoginPage strict-box redirect (decision B)', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.queryByLabelText(/用户名/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /登录/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('手机号（中国大陆 +86）')).not.toBeInTheDocument();
   });
 
   it('renders the normal login form (no redirect) outside strict box mode', () => {
@@ -61,12 +63,16 @@ describe('LoginPage strict-box redirect (decision B)', () => {
 
     expect(window.location.href).toBe('http://localhost/kiosk/login');
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('手机号（中国大陆 +86）')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: '账号密码' }));
     expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
   });
   it('allows a technical guest to sign into a real account outside strict mode', () => {
     mockUseAuth.mockReturnValue({ login: mockLogin, isStrictBoxKiosk: false, isAuthenticated: true, isGuest: true, isLoading: false });
     renderLoginPage();
+    expect(screen.getByLabelText('手机号（中国大陆 +86）')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: '账号密码' }));
     expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
   });

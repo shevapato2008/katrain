@@ -8,6 +8,8 @@
 
 **Tech Stack:** 现有 FastAPI、SQLAlchemy、PostgreSQL、httpx、React/Vite、Vitest/Playwright、11 语 gettext；不引入 Redis、支付系统或新部署平台。
 
+**执行状态（2026-11-11）：** B1–B4 首次注册/再次登录已实现并通过独立视觉、规格和代码复审；B1 Fixture 已退出产品源码。真实隔离 PG 接口已验证首次 5000 credits 与回登零重复赠额。B5 旧账号绑定、B6 launcher、两云发布及本人短信送达验收继续执行；目前运行服务器仍为此前发布版本。
+
 ---
 
 ## 权威范围与已有成果

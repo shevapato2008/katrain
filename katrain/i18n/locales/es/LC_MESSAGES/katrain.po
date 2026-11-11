@@ -8444,3 +8444,87 @@ msgid "membership:error_position_changed"
 msgstr ""
 "La posición ha cambiado. Vuelve a pulsar análisis y confirma una nueva "
 "cotización."
+
+msgid "auth:otp_method"
+msgstr "Método de acceso"
+
+msgid "auth:otp_tab"
+msgstr "Código SMS"
+
+msgid "auth:password_tab"
+msgstr "Contraseña de cuenta"
+
+msgid "auth:otp_phone"
+msgstr "Teléfono (China continental +86)"
+
+msgid "auth:otp_code"
+msgstr "Código de verificación SMS"
+
+msgid "auth:otp_send"
+msgstr "Obtener código"
+
+msgid "auth:otp_sending"
+msgstr "Enviando…"
+
+msgid "auth:otp_retry"
+msgstr "Reenviar en {seconds}s"
+
+msgid "auth:otp_submit"
+msgstr "Verificar e iniciar sesión"
+
+msgid "auth:otp_verifying"
+msgstr "Verificando…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"La primera verificación de un teléfono no registrado crea una cuenta. El "
+"primer registro de un número nuevo recibe 50 puntos; los números que ya "
+"recibieron puntos o fueron vinculados no reciben otra bonificación."
+
+msgid "auth:otp_existing_account"
+msgstr ""
+"¿Ya tienes cuenta? Accede con tu contraseña y luego vincula el teléfono."
+
+msgid "auth:otp_requested"
+msgstr "Código solicitado. Es válido durante 5 minutos; revisa tus mensajes."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"El estado del envío no está confirmado. Si recibes el código, puedes "
+"verificarlo. Espera a que termine la pausa antes de decidir reenviarlo."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Introduce un teléfono de China continental de 11 dígitos."
+
+msgid "auth:otp_invalid_code"
+msgstr "Introduce el código correcto de 6 dígitos."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "El código ya no es válido. Solicita otro."
+
+msgid "auth:otp_challenge_expired"
+msgstr "El código ha caducado. Solicita otro."
+
+msgid "auth:otp_challenge_used"
+msgstr "El código ya se utilizó. Solicita otro."
+
+msgid "auth:otp_sms_limited"
+msgstr "Demasiadas solicitudes de SMS. Inténtalo más tarde."
+
+msgid "auth:otp_locked"
+msgstr "Demasiados códigos incorrectos. Inténtalo más tarde."
+
+msgid "auth:otp_unavailable"
+msgstr ""
+"Servicio SMS no disponible. Prueba después o accede con tu contraseña."
+
+msgid "auth:otp_rejected"
+msgstr ""
+"La solicitud de SMS fue rechazada. Prueba después o accede con tu "
+"contraseña."
+
+msgid "auth:otp_identity_changed"
+msgstr "La identidad de acceso ha cambiado. Empieza de nuevo."
+
+msgid "auth:otp_verification_required"
+msgstr "Regístrate con un código de verificación SMS."

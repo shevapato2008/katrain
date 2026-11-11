@@ -458,6 +458,33 @@ export class ApiError extends Error {
   }
 }
 
+export interface AuthToken {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
+}
+export interface PhoneChallengeRequest { phone: string; purpose: 'login'; flow_id: string; }
+export interface PhoneChallenge { challenge_id: string; retry_after: number; expires_in: number; delivery: 'sent' | 'unknown'; }
+export interface PhoneLoginRequest { challenge_id: string; code: string; flow_id: string; }
+export type PhoneAuthErrorCode = 'invalid_phone' | 'invalid_code' | 'challenge_invalid' | 'challenge_expired' |
+  'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required';
+export interface PhoneAuthErrorDetail { code: PhoneAuthErrorCode; retry_after?: number; }
+
+// Auth errors carry only structured classifications, never raw upstream bodies
+// (which may contain private request data).
+async function phoneAuthPost<T>(path: string, payload: PhoneChallengeRequest | PhoneLoginRequest, signal?: AbortSignal): Promise<T> {
+  if (isStrictBoxKiosk) throw new ApiError(403, 'Direct login disabled', { code: 'identity_changed' });
+  const response = await fetch(`/api/v1/auth/phone/${path}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal,
+  });
+  if (!response.ok) {
+    let detail: unknown;
+    try { detail = (await response.json()).detail; } catch { /* safe generic error below */ }
+    throw new ApiError(response.status, 'Phone authentication failed', detail);
+  }
+  return response.json();
+}
+
 /* 严格盒端 SSO（kiosk 构建 + VITE_BOX_SSO_STRICT）那一档故意不持有 token，
    鉴权只走 HttpOnly 的 sb_go_token cookie，这里绝不能自己造 Bearer 头。 */
 const isStrictBoxKiosk = __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
@@ -517,6 +544,8 @@ export async function apiPost(path: string, payload: any, token?: string | null)
 }
 
 export const API = {
+  createPhoneChallenge: (payload: PhoneChallengeRequest, signal?: AbortSignal): Promise<PhoneChallenge> => phoneAuthPost('challenges', payload, signal),
+  phoneLogin: (payload: PhoneLoginRequest, signal?: AbortSignal): Promise<AuthToken> => phoneAuthPost('login', payload, signal),
   engineHealth: async (): Promise<EngineHealthResponse> => {
     const response = await fetch('/api/v1/health');
     if (!response.ok) throw new Error(`Failed to get engine health (${response.status})`);

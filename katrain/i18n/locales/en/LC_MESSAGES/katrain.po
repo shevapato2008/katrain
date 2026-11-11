@@ -14091,3 +14091,87 @@ msgstr "Waiting for WeChat Pay confirmation"
 
 msgid "membership:error_position_changed"
 msgstr "The position changed. Click analysis again and confirm a new quote."
+
+msgid "auth:otp_method"
+msgstr "Sign-in method"
+
+msgid "auth:otp_tab"
+msgstr "SMS code"
+
+msgid "auth:password_tab"
+msgstr "Account password"
+
+msgid "auth:otp_phone"
+msgstr "Phone (mainland China +86)"
+
+msgid "auth:otp_code"
+msgstr "SMS verification code"
+
+msgid "auth:otp_send"
+msgstr "Get code"
+
+msgid "auth:otp_sending"
+msgstr "Sending…"
+
+msgid "auth:otp_retry"
+msgstr "Resend in {seconds}s"
+
+msgid "auth:otp_submit"
+msgstr "Verify and sign in"
+
+msgid "auth:otp_verifying"
+msgstr "Verifying…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"First verification of an unregistered phone creates an account. First "
+"registration with a new phone receives 50 points; a phone that has already "
+"claimed or been bound receives no repeat grant."
+
+msgid "auth:otp_existing_account"
+msgstr ""
+"Existing account? Sign in with your account password, then bind your phone."
+
+msgid "auth:otp_requested"
+msgstr "Code requested. It is valid for 5 minutes; check your messages."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"Sending status is unconfirmed. If you receive the code, you can still verify"
+" it. Wait for the cooldown before deciding to resend."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Enter an 11-digit mainland China phone number."
+
+msgid "auth:otp_invalid_code"
+msgstr "Enter the correct 6-digit code."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "This code is no longer valid. Request a new one."
+
+msgid "auth:otp_challenge_expired"
+msgstr "This code has expired. Request a new one."
+
+msgid "auth:otp_challenge_used"
+msgstr "This code has already been used. Request a new one."
+
+msgid "auth:otp_sms_limited"
+msgstr "Too many SMS requests. Try again later."
+
+msgid "auth:otp_locked"
+msgstr "Too many incorrect codes. Try again later."
+
+msgid "auth:otp_unavailable"
+msgstr ""
+"SMS service is unavailable. Try later or sign in with your account password."
+
+msgid "auth:otp_rejected"
+msgstr ""
+"The SMS request was rejected. Try later or sign in with your account "
+"password."
+
+msgid "auth:otp_identity_changed"
+msgstr "The sign-in identity changed. Start again."
+
+msgid "auth:otp_verification_required"
+msgstr "Register using an SMS verification code."

@@ -13288,3 +13288,78 @@ msgstr "等待微信支付确认"
 
 msgid "membership:error_position_changed"
 msgstr "局面已变化，请重新点击分析并确认报价"
+
+msgid "auth:otp_method"
+msgstr "登录方式"
+
+msgid "auth:otp_tab"
+msgstr "短信验证码"
+
+msgid "auth:password_tab"
+msgstr "账号密码"
+
+msgid "auth:otp_phone"
+msgstr "手机号（中国大陆 +86）"
+
+msgid "auth:otp_code"
+msgstr "短信验证码"
+
+msgid "auth:otp_send"
+msgstr "获取验证码"
+
+msgid "auth:otp_sending"
+msgstr "发送中…"
+
+msgid "auth:otp_retry"
+msgstr "{seconds}秒后重发"
+
+msgid "auth:otp_submit"
+msgstr "验证并登录"
+
+msgid "auth:otp_verifying"
+msgstr "验证中…"
+
+msgid "auth:otp_signup_policy"
+msgstr "未注册手机号首次验证将创建账号。新手机号首次注册赠50积分；同手机号已领取或绑定过不重复赠送。"
+
+msgid "auth:otp_existing_account"
+msgstr "已有账号请用账号密码登录后绑定手机号。"
+
+msgid "auth:otp_requested"
+msgstr "验证码已请求，有效期5分钟，请查看短信。"
+
+msgid "auth:otp_unknown"
+msgstr "发送状态未确认；若收到验证码仍可验证。请等待冷却结束后再决定是否重发。"
+
+msgid "auth:otp_invalid_phone"
+msgstr "请输入中国大陆11位手机号"
+
+msgid "auth:otp_invalid_code"
+msgstr "请输入正确的6位数字验证码"
+
+msgid "auth:otp_challenge_invalid"
+msgstr "验证码已失效，请重新获取"
+
+msgid "auth:otp_challenge_expired"
+msgstr "验证码已过期，请重新获取"
+
+msgid "auth:otp_challenge_used"
+msgstr "验证码已使用，请重新获取"
+
+msgid "auth:otp_sms_limited"
+msgstr "短信请求过于频繁，请稍后再试"
+
+msgid "auth:otp_locked"
+msgstr "验证码错误次数过多，请稍后再试"
+
+msgid "auth:otp_unavailable"
+msgstr "短信服务暂不可用，请稍后重试或使用账号密码登录"
+
+msgid "auth:otp_rejected"
+msgstr "短信发送被拒绝，请稍后重试或使用账号密码登录"
+
+msgid "auth:otp_identity_changed"
+msgstr "登录身份已变化，请重新开始"
+
+msgid "auth:otp_verification_required"
+msgstr "请使用短信验证码完成注册"

@@ -1,12 +1,12 @@
-import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
-import { useState, useEffect, type KeyboardEvent } from 'react';
-import { Box, TextField, Button, Typography, Alert, CircularProgress, useTheme } from '@mui/material';
+import { useEffect } from 'react';
+import { Box, Button, Typography, CircularProgress, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KIOSK_SERIF } from '../theme';
 import { LAUNCHER_LOGIN_URL } from '../shell/boxUrls';
+import LoginMethods from '../../features/auth/LoginMethods';
 
 // Brand lockup matches the Header (智星盒 / StellaBox).
 const BRAND_SERIF = KIOSK_SERIF;
@@ -18,13 +18,9 @@ const BRAND_SERIF = KIOSK_SERIF;
 // instead of rendering a dead username/password form nobody can submit.
 const LoginPage = () => {
   const theme = useTheme();
-  const { login, isAuthenticated, isLoading, isStrictBoxKiosk, isGuest } = useAuth();
+  const { isAuthenticated, isLoading, isStrictBoxKiosk, isGuest } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<UiMessage | string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isStrictBoxKiosk) {
@@ -50,23 +46,6 @@ const LoginPage = () => {
     );
   }
 
-  const handleLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await login(username, password);
-      navigate('/kiosk/play', { replace: true });
-    } catch {
-      setError(uiMessage('Login failed', '登录失败'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && username && !loading) handleLogin();
-  };
-
   // 左半边与 launcher 登录页(setup-wizard `launcher.html` 的 `.auth-gate` / `.ag-*`)逐项一致:
   // 用户刚从那一屏过来,这里长得不一样就像换了个产品。数值取自板上实测(1024×600)。
   // Faint go-board grid — full-page like launcher's `.ag-goboard`; the opaque brand panel hides it on the left.
@@ -84,7 +63,6 @@ const LoginPage = () => {
     WebkitMaskImage: 'radial-gradient(ellipse 74% 64% at 50% 44%, #000 0%, transparent 78%)',
   } as const;
 
-  const inputSx = { '& .MuiOutlinedInput-root': { bgcolor: 'var(--raise2)' } };
 
   // 已经登录的人不该停在登录页。两个构建都需要这一条:盒端会在挂载探针跑完之前
   // 就把人弹到这里(守卫等 isLoading,但 `navigate('/kiosk/login')` 那几个调用点不等),
@@ -99,7 +77,8 @@ const LoginPage = () => {
         position: 'relative',
         display: 'flex',
         width: '100%',
-        height: '100%',
+        minHeight: '100%',
+        flexDirection: { xs: 'column', sm: 'row' },
         background: `radial-gradient(120% 140% at 50% -20%, #16201d 0%, ${theme.palette.background.default} 55%)`,
       }}
     >
@@ -110,10 +89,10 @@ const LoginPage = () => {
           position: 'relative',
           flexShrink: 0,
           // launcher 的 `.ag-brand` 是 content-box:42% + 左右各 40 内边距 + 1px 边线 = 板上 511px。
-          width: 'calc(42% + 81px)',
-          minWidth: 381,
-          maxWidth: 521,
-          display: 'flex',
+          width: { xs: '100%', sm: 'calc(42% + 81px)' },
+          minWidth: { xs: 0, sm: 381 },
+          maxWidth: { xs: 'none', sm: 521 },
+          display: { xs: 'none', sm: 'flex' },
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
@@ -180,12 +159,12 @@ const LoginPage = () => {
         <Box
           sx={{
             width: '100%',
-            maxWidth: 380,
+            maxWidth: 410,
             bgcolor: 'background.paper',
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: '16px',
-            p: 3.5,
+            p: { xs: 2.5, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
@@ -237,34 +216,7 @@ const LoginPage = () => {
             </>
           ) : (
           <>
-          {error && <Alert severity="error">{renderUiMessage(error, t)}</Alert>}
-          <TextField
-            fullWidth
-            label={t('Username', '用户名')}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            onKeyDown={handleKeyDown}
-            sx={inputSx}
-          />
-          <TextField
-            fullWidth
-            label={t('Password', '密码')}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            sx={inputSx}
-          />
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            onClick={handleLogin}
-            disabled={loading || !username}
-            sx={{ minHeight: 52, mt: 0.5, fontSize: '1rem', letterSpacing: '0.1em' }}
-          >
-            {loading ? t('Logging in...', '登录中...') : t('Login', '登录')}
-          </Button>
+          <LoginMethods onSuccess={() => navigate('/kiosk/play', { replace: true })} />
           </>
           )}
         </Box>

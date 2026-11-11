@@ -8634,3 +8634,88 @@ msgid "membership:error_position_changed"
 msgstr ""
 "Die Stellung hat sich geändert. Klicke erneut auf Analyse und bestätige ein "
 "neues Angebot."
+
+msgid "auth:otp_method"
+msgstr "Anmeldemethode"
+
+msgid "auth:otp_tab"
+msgstr "SMS-Code"
+
+msgid "auth:password_tab"
+msgstr "Kontopasswort"
+
+msgid "auth:otp_phone"
+msgstr "Mobilnummer (Festlandchina +86)"
+
+msgid "auth:otp_code"
+msgstr "SMS-Bestätigungscode"
+
+msgid "auth:otp_send"
+msgstr "Code anfordern"
+
+msgid "auth:otp_sending"
+msgstr "Wird gesendet…"
+
+msgid "auth:otp_retry"
+msgstr "In {seconds}s erneut senden"
+
+msgid "auth:otp_submit"
+msgstr "Bestätigen und anmelden"
+
+msgid "auth:otp_verifying"
+msgstr "Wird bestätigt…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"Die erste Bestätigung einer unregistrierten Nummer erstellt ein Konto. Die "
+"Erstregistrierung einer neuen Nummer erhält 50 Punkte. Bereits verwendete "
+"oder verknüpfte Nummern erhalten keine erneute Gutschrift."
+
+msgid "auth:otp_existing_account"
+msgstr ""
+"Bestehendes Konto? Mit Kontopasswort anmelden und dann die Mobilnummer "
+"verknüpfen."
+
+msgid "auth:otp_requested"
+msgstr "Code angefordert. Er gilt 5 Minuten. Bitte SMS prüfen."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"Der Sendestatus ist unbestätigt. Ein erhaltener Code kann trotzdem bestätigt"
+" werden. Vor erneutem Senden die Wartezeit abwarten."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Eine elfstellige Mobilnummer aus Festlandchina eingeben."
+
+msgid "auth:otp_invalid_code"
+msgstr "Den korrekten sechsstelligen Zahlencode eingeben."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "Dieser Code ist ungültig. Neuen Code anfordern."
+
+msgid "auth:otp_challenge_expired"
+msgstr "Dieser Code ist abgelaufen. Neuen Code anfordern."
+
+msgid "auth:otp_challenge_used"
+msgstr "Dieser Code wurde verwendet. Neuen Code anfordern."
+
+msgid "auth:otp_sms_limited"
+msgstr "Zu viele SMS-Anfragen. Später erneut versuchen."
+
+msgid "auth:otp_locked"
+msgstr "Zu viele falsche Codes. Später erneut versuchen."
+
+msgid "auth:otp_unavailable"
+msgstr ""
+"SMS-Dienst nicht verfügbar. Später versuchen oder mit Kontopasswort "
+"anmelden."
+
+msgid "auth:otp_rejected"
+msgstr ""
+"SMS-Anfrage abgelehnt. Später versuchen oder mit Kontopasswort anmelden."
+
+msgid "auth:otp_identity_changed"
+msgstr "Die Anmeldeidentität hat sich geändert. Neu beginnen."
+
+msgid "auth:otp_verification_required"
+msgstr "Mit einem SMS-Bestätigungscode registrieren."

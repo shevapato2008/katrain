@@ -34,6 +34,14 @@ class _CloudIdentity(NamedTuple):
     refresh_token: Optional[str]
 
 
+class RemoteLoginCandidate(NamedTuple):
+    """Verified cloud identity held apart from the board's active credentials."""
+
+    generation: int
+    tokens: Dict[str, Any]
+    user: Dict[str, Any]
+
+
 class CloudIdentityChangedError(httpx.HTTPStatusError):
     """A private cloud request no longer belongs to the active local user."""
 
@@ -355,17 +363,74 @@ class RemoteAPIClient:
 
     # ── Auth ──
 
-    async def login(self, username: str, password: str) -> Dict[str, Any]:
-        resp = await self._request(
-            "POST",
-            "/api/v1/auth/login",
-            json={"username": username, "password": password},
-            auth=False,
+    def begin_login_attempt(self) -> int:
+        """A newer attempt or an explicit identity change invalidates an older candidate."""
+        self._identity_generation += 1
+        return self._identity_generation
+
+    def _assert_login_generation(self, generation: int) -> None:
+        if generation != self._identity_generation:
+            raise CloudIdentityChangedError()
+
+    def assert_login_candidate(self, candidate: RemoteLoginCandidate) -> None:
+        self._assert_login_generation(candidate.generation)
+
+    def install_login_candidate(self, candidate: RemoteLoginCandidate, *, user_id) -> None:
+        self.assert_login_candidate(candidate)
+        self.set_tokens(candidate.tokens["access_token"], candidate.tokens.get("refresh_token"), user_id=user_id)
+
+    async def _login_candidate(self, path: str, data: Dict[str, Any]) -> RemoteLoginCandidate:
+        generation = self.begin_login_attempt()
+        response = await self._client.post(path, json=data, headers={"X-StellaBox-Device-ID": self.device_id})
+        self._assert_login_generation(generation)
+        response.raise_for_status()
+        tokens = response.json()
+        if (
+            not isinstance(tokens, dict)
+            or not isinstance(tokens.get("access_token"), str)
+            or not tokens["access_token"]
+        ):
+            raise httpx.DecodingError("Invalid cloud authentication response", request=response.request)
+        if tokens.get("refresh_token") is not None and not isinstance(tokens["refresh_token"], str):
+            raise httpx.DecodingError("Invalid cloud authentication response", request=response.request)
+        # Confirm canonical account using the candidate token, without ever
+        # exposing it as the singleton's active bearer during this await.
+        response = await self._client.get(
+            "/api/v1/auth/me",
+            headers={"X-StellaBox-Device-ID": self.device_id, "Authorization": f"Bearer {tokens['access_token']}"},
         )
-        resp.raise_for_status()
-        data = resp.json()
-        self.set_tokens(data["access_token"], data.get("refresh_token"))
-        return data
+        self._assert_login_generation(generation)
+        response.raise_for_status()
+        user = response.json()
+        username = user.get("username") if isinstance(user, dict) else None
+        if (
+            not isinstance(username, str)
+            or not username.strip()
+            or len(username) > 128
+            or username.strip().lower() == "guest"
+            or username.strip().lower().startswith("admin:")
+            or user.get("is_admin")
+        ):
+            raise httpx.DecodingError("Invalid cloud account identity", request=response.request)
+        return RemoteLoginCandidate(generation, tokens, user)
+
+    async def login(self, username: str, password: str) -> RemoteLoginCandidate:
+        return await self._login_candidate("/api/v1/auth/login", {"username": username, "password": password})
+
+    async def phone_login(self, data: Dict[str, Any]) -> RemoteLoginCandidate:
+        return await self._login_candidate("/api/v1/auth/phone/login", data)
+
+    async def phone_challenge(self, data: Dict[str, Any], *, expected_user_id=None) -> Dict:
+        if data.get("purpose") == "bind":
+            return await self._identity_bound_request(
+                "POST", "/api/v1/auth/phone/challenges", json=data, expected_user_id=expected_user_id
+            )
+        response = await self._request("POST", "/api/v1/auth/phone/challenges", json=data, auth=False)
+        response.raise_for_status()
+        return response.json()
+
+    async def phone_status(self, *, expected_user_id) -> Dict:
+        return await self._identity_bound_request("GET", "/api/v1/auth/phone/status", expected_user_id=expected_user_id)
 
     async def register(self, username: str, password: str) -> Dict[str, Any]:
         resp = await self._request(
@@ -510,15 +575,14 @@ class RemoteAPIClient:
         return resp.json()
 
     async def end_ai_ladder_game(self, game_id: str) -> Dict:
-        resp = await self._request(
-            "POST", f"/api/v1/ai-ladder/games/{game_id}/end", json={"reason": "user_resigned"}
-        )
+        resp = await self._request("POST", f"/api/v1/ai-ladder/games/{game_id}/end", json={"reason": "user_resigned"})
         resp.raise_for_status()
         return resp.json()
 
     async def count_ai_ladder_game(self, game_id: str, reservation_key: str, sgf_content: str, trigger: str) -> Dict:
         resp = await self._request(
-            "POST", f"/api/v1/ai-ladder/games/{game_id}/count",
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/count",
             json={"reservation_key": reservation_key, "sgf_content": sgf_content, "trigger": trigger},
         )
         resp.raise_for_status()
@@ -533,7 +597,8 @@ class RemoteAPIClient:
         self, game_id: str, reservation_key: str, sgf_content: str, request_id: str
     ) -> Dict:
         resp = await self._request(
-            "POST", f"/api/v1/ai-ladder/games/{game_id}/territory",
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/territory",
             json={"reservation_key": reservation_key, "sgf_content": sgf_content, "request_id": request_id},
         )
         resp.raise_for_status()

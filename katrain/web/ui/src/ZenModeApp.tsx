@@ -587,10 +587,7 @@ function ZenModeApp() {
         <RegisterDialog
           open={isRegisterDialogOpen}
           onClose={() => setRegisterDialogOpen(false)}
-          onRegisterSuccess={(username) => {
-            setNotification({ open: true, message: `User ${username} registered successfully!`, severity: 'success' });
-            setLoginDialogOpen(true);
-          }}
+          onLoginSuccess={handleLoginSuccess}
         />
         <TimeSettingsDialog 
           open={isTimeSettingsDialogOpen} 

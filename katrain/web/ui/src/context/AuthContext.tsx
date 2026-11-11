@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { API } from '../api';
+import { API, ApiError, type PhoneLoginRequest } from '../api';
 import { setKioskIdentity } from '../kiosk/storage/kioskActivityStorage';
 
 // Define User type matching backend response
@@ -27,7 +27,8 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (username: string, password: string) => Promise<void>;
+    login: (username: string, password: string, signal?: AbortSignal) => Promise<void>;
+    loginPhone: (request: PhoneLoginRequest, signal?: AbortSignal) => Promise<void>;
     logout: () => Promise<void>;
     token: string | null;
     // True for the shared zero-persistence `guest` account (box-SSO guest mode).
@@ -138,25 +139,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return () => { invalidatePending(); };
     }, [retry, invalidatePending]);
 
-    const login = async (username: string, password: string) => {
+    const login = async (username: string, password: string, signal?: AbortSignal) => {
         if (isStrictBoxKiosk) throw new Error('Direct login is disabled in strict box mode');
         const requestGeneration = invalidatePending();
+        const assertCurrent = () => {
+            if (signal?.aborted || generation.current !== requestGeneration) {
+                throw new ApiError(409, 'Identity changed', { code: 'identity_changed' });
+            }
+        };
         try {
+            assertCurrent();
             const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
+                signal,
             });
             if (!response.ok) throw new Error('Login failed');
             const data = await response.json();
+            assertCurrent();
             const newToken = data.access_token;
             const meRes = await fetch('/api/v1/auth/me', {
                 headers: { Authorization: `Bearer ${newToken}` },
+                signal,
             });
             if (!meRes.ok) throw new Error('Login failed');
             const userData: User = await meRes.json();
             // A logout or newer login owns the state even if this request settles later.
-            if (generation.current !== requestGeneration) return;
+            assertCurrent();
             // A retry may have started while login was in flight. Retire that
             // probe before committing the new account or its saved credential.
             invalidatePending();
@@ -166,8 +176,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setToken(newToken);
             setStatus(userData.username === 'guest' ? 'guest' : 'authenticated');
         } catch (error) {
+            // Even transports that ignore abort cannot turn a retired candidate
+            // into a fulfilled login promise at the form boundary.
+            assertCurrent();
             if (generation.current === requestGeneration && status === 'checking') setStatus('unavailable');
             throw error;
+        }
+    };
+
+    const loginPhone = async (request: PhoneLoginRequest, signal?: AbortSignal) => {
+        if (isStrictBoxKiosk) throw new ApiError(403, 'Direct login disabled', { code: 'identity_changed' });
+        const requestGeneration = invalidatePending();
+        const controller = new AbortController();
+        activeController.current = controller;
+        const abort = () => controller.abort();
+        signal?.addEventListener('abort', abort, { once: true });
+        if (signal?.aborted) controller.abort();
+        const assertCurrent = () => {
+            if (generation.current !== requestGeneration || controller.signal.aborted) {
+                throw new ApiError(409, 'Identity changed', { code: 'identity_changed' });
+            }
+        };
+        try {
+            assertCurrent();
+            const candidate = await API.phoneLogin(request, controller.signal);
+            assertCurrent();
+            const response = await fetch('/api/v1/auth/me', {
+                headers: { Authorization: `Bearer ${candidate.access_token}` }, signal: controller.signal,
+            });
+            if (!response.ok) throw new ApiError(response.status, 'Cannot confirm account', { code: 'identity_changed' });
+            const canonical: User = await response.json();
+            assertCurrent();
+            if (!canonical.username || canonical.username === 'guest') {
+                throw new ApiError(409, 'Cannot confirm account', { code: 'identity_changed' });
+            }
+            invalidatePending();
+            localStorage.setItem('token', candidate.access_token);
+            hadIdentity.current = true;
+            setUser(canonical);
+            setToken(candidate.access_token);
+            setStatus('authenticated');
+        } finally {
+            signal?.removeEventListener('abort', abort);
+            if (activeController.current === controller) activeController.current = null;
         }
     };
 
@@ -206,7 +257,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         <AuthContext.Provider
             value={{ user, isAuthenticated: !!user, isLoading, status, retry,
                 identityKey: user ? user.uuid ?? `${user.id}:${user.username}` : null,
-                login, logout, token, isGuest, isStrictBoxKiosk }}
+                login, loginPhone, logout, token, isGuest, isStrictBoxKiosk }}
         >
             {children}
         </AuthContext.Provider>

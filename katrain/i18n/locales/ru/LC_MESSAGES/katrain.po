@@ -8461,3 +8461,83 @@ msgstr "Ожидаем подтверждения от WeChat Pay"
 msgid "membership:error_position_changed"
 msgstr ""
 "Позиция изменилась. Снова нажмите анализ и подтвердите новую стоимость."
+
+msgid "auth:otp_method"
+msgstr "Способ входа"
+
+msgid "auth:otp_tab"
+msgstr "Код из SMS"
+
+msgid "auth:password_tab"
+msgstr "Пароль аккаунта"
+
+msgid "auth:otp_phone"
+msgstr "Телефон (материковый Китай +86)"
+
+msgid "auth:otp_code"
+msgstr "Код подтверждения из SMS"
+
+msgid "auth:otp_send"
+msgstr "Получить код"
+
+msgid "auth:otp_sending"
+msgstr "Отправка…"
+
+msgid "auth:otp_retry"
+msgstr "Повторить через {seconds}с"
+
+msgid "auth:otp_submit"
+msgstr "Подтвердить и войти"
+
+msgid "auth:otp_verifying"
+msgstr "Проверка…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"Первая проверка незарегистрированного номера создаёт аккаунт. При первой "
+"регистрации нового номера начисляется 50 баллов. Номер, уже получавший баллы"
+" или привязанный ранее, не получает их повторно."
+
+msgid "auth:otp_existing_account"
+msgstr "Есть аккаунт? Войдите по паролю, затем привяжите телефон."
+
+msgid "auth:otp_requested"
+msgstr "Код запрошен. Он действует 5 минут; проверьте SMS."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"Статус отправки не подтверждён. Если код пришёл, его можно проверить. "
+"Дождитесь конца паузы, прежде чем решать, отправлять ли снова."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Введите 11-значный номер материкового Китая."
+
+msgid "auth:otp_invalid_code"
+msgstr "Введите правильный код из 6 цифр."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "Код недействителен. Запросите новый."
+
+msgid "auth:otp_challenge_expired"
+msgstr "Срок действия кода истёк. Запросите новый."
+
+msgid "auth:otp_challenge_used"
+msgstr "Код уже использован. Запросите новый."
+
+msgid "auth:otp_sms_limited"
+msgstr "Слишком много запросов SMS. Повторите позже."
+
+msgid "auth:otp_locked"
+msgstr "Слишком много неверных кодов. Повторите позже."
+
+msgid "auth:otp_unavailable"
+msgstr "SMS-сервис недоступен. Повторите позже или войдите по паролю."
+
+msgid "auth:otp_rejected"
+msgstr "Запрос SMS отклонён. Повторите позже или войдите по паролю."
+
+msgid "auth:otp_identity_changed"
+msgstr "Аккаунт для входа изменился. Начните заново."
+
+msgid "auth:otp_verification_required"
+msgstr "Зарегистрируйтесь с помощью кода из SMS."

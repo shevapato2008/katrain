@@ -18,7 +18,7 @@ import type { GalaxySidebarState } from './useGalaxySidebar';
 import GalaxySidebar from './GalaxySidebar';
 
 vi.mock('../../../context/AuthContext', async (importOriginal) => ({ ...await importOriginal<object>(), useAuth: vi.fn() }));
-vi.mock('../../../api', () => ({ API: { getTranslations: vi.fn().mockResolvedValue({ translations: {} }) } }));
+vi.mock('../../../api', () => ({ API: { getTranslations: vi.fn().mockResolvedValue({ translations: {} }), phoneStatus: vi.fn().mockResolvedValue({ bound: false }) } }));
 vi.mock('../../context/GameNavigationContext', () => ({ useGameNavigation: vi.fn() }));
 vi.mock('../../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 
@@ -140,6 +140,12 @@ describe('GalaxySidebar', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('Sign In')).toBeInTheDocument();
     expect(screen.queryByText('棋道导航者')).not.toBeInTheDocument();
+  });
+  it('offers an eligible signed-in account the shared phone binding form', async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { username: 'existing-player', rank: '1d' }, token: 'captured-token', identityKey: 'account-a', isGuest: false, logout: vi.fn() } as never);
+    renderSidebar();
+    fireEvent.click(await screen.findByRole('button', { name: '绑定手机号' }));
+    expect(await screen.findByLabelText('当前账号密码')).toBeInTheDocument();
   });
 
   it('opens Level 1 settings menu showing categories and their active summary labels', () => {

@@ -17,9 +17,7 @@ from katrain.web.core.box_sso import (
 )
 from katrain.web.core.config import settings
 from katrain.web.core import models_db
-from katrain.web.core.db import get_db
 from katrain.web.models import User, UserInDB
-from sqlalchemy.orm import Session
 
 logger = logging.getLogger("katrain_web")
 
@@ -272,12 +270,8 @@ def _guest_row_has_data(repo: Any, user_id: int) -> bool:
             session.query(models_db.UserGameAnalysis)
             .join(models_db.UserGame, models_db.UserGameAnalysis.game_id == models_db.UserGame.id)
             .filter(models_db.UserGame.user_id == user_id),
-            session.query(models_db.UserTsumegoProgress).filter(
-                models_db.UserTsumegoProgress.user_id == user_id
-            ),
-            session.query(models_db.UserTutorialProgress).filter(
-                models_db.UserTutorialProgress.user_id == user_id
-            ),
+            session.query(models_db.UserTsumegoProgress).filter(models_db.UserTsumegoProgress.user_id == user_id),
+            session.query(models_db.UserTutorialProgress).filter(models_db.UserTutorialProgress.user_id == user_id),
             session.query(models_db.RatingHistory).filter(models_db.RatingHistory.user_id == user_id),
             session.query(models_db.Relationship).filter(models_db.Relationship.follower_id == user_id),
             session.query(models_db.Relationship).filter(models_db.Relationship.following_id == user_id),
@@ -405,9 +399,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     if existing is not None:
         # R2-F7: a legacy real "guest" (board-mode shadow) also has the sentinel hash;
         # only adopt a PRISTINE row. Any accumulated personalization -> fail closed.
-        if existing.get("hashed_password") != SHADOW_USER_NO_LOCAL_AUTH or _guest_row_has_data(
-            repo, existing["id"]
-        ):
+        if existing.get("hashed_password") != SHADOW_USER_NO_LOCAL_AUTH or _guest_row_has_data(repo, existing["id"]):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="guest identity conflict")
     shadow_user = _get_or_create_shadow_user(repo, GUEST_USERNAME)
     # Defensive: guest must never carry a prior real session's cloud credentials.
@@ -416,9 +408,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
         remote_client.clear_tokens()
     await _activate_and_release_previous_user(request, state, generation, shadow_user["id"])
     return {
-        "access_token": create_access_token(
-            data={"sub": shadow_user["username"]}, box_generation=generation
-        ),
+        "access_token": create_access_token(data={"sub": shadow_user["username"]}, box_generation=generation),
         "token_type": "bearer",
     }
 
@@ -433,37 +423,26 @@ async def login(request: Request, login_data: LoginRequest, response: Response) 
     if remote_client is not None:
         # Board mode: forward to remote server (design 5.1)
         try:
-            remote_data = await remote_client.login(login_data.username, login_data.password)
+            candidate = await remote_client.login(login_data.username, login_data.password)
         except httpx.HTTPStatusError as e:
+            from katrain.web.core.remote_client import CloudIdentityChangedError
+
+            if isinstance(e, CloudIdentityChangedError):
+                raise HTTPException(status_code=409, detail={"code": "identity_changed"}) from None
             if e.response.status_code == 401:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Incorrect username or password",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-            raise HTTPException(status_code=e.response.status_code, detail=str(e))
-        except (httpx.ConnectError, httpx.TimeoutException):
+            raise HTTPException(status_code=e.response.status_code, detail="Remote authentication failed") from None
+        except (httpx.RequestError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Cannot connect to remote server",
             )
 
-        # Persist remote refresh_token to encrypted file
-        if remote_data.get("refresh_token"):
-            from katrain.web.core.credentials import save_refresh_token
-
-            save_refresh_token(settings.DEVICE_ID, remote_data["refresh_token"])
-
-        # Get or create local shadow user (design 5.3)
-        repo = request.app.state.user_repo
-        shadow_user = _get_or_create_shadow_user(repo, login_data.username)
-        remote_client.bind_user(shadow_user["id"])
-
-        # Issue local tokens (design 5.2)
-        local_access = create_access_token(data={"sub": shadow_user["username"]})
-        local_refresh = create_refresh_token(data={"sub": shadow_user["username"]})
-        _issue_loopback_sso_cookie(request, response, local_access)
-        return {"access_token": local_access, "token_type": "bearer", "refresh_token": local_refresh}
+        return _install_board_login(request, response, candidate)
 
     # Server mode: local authentication
     repo = request.app.state.user_repo
@@ -516,59 +495,37 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 
+def _install_board_login(request: Request, response: Response, candidate) -> dict:
+    """No await between the generation check and installing a verified candidate.
+
+    Password input or a submitted phone is never used as the local account name.
+    Existing shadows retain their existing local UUID and personalization.
+    """
+    from katrain.web.core.credentials import save_refresh_token
+    from katrain.web.core.remote_client import CloudIdentityChangedError
+
+    remote = request.app.state.remote_client
+    try:
+        remote.assert_login_candidate(candidate)
+        username = candidate.user["username"]
+        _reject_reserved_username(username)
+        shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, username)
+        if candidate.tokens.get("refresh_token"):
+            save_refresh_token(settings.DEVICE_ID, candidate.tokens["refresh_token"])
+        remote.install_login_candidate(candidate, user_id=shadow_user["id"])
+    except CloudIdentityChangedError:
+        raise HTTPException(status_code=409, detail={"code": "identity_changed"}) from None
+    access_token = create_access_token(data={"sub": shadow_user["username"]})
+    refresh_token = create_refresh_token(data={"sub": shadow_user["username"]})
+    _issue_loopback_sso_cookie(request, response, access_token)
+    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
+
+
 @router.post("/register", response_model=User)
-async def register(request: Request, register_data: LoginRequest, db: Session = Depends(get_db)) -> Any:
+async def register(request: Request) -> Any:
     if strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct registration disabled")
-    _reject_reserved_username(register_data.username)
-    remote_client = getattr(request.app.state, "remote_client", None)
-
-    if remote_client is not None:
-        # Board mode: forward to remote server (design 5.1)
-        try:
-            remote_user = await remote_client.register(register_data.username, register_data.password)
-            return User(**remote_user)
-        except httpx.HTTPStatusError as e:
-            detail = str(e)
-            try:
-                detail = e.response.json().get("detail", detail)
-            except Exception:
-                pass
-            raise HTTPException(status_code=e.response.status_code, detail=detail)
-        except (httpx.ConnectError, httpx.TimeoutException):
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Cannot connect to remote server",
-            )
-
-    # Server mode: local registration
-    from katrain.web.core.auth import get_password_hash
-
-    repo = request.app.state.user_repo
-    try:
-        user_dict = repo.create_user(
-            username=register_data.username,
-            hashed_password=get_password_hash(register_data.password),
-        )
-        # New accounts start at 0 credits (models_db.User.credits default). Any signup
-        # grant is opt-in via settings.BILLING_SIGNUP_GRANT and goes through billing.grant
-        # so it lands as a real, auditable ledger row instead of a silent column default.
-        if settings.BILLING_SIGNUP_GRANT > 0:
-            from katrain.web.core import billing
-
-            user_dict["credits"] = billing.grant(
-                db,
-                user_dict["id"],
-                settings.BILLING_SIGNUP_GRANT,
-                "signup",
-                f"signup:{user_dict['id']}",
-            )
-        return User(**user_dict)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+    raise HTTPException(status_code=400, detail={"code": "phone_verification_required"})
 
 
 @router.get("/me", response_model=User)
@@ -585,6 +542,16 @@ async def logout(request: Request, response: Response, current_user: User = Depe
 
     _clear_loopback_sso_cookie(request, response)
 
+    # Invalidate a pending candidate before the first external await. A platform
+    # teardown can be slow, and must never allow an older login to install itself
+    # while this logout is already in progress.
+    remote_client = getattr(request.app.state, "remote_client", None)
+    if remote_client is not None:
+        remote_client.clear_tokens()
+        from katrain.web.core.credentials import delete_credentials
+
+        delete_credentials(settings.DEVICE_ID)
+
     # Release any platform (星阵/OGS/...) connections this user holds on the
     # shared box's ONE global adapter-per-platform, without deleting their
     # saved credentials -- see PlatformManager.release_user. Otherwise the
@@ -594,14 +561,6 @@ async def logout(request: Request, response: Response, current_user: User = Depe
     platform_manager = getattr(request.app.state, "platform_manager", None)
     if platform_manager is not None:
         await platform_manager.release_user(current_user.id)
-
-    # Board mode: clear remote tokens + delete credential file (design 5.4)
-    remote_client = getattr(request.app.state, "remote_client", None)
-    if remote_client is not None:
-        remote_client.clear_tokens()
-        from katrain.web.core.credentials import delete_credentials
-
-        delete_credentials(settings.DEVICE_ID)
 
     # Clean up from lobby if present
     lobby_manager: LobbyManager = request.app.state.lobby_manager

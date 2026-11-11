@@ -23,6 +23,7 @@ from katrain.web.api.v1.endpoints.auth import SHADOW_USER_NO_LOCAL_AUTH
 from katrain.web.core import models_db
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token, create_refresh_token
 from katrain.web.core.config import settings
+from katrain.web.core.remote_client import RemoteLoginCandidate
 from katrain.web.server import create_app
 from katrain.web.session import LobbyManager, Matchmaker, SessionManager
 
@@ -46,7 +47,13 @@ def board_app():
 
     # Mock RemoteAPIClient (marks this as board mode)
     mock_client = MagicMock()
-    mock_client.login = AsyncMock()
+
+    async def verified_candidate(username, password):
+        return RemoteLoginCandidate(1, mock_client.login.return_value, {"username": username})
+
+    mock_client.login = AsyncMock(side_effect=verified_candidate)
+    mock_client.assert_login_candidate = MagicMock()
+    mock_client.install_login_candidate = MagicMock()
     mock_client.register = AsyncMock()
     mock_client._refresh_access_token = AsyncMock(return_value=True)
     mock_client.clear_tokens = MagicMock()
@@ -193,51 +200,15 @@ async def test_board_login_remote_timeout(board_app):
 
 
 @pytest.mark.asyncio
-async def test_board_register_forwards_to_remote(board_app):
-    """Board-mode register: forward to remote, return remote user."""
-    board_app.state.remote_client.register.return_value = {
-        "id": 42,
-        "uuid": "abc123",
-        "username": "newuser",
-        "rank": "20k",
-        "credits": 0.0,
-    }
+async def test_board_register_requires_phone_verification_without_remote_call(board_app):
+    """A board cannot retain the old unverified registration bypass."""
 
     async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1/auth/register", json={"username": "newuser", "password": "pass"})
 
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["username"] == "newuser"
-    board_app.state.remote_client.register.assert_called_once_with("newuser", "pass")
-
-
-@pytest.mark.asyncio
-async def test_board_register_remote_error(board_app):
-    """Remote register error → forwarded status code."""
-    mock_resp = MagicMock()
-    mock_resp.status_code = 400
-    mock_resp.json.return_value = {"detail": "User already exists"}
-    board_app.state.remote_client.register.side_effect = httpx.HTTPStatusError(
-        "400 Bad Request", request=MagicMock(), response=mock_resp
-    )
-
-    async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:
-        resp = await ac.post("/api/v1/auth/register", json={"username": "dup", "password": "pass"})
-
-    assert resp.status_code == 400
-    assert "User already exists" in resp.json()["detail"]
-
-
-@pytest.mark.asyncio
-async def test_board_register_remote_unreachable(board_app):
-    """Remote unreachable during register → 503."""
-    board_app.state.remote_client.register.side_effect = httpx.ConnectError("Connection refused")
-
-    async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:
-        resp = await ac.post("/api/v1/auth/register", json={"username": "u", "password": "p"})
-
-    assert resp.status_code == 503
+    assert resp.status_code == 400 and resp.json() == {"detail": {"code": "phone_verification_required"}}
+    board_app.state.remote_client.register.assert_not_awaited()
+    assert board_app.state.user_repo.get_user_by_username("newuser") is None
 
 
 # ── Refresh Tests ──

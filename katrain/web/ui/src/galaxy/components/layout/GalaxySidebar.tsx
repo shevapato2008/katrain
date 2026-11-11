@@ -46,6 +46,7 @@ import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';
+import PhoneBindingEntry from '../../../features/auth/PhoneBindingEntry';
 import { getGalaxyNavigation, isGalaxyNavigationActive } from './galaxyNavigation';
 import type { GalaxySidebarState } from './useGalaxySidebar';
 
@@ -431,6 +432,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
         ) : (
           <Button variant="outlined" fullWidth startIcon={<LoginIcon />} onClick={() => setLoginOpen(true)}>{t('Login', 'Sign In')}</Button>
         )}
+        <PhoneBindingEntry />
       </Box>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </Box>

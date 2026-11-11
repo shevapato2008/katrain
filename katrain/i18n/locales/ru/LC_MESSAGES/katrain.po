@@ -8461,3 +8461,145 @@ msgstr "Ожидаем подтверждения от WeChat Pay"
 msgid "membership:error_position_changed"
 msgstr ""
 "Позиция изменилась. Снова нажмите анализ и подтвердите новую стоимость."
+
+msgid "auth:otp_method"
+msgstr "Способ входа"
+
+msgid "auth:otp_tab"
+msgstr "Код из SMS"
+
+msgid "auth:password_tab"
+msgstr "Пароль аккаунта"
+
+msgid "auth:otp_phone"
+msgstr "Телефон (материковый Китай +86)"
+
+msgid "auth:otp_code"
+msgstr "Код подтверждения из SMS"
+
+msgid "auth:otp_send"
+msgstr "Получить код"
+
+msgid "auth:otp_sending"
+msgstr "Отправка…"
+
+msgid "auth:otp_retry"
+msgstr "Повторить через {seconds}с"
+
+msgid "auth:otp_submit"
+msgstr "Подтвердить и войти"
+
+msgid "auth:otp_verifying"
+msgstr "Проверка…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"Первая проверка незарегистрированного номера создаёт аккаунт. При первой "
+"регистрации нового номера начисляется 50 баллов. Номер, уже получавший баллы"
+" или привязанный ранее, не получает их повторно."
+
+msgid "auth:otp_existing_account"
+msgstr "Есть аккаунт? Войдите по паролю, затем привяжите телефон."
+
+msgid "auth:otp_requested"
+msgstr "Код запрошен. Он действует 5 минут; проверьте SMS."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"Статус отправки не подтверждён. Если код пришёл, его можно проверить. "
+"Дождитесь конца паузы, прежде чем решать, отправлять ли снова."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Введите 11-значный номер материкового Китая."
+
+msgid "auth:otp_invalid_code"
+msgstr "Введите правильный код из 6 цифр."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "Код недействителен. Запросите новый."
+
+msgid "auth:otp_challenge_expired"
+msgstr "Срок действия кода истёк. Запросите новый."
+
+msgid "auth:otp_challenge_used"
+msgstr "Код уже использован. Запросите новый."
+
+msgid "auth:otp_sms_limited"
+msgstr "Слишком много запросов SMS. Повторите позже."
+
+msgid "auth:otp_locked"
+msgstr "Слишком много неверных кодов. Повторите позже."
+
+msgid "auth:otp_unavailable"
+msgstr "SMS-сервис недоступен. Повторите позже или войдите по паролю."
+
+msgid "auth:otp_rejected"
+msgstr "Запрос SMS отклонён. Повторите позже или войдите по паролю."
+
+msgid "auth:otp_identity_changed"
+msgstr "Аккаунт для входа изменился. Начните заново."
+
+msgid "auth:otp_verification_required"
+msgstr "Зарегистрируйтесь с помощью кода из SMS."
+
+msgid "auth:bind_title"
+msgstr "Привязать телефон"
+
+msgid "auth:bind_password"
+msgstr "Текущий пароль аккаунта"
+
+msgid "auth:bind_policy"
+msgstr ""
+"После привязки можно входить по коду из SMS. Баланс и подписка сохраняются; "
+"повторные бонусные баллы не начисляются."
+
+msgid "auth:bind_submit"
+msgstr "Подтвердить привязку"
+
+msgid "auth:bind_submitting"
+msgstr "Привязка…"
+
+msgid "auth:bind_success"
+msgstr "Телефон успешно привязан"
+
+msgid "auth:bind_bound_label"
+msgstr "Привязанный телефон"
+
+msgid "auth:bind_load_error"
+msgstr "Не удалось загрузить статус привязки."
+
+msgid "auth:bind_loading"
+msgstr "Проверка привязки…"
+
+msgid "auth:bind_retry"
+msgstr "Повторить"
+
+msgid "auth:bind_not_allowed"
+msgstr "К этому аккаунту нельзя привязать телефон."
+
+msgid "auth:bind_auth_required"
+msgstr "Войдите заново перед привязкой телефона."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Номер привязан к другому аккаунту. Используйте другой номер."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Текущий пароль неверен. Введите его снова."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Слишком много попыток ввода пароля. Повторите через {seconds}с."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS-сервис недоступен. Повторите позже."
+
+msgid "auth:bind_sms_rejected"
+msgstr "Запрос SMS отклонён. Повторите позже."
+
+msgid "auth:bind_failed"
+msgstr "Привязка не завершена. Повторите позже."
+
+msgid "auth:bind_done"
+msgstr "Готово"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Управлять телефоном на главной"

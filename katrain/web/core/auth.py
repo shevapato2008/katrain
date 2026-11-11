@@ -129,9 +129,14 @@ class SQLAlchemyUserRepository(UserRepository):
         fresh_database = not inspect(engine).get_table_names()
         rank_tables = migrations.KIFU_RANK_TABLES
         startup_tables = [
-            table for table in models_db.Base.metadata.sorted_tables
-            if table.name not in (
-                migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES | rank_tables
+            table
+            for table in models_db.Base.metadata.sorted_tables
+            if table.name
+            not in (
+                migrations.KIFU_NAME_TABLES
+                | migrations.KIFU_EVENT_SELECTION_TABLES
+                | rank_tables
+                | migrations.PHONE_AUTH_TABLES
             )
         ]
         if fresh_database:
@@ -142,7 +147,11 @@ class SQLAlchemyUserRepository(UserRepository):
                 # Rank tables are explicit-only even for a new application database.
                 models_db.Base.metadata.create_all(
                     bind=conn,
-                    tables=[table for table in models_db.Base.metadata.sorted_tables if table.name not in rank_tables],
+                    tables=[
+                        table
+                        for table in models_db.Base.metadata.sorted_tables
+                        if table.name not in rank_tables | migrations.PHONE_AUTH_TABLES
+                    ],
                 )
                 migrations.install_kifu_name_change_immutability(conn)
         else:
@@ -157,6 +166,10 @@ class SQLAlchemyUserRepository(UserRepository):
             migrations.verify_kifu_event_selection_schema(engine)
             migrations.verify_kifu_name_change_immutability(engine)
             migrations.verify_kifu_name_indexes(engine)
+
+        # Verify the five private authentication tables before generic additive
+        # migrations can hide partial schema drift. Users already exists here.
+        migrations.migrate_phone_auth_schema(engine)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
         # to update game_id FK from games.id (Integer) to user_games.id (String)

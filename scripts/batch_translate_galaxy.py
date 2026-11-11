@@ -10530,6 +10530,9 @@ GALAXY_TRANSLATIONS = {
 MEMBERSHIP_TRANSLATIONS = json.loads((PROJECT_ROOT / "scripts" / "membership_translations.json").read_text(encoding="utf-8"))
 GALAXY_TRANSLATIONS.update(MEMBERSHIP_TRANSLATIONS)
 
+# Phone OTP login strings, scoped to this journey.
+GALAXY_TRANSLATIONS.update(json.loads((PROJECT_ROOT / "scripts" / "phone_otp_translations.json").read_text(encoding="utf-8")))
+
 
 def update_po_file(lang_code: str, translations: dict):
     """Update a single .po file with translations."""

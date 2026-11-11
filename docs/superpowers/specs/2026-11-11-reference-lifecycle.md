@@ -172,3 +172,21 @@ vision/status添加reference_status、目标/照片node与revision、简短reaso
 本稿推荐接受的性能取舍是一份有限快照加每次明确采纳动作至多一次现有模型见证，另每份参考至多一次争议见证；不是零额外NPU。若用户不接受该成本，明确使用single-contributor-only备选并承认参考经常limited，不能删掉见证却保留同等安全承诺。
 
 R1关闭已知平均源错配并撤销持续争议的永久空标签权；R2新增真实可读owner元数据和ACK后帧边界；R3在实际play提交锁内制作精确接受命令；R4丢弃所有不属于当前目标的迟到回执。仍不保证分类器零语义错误、不保证每手物理上都有合格照片，也不声称本B方案修复了A轮次/缓存问题。
+
+<!-- END VERBATIM APPROVED PROPOSAL -->
+
+## Authorized bounded same-position retry supplement — 2026-11-11
+
+The user requested a later qualified retry for transient failures during authorized implementation. This is a narrow approved increment, not a third design cycle; it supersedes only the original ordinary one-attempt/no-same-target-recovery budget. Original proposal text and source artifact remain unchanged.
+
+- Delta SHA256: `54884e71b6ebb4baa28691b227414aa7c881c6d6136f3c0db93dd0afe3df0920`.
+- Independent Astra Max Approved review SHA256: `3a7822582ef75ca84885684a4c8383fbf4b5212682e7935379e6d256c5922480`.
+- Source artifacts: root `output/diagnostics/reference-lifecycle-20261111/retry-delta.md` and `retry-delta-astra-review.json`.
+
+Ordinary capture gets at most TWO same-target witness attempts. Pre-inference eligibility failures consume none; starting the detector consumes an attempt even on exception or final owner/target rejection. After failure, retry needs at least1 monotonic second and two distinct fresh qualified stable owner frames, both newer than the failed frame in the same stream. A stream change requires a new qualified pair in the new stream but never resets spent attempts; control/LED changes likewise only restart qualification. The5s pending-to-limited status transition does not delete the unused retry. No sleeps, background loops or image history.
+
+Preserve the one target's spent count, cooldown and failed-frame/freshness gate across redundant BIND's real epoch change. Temporarily retain that single budget until SET_EXPECTED re-establishes the same source nonce/game/mode/worker plus actual node and canonical board; then remap it to the new TargetKey rather than refill. No warehouse of old target budgets. Truly changed target/legitimate undo publication or a new explicit verified recovery_id gets a new budget; duplicate force_rearm/no recovery id/status refresh/rename/repeated receipts never do. Candidate and disputed-cell authority do not revive through BIND/rename.
+
+Candidate, periodic-refresh and conflict witnesses retain their original one-attempt limits. A newer successful current reference suppresses pending obsolete retry; final adoption rechecks target and owners. Attempt2 failure remains limited. The additional possible witness is an honest extra performance cost, unmeasured on RK. It does not create an image of a missed intermediate position or alter game legality.
+
+Event000006 only proves later reference creation at depth1; it does not prove same-target retry because the target changed. The old worker loop separately demonstrates repeated eligible attempts. Likewise “last stable frame” means the exact same source used for witness/reference, not an extra photograph; stability does not prove absence of hands and does not authorize new hand detection/classes.

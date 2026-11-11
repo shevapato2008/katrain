@@ -133,6 +133,7 @@ class _Batch:
         "finished",
         "request_revision",
         "final_dark",
+        "io_started",
     )
 
     def __init__(self, commands: List[str], strict: bool):
@@ -147,6 +148,7 @@ class _Batch:
         self.guidance_revision = None
         self.finished = False
         self.request_revision = None
+        self.io_started = False
         # Only a known, completely dark frame followed by a final SHOW can
         # authenticate reference capture. An intermediate blackout cannot.
         lit = None
@@ -660,7 +662,6 @@ class LedService:
     def _run_batch(self, batch: _Batch) -> None:
         errors: List[str] = []
         shown_at = None
-        started = False
         if batch.deadline is None:
             batch.deadline = self._clock() + _STRICT_TIMEOUT
             batch.real_deadline = time.monotonic() + _STRICT_TIMEOUT
@@ -683,13 +684,16 @@ class LedService:
                 break
             if batch.cancelled or self._batch_remaining(batch) <= 0 or self._stop.is_set():
                 errors.append("timeout" if not self._stop.is_set() else "stopped")
-                if started:
+                if batch.io_started:
                     self._close_serial()
                 break
-            started = True
             # As in the open handshake, each display command needs its own
             # response. A buffered prior ACK cannot certify the final SHOW.
-            self._drain_prewrite_input()
+            # Preserve an unfinished LINK line for the existing ACK parser;
+            # discarding its buffered tail would leave framing out of sync.
+            if not self._link_partial_line:
+                self._drain_prewrite_input()
+            batch.io_started = True
             ok, resp = self._send_and_ack(cmd, deadline=batch.deadline, real_deadline=batch.real_deadline)
             if batch.cancelled or self._batch_remaining(batch) <= 0:
                 errors.append("timeout")
@@ -915,7 +919,10 @@ class LedService:
                 return
             batch.finished = True
             if not ok:
-                self._invalidate_reference_lighting()
+                # A rejected old request that never reached serial cannot
+                # invalidate a newer frame's successful dark SHOW.
+                if batch.io_started or batch.request_revision == self._reference_request_revision:
+                    self._invalidate_reference_lighting()
             elif (
                 batch.request_revision == self._reference_request_revision
                 and batch.generation == self._generation

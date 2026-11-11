@@ -1167,8 +1167,8 @@ def test_late_link_response_does_not_consume_clear_or_show_ack(late):
 
 
 @pytest.mark.parametrize("show_ack", [False, True])
-@pytest.mark.parametrize("tail_reads", [1, 2])
-def test_truncated_link_ack_tail_cannot_shift_command_acknowledgements(show_ack, tail_reads):
+@pytest.mark.parametrize("tail_reads,tail_arrival", [(1, "after_write"), (2, "after_write"), (1, "before_write")])
+def test_truncated_link_ack_tail_cannot_shift_command_acknowledgements(show_ack, tail_reads, tail_arrival):
     svc, serial, clock = _link_service("")
     prefix, tail = _link_line().split("ack=", 1)
 
@@ -1178,12 +1178,14 @@ def test_truncated_link_ack_tail_cannot_shift_command_acknowledgements(show_ack,
         if command == "LINK":
             serial._buf.append((prefix + "ack=").encode("ascii"))  # No newline before the 200ms deadline.
         elif command == "CLEAR":
-            if tail_reads == 2:
-                serial._buf.append(b"OK")  # The late tail can itself span a read timeout.
-                remaining_tail = tail[2:]
-            else:
-                remaining_tail = tail
-            serial._buf.extend([(remaining_tail + "\n").encode("ascii"), b"OK\n"])
+            if tail_arrival == "after_write":
+                if tail_reads == 2:
+                    serial._buf.append(b"OK")  # The late tail can itself span a read timeout.
+                    remaining_tail = tail[2:]
+                else:
+                    remaining_tail = tail
+                serial._buf.append((remaining_tail + "\n").encode("ascii"))
+            serial._buf.append(b"OK\n")
         elif command != "SHOW" or show_ack:
             serial._buf.append(b"OK\n")
 
@@ -1192,6 +1194,8 @@ def test_truncated_link_ack_tail_cannot_shift_command_acknowledgements(show_ack,
     assert svc.is_board_connected() is None
     assert clock() <= 1000.2 + 0.0001
     assert serial.timeout == 2.0
+    if tail_arrival == "before_write":
+        serial._buf.append((tail + "\n").encode("ascii"))
     batch = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
     svc._run_batch(batch)
     assert batch.result["ok"] is show_ack
@@ -2136,9 +2140,14 @@ def test_reference_lighting_superseded_raw_batch_cannot_change_new_dark_display(
     stale = svc._queue.get_nowait()
     svc.clear()
     svc._run_batch(svc._queue.get_nowait())
-    assert svc.reference_lighting_snapshot().all_dark
+    token = svc.reference_lighting_snapshot()
+    assert token.all_dark
     serial.written.clear()
     svc._run_batch(stale)
     assert serial.written == []
     assert stale.result["ok"] is False
+    assert svc.reference_lighting_snapshot() == token
+    commits = []
+    assert svc.try_commit_reference_lighting(token, lambda: commits.append("current"))
+    assert commits == ["current"]
     svc._close_serial()

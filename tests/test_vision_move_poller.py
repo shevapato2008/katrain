@@ -1055,3 +1055,87 @@ def test_local_reference_receipt_uses_actual_commit_before_later_publish_and_rel
     if interleave == "ai":
         assert commands[-2].data["expected_node_id"] == id(w.game.current_node)
         assert commands[-2].data["board"][4][4] == 2
+
+
+@pytest.mark.parametrize("outcome", ["accepted", "late_after_ai", "rejected"])
+def test_real_local_game_commit_hands_qualified_photo_to_real_worker(outcome):
+    """Exercise game→service FIFO→worker adoption with only hardware/model fakes."""
+    import numpy as np
+    from katrain.core.constants import PLAYER_HUMAN
+    from katrain.core.sgf_parser import Move
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+    from katrain.vision.service import VisionService
+    from katrain.web.interface import WebKaTrain
+    from katrain.web.api.v1.endpoints.vision import reference_candidate_enabled_for_session
+    from tests.test_vision.test_reference_frame import _lifecycle_worker, _source, _board_frame, _det
+
+    w = WebKaTrain(force_package_config=True, enable_engine=False)
+    w.save_config = lambda *args, **kwargs: None
+    w.message_callback = lambda *args, **kwargs: None
+    w.start()
+    for player in w.players_info.values():
+        player.update(player_type=PLAYER_HUMAN)
+    session = FakeSession()
+    session.katrain = w
+    app = _app(FakeSessionManager({"s1": session}))
+    worker, _, _ = _lifecycle_worker()
+    vision = VisionService(VisionServiceConfig())
+    vision._worker = worker
+    vision.bind_session(
+        "s1",
+        session=session,
+        reference_candidate_enabled=reference_candidate_enabled_for_session(app, "s1", session),
+    )
+    source = vision.capture_binding_source("s1", session)
+    parent = w.game.current_node
+    vision.publish_expected_from_stones(source, [], expected_node_id=id(parent))
+    worker._drain_commands()
+    baseline = worker._reference_target
+    accepted = np.zeros((19, 19), dtype=int)
+    accepted[3, 3] = 1
+    image = _board_frame([(3, 3, 1)])
+    worker._detector.detect.return_value = [_det(3, 3, 0)]
+    _source(worker, 1, raw=image)
+    gray = _source(worker, 2, raw=image)
+    move = ConfirmedMove(3, 3, 1, 8, vision.binding_epoch, vision.expected_revision)
+    worker._stage_reference_candidate(move, accepted, accepted, gray)
+    frozen = worker._reference_candidate
+    assert frozen is not None and frozen.baseline == baseline
+    vision.get_board_observation = lambda: (None, 0)
+    if outcome == "rejected":
+        w.game.play(Move((10, 10), player="B"))
+        w.game.play(Move((11, 11), player="W"))
+    elif outcome == "late_after_ai":
+
+        def ai_callback(*_):
+            if w.game.current_node.depth != 1:
+                return
+            w.game.play(Move((4, 14), player="W"))
+            vision.publish_expected_from_stones(
+                source, w.get_state()["stones"], expected_node_id=id(w.game.current_node)
+            )
+
+        w.update_state_callback = ai_callback
+    asyncio.run(_handle_confirmed_move(app, vision, "s1", move, log))
+    queued = []
+    while not worker._cmd_queue.empty():
+        queued.append(worker._cmd_queue.get_nowait())
+    if outcome == "late_after_ai":
+        receipts = [cmd for cmd in queued if cmd.action == CommandType.ACCEPT_REFERENCE_CANDIDATE]
+        queued = [
+            cmd
+            for cmd in queued
+            if cmd.action not in (CommandType.ACCEPT_REFERENCE_CANDIDATE, CommandType.RELEASE_CONFIRMED_MOVE)
+        ] + receipts
+    for cmd in queued:
+        worker.send_command(cmd)
+    before_inferences = worker._detector.detect.call_count
+    worker._drain_commands()
+    if outcome == "accepted":
+        assert worker._reference is frozen.reference
+        assert worker._reference_position == worker._reference_target
+        assert worker._reference.board[3, 3] == 1
+    else:
+        assert worker._reference is None
+    assert worker._detector.detect.call_count == before_inferences

@@ -6,12 +6,14 @@ in-thread — no subprocess overhead, easy to debug.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
 import os
 import queue
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -32,7 +34,14 @@ from katrain.vision.gating import (
     should_feed_sync,
     should_feed_sync_frame,
 )
-from katrain.vision.ipc import CommandType, ConfirmedMove, LocalWindowObservation, WorkerCommand, WorkerStatus
+from katrain.vision.ipc import (
+    CommandType,
+    ConfirmedMove,
+    LocalWindowObservation,
+    ReferenceTargetKey,
+    WorkerCommand,
+    WorkerStatus,
+)
 from katrain.vision.led_geometry_calibrator import (
     ROI_CELLS,
     ROI_RADIUS_MIN_PX,
@@ -82,20 +91,11 @@ REFERENCE_ZNCC = 0.90
 # wrong (the player really took that stone off), the board surfaces it after this many frames plus
 # Sync's own 7 s missing hold, so keep it well under a minute.
 REFERENCE_HOLD_KEEP = 90  # frames, ~36 s at 2.3 fps
-# ... while everything else is held only briefly: a stone on a point the game thinks is empty (the
-# reference may be the wrong one -- captured with that stone already on the board and unnoticed), and
-# a colour disagreement, which board_state.py:316 already releases on its own after 15 raw frames and
-# must not be re-blocked for longer than that.
-# ⚠️ 2026-09-24 起,这个上限**只管颜色判错那一路**。「参考帧说空、检测器说有子」(凭空多出一颗子)
-# 已按 Fan 的裁定改为**无上限** —— 现场实测 10 帧(~4.4 秒)会被静态反光烧穿,而放行是粘的,
-# 于是同一颗假白子在 (18,12) 上重播了 8 分 48 秒、一局之内复发三轮。详见 _reference_check。
+# Colour disagreements keep the short historical budget. Empty labels instead yield
+# to repeated confidence-backed contradictions and one whole-board conflict witness.
 REFERENCE_HOLD_SUPPRESS = 10  # frames, ~4 s at 2.3 fps -- colour disagreements only
-# While the game does not advance (a long think), light drifts and the reference ages out. Every this
-# many seconds the next frame that passes every capture guard re-samples, cell by cell, only what still
-# matches -- the current sample at REFERENCE_ZNCC and the sample from when the game last advanced at
-# REFERENCE_ANCHOR_ZNCC. On the synthetic board a soft shadow edge sweeping across a cell bottoms out at
-# 0.545 against the anchor while every real occupancy change measures <= 0.21, hence 0.45 (0.70 would
-# refuse exactly the drift this exists for). Provisional until the board's shadow logs. See design §4.1.
+# One qualified unaveraged refresh witness at most once per minute.
+REFERENCE_ADVISORY_MEDIAN_DELTA = 5.0
 REFERENCE_REFRESH_S = 60.0
 REFERENCE_ANCHOR_ZNCC = 0.45
 REFERENCE_MODES = ("off", "shadow", "on")
@@ -109,6 +109,39 @@ REFERENCE_MODES = ("off", "shadow", "on")
 # 而且顺手销毁了参考帧(RESET_SYNC → _invalidate_reference),等于在最需要否决的时刻自废武功。
 DENIAL_ZNCC = REFERENCE_ZNCC
 LOCAL_BOOTSTRAP_SECONDS = 8.0
+
+
+@dataclass(frozen=True)
+class _ReferenceSource:
+    # Only the last qualified unaveraged frame is selected, never re-read at adoption.
+    bgr: np.ndarray
+    gray: np.ndarray
+    metadata: Any
+    lighting: Any
+    geometry: Any
+    context: tuple
+
+
+@dataclass
+class _ReferenceAttempt:
+    target: ReferenceTargetKey
+    recovery_id: Any = None
+    spent: int = 0
+    not_before: float = 0.0
+    failed_stream: int | None = None
+    failed_seq: int = -1
+
+
+@dataclass
+class _ReferenceCandidate:
+    token: tuple
+    baseline: ReferenceTargetKey
+    reference: ReferenceFrame
+    metadata: Any
+    lighting: Any
+    geometry: Any
+    created_at: float
+    observations_left: int = 8
 
 
 @dataclass
@@ -265,8 +298,27 @@ class InProcessAdapter:
     def supports_local_confirmation(self) -> bool:
         return self._ref_mode == "on" and callable(getattr(self._camera, "read_frame_identified", None))
 
-    def __init__(self, config: dict[str, Any], camera=None):
+    def __init__(self, config: dict[str, Any], camera=None, *, lighting_owner=None, lighting_disabled=False):
         self._config = config
+        self._lighting_owner = lighting_owner
+        self._lighting_disabled = lighting_disabled is True
+        self._reference_target: ReferenceTargetKey | None = None
+        self._reference_position: ReferenceTargetKey | None = None
+        self._reference_origin = None
+        self._reference_continuity_lost = False
+        self._reference_source: _ReferenceSource | None = None
+        self._reference_pair = []
+        self._reference_candidate: _ReferenceCandidate | None = None
+        self._reference_candidate_enabled = False
+        self._candidate_attempted_token = None
+        self._reference_attempt: _ReferenceAttempt | None = None
+        self._reference_rebind_attempt = False
+        self._reference_pending_at = time.monotonic()
+        self._reference_reason = "owner evidence unavailable"
+        self._reference_refresh_attempt_at = 0.0
+        self._reference_conflict_attempted = False
+        self._reference_source_nonce = None
+        self._reference_worker_generation = None
         self._thread: threading.Thread | None = None
         self._running = False
         self._usb_requested = threading.Event()
@@ -367,9 +419,11 @@ class InProcessAdapter:
         self._reference: ReferenceFrame | None = None
         self._ref_compare_failed = False  # 只吼一次的闩
         self._ref_disagree = None  # 上一帧被参考帧否决的格子(逐格掩码)
-        self._ref_stale = False  # 不再领先一手;等新参考照上来替换,期间照常按像素否决
+        self._ref_stale = False  # older target; only authority-agreeing cells can compare
         grid = (board_config.grid_size, board_config.grid_size)
         self._ref_hold = np.zeros(grid, dtype=int)  # veto frames spent per cell, over this reference's life
+        self._ref_disputed = np.zeros(grid, dtype=bool)
+        self._ref_evidence = np.zeros(grid, dtype=int)
         self._ref_released = np.zeros(grid, dtype=bool)  # cells whose budget ran out: no longer vetoed
         self._ref_vetoing = False  # the last check disagreed somewhere (applied in "on", logged in shadow)
         self._ref_log_frame = -1
@@ -527,14 +581,15 @@ class InProcessAdapter:
         return kept
 
     def _invalidate_reference(self, reason: str) -> None:
-        """只在参考帧**没法再比**时才销毁(换了单应/换了帧尺寸/比对本身失败)。
-
-        记账类的理由(暂停、对局不再领先一手)一律不走这里 —— 见 Fan 2026-09-24 的原则:
-        照到新的参考帧才允许销毁旧的。空置不省空间(任何时刻只持有一份),只会让否决失效。
-        """
+        """Retire unusable evidence without refilling the ordinary target budget."""
+        self._reference_reason = reason
         if self._reference is not None:
             logger.info("refcheck reference dropped: %s", reason)
         self._reference = None
+        self._reference_position = None
+        self._reference_origin = None
+        self._reference_candidate = None
+        self._clear_reference_source()
         self._ref_stale = False
         self._reset_reference_budget()
 
@@ -645,194 +700,439 @@ class InProcessAdapter:
         logger.info("not-a-stone suppresses %s", ", ".join(f"({r},{c})" for r, c in hits))
         return effective
 
-    def _reference_check(self, board: np.ndarray, gray: np.ndarray | None) -> np.ndarray:
-        """The board to hand downstream: cells that still look exactly as they did when the board last
-        matched the game record keep that value, for a bounded number of frames.
+    def _reference_check(self, board, gray, *, raw_observed=None, confidences=None):
+        """Historical evidence only applies where its label still matches authority.
 
-        The caller's array is board assignment's own history (_last_stable_board, and through it the
-        hysteresis, the sustain tier and the colour-flip release) and is never modified: a veto fed
-        back there would re-assert itself through the state it corrupted and have no way out.
-        Everything downstream -- MoveDetector (including the baseline its force_sync takes after a
-        confirmed move), the stuck-stone promoter, Sync, status -- consistently sees the board this
-        returns; MoveDetector's baseline is re-synced to the game record on every SET_EXPECTED_BOARD.
+        Repeated confidence-backed contradictions withdraw empty-label permission. An
+        unresolved whole-board witness uses the existing ambiguous confirmation flow.
         """
         reference = self._reference
-        if reference is None or gray is None:
-            self._ref_disagree = None
+        self._ref_vetoing = False
+        self._ref_disagree = None
+        if reference is None or gray is None or self._expected_np is None or not self._reference_live():
             return board
         sampler = reference.sampler
-        if gray.shape[:2] != (sampler.img_h, sampler.img_w):  # the next capture rebuilds the sampler
-            self._ref_sampler = None
-            return board  # 这一帧比不了 —— 但**不销毁**:下一次拍到新参考自会替换它(Fan 的原则)
+        if gray.shape[:2] != (sampler.img_h, sampler.img_w):
+            self._reference_candidate = None
+            self._clear_reference_source()
+            return board
         try:
             unchanged, sim = reference.unchanged(gray, REFERENCE_ZNCC)
-        except Exception:  # a real bug here must be loud, and must never take recognition down with it
-            # 比对**失败**不等于旧参考作废。销毁它换不来空间(任何时刻只持有一份),只会让一次
-            # 偶发异常永久关掉否决 —— 而新参考要等「不暂停 + 无亮灯 + 盘面等于记录」才拍得成。
-            # 只跳过这一帧;真拍到新的那一刻它自然被替换。每份参考只吼一次,免得逐帧刷屏。
+        except Exception:
             if not self._ref_compare_failed:
                 self._ref_compare_failed = True
                 logger.warning("refcheck comparison failed; skipping this frame, keeping the reference", exc_info=True)
             return board
+        valid = reference.board == self._expected_np
         for row, col in self._lit_points:
-            unchanged[row][col] = False  # a lit lamp changes the cell's look on its own
-        disagree = unchanged & (board != reference.board) & ~self._ref_released
-        self._ref_vetoing = bool(disagree.any())
-        self._ref_disagree = disagree
-        if not self._ref_vetoing:
-            return board
-        # Counted over this reference's whole life, never reset on an agreeing frame: a detector that
-        # sees the stone only every other frame would never exhaust a consecutive counter, and the
-        # veto would become permanent -- exactly the failure the limit exists to prevent. A new
-        # reference zeroes them.
+            valid[row, col] = False
+        if raw_observed is not None and confidences is not None:
+            evidence = valid & (reference.board == EMPTY) & (raw_observed != EMPTY) & ~self._ref_released
+            confidence_backed = np.zeros_like(evidence)
+            for (row, col), confidence in confidences.items():
+                confidence_backed[row, col] = confidence >= self._add_threshold
+            evidence &= confidence_backed
+            self._ref_evidence[evidence] += 1
+            conflict = evidence & (self._ref_evidence >= self._move_detector.consistency_frames)
+            if conflict.any():
+                witnessed = None
+                if not self._reference_conflict_attempted:
+                    # Freeze the whole conflict set once, even if no owner-qualified source exists.
+                    self._reference_conflict_attempted = True
+                    source = self._reference_source
+                    with self._time_reference_witness("conflict"):
+                        result = self._witness_reference(source, self._reference_target)
+                        if result is not None:
+                            accepted = [False]
+                            if self._commit_reference(source, lambda: accepted.__setitem__(0, True)) and accepted[0]:
+                                witnessed = result
+                resolved = conflict & (witnessed == raw_observed) if witnessed is not None else np.zeros_like(conflict)
+                self._ref_released |= conflict
+                self._ref_disputed |= conflict & ~resolved
+                self._reference_reason = "reference empty label disputed"
+        disagree = unchanged & valid & (board != reference.board) & ~self._ref_released
         self._ref_hold[disagree] += 1
-        # Only "the game knows a stone here and the detector now sees nothing" earns the long hold.
-        # A colour disagreement gets the short one: board_state.py:316 releases a wrong colour after
-        # 15 raw frames by design, and this must not quietly re-block that for half a minute.
         missing = (reference.board != EMPTY) & (board == EMPTY)
-        # Fan 2026-09-24 的裁定:**只要当前画面和参考帧比对没有变化,就持续否定这里有落子。**
-        # 压制方向(参考帧说空、检测器说有子)因此**没有帧数上限** —— 它的结束条件是像素本身变了
-        # (zncc 掉到 REFERENCE_ZNCC 以下,`unchanged` 为假),或者换了一份新参考帧。
-        #
-        # 09-24 现场:`(18,12)` 以 zncc=0.98 被否决满 10 帧后预算耗尽、放行、弹窗,而 `_ref_released`
-        # 是粘的 ⇒ 这一格在这份参考帧余生里不再被否决;偏偏新参考帧要等「盘面==记录」才建得成,
-        # 而那颗假子正好让盘面对不上 —— 死锁,同一颗假阳性无限重播。`(6,5)` 同样,它被确认成
-        # 「一手棋」时的峰值置信度只有 0.55(当天真子 0.63-0.84)。
-        #
-        # ⚠️ 已知代价(Fan 知情并拍板):参考帧的**矩阵**若在拍摄那刻就错了(某格其实压着一颗子,
-        # 而检测器与对局记录同时漏了它),那颗子将被永久否决且无自动恢复 —— 原先那 10 帧上限
-        # 正是留给这一种的逃生口。恢复手段改由人来给:重新标定,或将来的「不是落子」反向确认。
-        # 「凭空多出一颗子」= 参考帧说空、检测器说有 —— 这一种**没有上限**(Fan 的裁定)。
-        # 另外两种保留各自的预算:`missing`(记录有子而检测器看不见)给长预算;**颜色判错**给短预算
-        # —— 颜色不是"有没有落子",而 board_state.py:316 本来就会在 15 帧后释放一个错颜色,
-        # 参考帧不该把它永久反锁,否则一颗被认错颜色的子再也纠正不回来。
         invented = (reference.board == EMPTY) & (board != EMPTY)
         limit = np.where(missing, REFERENCE_HOLD_KEEP, REFERENCE_HOLD_SUPPRESS)
         exhausted = disagree & ~invented & (self._ref_hold > limit)
-        if exhausted.any():
-            # The detector has insisted on these cells for too long: it wins there, for the rest of
-            # this reference's life. Only those cells -- one daylight glare often loses a stone AND
-            # invents another in the same frames, and releasing the invented one must not cut the long
-            # hold on the lost one. If the reference was the poisoned one (a stone already on the
-            # board when it was taken), this is the exit: the real stone lands, the game moves on, and
-            # the next capture replaces the reference.
-            self._ref_released |= exhausted
-            # 放行不许静默(升到 warning):预算耗尽 = 参考帧说「这里没变」而我们仍然放它进盘面。
-            # 两种可能都要看得见 —— 参考帧矩阵被毒化(真有子),或一个我们挡不住的假阳性。
-            er, ec = np.nonzero(exhausted)
-            logger.warning(
-                "refcheck releases %s after the hold budget ran out: the detector kept disagreeing",
-                ", ".join(
-                    f"({r},{c}) board={board[r][c]} ref={reference.board[r][c]}"
-                    for r, c in zip(er.tolist(), ec.tolist())
-                ),
-            )
-            disagree &= ~exhausted
-            self._ref_vetoing = bool(disagree.any())
-            if not self._ref_vetoing:
-                return board
-        rows, cols = np.nonzero(disagree)
-        if self._frame_count != self._ref_log_frame:
+        self._ref_released |= exhausted
+        disagree &= ~exhausted
+        self._ref_disagree = disagree
+        self._ref_vetoing = bool(disagree.any())
+        if self._ref_vetoing and self._frame_count != self._ref_log_frame:
             self._ref_log_frame = self._frame_count
-            shown = ", ".join(
-                f"({r},{c}) board={board[r][c]} ref={reference.board[r][c]} zncc={sim[r][c]:.2f} "
-                f"held={self._ref_hold[r][c]}/"
-                f"{'inf' if invented[r][c] else (REFERENCE_HOLD_KEEP if missing[r][c] else REFERENCE_HOLD_SUPPRESS)}"
-                for r, c in list(zip(rows.tolist(), cols.tolist()))[:4]
-            )
+            rows, cols = np.nonzero(disagree)
             logger.info(
-                "refcheck %s %d cell(s): %s%s",
-                "keeps" if self._ref_mode == "on" or (self._monitor and self._ref_mode == "shadow") else "would keep",
+                "refcheck %s %d cell(s): %s",
+                "keeps" if self._ref_mode == "on" else "would keep",
                 len(rows),
-                shown,
-                " ..." if len(rows) > 4 else "",
+                ", ".join(f"({r},{c}) zncc={sim[r,c]:.2f}" for r, c in zip(rows[:4], cols[:4])),
             )
-        # Monitor mode has no low-confidence confirmation dialog. Apply the same reference veto
-        # there even when game sessions are still running the checker in shadow mode.
         if self._ref_mode != "on" and not (self._monitor and self._ref_mode == "shadow"):
-            return board  # shadow: the same object, so nothing downstream can diverge
+            return board
         effective = board.copy()
         effective[disagree] = reference.board[disagree]
         return effective
 
-    def _maybe_capture_reference(self, board: np.ndarray, observed: np.ndarray, gray: np.ndarray | None) -> None:
-        """Take a new reference only when nothing can be hiding in the picture.
+    def _lighting_snapshot(self):
+        if self._lighting_disabled:
+            return None
+        owner = self._lighting_owner
+        if owner is None:
+            return None
+        try:
+            token = owner.reference_lighting_snapshot()
+            if (
+                token.available
+                and token.all_dark
+                and token.request_revision == token.shown_revision
+                and token.shown_at is not None
+            ):
+                return token
+        except Exception:
+            logger.warning("reference lighting snapshot unavailable", exc_info=True)
+        return None
 
-        `board` is the RAW voted board and `observed` this frame's pre-vote observation; both must
-        equal the game record. Requiring only the voted one is not enough: the two-frame vote holds
-        the previous value on the first frame a cell changes, so the very frame a new stone appears
-        still votes "empty" while `pending_move` is not set yet (MoveDetector runs later in the loop).
-        That frame would photograph the stone and label its cell empty. The pre-vote board sees the
-        stone immediately, so demanding both closes that window.
+    def _camera_current(self, metadata) -> bool:
+        check = getattr(self._camera, "is_frame_metadata_current", None)
+        try:
+            return metadata is not None and callable(check) and check(metadata) is True
+        except Exception:
+            return False
 
-        Never pass the reference-corrected board here: a corrected board would let a wrong veto
-        authorise its own replacement reference. Even with all of this, board == game record is
-        agreement between two fallible matrices, not proof of the pixels. 压制方向的帧数上限原本是
-        这条风险的最后一道兜底,2026-09-24 已按 Fan 的裁定退役 —— 代价写在 _reference_check 里。
+    def _origin_current(self, metadata, lighting, geometry) -> bool:
+        return (
+            geometry is self._geometry
+            and self._camera_current(metadata)
+            and (self._lighting_disabled or (lighting is not None and lighting == self._lighting_snapshot()))
+        )
 
-        Only ever called on a still frame (the loop reaches it inside its motion gate), so motion is
-        not re-checked here.
+    def _reference_live(self):
+        # A later lamp request retires acquisition/retention permission, not the
+        # correctly captured historical pixels. Lit cells are excluded separately.
+        if self._reference_origin is None:
+            return False
+        metadata, _, geometry = self._reference_origin
+        if self._reference_continuity_lost or geometry is not self._geometry or not self._camera_current(metadata):
+            self._reference_continuity_lost = True
+            return False
+        return True
 
-        `self._paused` blocks **taking** a new reference, and that is all it should do. Dropping the
-        reference the pause began with was the 2026-09-24 field failure: every move pauses the
-        orchestrator (lag while the board catches up), so the reference died 12 times in one game and
-        the veto was unavailable for almost all of it -- (18,12) was vetoed for 3 frames at zncc=1.00,
-        then the reference went and the same false white stone reached the screen as 12 popups.
-        Keeping it across a pause is safe because the veto is gated on the pixels, not on game state:
-        `disagree` requires `unchanged` at REFERENCE_ZNCC, so anything the player physically moves
-        while paused drops that cell's correlation and cannot be vetoed. REFERENCE_HOLD_* bounds
-        whatever is left.
-        """
-        expected = self._expected_np
+    def _commit_reference_origin(self, origin, commit) -> bool:
+        metadata, lighting, geometry = origin
+        # Owner checks, image construction and model work MUST stay outside the LED lock.
+        if not self._origin_current(metadata, lighting, geometry):
+            self._reference_reason = "owner continuity changed"
+            return False
+        if self._lighting_disabled:
+            commit()
+            return True
+        try:
+            return bool(self._lighting_owner.try_commit_reference_lighting(lighting, commit))
+        except Exception:
+            logger.warning("reference lighting commit rejected", exc_info=True)
+            return False
+
+    def _commit_reference(self, source, commit, *, target=None) -> bool:
+        if target is not None and target != self._reference_target:
+            return False
+        return self._commit_reference_origin((source.metadata, source.lighting, source.geometry), commit)
+
+    def _clear_reference_source(self):
+        self._reference_source = None
+        self._reference_pair.clear()
+
+    def _observe_reference_source(self, bgr, metadata):
+        """Qualify two distinct owner frames; freeze ONLY the last frame's raw pixels."""
+        self._reference_source = None
+        if self._ref_mode == "off":
+            self._reference_pair.clear()
+            return
+        if self._reference_origin is not None:
+            self._reference_live()
+        token = self._lighting_snapshot()
         if (
-            self._ref_mode == "off"
-            or gray is None
-            or not (self._bound or self._monitor)
-            or (self._paused and not self._local_confirmation_mode)
-            or self._lit_points
-            or expected is None
-            or self._geometry is None
-            or self._move_detector.pending_move is not None
-            or self._ref_vetoing  # this frame's board is being corrected: don't freeze that state
-            or not np.array_equal(board, expected)
-            or not np.array_equal(observed, expected)
+            self._geometry is None
+            or metadata is None
+            or not self._camera_current(metadata)
+            or (not self._lighting_disabled and token is None)
+            or self._usb_requested.is_set()
+            or self._usb_waiting_fresh
+            or not metadata.ownership_known
+            or metadata.controls_requested_generation != metadata.controls_applied_generation
+            or metadata.controls_completed_at is None
+            or metadata.camera_read_monotonic <= metadata.controls_completed_at
+            or not (metadata.controls_effective is True or (metadata.controls_effective is False and metadata.advisory))
+            or (token is not None and metadata.camera_read_monotonic <= token.shown_at + 0.2)
         ):
+            self._reference_pair.clear()
+            self._reference_candidate = None
+            self._reference_reason = "camera or lighting qualification pending"
             return
-        now = time.monotonic()
-        if self._reference is not None and np.array_equal(self._reference.board, board):
-            if now - self._ref_taken_at >= REFERENCE_REFRESH_S:
-                self._refresh_reference(gray, now)
+        ok, reason, stats = check_frame_exposure(bgr)
+        if not ok:
+            self._reference_pair.clear()
+            self._reference_candidate = None
+            self._reference_reason = reason
             return
-        h, w = gray.shape[:2]
-        if self._ref_sampler is None or (self._ref_sampler.img_w, self._ref_sampler.img_h) != (w, h):
-            extractor = self._active_extractor()
-            self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
-        self._reference = ReferenceFrame(self._ref_sampler, gray, board)
+        context = (
+            id(self._geometry),
+            bgr.shape,
+            metadata.stream_generation,
+            metadata.controls_requested_generation,
+            metadata.controls_applied_generation,
+            metadata.controls_effective,
+            metadata.advisory,
+            token,
+        )
+        if self._reference_pair and self._reference_pair[-1][0] != context:
+            self._reference_pair.clear()
+            self._reference_candidate = None
+        if self._reference_pair and metadata.frame_seq <= self._reference_pair[-1][1]:
+            return
+        self._reference_pair.append((context, metadata.frame_seq, stats["median"], metadata))
+        self._reference_pair = self._reference_pair[-2:]
+        if len(self._reference_pair) < 2:
+            return
+        if metadata.advisory and abs(self._reference_pair[0][2] - stats["median"]) > REFERENCE_ADVISORY_MEDIAN_DELTA:
+            self._reference_reason = "advisory exposure unstable"
+            return
+        raw = bgr.copy()
+        raw.flags.writeable = False
+        gray = to_gray(raw)
+        gray.flags.writeable = False
+        self._reference_source = _ReferenceSource(raw, gray, metadata, token, self._geometry, context)
+        candidate = self._reference_candidate
+        if candidate is not None:
+            candidate.observations_left -= 1
+            if (
+                time.monotonic() - candidate.created_at >= 5
+                or candidate.observations_left <= 0
+                or not self._origin_current(candidate.metadata, candidate.lighting, candidate.geometry)
+            ):
+                self._reference_candidate = None
+
+    @contextmanager
+    def _time_reference_witness(self, kind):
+        self._reference_witness_started_at = None
+        try:
+            yield
+        finally:
+            started = self._reference_witness_started_at
+            self._reference_witness_started_at = None
+            if started is not None:
+                # Includes preprocessing, inference, stateless assignment, feature preparation
+                # and final owner gate. Always outside the LED lock; cooldown has no sleep.
+                logger.info("reference witness %s elapsed_ms=%.1f", kind, (time.perf_counter() - started) * 1000)
+
+    def _witness_reference(self, source, target, on_start=None):
+        if source is None or not self._origin_current(source.metadata, source.lighting, source.geometry):
+            return None
+        if target != self._reference_target:
+            return None
+        try:
+            started = time.perf_counter()
+            image = enhance_for_inference(source.bgr.copy(), self._enhance_mode)
+            self._reference_witness_started_at = started
+            if on_start is not None:
+                on_start()
+            detections = self._detector.detect(image)
+            if any(d.class_id not in (0, 1) for d in detections):
+                return None
+            active = self._active_extractor()
+            # A separate stateless extractor is cheap; the detector instance is shared.
+            extractor = BoardStateExtractor(active.config, parallax=active.parallax)
+            board = extractor.detections_to_board(
+                [d for d in detections if d.confidence >= self._add_threshold],
+                img_w=image.shape[1],
+                img_h=image.shape[0],
+            )
+            if target != self._reference_target or not self._origin_current(
+                source.metadata, source.lighting, source.geometry
+            ):
+                return None
+            return board
+        except Exception:
+            logger.warning("unaveraged reference witness failed", exc_info=True)
+            return None
+
+    def _install_reference(self, reference, source, target, now, *, reset_permissions=True):
+        # Only worker-local assignments: safe to run under the LED owner's existing lock.
+        self._reference = reference
+        self._reference_position = target
+        self._reference_origin = (source.metadata, source.lighting, source.geometry)
+        self._reference_continuity_lost = False
         self._ref_stale = False
         self._ref_compare_failed = False
         self._ref_taken_at = now
-        self._reset_reference_budget()
+        self._reference_reason = None
+        if reset_permissions:
+            self._reset_reference_budget()
+            self._ref_disputed[:] = False
+            self._ref_evidence[:] = 0
+            self._reference_conflict_attempted = False
 
-    def _refresh_reference(self, gray: np.ndarray, now: float) -> None:
-        """每分钟一次:把参考帧的照片刷成当前这一帧,**包括看起来变了的格**(Fan 2026-09-24 的裁定)。
+    def _maybe_capture_reference(self, board, observed, gray):
+        expected, target, source = self._expected_np, self._reference_target, self._reference_source
+        if (
+            self._ref_mode == "off"
+            or gray is None
+            or source is None
+            or target is None
+            or not self._bound
+            or self._monitor
+            or (self._paused and not self._local_confirmation_mode)
+            or self._lit_points
+            or expected is None
+            or hashlib.sha256(np.asarray(expected, dtype=np.int8, order="C").tobytes()).hexdigest()
+            != target.board_digest
+            or self._move_detector.pending_move is not None
+            or self._ref_vetoing
+            or not np.array_equal(board, expected)
+            or not np.array_equal(observed, expected)
+            or not np.array_equal(gray, source.gray)
+        ):
+            return
+        now = time.monotonic()
+        if self._reference is not None and self._reference_position == target and self._reference_live():
+            if now - max(self._ref_taken_at, self._reference_refresh_attempt_at) >= REFERENCE_REFRESH_S:
+                self._refresh_reference(gray, now)
+            return
+        attempt = self._reference_attempt
+        if attempt is None or attempt.target != target or attempt.spent >= 2 or now < attempt.not_before:
+            return
+        if attempt.spent and attempt.failed_stream == source.metadata.stream_generation:
+            if any(entry[1] <= attempt.failed_seq for entry in self._reference_pair):
+                return
 
-        地图(哪格有子)不动 —— 只有落子被确认之后的**重建**才换地图。刷新只让照片跟上现场。
-        """
-        self._reference, absorbed = self._reference.refreshed(gray, REFERENCE_ZNCC, REFERENCE_ANCHOR_ZNCC)
-        self._ref_taken_at = now
-        # 照片刚跟当前这一帧对齐过,整份基准都是新鲜的 ⇒ 压制预算清零。
-        # (「凭空多出一颗子」那一路本来就没有上限了;这里主要影响颜色判错与丢子那两路。)
-        self._ref_hold[:] = 0
-        blind = ~self._reference.usable.reshape(absorbed.shape)  # neither frame could ever compare these
-        rows, cols = np.nonzero(absorbed & ~blind)
-        logger.info(
-            "refcheck refreshed: absorbed %d changed cell(s) into the reference%s%s (+%d that cannot be compared)",
-            len(rows),
-            ": " if len(rows) else "",
-            ", ".join(f"({r},{c})" for r, c in list(zip(rows.tolist(), cols.tolist()))[:6])
-            + (" ..." if len(rows) > 6 else ""),
-            int((absorbed & blind).sum()),
-        )
+        def started():
+            attempt.spent += 1
+            attempt.not_before = now + 1.0
+            attempt.failed_stream = source.metadata.stream_generation
+            attempt.failed_seq = source.metadata.frame_seq
+
+        with self._time_reference_witness("ordinary"):
+            witnessed = self._witness_reference(source, target, started)
+            if witnessed is None or not np.array_equal(witnessed, expected):
+                self._reference_reason = "unaveraged witness mismatch"
+                return
+            reference = ReferenceFrame(self._sampler_for(source.gray), source.gray, expected)
+            if not self._commit_reference(
+                source, lambda: self._install_reference(reference, source, target, now), target=target
+            ):
+                self._reference_reason = "owner changed before adoption"
+
+    def _refresh_reference(self, gray, now):
+        source, target = self._reference_source, self._reference_target
+        if (
+            source is None
+            or target != self._reference_position
+            or self._reference is None
+            or not np.array_equal(gray, source.gray)
+            or now - self._reference_refresh_attempt_at < REFERENCE_REFRESH_S
+        ):
+            return
+
+        def started():
+            self._reference_refresh_attempt_at = now
+
+        with self._time_reference_witness("refresh"):
+            witnessed = self._witness_reference(source, target, started)
+            if witnessed is None or not np.array_equal(witnessed, self._reference.board):
+                self._reference_reason = "refresh witness mismatch"
+                return
+            reference = ReferenceFrame(self._reference.sampler, source.gray, witnessed)
+            # Refresh never resurrects disputed/released authority on the same map.
+            if self._commit_reference(
+                source,
+                lambda: self._install_reference(reference, source, target, now, reset_permissions=False),
+                target=target,
+            ):
+                logger.info("refcheck refreshed: qualified unaveraged witness")
+            else:
+                self._reference_reason = "refresh owner gate rejected"
+
+    def _stage_reference_candidate(self, move, board, observed, gray):
+        target, source = self._reference_target, self._reference_source
+        if (
+            target is None
+            or source is None
+            or (not self._reference_candidate_enabled and self._local_window is None)
+            or self._monitor
+            or not self._bound
+            or self._lit_points
+            or self._reference_candidate is not None
+            or self._candidate_attempted_token == move.token
+            or move.token[:2] != (target.binding_epoch, target.expected_revision)
+            or not np.array_equal(board, observed)
+            or not np.array_equal(gray, source.gray)
+        ):
+            return
+
+        def started():
+            self._candidate_attempted_token = move.token
+
+        with self._time_reference_witness("candidate"):
+            witnessed = self._witness_reference(source, target, started)
+            if witnessed is None or not np.array_equal(witnessed, board):
+                return
+            reference = ReferenceFrame(self._sampler_for(source.gray), source.gray, board)
+            candidate = _ReferenceCandidate(
+                move.token, target, reference, source.metadata, source.lighting, source.geometry, time.monotonic()
+            )
+            self._commit_reference(source, lambda: setattr(self, "_reference_candidate", candidate), target=target)
+
+    def _observe_candidate_board(self, board, observed):
+        candidate, source = self._reference_candidate, self._reference_source
+        if (
+            candidate is not None
+            and source is not None
+            and source.metadata.stream_generation == candidate.metadata.stream_generation
+            and source.metadata.frame_seq > candidate.metadata.frame_seq
+            and (
+                not np.array_equal(board, candidate.reference.board)
+                or not np.array_equal(observed, candidate.reference.board)
+            )
+        ):
+            self._reference_candidate = None
+
+    def _accept_reference_candidate(self, data):
+        target = data.get("accepted_target")
+        # A late receipt must not touch the reference, budgets, or permissions.
+        if target is None or target != self._reference_target:
+            return
+        candidate = self._reference_candidate
+        if (
+            candidate is None
+            or candidate.token != tuple(data.get("move_token", ()))
+            or candidate.baseline != data.get("baseline_target")
+            or candidate.baseline.expected_node_id != data.get("accepted_parent_node_id")
+            or candidate.baseline.source_nonce != target.source_nonce
+            or candidate.baseline.worker_generation != target.worker_generation
+            or candidate.baseline.binding_epoch != target.binding_epoch
+            or time.monotonic() - candidate.created_at >= 5
+            or candidate.observations_left <= 0
+            or not np.array_equal(candidate.reference.board, data.get("accepted_board"))
+            or hashlib.sha256(np.asarray(candidate.reference.board, dtype=np.int8, order="C").tobytes()).hexdigest()
+            != target.board_digest
+            or not self._origin_current(candidate.metadata, candidate.lighting, candidate.geometry)
+        ):
+            return
+        if self._reference_position == target and self._reference_origin is not None:
+            old_metadata = self._reference_origin[0]
+            if (
+                old_metadata.stream_generation != candidate.metadata.stream_generation
+                or old_metadata.frame_seq >= candidate.metadata.frame_seq
+            ):
+                return
+        now = time.monotonic()
+
+        def commit():
+            self._install_reference(candidate.reference, candidate, target, now)
+            self._reference_candidate = None
+
+        self._commit_reference(candidate, commit, target=target)
 
     def _measure_pending_glow(self, frame: np.ndarray) -> None:
         """Measure each newly lit lamp that is still a bare lamp (no stone on the camera's board there) and
@@ -1164,10 +1464,15 @@ class InProcessAdapter:
             tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
             observer = self._observer
+            metadata = None
             identified = (observer is not None or self._local_confirmation_mode or self._usb_waiting_fresh) and hasattr(
                 self._camera, "read_frame_identified"
             )
-            if identified:
+            if callable(getattr(self._camera, "read_frame_with_metadata", None)):
+                frame, metadata = self._camera.read_frame_with_metadata()
+                camera_seq = metadata.frame_seq if metadata is not None else None
+                camera_ts = metadata.camera_read_monotonic if metadata is not None else None
+            elif identified:
                 frame, camera_seq, camera_ts = self._camera.read_frame_identified()
             else:
                 frame, camera_seq, camera_ts = self._camera.read_frame(), None, None
@@ -1209,9 +1514,12 @@ class InProcessAdapter:
                     elif window is not None:
                         window.reset_lighting()
 
+            self._reference_source = None
             motion_stable = False
             if frame is not None and (not local_active or local_inference):
                 motion_stable = self._motion_is_stable(frame)
+            if frame is None or not motion_stable:
+                self._clear_reference_source()
             if self._local_window is not None and (frame is None or not motion_stable):
                 self._local_window.reset_lighting()
             if self._glow_pending and frame is not None and motion_stable:
@@ -1292,7 +1600,12 @@ class InProcessAdapter:
                         and (self._bound or self._monitor)
                         and (not self._paused or self._local_confirmation_mode)
                     )
-                    ref_gray = to_gray(warped) if want_gray else None
+                    self._observe_reference_source(warped, metadata)
+                    ref_gray = (
+                        (self._reference_source.gray if self._reference_source is not None else to_gray(warped))
+                        if want_gray
+                        else None
+                    )
                     if ref_gray is not None:
                         self._last_ref_gray = ref_gray
                         self._consume_pending_denials(ref_gray)
@@ -1393,11 +1706,17 @@ class InProcessAdapter:
                     # 拍新参考要求「读数 == 对局记录」,假阳性在场时这条永远不成立 ⇒ 参考帧再也
                     # 更新不了(09-24 现场那个「放行之后就死循环」的形状)。用户否认之后把那一格
                     # 按空处理,参考帧立刻就能重拍 —— 新参考把这团反光拍进照片、地图记它是空,
-                    # 之后「照片一样 + 地图说空」这条常设否决就接手了(凭空多出的子无帧数上限)。
+                    # 新照片仍必须经过独立的未平均见证,否认标签不能替代照片见证。
                     denied_cells = self._live_denials(ref_gray)
                     denied_stable = self._mask_denied(stable_board, denied_cells)
                     denied_observation = self._mask_denied(raw_observation, denied_cells)
-                    observed_board = self._reference_check(denied_stable, ref_gray)
+                    self._observe_candidate_board(denied_stable, denied_observation)
+                    observed_board = self._reference_check(
+                        denied_stable,
+                        ref_gray,
+                        raw_observed=raw_observation,
+                        confidences=self._active_extractor().cell_confidences(detections, img_w=w, img_h=h),
+                    )
                     self._maybe_capture_reference(denied_stable, denied_observation, ref_gray)
                     if self._local_confirmation_mode and self._local_bootstrap_state == "bootstrap":
                         if self._reference is not None:
@@ -1526,7 +1845,7 @@ class InProcessAdapter:
                                 ambiguous_gate = self._ambiguous_confidence
                                 if self._move_detector.is_suspect(row, col):
                                     ambiguous_gate = min(0.95, ambiguous_gate + SUSPECT_CONFIDENCE_BONUS)
-                                if conf < ambiguous_gate:
+                                if conf < ambiguous_gate or self._ref_disputed[row, col]:
                                     # Charge the CELL, not the prompt: AMBIG_REPROMPT_FRAMES
                                     # suppresses the repeat *event*, but every suppressed
                                     # re-confirmation is still evidence this intersection keeps
@@ -1593,6 +1912,9 @@ class InProcessAdapter:
                                         observation_seq=self._observation_seq,
                                         binding_epoch=getattr(self, "_binding_epoch", 0),
                                         expected_revision=getattr(self, "_expected_revision", 0),
+                                    )
+                                    self._stage_reference_candidate(
+                                        confirmed, denied_stable, denied_observation, ref_gray
                                     )
                                     if local_window is not None:
                                         if local_window.candidate is None:
@@ -1747,7 +2069,36 @@ class InProcessAdapter:
                 self._sync.confirm_pose_lock()
             else:
                 self._sync.bind()
+        current = (
+            self._reference_target is not None
+            and self._reference_position == self._reference_target
+            and self._reference is not None
+            and self._reference_origin is not None
+            and self._reference_live()
+            and not self._ref_disputed.any()
+            and self._reference_reason is None
+        )
+        if current:
+            reference_status = "current"
+        elif self._reference_target is None or self._ref_mode == "off":
+            reference_status = "unavailable"
+        elif (
+            self._ref_disputed.any()
+            or self._reference_reason in ("refresh witness mismatch", "refresh owner gate rejected")
+            or (self._reference_attempt is not None and self._reference_attempt.spent >= 2)
+        ):
+            reference_status = "limited"
+        elif time.monotonic() - self._reference_pending_at < 5:
+            reference_status = "pending"
+        else:
+            reference_status = "limited"
         self._status = WorkerStatus(
+            reference_status=reference_status,
+            reference_reason=None if current else self._reference_reason,
+            reference_target_node_id=self._reference_target.expected_node_id if self._reference_target else None,
+            reference_target_revision=self._reference_target.expected_revision if self._reference_target else None,
+            reference_source_node_id=self._reference_position.expected_node_id if self._reference_position else None,
+            reference_source_revision=self._reference_position.expected_revision if self._reference_position else None,
             camera_status="connected" if camera_connected else "disconnected",
             pose_lock_status=(
                 "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
@@ -1758,8 +2109,12 @@ class InProcessAdapter:
             camera_ready=bool(camera_connected),
             geometry_ready=self._geometry is not None or not self._require_geometry,
             model_ready=True,
-            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)
-                and not self._usb_requested.is_set() and not self._usb_waiting_fresh),
+            recognition_ready=bool(
+                camera_connected
+                and (self._geometry is not None or not self._require_geometry)
+                and not self._usb_requested.is_set()
+                and not self._usb_waiting_fresh
+            ),
             observation_seq=self._observation_seq,
             local_confirmation_mode=self._local_confirmation_mode,
             local_confirmation_session_id=self._local_confirmation_session_id,
@@ -1779,17 +2134,61 @@ class InProcessAdapter:
             if cmd.action == CommandType.SHUTDOWN:
                 self._running = False
             elif cmd.action == CommandType.RELEASE_CONFIRMED_MOVE:
-                self._sync.release_confirmed_move(tuple(cmd.data["token"]))
+                token = tuple(cmd.data["token"])
+                self._sync.release_confirmed_move(token)
+                if self._reference_candidate is not None and self._reference_candidate.token == token:
+                    self._reference_candidate = None
+            elif cmd.action == CommandType.ACCEPT_REFERENCE_CANDIDATE:
+                self._accept_reference_candidate(cmd.data)
             elif cmd.action == CommandType.BIND:
+                self._reference_candidate_enabled = cmd.data.get("reference_candidate_enabled") is True
+                same_source = (
+                    cmd.data.get("source_nonce") is not None
+                    and cmd.data.get("source_nonce") == self._reference_source_nonce
+                    and cmd.data.get("worker_generation") == self._reference_worker_generation
+                )
+                carry_pair = []
+                if same_source and self._reference_pair:
+                    context, _, _, metadata = self._reference_pair[-1]
+                    if (
+                        context[0] == id(self._geometry)
+                        and self._camera_current(metadata)
+                        and (self._lighting_disabled or context[-1] == self._lighting_snapshot())
+                    ):
+                        carry_pair = self._reference_pair.copy()
+                preserve = (
+                    same_source
+                    and cmd.data.get("preserve_reference") is True
+                    and self._reference_live()
+                    and self._commit_reference_origin(self._reference_origin, lambda: None)
+                )
+                self._reference_preserved_reason = self._reference_reason if preserve else None
+                self._reference_rebind_attempt = same_source and self._reference_attempt is not None
+                if not same_source:
+                    self._reference_attempt = None
+                self._reference_source_nonce = cmd.data.get("source_nonce")
+                self._reference_worker_generation = cmd.data.get("worker_generation")
+                self._reference_target = None
+                self._reference_candidate = None
+                self._candidate_attempted_token = None
+                self._clear_reference_source()
                 self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
                 self._expected_revision = 0
                 self._sync.invalidate_confirmed_move()
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
-                self._invalidate_reference("bind")
+                if not preserve:
+                    self._invalidate_reference("bind")
+                self._reference_pair = carry_pair  # bounded owner facts only; never retain BGR across bind
+                self._reference_reason = "awaiting target after bind"
                 self._drop_denials("bind")
             elif cmd.action == CommandType.UNBIND:
+                self._reference_candidate_enabled = False
+                self._reference_target = None
+                self._reference_attempt = None
+                self._reference_source_nonce = None
+                self._reference_worker_generation = None
                 self._binding_epoch = 0
                 self._expected_revision = 0
                 self._local_confirmation_mode = False
@@ -1820,6 +2219,18 @@ class InProcessAdapter:
                 if generation < self._local_mode_generation:
                     continue
                 self._local_mode_generation = generation
+                self._reference_candidate_enabled = cmd.data.get("reference_candidate_enabled") is True
+                nonce = cmd.data.get("source_nonce")
+                worker_generation = cmd.data.get("worker_generation")
+                if nonce is not None and (nonce, worker_generation) != (
+                    self._reference_source_nonce,
+                    self._reference_worker_generation,
+                ):
+                    self._invalidate_reference("local source changed")
+                    self._reference_target = None
+                    self._reference_attempt = None
+                    self._reference_source_nonce = nonce
+                    self._reference_worker_generation = worker_generation
                 if (enabled, session_id, game_id) == (
                     self._local_confirmation_mode,
                     self._local_confirmation_session_id,
@@ -1888,14 +2299,45 @@ class InProcessAdapter:
                 if window is None or window.token != cmd.data["token"]:
                     continue
                 accepted = np.array(cmd.data["accepted_board"], dtype=int)
+                target = cmd.data.get("accepted_target")
+                if (
+                    target is None
+                    or target != self._reference_target
+                    or cmd.data.get("source_nonce") != self._reference_source_nonce
+                    or cmd.data.get("worker_generation") != self._reference_worker_generation
+                    or hashlib.sha256(np.asarray(accepted, dtype=np.int8, order="C").tobytes()).hexdigest()
+                    != target.board_digest
+                ):
+                    self._reference_candidate = None
+                    self._local_window = None
+                    continue
                 self._expected_np = accepted
                 self._sync.set_expected_board(accepted, expected_node_id=cmd.data.get("expected_node_id"))
                 self._move_detector.force_sync(accepted)
                 # Reuse the final qualified raw frame, never the reference-corrected board.
                 # The original guards still demand raw agreement, no lamps and no veto.
-                if window.geometry is self._geometry and window.raw_voted is not None and not window.lit:
-                    self._ref_vetoing = window.vetoing
-                    self._maybe_capture_reference(window.raw_voted, window.raw_observed, window.gray)
+                target = cmd.data.get("accepted_target")
+                candidate = self._reference_candidate
+                if (
+                    target is not None
+                    and target == self._reference_target
+                    and candidate is not None
+                    and window.candidate is not None
+                    and candidate.token == window.candidate.token
+                    and window.geometry is self._geometry
+                    and not window.lit
+                    and not window.vetoing
+                ):
+                    self._accept_reference_candidate(
+                        {
+                            "accepted_target": target,
+                            "move_token": candidate.token,
+                            "baseline_target": candidate.baseline,
+                            "accepted_parent_node_id": candidate.baseline.expected_node_id,
+                            "accepted_board": accepted,
+                        }
+                    )
+                self._reference_candidate = None
                 self._local_window = None
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
                 epoch = int(cmd.data.get("binding_epoch", 0))
@@ -1904,19 +2346,71 @@ class InProcessAdapter:
                     continue
                 if revision and revision < getattr(self, "_expected_revision", 0):
                     continue
+                board = np.array(cmd.data["board"], dtype=int)
+                nonce = cmd.data.get("source_nonce")
+                generation = cmd.data.get("worker_generation")
+                if nonce is not None and (
+                    nonce != self._reference_source_nonce or generation != self._reference_worker_generation
+                ):
+                    continue
+                target = None
+                digest = hashlib.sha256(np.asarray(board, dtype=np.int8, order="C").tobytes()).hexdigest()
+                if nonce is not None and generation is not None and revision and epoch:
+                    if cmd.data.get("board_digest", digest) != digest:
+                        continue
+                    target = ReferenceTargetKey(
+                        nonce, generation, epoch, revision, cmd.data.get("expected_node_id"), digest
+                    )
                 if revision and revision != getattr(self, "_expected_revision", 0):
                     self._sync.invalidate_confirmed_move()
+                previous = self._reference_target
+                attempt = self._reference_attempt
+                recovery = cmd.data.get("recovery_id")
+                same_position = (
+                    attempt is not None
+                    and target is not None
+                    and (
+                        attempt.target.source_nonce,
+                        attempt.target.worker_generation,
+                        attempt.target.expected_node_id,
+                        attempt.target.board_digest,
+                    )
+                    == (target.source_nonce, target.worker_generation, target.expected_node_id, target.board_digest)
+                )
+                remap = self._reference_rebind_attempt and same_position
+                new_recovery = recovery is not None and (attempt is None or recovery != attempt.recovery_id)
+                if target != previous or new_recovery:
+                    if remap and not new_recovery:
+                        attempt.target = target
+                    elif target is not None:
+                        self._reference_attempt = _ReferenceAttempt(target, recovery)
+                    else:
+                        self._reference_attempt = None
+                    if (
+                        remap
+                        and self._reference_position is not None
+                        and self._reference_position.expected_node_id == target.expected_node_id
+                        and self._reference_position.board_digest == target.board_digest
+                        and self._reference_live()
+                    ):
+                        self._commit_reference_origin(
+                            self._reference_origin, lambda: setattr(self, "_reference_position", target)
+                        )
+                    self._reference_pending_at = time.monotonic()
+                    self._reference_reason = (
+                        getattr(self, "_reference_preserved_reason", None)
+                        if remap and self._reference_position == target
+                        else "awaiting qualified target photo"
+                    )
+                self._reference_rebind_attempt = False
+                self._reference_target = target
                 self._expected_revision = revision
-                board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
                 if self._reference is not None and not np.array_equal(board, self._reference.board):
                     # Undo, sibling navigation and captures can move the game away from the
                     # reference position. Mark it stale, but keep its image until a clean frame
                     # replaces it: unchanged pixels still give valid evidence for each cell.
                     # Repeated expected-board updates from the orchestrator must keep it too.
-                    # Known and accepted: a setup edit that only adds one stone looks like a move
-                    # here. The capture guards still constrain that case; the invented-stone hold
-                    # no longer has a frame budget.
                     ref_board = self._reference.board
                     kept = bool(np.all((ref_board == EMPTY) | (board == ref_board)))
                     added = int(((ref_board == EMPTY) & (board != EMPTY)).sum())
@@ -1957,6 +2451,7 @@ class InProcessAdapter:
             elif cmd.action == CommandType.RESET_SYNC:
                 self._sync.invalidate_confirmed_move()
                 self._invalidate_reference("resync")
+                self._candidate_attempted_token = None
                 expected = cmd.data.get("expected") if cmd.data else None
                 if expected is not None:
                     # Trust-digital recovery (resync): sync compares against the digital

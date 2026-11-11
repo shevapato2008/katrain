@@ -243,16 +243,28 @@ from katrain.vision.worker_inprocess import (
 
 def _adapter(mode="on"):
     with mock_patch("katrain.vision.worker_inprocess.StoneDetector"):
-        adapter = InProcessAdapter({"board_size": 19, "reference_check": mode}, camera=None)
+        adapter = InProcessAdapter(
+            {"board_size": 19, "reference_check": mode, "enhance": "off"},
+            camera=_ReferenceCamera(),
+            lighting_disabled=True,
+        )
     adapter._geometry = SimpleNamespace(points=None)
     adapter._bound = True
+    adapter._detector.detect.return_value = []
+    _target(adapter, _empty_board(), 1, 10, bind=True)
     return adapter
 
 
 def _with_reference(mode, ref_frame, ref_board):
     adapter = _adapter(mode)
     adapter._ref_sampler = _sampler()
+    _target(adapter, ref_board, 2, 11)
+    _source(adapter, 1, raw=ref_frame)
+    _source(adapter, 2, raw=ref_frame)
     adapter._reference = ReferenceFrame(adapter._ref_sampler, to_gray(ref_frame), ref_board)
+    adapter._reference_position = adapter._reference_target
+    source = adapter._reference_source
+    adapter._reference_origin = (source.metadata, source.lighting, source.geometry)
     return adapter
 
 
@@ -272,24 +284,16 @@ def test_a_stone_the_game_knows_survives_a_detector_that_lost_it():
     assert detector_says[4][4] == EMPTY  # the caller's array is never mutated
 
 
-def test_an_invented_stone_is_suppressed_for_as_long_as_the_pixels_do_not_change():
-    """Fan 2026-09-24 的裁定:只要当前画面和参考帧比对没有变化,就持续否定这里有落子。
-
-    旧行为是压 REFERENCE_HOLD_SUPPRESS 帧(板上 ~4.4 秒)就放行,而放行是**粘的**
-    (`_ref_released`),于是那一格在这份参考帧余生里不再被否决;偏偏新参考帧要等
-    「读数==记录」才拍得成,而那颗假子正好让两者对不上 —— 死锁。现场 (18,12) 因此
-    重播了 8 分 48 秒、一局内复发三轮。
-
-    地图里**不可能**有假子(拍摄前置条件要求读数==记录,一有假阳性就拍不成),所以
-    「地图说空 + 像素没变」这条证据不会去否决任何系统已知的真子。
-    """
+def test_empty_veto_requires_confidence_backed_dispute_evidence_before_release():
     frame = _board_frame()
     adapter = _with_reference("on", frame, _empty_board())
-    detector_says = _empty_board()
-    detector_says[12][3] = WHITE
-    for _ in range(REFERENCE_HOLD_SUPPRESS * 20):  # 远超旧上限
-        assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == EMPTY
-    assert not adapter._ref_released[12][3], "凭空多出的子不该因为「耗时够久」就获得放行"
+    raw = _empty_board()
+    raw[12, 3] = WHITE
+    for _ in range(20):
+        assert adapter._reference_check(raw, to_gray(frame))[12, 3] == EMPTY
+    for seq in range(3, 6):
+        out = adapter._reference_check(raw, _source(adapter, seq), raw_observed=raw, confidences={(12, 3): 0.9})
+    assert out[12, 3] == WHITE and adapter._ref_disputed[12, 3]
 
 
 def test_releasing_an_invented_stone_does_not_cut_the_hold_on_a_lost_one():
@@ -384,7 +388,10 @@ def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
     gray = to_gray(frame)
     board = _empty_board()
     board[4][4] = BLACK
-    adapter._expected_np = board
+    _target(adapter, board, 2, 11)
+    adapter._detector.detect.return_value = [_det(4, 4, 0)]
+    _source(adapter, 1, raw=frame)
+    _source(adapter, 2, raw=frame)
 
     adapter._maybe_capture_reference(_empty_board(), _empty_board(), gray)  # camera disagrees
     assert adapter._reference is None
@@ -423,6 +430,10 @@ def test_new_geometry_replaces_reference_with_current_nonempty_game_position():
 
     adapter.set_geometry(SimpleNamespace(points=None))
     assert adapter._reference is None
+    _target(adapter, position, 3, 12)
+    adapter._detector.detect.return_value = [_det(4, 4, 0), _det(5, 5, 1)]
+    _source(adapter, 3, raw=_board_frame([(4, 4, BLACK), (5, 5, WHITE)]))
+    _source(adapter, 4, raw=_board_frame([(4, 4, BLACK), (5, 5, WHITE)]))
     adapter._maybe_capture_reference(position, position, current)
 
     assert adapter._reference is not None
@@ -431,36 +442,25 @@ def test_new_geometry_replaces_reference_with_current_nonempty_game_position():
     assert adapter._reference.similarity(current)[5][5] > 0.99
 
 
-def test_monitor_mode_can_capture_and_apply_the_same_reference_filter():
+def test_monitor_without_an_authoritative_source_cannot_fabricate_reference():
     adapter = _adapter("shadow")
     adapter._bound = False
     adapter._monitor = True
-    board = _empty_board()
-    adapter._expected_np = board
-    gray = to_gray(_board_frame())
-    adapter._maybe_capture_reference(board, board, gray)
-    assert adapter._reference is not None
-    false_positive = board.copy()
-    false_positive[12][3] = WHITE
-    for _ in range(REFERENCE_HOLD_SUPPRESS + 2):
-        assert adapter._reference_check(false_positive, gray)[12][3] == EMPTY
-    assert not adapter._ref_released[12][3]
+    _source(adapter, 1)
+    gray = _source(adapter, 2)
+    adapter._maybe_capture_reference(_empty_board(), _empty_board(), gray)
+    assert adapter._reference is None
 
 
-def test_monitor_setup_supplies_the_reference_target_and_stop_drops_it():
+def test_monitor_setup_supplies_target_but_not_reference_authority():
     adapter = _adapter("shadow")
     adapter._bound = False
     adapter._monitor = True
-    board = _empty_board()
-    board[4][4] = BLACK
-    adapter._cmd_queue.put(WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": board.tolist()}))
+    target = _empty_board()
+    target[4, 4] = BLACK
+    adapter.send_command(WorkerCommand(CommandType.ENTER_SETUP_MODE, {"target_board": target.tolist()}))
     adapter._drain_commands()
-    assert np.array_equal(adapter._expected_np, board)
-    adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])))
-    assert adapter._reference is not None
-    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_MONITOR, data={"active": False}))
-    adapter._drain_commands()
-    assert adapter._reference is None and adapter._expected_np is None
+    assert np.array_equal(adapter._expected_np, target) and adapter._reference is None
 
 
 def test_monitor_keeps_a_clean_reference_through_multiple_forward_moves():
@@ -483,7 +483,9 @@ def test_the_same_expected_board_is_never_re_captured(monkeypatch):
     monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: 1000.0)
     adapter = _adapter("on")
     board = _empty_board()
-    adapter._expected_np = board
+    _target(adapter, board, 2, 11)
+    _source(adapter, 1)
+    _source(adapter, 2)
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     first = adapter._reference
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame(seed=1)))
@@ -491,7 +493,9 @@ def test_the_same_expected_board_is_never_re_captured(monkeypatch):
 
     board = board.copy()
     board[4][4] = BLACK
-    adapter._expected_np = board
+    _target(adapter, board, 3, 12)
+    adapter._detector.detect.return_value = [_det(4, 4, 0)]
+    _source(adapter, 3, raw=_board_frame([(4, 4, BLACK)]))
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])))
     assert adapter._reference is not first and adapter._reference.board[4][4] == BLACK
 
@@ -501,13 +505,17 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
     adapter = _adapter("on")
     board = _empty_board()
-    adapter._expected_np = board
+    _target(adapter, board, 2, 11)
+    _source(adapter, 1)
+    _source(adapter, 2)
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     first = adapter._reference
     adapter._ref_hold[2][2] = 7  # 这一格刷新时会被重新验证
     adapter._ref_hold[4][4] = 5  # 这一格变了(落了子),刷新验不过,只能保留旧样本
     adapter._ref_released[3][3] = True
-    later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
+    later_raw = _shaded(_board_frame(), 0.05)
+    later = to_gray(later_raw)
+    _source(adapter, 3, raw=later_raw)
 
     clock[0] += REFERENCE_REFRESH_S - 1
     adapter._maybe_capture_reference(board, board, later)
@@ -520,9 +528,9 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     # Fan 2026-09-24:刷新把**所有**能比对的格子都拍成当前这一帧,变了的也吸收进来。
     assert adapter._reference.similarity(later)[4][4] > 0.999, "变了的格子也该被吸收进基准"
     # 照片刚跟当前帧对齐过,整份基准都是新鲜的 ⇒ 压制预算清零。
-    assert adapter._ref_hold[2][2] == 0 and adapter._ref_hold[4][4] == 0
+    assert adapter._ref_hold[2][2] == 7 and adapter._ref_hold[4][4] == 5
     assert adapter._ref_released[3][3]  # 已放行的格子不会因刷新而回收
-    assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
+    assert "refcheck refreshed" in caplog.text
 
     second = adapter._reference
     clock[0] += 30
@@ -530,12 +538,8 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     assert adapter._reference is second  # the minute restarts at each refresh
 
 
-# ⛔ 2026-09-24 删除:test_the_worker_stops_absorbing_a_cell_once_it_has_left_the_original_capture
-# 它守的是 anchor 闸 ——「一颗子用十分钟慢慢淡入,每一步都过得了 0.90 的步进闸,只有与最初那张
-# 照片比对才能斩断这条链」。Fan 的裁定把「变了的格也吸收」定为规则,这条守卫按定义不再存在:
-# 现在一步就吸收,不需要十分钟。**代价是真的**:一颗没被识别出来的真子会被直接吸收进基准,
-# 而压制方向的帧数上限同日已取消 ⇒ 无法自动恢复,只能重新标定或人工确认。
-# 取舍依据写在 ReferenceFrame.refreshed 的 docstring 里。
+# Pixel refresh now additionally requires the complete unaveraged witness; persistent
+# semantic disagreement withdraws empty-label permission through the ambiguous flow.
 
 
 def test_the_reference_is_dropped_by_every_discontinuity():
@@ -616,7 +620,9 @@ def test_one_passing_veto_does_not_freeze_the_reference_for_good():
     adapter._reference_check(_empty_board(), to_gray(_board_frame()))  # and it is gone
     moved = ref_board.copy()
     moved[4][4] = BLACK  # the game moves on, the player plays it
-    adapter._expected_np = moved
+    _target(adapter, moved, 3, 12)
+    adapter._detector.detect.return_value = [_det(4, 4, 0)]
+    _source(adapter, 3, raw=_board_frame([(4, 4, BLACK)]))
     adapter._maybe_capture_reference(moved, moved, to_gray(_board_frame([(4, 4, BLACK)])))
     assert adapter._reference.board[4][4] == BLACK
 
@@ -630,7 +636,9 @@ def test_an_unknown_mode_is_reported_and_changes_nothing(caplog):
 def test_off_mode_never_takes_a_reference():
     adapter = _adapter("off")
     board = _empty_board()
-    adapter._expected_np = board
+    _target(adapter, board, 2, 11)
+    _source(adapter, 1)
+    _source(adapter, 2)
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     assert adapter._reference is None
 
@@ -667,6 +675,15 @@ class _ScriptedCamera:
         self.drop_reference_at = drop_reference_at
         self.on_read = on_read
         self.worker = None
+        self.seq = 0
+
+    def is_frame_metadata_current(self, metadata):
+        return metadata.stream_generation == 1
+
+    def read_frame_with_metadata(self):
+        image = self.read_frame()
+        self.seq += 1
+        return image, FrameMetadata(1, self.seq, float(self.seq + 1), 1, 1, True, 0.0, True)
 
     def read_frame(self):
         self.frames -= 1
@@ -691,13 +708,15 @@ def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_r
     camera = _ScriptedCamera(len(detection_script), drop_reference_at, on_read)
     with mock_patch("katrain.vision.worker_inprocess.StoneDetector", _ScriptedDetector):
         worker = InProcessAdapter(
-            {"board_size": 19, "enhance": "off", "auto_exposure": "off", "reference_check": mode}, camera=camera
+            {"board_size": 19, "enhance": "off", "auto_exposure": "off", "reference_check": mode},
+            camera=camera,
+            lighting_disabled=True,
         )
     camera.worker = worker
     worker.needs_frames = lambda: True
     worker._bound = True
     worker._geometry = SimpleNamespace(points=None)
-    worker._expected_np = game
+    _target(worker, game, 1, 10, bind=True)
     worker._running = True
     worker._config["capture_fps"] = 100000
     worker._motion_is_stable = MagicMock(return_value=True)
@@ -710,6 +729,23 @@ def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_r
     worker._maybe_send_preview = MagicMock()
     worker._ref_sampler = _sampler()
     _ScriptedDetector.instance.script = [list(frame) for frame in detection_script]
+    original_witness = worker._witness_reference
+
+    def witness(source, target, on_start=None):
+        # The ordinary detector script describes averaged observations. Its independent
+        # witness fake reads the actual synthetic discs from the unaveraged source.
+        raw_detections = []
+        if source is not None:
+            for row in range(19):
+                for col in range(19):
+                    x, y = _cell_centre(row, col)
+                    value = float(source.bgr[y, x].mean())
+                    if value < 60 or value > 210:
+                        raw_detections.append(_det(row, col, 0 if value < 60 else 1))
+        with mock_patch.object(worker._detector, "detect", return_value=raw_detections):
+            return original_witness(source, target, on_start)
+
+    worker._witness_reference = witness
     worker._loop()
     return worker
 
@@ -727,7 +763,8 @@ def test_on_mode_hides_the_invented_stone_downstream_but_keeps_recognition_histo
     worker = _run_loop("on", frames, script, game)
     assert worker._reference is not None  # the first two frames agreed with the game: reference taken
     assert int(worker._last_stable_board[12][3]) == WHITE  # history stays raw, so the detector is visible
-    assert int(worker.get_status().detected_board[12][3]) == EMPTY  # downstream got the corrected board
+    assert int(worker.get_status().detected_board[12][3]) == WHITE
+    assert worker._ref_disputed[12, 3]
 
 
 def test_shadow_mode_is_behaviour_identical_to_off():
@@ -744,7 +781,7 @@ def test_the_check_runs_on_the_pre_average_frame():
     flat frame, which has no structure to correlate, so nothing could be vetoed."""
     frames, script, game = _invented_stone_script()
     flat = _run_loop("on", frames, script, game, averager=lambda frame: np.full_like(frame, 128))
-    assert int(flat.get_status().detected_board[12][3]) == EMPTY
+    assert flat._ref_released[12, 3] and flat._ref_disputed[12, 3]
 
 
 def test_the_first_frame_of_a_real_stone_is_never_captured_as_a_reference():
@@ -932,3 +969,518 @@ def test_a_new_session_or_geometry_clears_denials(action):
         adapter._drain_commands()
 
     assert adapter._denied == {} and adapter._denial_sampler is None
+
+
+# Reference lifecycle: the camera/light owners attest the actual unaveraged source.
+from dataclasses import replace
+from katrain.vision.camera import FrameMetadata
+from katrain.vision.ipc import ReferenceTargetKey, ConfirmedMove
+import hashlib
+
+
+class _ReferenceCamera:
+    is_connected = True
+
+    def __init__(self):
+        self.stream = 1
+        self.controls = 1
+        self.current = True
+
+    def is_frame_metadata_current(self, metadata):
+        return (
+            self.current
+            and metadata.stream_generation == self.stream
+            and metadata.controls_requested_generation == self.controls
+        )
+
+
+class _ReferenceLight:
+    def __init__(self):
+        self.token = SimpleNamespace(
+            request_revision=1, shown_revision=1, connection_generation=1, all_dark=True, shown_at=0.0, available=True
+        )
+        self.reject = False
+
+    def reference_lighting_snapshot(self):
+        return self.token
+
+    def try_commit_reference_lighting(self, token, local_commit):
+        if self.reject or token != self.token or not self.token.all_dark:
+            return False
+        local_commit()
+        return True
+
+
+def _lifecycle_worker():
+    camera, light = _ReferenceCamera(), _ReferenceLight()
+    with mock_patch("katrain.vision.worker_inprocess.StoneDetector"):
+        worker = InProcessAdapter(
+            {"reference_check": "on", "enhance": "off", "auto_exposure": "off"}, camera=camera, lighting_owner=light
+        )
+    worker._geometry = SimpleNamespace(points=None)
+    worker._active_extractor = lambda: BoardStateExtractor(CONFIG)
+    worker._detector.detect.return_value = []
+    _target(worker, _empty_board(), 1, 10, bind=True)
+    return worker, camera, light
+
+
+def _target(worker, board, revision, node, *, bind=False, epoch=1, **extra):
+    if bind:
+        worker.send_command(
+            WorkerCommand(
+                CommandType.BIND,
+                dict(
+                    binding_epoch=epoch,
+                    source_nonce="source",
+                    worker_generation="worker",
+                    preserve_reference=epoch != 1,
+                    reference_candidate_enabled=True,
+                ),
+            )
+        )
+    worker.send_command(
+        WorkerCommand(
+            CommandType.SET_EXPECTED_BOARD,
+            dict(
+                board=board.tolist(),
+                binding_epoch=epoch,
+                expected_revision=revision,
+                expected_node_id=node,
+                source_nonce="source",
+                worker_generation="worker",
+                board_digest=hashlib.sha256(np.asarray(board, dtype=np.int8).tobytes()).hexdigest(),
+                **extra,
+            ),
+        )
+    )
+    worker._drain_commands()
+
+
+def _source(worker, seq, *, raw=None, stream=1, controls=1, effective=True, advisory=False, ts=None):
+    raw = _board_frame() if raw is None else raw
+    metadata = FrameMetadata(
+        stream, seq, float(seq + 1) if ts is None else ts, controls, controls, effective, 0.0, True, advisory
+    )
+    worker._observe_reference_source(raw, metadata)
+    return to_gray(raw)
+
+
+def _capture(worker, seq, *, raw=None, board=None, **kwargs):
+    board = _empty_board() if board is None else board
+    gray = _source(worker, seq, raw=raw, **kwargs)
+    worker._maybe_capture_reference(board, board, gray)
+
+
+def test_reference_constructor_accepts_live_lighting_owner():
+    worker, _, light = _lifecycle_worker()
+    assert worker._lighting_owner is light
+
+
+@pytest.mark.parametrize("path", ["ordinary", "candidate", "refresh"])
+def test_average_lag_cannot_label_the_unaveraged_stone_photo_empty(path):
+    worker, _, _ = _lifecycle_worker()
+    empty = _empty_board()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    original = worker._reference
+    if path == "ordinary":
+        worker._reference = None
+        _target(worker, empty, 2, 11)
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    gray = _source(worker, 3, raw=_board_frame([(9, 9, WHITE)]))
+    if path == "candidate":
+        worker._stage_reference_candidate(ConfirmedMove(9, 9, WHITE, 3, 1, 1), empty, empty, gray)
+        assert worker._reference_candidate is None
+    else:
+        worker._ref_taken_at -= REFERENCE_REFRESH_S + 1
+        worker._maybe_capture_reference(empty, empty, gray)
+        assert worker._reference is (None if path == "ordinary" else original)
+    assert worker._detector.detect.call_count == 2
+
+
+def test_reference_retry_needs_cooldown_and_two_fresh_frames_and_survives_limited(monkeypatch):
+    worker, _, _ = _lifecycle_worker()
+    clock = [10.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    _capture(worker, 1)
+    _capture(worker, 2)
+    assert worker._reference is None and worker._detector.detect.call_count == 1
+    _capture(worker, 2)
+    _capture(worker, 3)
+    assert worker._detector.detect.call_count == 1
+    clock[0] += 6
+    worker._reference_pending_at = 10.0
+    worker._publish_status(None)
+    assert worker.get_status().reference_status == "limited"
+    worker._detector.detect.return_value = []
+    _capture(worker, 4)
+    assert worker._reference is not None and worker._detector.detect.call_count == 2
+    _capture(worker, 5)
+    assert worker._detector.detect.call_count == 2
+
+
+@pytest.mark.parametrize("failure", ["exception", "light", "camera"])
+def test_detector_start_spends_attempt_even_if_final_adoption_fails(failure, monkeypatch):
+    worker, camera, light = _lifecycle_worker()
+    clock = [10.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+
+    def detect(image):
+        if failure == "exception":
+            raise RuntimeError("transient")
+        if failure == "light":
+            light.reject = True
+        else:
+            camera.current = False
+        return []
+
+    worker._detector.detect.side_effect = detect
+    for seq in range(1, 7):
+        clock[0] += 2
+        camera.current, light.reject = True, False
+        _capture(worker, seq)
+    assert worker._reference is None and worker._detector.detect.call_count == 2
+
+
+def test_retry_budget_remaps_across_redundant_bind_but_not_true_new_target(monkeypatch):
+    worker, camera, _ = _lifecycle_worker()
+    clock = [10.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    _capture(worker, 1)
+    _capture(worker, 2)
+    _target(worker, _empty_board(), 1, 10, bind=True, epoch=2, force_rearm=True)
+    camera.stream = 2
+    clock[0] += 2
+    _capture(worker, 1, stream=2)
+    assert worker._detector.detect.call_count == 1
+    _capture(worker, 2, stream=2)
+    assert worker._detector.detect.call_count == 2
+    _target(worker, _empty_board(), 1, 10, bind=True, epoch=3, force_rearm=True)
+    clock[0] += 2
+    _capture(worker, 3, stream=2)
+    _capture(worker, 4, stream=2)
+    assert worker._detector.detect.call_count == 2
+    _target(worker, _empty_board(), 2, 12, epoch=3)
+    _capture(worker, 5, stream=2)
+    assert worker._detector.detect.call_count == 3
+
+
+@pytest.mark.parametrize("delta,expected", [(5, True), (6, False)])
+def test_advisory_reference_requires_two_owner_frames_with_bounded_median_delta(delta, expected):
+    worker, _, _ = _lifecycle_worker()
+    _capture(worker, 1, raw=np.full((SIZE, SIZE, 3), 120, np.uint8), effective=False, advisory=True)
+    _capture(worker, 2, raw=np.full((SIZE, SIZE, 3), 120 + delta, np.uint8), effective=False, advisory=True)
+    assert (worker._reference is not None) is expected
+    assert worker._detector.detect.call_count == int(expected)
+
+
+def test_candidate_promotes_only_exact_accepted_target_without_new_inference():
+    worker, _, _ = _lifecycle_worker()
+    accepted = _empty_board()
+    accepted[9, 9] = WHITE
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    _source(worker, 1, raw=_board_frame([(9, 9, WHITE)]))
+    gray = _source(worker, 2, raw=_board_frame([(9, 9, WHITE)]))
+    move = ConfirmedMove(9, 9, WHITE, 2, 1, 1)
+    baseline = worker._reference_target
+    worker._reference_candidate_enabled = False
+    worker._stage_reference_candidate(move, accepted, accepted, gray)
+    assert worker._reference_candidate is None and worker._detector.detect.call_count == 0
+    worker._reference_candidate_enabled = True
+    worker._stage_reference_candidate(move, accepted, accepted, gray)
+    assert worker._reference is None and worker._reference_candidate is not None
+    _target(worker, accepted, 2, 11)
+    command = WorkerCommand(
+        CommandType.ACCEPT_REFERENCE_CANDIDATE,
+        dict(
+            move_token=move.token,
+            baseline_target=baseline,
+            accepted_target=worker._reference_target,
+            accepted_parent_node_id=10,
+            accepted_board=accepted.tolist(),
+        ),
+    )
+    worker.send_command(command)
+    worker._drain_commands()
+    photo = worker._reference
+    assert photo is not None and np.array_equal(photo.board, accepted)
+    worker.send_command(command)
+    worker._drain_commands()
+    assert worker._reference is photo and worker._detector.detect.call_count == 1
+    _target(worker, _empty_board(), 3, 12)
+    worker._detector.detect.return_value = []
+    _capture(worker, 3)
+    _capture(worker, 4)
+    current18 = worker._reference
+    assert current18 is not photo and worker._reference_position == worker._reference_target
+    worker._ref_disputed[1, 1] = True
+    spent = worker._reference_attempt.spent
+    worker.send_command(command)
+    worker._drain_commands()
+    assert worker._reference is current18 and worker._reference_attempt.spent == spent
+    assert worker._ref_disputed[1, 1]
+
+
+def test_historical_empty_label_never_vetoes_an_accepted_stone():
+    worker, _, _ = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    accepted = _empty_board()
+    accepted[9, 9] = WHITE
+    _target(worker, accepted, 2, 11)
+    assert worker._reference_check(accepted, _source(worker, 3))[9, 9] == WHITE
+
+
+def test_persistent_confidence_backed_empty_dispute_withdraws_veto_and_requires_ambiguity():
+    worker, _, _ = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    raw = _empty_board()
+    raw[9, 9] = WHITE
+    for seq in range(3, 6):
+        gray = _source(worker, seq)
+        result = worker._reference_check(raw, gray, raw_observed=raw, confidences={(9, 9): 0.99})
+    assert result[9, 9] == WHITE
+    assert worker._ref_disputed[9, 9] and worker._ref_released[9, 9]
+    assert worker._detector.detect.call_count == 2  # initial + one whole-board conflict witness
+    for seq in range(6, 12):
+        worker._reference_check(raw, _source(worker, seq), raw_observed=raw, confidences={(9, 9): 0.99})
+    assert worker._detector.detect.call_count == 2
+
+
+@pytest.mark.parametrize("invalid", ["missing", "pending", "unknown", "before_dark", "stale_owner"])
+def test_unqualified_owner_frames_spend_no_witness_attempt(invalid):
+    worker, camera, _ = _lifecycle_worker()
+    metadata = FrameMetadata(1, 1, 2.0, 1, 1, True, 0.0, True)
+    if invalid == "missing":
+        metadata = None
+    elif invalid == "pending":
+        metadata = replace(metadata, controls_applied_generation=0)
+    elif invalid == "unknown":
+        metadata = replace(metadata, ownership_known=False)
+    elif invalid == "before_dark":
+        metadata = replace(metadata, camera_read_monotonic=0.2)
+    else:
+        camera.current = False
+    for _ in range(3):
+        worker._observe_reference_source(_board_frame(), metadata)
+        worker._maybe_capture_reference(_empty_board(), _empty_board(), to_gray(_board_frame()))
+    assert worker._detector.detect.call_count == 0 and worker._reference_attempt.spent == 0
+
+
+def test_stream_or_control_change_cannot_revive_invalidated_reference_by_rebinding():
+    worker, camera, _ = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    old = worker._reference
+    camera.stream = 2
+    worker._reference_check(_empty_board(), to_gray(_board_frame()))
+    camera.stream = 1  # an owner flag must never restamp the old pixels into continuity
+    _target(worker, _empty_board(), 1, 10, bind=True, epoch=2)
+    assert worker._reference is None or worker._reference is not old
+
+
+def test_local_completion_cannot_install_accepted_board_with_the_previous_target_key():
+    worker, _, _ = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    original = worker._reference
+    accepted = _empty_board()
+    accepted[9, 9] = WHITE
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    gray = _source(worker, 3, raw=_board_frame([(9, 9, WHITE)]))
+    worker._expected_np = accepted  # old COMPLETE wrote this without a scoped target publication
+    worker._reference = None
+    worker._reference_attempt.not_before = 0
+    gray = _source(worker, 4, raw=_board_frame([(9, 9, WHITE)]))
+    worker._maybe_capture_reference(accepted, accepted, gray)
+    assert worker._reference is None
+
+
+def test_real_loop_eight_frame_average_does_not_authorize_the_last_raw_stone_photo():
+    from katrain.vision.temporal import FrameAverager
+
+    camera = _ScriptedCamera(10)
+    with mock_patch("katrain.vision.worker_inprocess.StoneDetector"):
+        worker = InProcessAdapter(
+            {"reference_check": "on", "enhance": "off", "auto_exposure": "off", "capture_fps": 100000},
+            camera=camera,
+            lighting_disabled=True,
+        )
+    camera.worker = worker
+    worker._geometry = SimpleNamespace(points=None)
+    worker._active_extractor = lambda: BoardStateExtractor(CONFIG)
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._maybe_send_preview = MagicMock()
+    _target(worker, _empty_board(), 1, 10, bind=True)
+    empty, stone = _board_frame(), _board_frame([(9, 9, BLACK)])
+    frames = [empty] * 8 + [stone] * 2
+    worker._warp_frame = lambda _: (frames.pop(0), True)
+    x, y = _cell_centre(9, 9)
+    calls = []
+
+    def detect(image):
+        has_stone = image[y, x, 0] < 70
+        calls.append(has_stone)
+        return [_det(9, 9, 0)] if has_stone else []
+
+    worker._detector.detect.side_effect = detect
+
+    def new_target(worker, left):
+        if left == 1:
+            _target(worker, _empty_board(), 2, 11)
+
+    camera.on_read = new_target
+    worker._running = True
+    worker._loop()
+    assert isinstance(worker._averager, FrameAverager) and worker._averager.n == 8
+    assert worker._reference_position.expected_node_id == 10  # last target photo remains genuinely historical
+    assert worker._reference_target.expected_node_id == 11
+    assert worker._reference_attempt.spent == 1
+    assert bool(calls[-2]) and not bool(calls[-1]) and worker._last_stable_board[9, 9] == EMPTY
+
+
+def test_witness_timing_logs_only_actual_attempt_and_includes_final_gate(caplog):
+    worker, _, light = _lifecycle_worker()
+    gate_calls = []
+    original = light.try_commit_reference_lighting
+
+    def gate(token, commit):
+        gate_calls.append(True)
+        return original(token, commit)
+
+    light.try_commit_reference_lighting = gate
+    with caplog.at_level("INFO"):
+        _capture(worker, 1)
+        assert "reference witness" not in caplog.text
+        _capture(worker, 2)
+    assert gate_calls == [True]
+    assert "reference witness ordinary elapsed_ms=" in caplog.text
+
+
+def test_later_light_request_retires_candidate_but_keeps_unlit_historical_cell_evidence():
+    worker, _, light = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    light.token = SimpleNamespace(
+        request_revision=2, shown_revision=1, connection_generation=1, all_dark=False, shown_at=0.0, available=True
+    )
+    worker._lit_points = {(1, 1)}
+    raw = _empty_board()
+    raw[9, 9] = WHITE
+    assert worker._reference_check(raw, to_gray(_board_frame()))[9, 9] == EMPTY
+    _target(worker, _empty_board(), 1, 10, bind=True, epoch=2)
+    assert worker._reference is None
+
+
+@pytest.mark.parametrize("expiry", ["time", "observations", "later_evidence"])
+def test_candidate_expiry_or_newer_contradiction_cannot_promote(expiry, monkeypatch):
+    worker, _, _ = _lifecycle_worker()
+    accepted = _empty_board()
+    accepted[9, 9] = WHITE
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    image = _board_frame([(9, 9, WHITE)])
+    _source(worker, 1, raw=image)
+    gray = _source(worker, 2, raw=image)
+    move = ConfirmedMove(9, 9, WHITE, 2, 1, 1)
+    baseline = worker._reference_target
+    worker._stage_reference_candidate(move, accepted, accepted, gray)
+    assert worker._reference_candidate is not None
+    if expiry == "time":
+        worker._reference_candidate.created_at -= 5
+    elif expiry == "observations":
+        for seq in range(3, 11):
+            _source(worker, seq, raw=image)
+    else:
+        _source(worker, 3)
+        worker._observe_candidate_board(_empty_board(), _empty_board())
+    _target(worker, accepted, 2, 11)
+    worker._accept_reference_candidate(
+        dict(
+            move_token=move.token,
+            baseline_target=baseline,
+            accepted_target=worker._reference_target,
+            accepted_parent_node_id=10,
+            accepted_board=accepted.tolist(),
+        )
+    )
+    assert worker._reference is None
+
+
+def test_redundant_bind_keeps_photo_permissions_and_exact_retry_budget():
+    worker, _, _ = _lifecycle_worker()
+    _capture(worker, 1)
+    _capture(worker, 2)
+    original, attempt = worker._reference, worker._reference_attempt
+    worker._ref_released[2, 2] = worker._ref_disputed[2, 2] = True
+    worker._reference_conflict_attempted = True
+    _target(worker, _empty_board(), 1, 10, bind=True, epoch=2)
+    assert worker._reference is original and worker._reference_attempt is attempt
+    assert worker._reference_position == worker._reference_target
+    assert worker._ref_released[2, 2] and worker._ref_disputed[2, 2] and worker._reference_conflict_attempted
+    assert attempt.spent == 1
+
+
+def test_second_failure_is_limited_and_only_a_new_verified_recovery_refills(monkeypatch):
+    worker, _, _ = _lifecycle_worker()
+    clock = [10.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    _capture(worker, 1)
+    _capture(worker, 2)
+    clock[0] += 2
+    _capture(worker, 3)
+    _capture(worker, 4)
+    worker._reference_pending_at = 10.0
+    worker._publish_status(None)
+    assert worker.get_status().reference_status == "limited"
+    spent = worker._reference_attempt
+    _target(worker, _empty_board(), 1, 10, force_rearm=True)
+    assert worker._reference_attempt is spent and spent.spent == 2
+    _target(worker, _empty_board(), 1, 10, recovery_id="restore", force_rearm=True)
+    fresh = worker._reference_attempt
+    assert fresh is not spent and fresh.spent == 0
+    _target(worker, _empty_board(), 1, 10, recovery_id="restore", force_rearm=True)
+    assert worker._reference_attempt is fresh
+
+
+def test_redundant_bind_carries_the_fresh_pair_gate_without_retaining_raw_photo(monkeypatch):
+    worker, _, _ = _lifecycle_worker()
+    clock = [10.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+    worker._detector.detect.return_value = [_det(9, 9, 1)]
+    _capture(worker, 1)
+    _capture(worker, 2)
+    _capture(worker, 3)
+    clock[0] += 2
+    _target(worker, _empty_board(), 1, 10, bind=True, epoch=2)
+    assert worker._reference_source is None
+    worker._detector.detect.return_value = []
+    _capture(worker, 4)
+    assert worker._reference is not None and worker._detector.detect.call_count == 2
+
+
+def test_stale_source_expected_publication_cannot_release_a_current_move():
+    worker, _, _ = _lifecycle_worker()
+    physical = _empty_board()
+    physical[3, 3] = BLACK
+    move = ConfirmedMove(3, 3, BLACK, 7, 1, 1)
+    assert worker._sync.claim_confirmed_move(move, physical)
+    current = worker._reference_target
+    worker.send_command(
+        WorkerCommand(
+            CommandType.SET_EXPECTED_BOARD,
+            dict(
+                board=physical.tolist(),
+                binding_epoch=1,
+                expected_revision=2,
+                expected_node_id=11,
+                source_nonce="stale",
+                worker_generation="worker",
+            ),
+        )
+    )
+    worker._drain_commands()
+    assert worker._reference_target is current and worker._sync._confirmed_move is move

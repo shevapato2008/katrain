@@ -39,6 +39,7 @@ const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove
     <Dialog open={open} maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
       <DialogTitle>{t('Board mismatch', '盘面与对局不一致')}</DialogTitle>
       <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
         <Typography variant="body2">{t('game:mismatch_check_point', '请看左侧紫圈标出的交叉点，再核对实体棋盘。')}</Typography>
         {positions.length === 1 && missing.length === 0 ? (
           <Box className="kiosk-attention-point-row">
@@ -64,7 +65,6 @@ const BoardMismatchDialog = ({ open, positions, missing, boardSize, playerToMove
             {t('Accept as my move', '确实落在这里？采纳为我的落子')}
           </Button>
         )}
-        {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
       </DialogContent>
       <DialogActions sx={{ flexWrap: 'nowrap' }}>
         {positions.length === 1 && missing.length === 0 && (

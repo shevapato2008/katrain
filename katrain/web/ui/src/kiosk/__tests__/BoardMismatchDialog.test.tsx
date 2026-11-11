@@ -26,3 +26,13 @@ it('disables duplicate actions and shows a retryable verification failure', () =
   expect(screen.getByRole('button', { name: '重试核对' })).toBeEnabled();
   expect(screen.queryByRole('button', { name: /采纳为我的落子/ })).toBeNull();
 });
+
+it('places the recovery error before helper content and the missing point', () => {
+  render(<BoardMismatchDialog {...base} positions={[]} missing={[[1, 4, 2]]} playerToMove="B" error="盘面核对失败，请重试" />);
+  const alert = screen.getByRole('alert');
+  const helper = screen.getByText('请看左侧紫圈标出的交叉点，再核对实体棋盘。');
+  const missing = screen.getByText(/白 E18/);
+  expect(alert.compareDocumentPosition(helper) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(alert.compareDocumentPosition(missing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByRole('button', { name: '重试核对' })).toBeEnabled();
+});

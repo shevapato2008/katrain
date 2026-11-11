@@ -45,6 +45,7 @@ class WebSession:
     # N22:终局收尾(先补分、再落账)的会话级串行锁。人发出的双停第二手和 AI 线程触发的收尾可能同时到,
     # 不串行的话先落账的那一方会把「终局」写进账,补出来的分数就再也进不去了(`_recorded` 已置)。
     end_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
+    broadcast_send_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     sockets: Set[WebSocket] = field(default_factory=set)
     spectator_presence: PvpSpectatorPresence = field(default_factory=PvpSpectatorPresence, repr=False)
     last_access: float = field(default_factory=time.time)
@@ -458,28 +459,37 @@ class SessionManager:
         if not self._loop or not self._loop.is_running():
             return
 
-        if threading.get_ident() == self._loop_thread_id:
-            self._loop.create_task(self._broadcast_payload(session, payload))
-        else:
-            future = asyncio.run_coroutine_threadsafe(self._broadcast_payload(session, payload), self._loop)
-            future.add_done_callback(
-                lambda f: f.exception() and print(f"Error in broadcast task: {f.exception()}", flush=True)
-            )
+        def _log_failure(task):
+            if task.cancelled():
+                return
+            exc = task.exception()
+            if exc is not None:
+                logging.getLogger("katrain_web").error("broadcast task failed for %s: %s", session.session_id, exc)
+
+        def _start_broadcast():
+            self._loop.create_task(self._broadcast_payload(session, payload)).add_done_callback(_log_failure)
+
+        # Both callers enter the same FIFO. A direct on-loop create_task can
+        # otherwise overtake an already queued background-thread publication.
+        self._loop.call_soon_threadsafe(_start_broadcast)
 
     async def _broadcast_payload(self, session: WebSession, payload: Dict):
-        if not session.sockets:
-            return
-        stale = []
-        for ws in list(session.sockets):
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                stale.append(ws)
-        for ws in stale:
-            session.sockets.discard(ws)
-            session.spectator_presence.leave_socket(ws)
-        if stale and not strict_box_sso_enabled():
-            self.broadcast_spectator_count(session, force=True)
+        # Keep each whole multi-socket publication ahead of the next one even
+        # when a socket yields. No synchronous game/session lock spans this I/O.
+        async with session.broadcast_send_lock:
+            if not session.sockets:
+                return
+            stale = []
+            for ws in list(session.sockets):
+                try:
+                    await ws.send_json(payload)
+                except Exception:
+                    stale.append(ws)
+            for ws in stale:
+                session.sockets.discard(ws)
+                session.spectator_presence.leave_socket(ws)
+            if stale and not strict_box_sso_enabled():
+                self.broadcast_spectator_count(session, force=True)
 
     def _schedule_socket_close(self, session: WebSession, close):
         """Close a session's game sockets, on the loop.

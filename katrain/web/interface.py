@@ -1021,8 +1021,12 @@ class WebKaTrain(KaTrainBase):
         callback = self.update_state_callback
         if callback is None:
             return
-        state = self.get_state()
-        callback(state)
+        # Snapshot and synchronous cache/enqueue publication share the commit
+        # boundary. Otherwise an older snapshot can publish after a newer move.
+        # The callback schedules socket work; it must not wait for session.lock.
+        with self.ai_ladder_commit_lock:
+            state = self.get_state()
+            callback(state)
         self._run_post_broadcast(post_broadcast, state)
 
     def update_state(self, **_kwargs):

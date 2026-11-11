@@ -1353,22 +1353,19 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         guard_session_reader(session, current_user, action)
 
     def session_state_for_read(session):
-        # A cached move snapshot does not include thinking time since that move.
-        # Refresh / reconnect must read the same current server clock as the players.
-        if getattr(session, "game_type", None) == "pvp_local" or (
-            getattr(session, "game_type", None) in ("free", "pvp_lobby")
-            and type(getattr(session, "player_b_id", None)) is int
-            and type(getattr(session, "player_w_id", None)) is int
-        ):
+        from copy import deepcopy
+
+        # Central rooms use their authoritative mirror. Local reads take a fresh
+        # cursor/clock snapshot; response projection never replaces publication.
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            state = deepcopy(session.last_state or {})
+        else:
             with session.lock:
-                if not session.game_ended:
-                    session.last_state = session.katrain.get_state()
-        state = session.last_state or session.katrain.get_state()
+                state = session.katrain.get_state()
         from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
 
         if not legacy_analysis_allowed(runtime=session.katrain, app=app):
             state = strip_private_analysis(state)
-            session.last_state = state
         state["sockets_count"] = len(session.sockets)
         if not strict_box_sso_enabled():
             state["spectator_count"] = session.spectator_presence.count(

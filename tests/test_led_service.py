@@ -1624,7 +1624,8 @@ def test_raw_calibration_submission_is_never_tagged_as_recoverable_guidance():
     svc._close_serial()
 
 
-def test_handshake_show_requires_its_own_ack_instead_of_extra_clear_ack():
+@pytest.mark.parametrize("operation", ["handshake", "display"])
+def test_show_requires_its_own_ack_instead_of_extra_clear_ack(operation):
     class ExtraClearAck(FakeSerial):
         def reset_input_buffer(self):
             self._buf.clear()
@@ -1641,7 +1642,19 @@ def test_handshake_show_requires_its_own_ack_instead_of_extra_clear_ack():
     serial = ExtraClearAck()
     svc = LedService(LedServiceConfig(serial_port=f"led-{uuid.uuid4().hex}"), serial_factory=lambda: serial)
     try:
-        svc._open_serial()
+        if operation == "handshake":
+            svc._open_serial()
+        else:
+            svc._serial = serial
+            svc._connected = True
+            svc.clear()
+            svc._run_batch(batch := svc._queue.get_nowait())
+            token = svc.reference_lighting_snapshot()
+            assert not token.all_dark
+            commits = []
+            assert not svc.try_commit_reference_lighting(token, lambda: commits.append("unacked"))
+            assert commits == []
+            assert batch.result["ok"] is False
         assert not svc.is_connected()
         assert serial.written == ["CLEAR", "SHOW"]
     finally:

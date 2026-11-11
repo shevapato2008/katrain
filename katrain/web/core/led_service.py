@@ -687,6 +687,9 @@ class LedService:
                     self._close_serial()
                 break
             started = True
+            # As in the open handshake, each display command needs its own
+            # response. A buffered prior ACK cannot certify the final SHOW.
+            self._drain_prewrite_input()
             ok, resp = self._send_and_ack(cmd, deadline=batch.deadline, real_deadline=batch.real_deadline)
             if batch.cancelled or self._batch_remaining(batch) <= 0:
                 errors.append("timeout")

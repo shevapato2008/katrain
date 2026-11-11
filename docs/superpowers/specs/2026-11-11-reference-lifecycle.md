@@ -190,3 +190,8 @@ Preserve the one target's spent count, cooldown and failed-frame/freshness gate 
 Candidate, periodic-refresh and conflict witnesses retain their original one-attempt limits. A newer successful current reference suppresses pending obsolete retry; final adoption rechecks target and owners. Attempt2 failure remains limited. The additional possible witness is an honest extra performance cost, unmeasured on RK. It does not create an image of a missed intermediate position or alter game legality.
 
 Event000006 only proves later reference creation at depth1; it does not prove same-target retry because the target changed. The old worker loop separately demonstrates repeated eligible attempts. Likewise “last stable frame” means the exact same source used for witness/reference, not an extra photograph; stability does not prove absence of hands and does not authorize new hand detection/classes.
+
+
+## Final qualified-frame clarification — user instruction, 2026-11-11
+
+Use the last frame in the consecutive stable owner-qualified sequence as the frozen candidate/reference source. That exact selected unaveraged image produces gray, the source-consistent witness and reference pixels; later acceptance/promotion never takes another photograph or selects a newer camera frame. Ordinary eight-frame recognition averaging is unchanged. Stability is not proof of no hands; this instruction adds no hand detector, segmentation or new class. Implementation acceptance includes one existing-framework cross-layer check: real local game commit → real service SET/ACCEPT → real worker promotion, with only camera/detector/LED faked; rejected or late receipts cannot adopt.

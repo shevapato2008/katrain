@@ -1566,6 +1566,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <PhysicalPlayStatusChip
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
+          referenceStatus={visionStatus.referenceStatus}
+          referenceReason={visionStatus.referenceReason}
+          referenceTargetActive={visionLoaded && visionStatus.enabled && visionSync.bindState === 'ready'
+            && visionStatus.boundSessionId === sessionId && visionStatus.referenceTargetNodeId != null
+            && visionStatus.referenceTargetNodeId === gameState.current_node_id}
+          suppressReferenceNotice={isGameOver || !!hardwareFault || !cameraRecognitionReady || !visionStatus.poseLocked
+            || showThinking || ladderStalled || !!physicalStatus
+            || !!session.connectionLost || recalOpen || escalationOpen || reminderOpen || cameraDisconnectToast
+            || !!session.physicalEngineError || visionAttentionPoints.length > 0
+            || (visionSync.setupProgress?.missing.length ?? 0) > 0 || (visionSync.setupProgress?.extra.length ?? 0) > 0}
         />
       )}
 

@@ -2,15 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { Chip } from '@mui/material';
 import { HourglassTop } from '@mui/icons-material';
 import { useTranslation } from '../../../hooks/useTranslation';
+import type { VisionReferenceStatus } from '../../../api';
 import type { VisionSyncEvent } from '../../hooks/useVisionSync';
 
 interface Props {
   latestEvent: VisionSyncEvent | null;
   currentNodeId: number | null; // gameState.current_node_id — advance hides the chip
+  referenceStatus?: VisionReferenceStatus;
+  referenceReason?: string | null;
+  /** The physical binding and reference target both belong to this active position. */
+  referenceTargetActive?: boolean;
+  suppressReferenceNotice?: boolean;
 }
 
 /** '确认中…' (PRD §3.2/Q3): shown from move_pending until the game state advances or 6s. */
-const PhysicalPlayStatusChip = ({ latestEvent, currentNodeId }: Props) => {
+const PhysicalPlayStatusChip = ({ latestEvent, currentNodeId, referenceStatus, referenceTargetActive = false, suppressReferenceNotice = false }: Props) => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -31,14 +37,18 @@ const PhysicalPlayStatusChip = ({ latestEvent, currentNodeId }: Props) => {
     }
     setVisible(false);
   }, [currentNodeId]);
-  if (!visible) return null;
+  const referenceLimited = referenceTargetActive && !suppressReferenceNotice
+    && (referenceStatus === 'limited' || referenceStatus === 'unavailable');
+  if (!visible && !referenceLimited) return null;
   return (
     <Chip
-      icon={<HourglassTop />}
-      label={t('Confirming…', '确认中…')}
+      icon={visible ? <HourglassTop /> : undefined}
+      label={visible ? t('Confirming…', '确认中…')
+        : t('vision:reference_not_current', '参考尚未更新，继续核对盘面')}
       color="warning"
       size="small"
-      sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}
+      className={visible ? undefined : 'gthink'}
+      sx={visible ? { position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 50 } : undefined}
     />
   );
 };

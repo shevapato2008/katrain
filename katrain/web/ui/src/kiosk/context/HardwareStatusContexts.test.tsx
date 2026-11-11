@@ -24,6 +24,46 @@ function GeometryProbe() {
   return <button onClick={() => void refresh()}>{String(status.capabilities.led_ready)}</button>;
 }
 
+function ReferenceProbe() {
+  const { visionStatus, refreshStatus } = useVision();
+  return <button onClick={() => void refreshStatus()}>{JSON.stringify({
+    status: visionStatus.referenceStatus,
+    reason: visionStatus.referenceReason,
+    targetNodeId: visionStatus.referenceTargetNodeId,
+    targetRevision: visionStatus.referenceTargetRevision,
+    sourceNodeId: visionStatus.referenceSourceNodeId,
+    sourceRevision: visionStatus.referenceSourceRevision,
+    ready: visionStatus.recognitionReady,
+  })}</button>;
+}
+
+describe('reference evidence status', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('defaults unsupported optional fields to unavailable without changing recognition readiness', async () => {
+    vi.spyOn(API, 'visionStatus').mockResolvedValue({ ...visionResponse(true), recognition_ready: true });
+    render(<VisionProvider><ReferenceProbe /></VisionProvider>);
+    await waitFor(() => expect(JSON.parse(screen.getByRole('button').textContent!)).toEqual({
+      status: 'unavailable', reason: null, targetNodeId: null, targetRevision: null,
+      sourceNodeId: null, sourceRevision: null, ready: true,
+    }));
+  });
+
+  it.each(['current', 'pending', 'limited', 'unavailable'] as const)('maps %s evidence and exact target/source identities independently of readiness', async (referenceStatus) => {
+    vi.spyOn(API, 'visionStatus').mockResolvedValue({
+      ...visionResponse(true), recognition_ready: true,
+      reference_status: referenceStatus, reference_reason: 'witness_mismatch',
+      reference_target_node_id: 17, reference_target_revision: 12,
+      reference_source_node_id: 16, reference_source_revision: 11,
+    });
+    render(<VisionProvider><ReferenceProbe /></VisionProvider>);
+    await waitFor(() => expect(JSON.parse(screen.getByRole('button').textContent!)).toEqual({
+      status: referenceStatus, reason: 'witness_mismatch', targetNodeId: 17, targetRevision: 12,
+      sourceNodeId: 16, sourceRevision: 11, ready: true,
+    }));
+  });
+});
+
 describe('hardware status cache on request failure', () => {
   afterEach(() => vi.restoreAllMocks());
 

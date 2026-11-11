@@ -396,6 +396,8 @@ export interface PlatformClockState {
   paused?: boolean;
 }
 
+export type VisionReferenceStatus = 'current' | 'pending' | 'limited' | 'unavailable';
+
 export interface VisionStatusResponse {
   enabled: boolean;
   camera_connected: boolean;
@@ -404,6 +406,12 @@ export interface VisionStatusResponse {
   bound_session_id: string | null;
   recognition_ready?: boolean;
   led_connected?: boolean | null;
+  reference_status?: VisionReferenceStatus;
+  reference_reason?: string | null;
+  reference_target_node_id?: number | null;
+  reference_target_revision?: number | null;
+  reference_source_node_id?: number | null;
+  reference_source_revision?: number | null;
 }
 
 // Task 9: physical engine-move (Golaxy 隧道) error recovery. `col`/`row` are GTP/board

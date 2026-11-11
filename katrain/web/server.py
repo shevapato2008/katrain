@@ -5726,8 +5726,18 @@ async def _submit_confirmed_move(
             _rearm_detection()
         return 0.0
 
-    # R1.3: only the side to move may inject (color check).
+    # Local authority can be ahead of its last broadcast (e.g. W16 committed
+    # while last_state still shows B15). Read its turn at the commit boundary;
+    # central mirrors and platform gateways retain their existing prechecks.
     expected_player = (session.last_state or {}).get("player_to_move")
+    gateway = getattr(app.state, "platform_gateway", None)
+    if getattr(session, "game_type", None) != "pvp_lobby" and not (
+        gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session))
+    ):
+        with session.katrain.ai_ladder_commit_lock:
+            if not current():
+                return 0.0
+            expected_player = session.katrain.next_player_to_move()
     move_player = "B" if move_data.color == 1 else "W"
     if expected_player and move_player != expected_player:
         log.info("Vision move %s out of turn (expects %s) — ignored", move_player, expected_player)

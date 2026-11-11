@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 import time
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
@@ -119,6 +120,21 @@ def _find_device_by_name(name: str, original_id: int | str) -> int | None:
     return None
 
 
+@dataclass(frozen=True)
+class FrameMetadata:
+    """Camera-owner facts saved with one frame, never inferred by a later reader."""
+
+    stream_generation: int
+    frame_seq: int
+    camera_read_monotonic: float
+    controls_requested_generation: int
+    controls_applied_generation: int | None
+    controls_effective: bool | None
+    controls_completed_at: float | None
+    ownership_known: bool
+    advisory: bool = False
+
+
 class CameraManager:
     """Manages a single camera with a background reader thread.
 
@@ -166,6 +182,8 @@ class CameraManager:
         # Background reader thread state
         self._reader_thread: threading.Thread | None = None
         self._latest_frame: np.ndarray | None = None
+        self._latest_metadata: FrameMetadata | None = None
+        self._stream_generation = 0
         self._frame_seq = 0  # increments per frame read (under _frame_lock)
         self._frame_ts = 0.0  # time.monotonic() when the frame was read
         # 最近一次有人要画面(read_frame / grab_fresh)的时刻;超过 CAMERA_IDLE_AFTER_S 没人要就降到每秒解码一帧。
@@ -179,6 +197,9 @@ class CameraManager:
         self._controls_generation = 0
         self._controls_lock = threading.Lock()
         self._controls_effective: bool | None = None  # None = no verified control result yet
+        self._controls_applied_generation: int | None = None
+        self._controls_completed_at: float | None = None
+        self._controls_advisory = False
         self._initial_exposure: float | None = None  # readback at open()
         self._current_auto_exposure: float | None = None
         self._current_exposure: float | None = None
@@ -212,6 +233,9 @@ class CameraManager:
         self._capture_identity = self._node_identity()
         with self._controls_lock:
             self._controls_effective = None
+            self._controls_applied_generation = None
+            self._controls_completed_at = None
+            self._controls_advisory = False
             open_generation = self._controls_generation
             desired_auto_exposure = self._desired_auto_exposure
             desired_exposure = self._desired_exposure
@@ -341,6 +365,14 @@ class CameraManager:
                         and current_auto_exposure is not None
                         and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, current_auto_exposure)
                     )
+                self._controls_applied_generation = open_generation
+                self._controls_completed_at = time.monotonic()
+                self._controls_advisory = bool(
+                    open_generation == self._controls_generation
+                    and not self._pending_controls
+                    and self._controls_effective is False
+                    and self._known_advisory_backend(cap)
+                )
 
             # Drain frames to let auto-focus and auto-exposure settle
             if self._warmup_seconds > 0:
@@ -349,8 +381,10 @@ class CameraManager:
                     cap.read()
                 logger.info("Camera %s focus stabilized (%.1fs warmup)", self._device_id, self._warmup_seconds)
 
-            self._cap = cap
-            self._connected = True
+            with self._frame_lock:
+                self._stream_generation += 1
+                self._cap = cap
+                self._connected = True
 
             # Start background reader thread
             self._stop_event = threading.Event()
@@ -371,6 +405,7 @@ class CameraManager:
         with self._frame_lock:
             self._connected = False
             self._latest_frame = None
+            self._latest_metadata = None
         if self._reader_thread is not None:
             # Thread.start() can fail after capture acquisition; unstarted threads cannot be joined.
             if self._reader_thread.ident is not None:
@@ -385,6 +420,7 @@ class CameraManager:
             self._connected = False
             with self._frame_lock:
                 self._latest_frame = None
+                self._latest_metadata = None
             logger.info("Camera %s closed", self._device_id)
 
     def handle_device_event(self, action: str) -> None:
@@ -454,6 +490,16 @@ class CameraManager:
             frame = self._latest_frame.copy() if self._latest_frame is not None else None
             return frame, self._frame_seq, self._frame_ts
 
+    def read_frame_with_metadata(self) -> tuple[np.ndarray | None, FrameMetadata | None]:
+        """Return a copied frame and its immutable owner facts from one publication."""
+        self._last_demand = time.monotonic()
+        if not self._connected:
+            self._try_reconnect()
+        with self._frame_lock:
+            if self._latest_frame is None or self._latest_metadata is None:
+                return None, None
+            return self._latest_frame.copy(), self._latest_metadata
+
     # ------------------------------------------------------------------
     # Background reader
     # ------------------------------------------------------------------
@@ -472,6 +518,7 @@ class CameraManager:
                     self._cap = None
                     self._connected = False
                     self._latest_frame = None
+                    self._latest_metadata = None
 
     def _read_frames(self, cap, stop: threading.Event) -> None:
         while not stop.is_set():
@@ -495,6 +542,12 @@ class CameraManager:
                 continue
             if idle:
                 self._last_idle_decode = now
+            # Keep the pre-read owner: a request or completed operation during
+            # native read makes this frame ambiguous, even if effectiveness is
+            # True both before and after the transition.
+            with self._controls_lock, self._frame_lock:
+                stream_generation = self._stream_generation
+                controls = self._controls_snapshot_locked()
             try:
                 ret, frame = cap.read()
             except cv2.error as exc:
@@ -507,12 +560,28 @@ class CameraManager:
                 self._mark_disconnected()
                 return
 
-            with self._frame_lock:
+            read_at = time.monotonic()
+            with self._controls_lock, self._frame_lock:
                 if stop.is_set():
                     return
                 self._latest_frame = frame
                 self._frame_seq += 1
-                self._frame_ts = time.monotonic()
+                self._frame_ts = read_at
+                requested, applied, effective, completed, advisory = controls
+                ownership_known = (
+                    stream_generation == self._stream_generation and controls == self._controls_snapshot_locked()
+                )
+                self._latest_metadata = FrameMetadata(
+                    stream_generation=stream_generation,
+                    frame_seq=self._frame_seq,
+                    camera_read_monotonic=read_at,
+                    controls_requested_generation=requested,
+                    controls_applied_generation=applied,
+                    controls_effective=effective,
+                    controls_completed_at=completed,
+                    ownership_known=ownership_known,
+                    advisory=advisory and ownership_known,
+                )
 
     # ------------------------------------------------------------------
     # Runtime camera controls (software AE)
@@ -582,6 +651,7 @@ class CameraManager:
         with self._controls_lock:
             self._controls_generation += 1
             self._pending_controls_generation = self._controls_generation
+            self._controls_advisory = False
             if not all(bool(np.isfinite(value)) for value in requested.values()):
                 self._pending_controls = {}
                 self._controls_effective = False
@@ -617,6 +687,25 @@ class CameraManager:
         """Last exposure value read by the camera-owning thread."""
         with self._controls_lock:
             return self._current_exposure
+
+    def _controls_snapshot_locked(self) -> tuple[int, int | None, bool | None, float | None, bool]:
+        return (
+            self._controls_generation,
+            self._controls_applied_generation,
+            self._controls_effective,
+            self._controls_completed_at,
+            self._controls_advisory,
+        )
+
+    @staticmethod
+    def _known_advisory_backend(cap) -> bool:
+        """Only this known backend limitation permits completed advisory evidence."""
+        if sys.platform != "darwin":
+            return False
+        try:
+            return cap.getBackendName() == "AVFOUNDATION"
+        except (AttributeError, cv2.error):
+            return False
 
     def _apply_pending_controls(self) -> None:
         with self._controls_lock:
@@ -679,6 +768,7 @@ class CameraManager:
         )
         legacy_manual_needs_readback = manual_without_exposure and not hardware_lock_request
         batch_ok = auto_ok and exposure_ok and (not legacy_manual_needs_readback or exposure_valid)
+        advisory_backend = self._known_advisory_backend(self._cap) if not batch_ok else False
         with self._controls_lock:
             self._current_auto_exposure = auto_readback if auto_valid else None
             self._current_exposure = exposure_readback if exposure_valid else None
@@ -692,8 +782,11 @@ class CameraManager:
             elif hardware_lock_request:
                 self._desired_auto_exposure = CAMERA_AUTO_EXPOSURE_ON
                 self._desired_exposure = None
+            self._controls_applied_generation = batch_generation
+            self._controls_completed_at = time.monotonic()
             if batch_generation == self._controls_generation:
                 self._controls_effective = batch_ok
+                self._controls_advisory = advisory_backend
 
     # ------------------------------------------------------------------
     # Fresh-frame grab (capture path)
@@ -734,6 +827,7 @@ class CameraManager:
         with self._frame_lock:
             self._connected = False
             self._latest_frame = None
+            self._latest_metadata = None
         logger.warning("Camera %s marked as disconnected", self._device_id)
 
     def _try_reconnect(self) -> np.ndarray | None:

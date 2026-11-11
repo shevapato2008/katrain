@@ -55,6 +55,56 @@ def test_camera_hub_owns_one_camera_lifecycle():
     assert camera.close_calls == 1
 
 
+def test_camera_hub_forwards_exact_metadata_pair_only_through_existing_read_gates():
+    from katrain.vision.camera import FrameMetadata
+
+    camera = FakeCamera()
+    metadata = FrameMetadata(3, 12, 45.0, 7, 7, True, 44.0, True)
+    pair = (camera.frame, metadata)
+    calls = []
+
+    def read_metadata():
+        calls.append(1)
+        return pair
+
+    camera.read_frame_with_metadata = read_metadata
+    camera.read_frame = lambda: pytest.fail("metadata forwarding must not read an extra frame")
+    hub = CameraHub(CameraHubConfig(device_id=uuid.uuid4().hex), camera=camera)
+    assert hub.read_frame_with_metadata() == (None, None)
+    hub._started = True
+    camera.is_connected = True
+    assert hub.read_frame_with_metadata() is pair
+    assert calls == [1]
+    with hub._usb_lock:
+        hub._usb_request = object()
+    assert hub.read_frame_with_metadata() == (None, None)
+    with hub._usb_lock:
+        hub._usb_request = None
+
+    owned, release = threading.Event(), threading.Event()
+
+    def hold_lifecycle():
+        with hub._lifecycle_lock:
+            owned.set()
+            assert release.wait(1)
+
+    holder = threading.Thread(target=hold_lifecycle)
+    try:
+        holder.start()
+        assert owned.wait(1)
+        assert hub.read_frame_with_metadata() == (None, None)
+    finally:
+        release.set()
+        holder.join(1)
+    camera.is_connected = False
+    hub.set_usb_startup_check(lambda: False)
+    assert hub.read_frame_with_metadata() == (None, None)
+    assert calls == [1]
+    camera.is_connected = True
+    del camera.read_frame_with_metadata
+    assert hub.read_frame_with_metadata() == (None, None)
+
+
 @pytest.mark.parametrize("timeout", [None, 0.5])
 def test_grab_fresh_waits_for_preview_and_only_spends_remaining_timeout(timeout):
     preview_entered, preview_release, captured = threading.Event(), threading.Event(), threading.Event()

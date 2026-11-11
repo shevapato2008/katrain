@@ -1,13 +1,174 @@
 """Camera lifecycle regressions independent of physical hardware."""
 
 import threading
+from dataclasses import FrozenInstanceError
 from types import SimpleNamespace
 
 import cv2
 import numpy as np
+import pytest
 
 from katrain.vision import camera as camera_module
 from katrain.vision.camera import CameraManager
+
+
+class MetadataCapture:
+    """Synchronous reader fake with real control readback behavior."""
+
+    def __init__(self, backend="V4L2"):
+        self.values = {cv2.CAP_PROP_AUTO_EXPOSURE: 3.0, cv2.CAP_PROP_EXPOSURE: 100.0}
+        self.backend = backend
+        self.opened = True
+        self.fail_controls = False
+
+    def isOpened(self):
+        return self.opened
+
+    def set(self, prop, value):
+        if self.fail_controls and prop in (cv2.CAP_PROP_AUTO_EXPOSURE, cv2.CAP_PROP_EXPOSURE):
+            return False
+        self.values[prop] = value
+        return True
+
+    def get(self, prop):
+        return self.values.get(prop, 0.0)
+
+    def getBackendName(self):
+        return self.backend
+
+    def release(self):
+        self.opened = False
+
+
+def publish_metadata_frame(camera, capture, value=17, during_read=None):
+    frame = np.full((4, 6, 3), value, np.uint8)
+    stop = threading.Event()
+    reads = []
+
+    def read():
+        reads.append(1)
+        if len(reads) == 1:
+            if during_read is not None:
+                during_read()
+        else:
+            stop.set()
+        return True, frame
+
+    capture.read = read
+    camera._read_frames(capture, stop)
+    # The second read only exits the synchronous fake loop; it is not published.
+    return frame
+
+
+def test_frame_metadata_keeps_completed_control_and_reopen_identity(monkeypatch):
+    camera = CameraManager(warmup_seconds=0)
+    first, reopened = MetadataCapture(), MetadataCapture()
+    captures = iter([first, reopened])
+    monkeypatch.setattr(camera_module.cv2, "VideoCapture", lambda _arg: next(captures))
+    monkeypatch.setattr(camera, "_reader_loop", lambda: None)
+    try:
+        assert camera.open()
+        original = publish_metadata_frame(camera, first)
+        image, before = camera.read_frame_with_metadata()
+        assert np.array_equal(image, original)
+        assert before.stream_generation == 1
+        assert before.frame_seq == 1
+        assert before.controls_requested_generation == before.controls_applied_generation == 0
+        assert before.controls_effective is True
+        assert before.controls_completed_at <= before.camera_read_monotonic
+        assert before.ownership_known is True
+        assert before.advisory is False
+        with pytest.raises(FrozenInstanceError):
+            before.frame_seq = 100
+
+        camera.request_controls(exposure=200.0)
+        camera._apply_pending_controls()
+        unchanged_image, unchanged = camera.read_frame_with_metadata()
+        assert unchanged is before, "new global controls must not relabel the cached old image"
+        assert np.array_equal(unchanged_image, original)
+        publish_metadata_frame(camera, first, value=23)
+        changed_image, changed = camera.read_frame_with_metadata()
+        assert int(changed_image[0, 0, 0]) == 23
+        assert changed.controls_requested_generation == changed.controls_applied_generation == 1
+        assert changed.controls_completed_at > before.controls_completed_at
+        assert changed.frame_seq == before.frame_seq + 1
+
+        assert camera.open()
+        assert camera.read_frame_with_metadata() == (None, None)
+        publish_metadata_frame(camera, reopened, value=42)
+        new_image, new = camera.read_frame_with_metadata()
+        assert int(new_image[0, 0, 0]) == 42
+        assert new.stream_generation == before.stream_generation + 1
+        assert new.controls_requested_generation == new.controls_applied_generation == 1
+        assert before.stream_generation == 1
+
+        # The established APIs keep their array and three-value result contracts.
+        identified, seq, ts = camera.read_frame_identified()
+        assert np.array_equal(camera.read_frame(), new_image)
+        assert np.array_equal(identified, new_image)
+        assert (seq, ts) == (new.frame_seq, new.camera_read_monotonic)
+        new_image[:] = 0
+        assert int(camera.read_frame_with_metadata()[0][0, 0, 0]) == 42
+    finally:
+        camera.close()
+    camera._last_reconnect_attempt = camera_module.time.monotonic()
+    assert camera.read_frame_with_metadata() == (None, None)
+
+
+@pytest.mark.parametrize("transition", ["pending", "completed", "stream"])
+def test_frame_metadata_marks_ownership_unknown_when_owner_changes_during_read(transition):
+    camera = CameraManager()
+    capture = MetadataCapture()
+    camera._cap = capture
+    camera._connected = True
+    camera.request_controls(exposure=100.0)
+    camera._apply_pending_controls()
+
+    def change_owner():
+        if transition == "stream":
+            with camera._frame_lock:
+                camera._stream_generation += 1
+        else:
+            camera.request_controls(exposure=200.0)
+            if transition == "completed":
+                camera._apply_pending_controls()
+
+    publish_metadata_frame(camera, capture, during_read=change_owner)
+    image, metadata = camera.read_frame_with_metadata()
+    assert image is not None
+    assert metadata.ownership_known is False
+    assert metadata.controls_requested_generation == 1
+    assert metadata.controls_applied_generation == 1
+
+
+@pytest.mark.parametrize("backend, advisory", [("AVFOUNDATION", True), ("V4L2", False), (None, False)])
+def test_frame_metadata_advisory_requires_explicit_backend_and_completed_controls(monkeypatch, backend, advisory):
+    monkeypatch.setattr(camera_module.sys, "platform", "darwin")
+    camera = CameraManager()
+    capture = MetadataCapture(backend)
+    capture.fail_controls = True
+    camera._cap = capture
+    camera._connected = True
+    camera.request_controls(exposure=200.0)
+    camera._apply_pending_controls()
+    publish_metadata_frame(camera, capture)
+    _image, completed = camera.read_frame_with_metadata()
+    assert completed.controls_effective is False
+    assert completed.controls_requested_generation == completed.controls_applied_generation == 1
+    assert completed.controls_completed_at is not None
+    assert completed.ownership_known is True
+    assert completed.advisory is advisory
+
+    camera.request_controls(exposure=300.0)
+    # Preserve a pending request through this read instead of applying it first.
+    original_apply = camera._apply_pending_controls
+    monkeypatch.setattr(camera, "_apply_pending_controls", lambda: None)
+    publish_metadata_frame(camera, capture)
+    _image, pending = camera.read_frame_with_metadata()
+    assert pending.controls_effective is None
+    assert pending.controls_requested_generation != pending.controls_applied_generation
+    assert pending.advisory is False
+    monkeypatch.setattr(camera, "_apply_pending_controls", original_apply)
 
 
 def test_disconnect_invalidates_cached_capture_and_readiness():

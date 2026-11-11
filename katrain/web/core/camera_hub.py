@@ -319,6 +319,18 @@ class CameraHub:
         finally:
             self._lifecycle_lock.release()
 
+    def read_frame_with_metadata(self):
+        """Forward the camera owner's atomic pair through the existing read gates."""
+        if not self._lifecycle_lock.acquire(blocking=False):
+            return None, None
+        try:
+            if not self._can_read():
+                return None, None
+            read_metadata = getattr(self._camera, "read_frame_with_metadata", None)
+            return read_metadata() if callable(read_metadata) else (None, None)
+        finally:
+            self._lifecycle_lock.release()
+
     def grab_fresh(self, after_ts=None, settle_ms: float = 150.0, timeout: float | None = None):
         # Lifecycle access and the frame wait share CameraManager's default budget.
         timeout = 2.0 if timeout is None else max(0.0, timeout)

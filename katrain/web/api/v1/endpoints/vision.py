@@ -319,6 +319,11 @@ async def bind_session(
             # This bind is an explicit retry after the player corrected the setup.
             vision.set_local_confirmation_mode(False, session_id=body.session_id, game_id=game_state["game_id"])
         vision.set_local_confirmation_mode(True, session_id=body.session_id, game_id=game_state["game_id"])
+        # A true mode transition retires the previous source target. Bootstrap
+        # must receive current authority under the new identity before waiting.
+        publish_current_expected(
+            vision, body.session_id, session, capture_vision_source(vision, body.session_id, session)
+        )
         deadline = asyncio.get_running_loop().time() + 8.5
         while not vision.local_confirmation_ready:
             if (

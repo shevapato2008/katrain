@@ -280,3 +280,59 @@ def test_reference_mode_change_rotates_nonce_and_force_rearm_keeps_target():
     revision = svc.expected_revision
     svc.publish_expected_from_stones(source, [], expected_node_id=1)
     assert svc.expected_revision > revision
+
+
+def test_local_mode_command_carries_current_reference_source_identity():
+    from katrain.vision.ipc import CommandType
+
+    svc, session, source, move = _reference_service()
+    svc._worker.supports_local_confirmation = True
+    old_nonce = svc._source_nonce
+    assert svc.set_local_confirmation_mode(True, session_id="s", game_id="g")
+    command = svc._worker.send_command.call_args.args[0]
+    assert command.action == CommandType.SET_LOCAL_CONFIRMATION_MODE
+    assert command.data["source_nonce"] == svc._source_nonce != old_nonce
+    assert command.data["worker_generation"] == svc._worker_generation
+    assert svc.set_local_confirmation_mode(False, session_id="s", game_id="g")
+    nonce = svc._source_nonce
+    assert svc.set_local_confirmation_mode(False, session_id="s", game_id="other")
+    assert svc._worker.send_command.call_args.args[0].data["source_nonce"] == nonce
+
+
+def test_local_completion_publishes_exact_target_before_complete_and_fences_replaced_source(monkeypatch):
+    import time
+    import numpy as np
+    from katrain.vision.ipc import CommandType
+
+    svc, session, source, move = _reference_service()
+    svc._worker.supports_local_confirmation = True
+    assert svc.set_local_confirmation_mode(True, session_id="s", game_id="g")
+    svc.publish_expected_from_stones(source, [], expected_node_id=16)
+    monkeypatch.setattr(VisionService, "local_confirmation_ready", property(lambda self: True))
+    board = np.zeros((19, 19), dtype=np.int8)
+    assert svc.open_local_window(
+        "window", board, expected_node_id=16, expected_color=1, deadline_monotonic=time.monotonic() + 10
+    )
+    board[3, 3] = 1
+    svc._worker.send_command.reset_mock()
+    assert svc.complete_local_window("window", board, expected_node_id=17)
+    commands = [call.args[0] for call in svc._worker.send_command.call_args_list]
+    assert [command.action for command in commands] == [
+        CommandType.SET_EXPECTED_BOARD,
+        CommandType.COMPLETE_LOCAL_WINDOW,
+    ]
+    expected, complete = commands
+    assert complete.data["accepted_target"] == svc._reference_target
+    assert complete.data["accepted_target"].expected_node_id == 17
+    assert complete.data["accepted_target"].expected_revision == expected.data["expected_revision"]
+    assert complete.data["source_nonce"] == expected.data["source_nonce"] == svc._source_nonce
+    assert complete.data["worker_generation"] == svc._worker_generation
+    assert complete.data["accepted_board"] == board.tolist()
+    assert not svc.complete_local_window("window", board, expected_node_id=17)
+    assert svc.open_local_window(
+        "stale", board, expected_node_id=17, expected_color=2, deadline_monotonic=time.monotonic() + 10
+    )
+    session.katrain.game = object()
+    before = svc._worker.send_command.call_count
+    assert not svc.complete_local_window("stale", board, expected_node_id=18)
+    assert svc._worker.send_command.call_count == before

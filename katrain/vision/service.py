@@ -99,6 +99,7 @@ class VisionService:
         self._local_confirmation_game_id: str | None = None
         self._local_mode_generation = 0
         self._local_window_token: str | None = None
+        self._local_window_source: tuple[VisionBindingSource, str, str] | None = None
         self._local_window_deadline = 0.0
         self.recovery_gate = recovery_gate
         self._usb_requested = False
@@ -128,6 +129,7 @@ class VisionService:
                 self._pending_events.clear()
                 self._pending_local_observations.clear()
                 self._local_window_token = None
+                self._local_window_source = None
             if self._usb_recovery_callback is not None:
                 remaining = max(0.0, timeout - (time.monotonic() - started))
                 if self._usb_recovery_callback(remaining) is not True:
@@ -185,6 +187,7 @@ class VisionService:
             self._worker = None
         self._local_confirmation_mode = False
         self._local_window_token = None
+        self._local_window_source = None
         self._pending_local_observations.clear()
         logger.info("VisionService stopped")
 
@@ -576,6 +579,7 @@ class VisionService:
         self._local_confirmation_session_id = None
         self._local_confirmation_game_id = None
         self._local_window_token = None
+        self._local_window_source = None
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.UNBIND))
 
@@ -650,6 +654,7 @@ class VisionService:
             self._local_confirmation_game_id = game_id
             self._bound_mode = self._binding_mode(self._bound_session)
             self._local_window_token = None
+            self._local_window_source = None
             self._pending_local_observations.clear()
             self._pending_moves.clear()
             self._worker.send_command(
@@ -660,6 +665,8 @@ class VisionService:
                         "session_id": session_id,
                         "game_id": game_id,
                         "mode_generation": self._local_mode_generation,
+                        "source_nonce": self._source_nonce,
+                        "worker_generation": self._worker_generation,
                     },
                 )
             )
@@ -679,6 +686,11 @@ class VisionService:
             if self.usb_business_blocked or not self.local_confirmation_ready or deadline_monotonic <= opened:
                 return False
             self._local_window_token = token
+            self._local_window_source = None
+            if self._bound_session is not None:
+                source = self.capture_binding_source(self._bound_session_id, self._bound_session)
+                if self._source_is_current_locked(source, binding_game_identity(source.session)):
+                    self._local_window_source = (source, self._source_nonce, self._worker_generation)
             self._local_window_deadline = deadline_monotonic
             self._pending_local_observations.clear()
             self._worker.send_command(
@@ -700,22 +712,52 @@ class VisionService:
         if not self.supports_local_confirmation or token != self._local_window_token:
             return False
         self._local_window_token = None
+        self._local_window_source = None
         self._pending_local_observations.clear()
         self._worker.send_command(WorkerCommand(action=CommandType.CANCEL_LOCAL_WINDOW, data={"token": token}))
         return True
 
     def complete_local_window(self, token: str, accepted_board: np.ndarray, *, expected_node_id: int | None) -> bool:
-        if not self.supports_local_confirmation or token != self._local_window_token:
-            return False
-        self._local_window_token = None
-        self._pending_local_observations.clear()
-        self._worker.send_command(
-            WorkerCommand(
-                action=CommandType.COMPLETE_LOCAL_WINDOW,
-                data={"token": token, "accepted_board": accepted_board.tolist(), "expected_node_id": expected_node_id},
+        """Publish the controller's true accepted board, then finish its scoped window.
+
+        The local controller holds session.lock and the actual game's commit lock
+        from its successful commit through this call. Never reread later game state.
+        """
+        board = np.array(accepted_board, dtype=np.int8, order="C", copy=True)
+        with self._metadata_lock:
+            scope = self._local_window_source
+            if (
+                not self.supports_local_confirmation
+                or not self._local_confirmation_mode
+                or token != self._local_window_token
+                or scope is None
+            ):
+                return False
+            source, source_nonce, worker_generation = scope
+            if (
+                source_nonce != self._source_nonce
+                or worker_generation != self._worker_generation
+                or not self._source_is_current_locked(source, binding_game_identity(source.session))
+            ):
+                return False
+            self._publish_expected_locked(source, board, expected_node_id)
+            self._worker.send_command(
+                WorkerCommand(
+                    action=CommandType.COMPLETE_LOCAL_WINDOW,
+                    data={
+                        "token": token,
+                        "accepted_board": board.tolist(),
+                        "expected_node_id": expected_node_id,
+                        "accepted_target": self._reference_target,
+                        "source_nonce": self._source_nonce,
+                        "worker_generation": self._worker_generation,
+                    },
+                )
             )
-        )
-        return True
+            self._local_window_token = None
+            self._local_window_source = None
+            self._pending_local_observations.clear()
+            return True
 
     def set_move_armed(self, armed: bool) -> None:
         """Arm/disarm monitor-mode move detection (frontend arms only in the 'ready' phase)."""

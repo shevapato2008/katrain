@@ -478,3 +478,58 @@ def test_replacement_boundary_without_orchestrator_only_invalidates_actual_game_
             session.katrain.game = object()
     assert svc.bound_session_id == (None if changed else "s")
     assert app.state.engine_recovery.clear.call_count == (1 if changed else 0)
+
+
+def test_local_bind_republishes_authority_after_mode_enable_before_bootstrap_ready(monkeypatch):
+    from types import SimpleNamespace
+    from threading import RLock
+    from katrain.web.core import local_confirmation
+
+    calls = []
+    game = SimpleNamespace(game_id="g", current_node=object())
+    state = {
+        "game_id": "g",
+        "game_type": "pvp_local",
+        "board_size": [19, 19],
+        "current_node_id": id(game.current_node),
+        "stones": [],
+    }
+    katrain = SimpleNamespace(
+        game=game,
+        get_state=lambda: state,
+        set_local_geometry_paused=lambda *args, **kwargs: True,
+        start_clock=lambda: None,
+        local_geometry_pause_epoch=0,
+    )
+    session = SimpleNamespace(katrain=katrain, lock=RLock())
+
+    class LocalVision(FakeVision):
+        supports_local_confirmation = True
+        local_confirmation_bootstrap_state = "bootstrap"
+
+        def set_expected_from_stones(self, stones, *, expected_node_id=None):
+            calls.append("expected")
+
+        def set_local_confirmation_mode(self, enabled, **kwargs):
+            calls.append("mode")
+            return True
+
+        @property
+        def bound_session_id(self):
+            return self.bound
+
+        @property
+        def local_confirmation_ready(self):
+            assert calls[-2:] == ["mode", "expected"], "bootstrap checked before source-scoped republish"
+            return True
+
+    fake = LocalVision()
+    monkeypatch.setattr(
+        local_confirmation,
+        "local_confirmation_for",
+        lambda session: SimpleNamespace(ready=lambda *args, **kwargs: None),
+    )
+    c = _client(fake, SimpleNamespace(get_session=lambda sid: session))
+    response = TestClient(c.app).post("/vision/bind", json={"session_id": "s"})
+    assert response.status_code == 200, response.text
+    assert calls == ["expected", "mode", "expected"]

@@ -1,6 +1,9 @@
 import ctypes
+import fcntl
 import os
 import stat
+import struct
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -9,8 +12,8 @@ from katrain.web.core.linux_usb_hub import LinuxUsbHub, UsbControl, USBDEVFS_CON
 
 
 def fake_usb(tmp_path, monkeypatch, statuses=None):
-    root = tmp_path / "sys"
-    root.mkdir()
+    root = tmp_path / "sys" / "bus" / "usb" / "devices"
+    root.mkdir(parents=True)
     hub = root / "1-1"
     hub.mkdir()
     for key, value in {
@@ -22,7 +25,8 @@ def fake_usb(tmp_path, monkeypatch, statuses=None):
         "devnum": "7",
     }.items():
         (hub / key).write_text(value)
-    usbfs = tmp_path / "dev"
+    dev = tmp_path / "dev"
+    usbfs = dev / "bus" / "usb"
     (usbfs / "001").mkdir(parents=True)
     (usbfs / "001" / "007").touch()
     statuses = statuses or {1: 0x100, 2: 0x100, 3: 0x103, 4: 0x101}
@@ -37,11 +41,43 @@ def fake_usb(tmp_path, monkeypatch, statuses=None):
             assert (arg.bRequestType, arg.bRequest, arg.wValue, arg.wLength, arg.timeout) == (0xA3, 0, 0, 4, 1000)
             ctypes.memmove(arg.data, statuses[arg.wIndex].to_bytes(2, "little") + b"\0\0", 4)
             return 4
+        if request == 0x80685600:  # VIDIOC_QUERYCAP, no streaming or frame reads.
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+            assert flags & os.O_ACCMODE == os.O_RDONLY
+            assert flags & os.O_NONBLOCK
+            arg.capabilities, arg.device_caps = struct.unpack("<II", os.pread(fd, 8, 0))
+            return 0
+        assert request == USBDEVFS_RESET
         return 0
 
     monkeypatch.setattr("katrain.web.core.linux_usb_hub.fcntl.ioctl", ioctl)
-    # Real adapters require a character usbfs device; fixture checks the same dev identity against fstat.
-    monkeypatch.setattr("katrain.web.core.linux_usb_hub.stat.S_ISCHR", lambda mode: stat.S_ISREG(mode))
+    # Model only the character-device boundary; sysfs ancestry and validation run unchanged.
+    real_stat, real_fstat = os.stat, os.fstat
+    char_devices = {}
+
+    def character_info(info, rdev):
+        values = {name: getattr(info, name) for name in dir(info) if name.startswith("st_")}
+        values.update(st_mode=stat.S_IFCHR | 0o600, st_rdev=rdev)
+        return SimpleNamespace(**values)
+
+    def device_stat(path, **kwargs):
+        info = real_stat(path, **kwargs)
+        if stat.S_ISREG(info.st_mode):
+            node = Path(path)
+            if node == usbfs / "001" / "007":
+                char_devices[info.st_dev, info.st_ino] = os.makedev(189, 6)
+            elif node.parent == dev and node.name.startswith("video") and node.name[5:].isdigit():
+                char_devices[info.st_dev, info.st_ino] = os.makedev(81, int(node.name[5:]))
+        rdev = char_devices.get((info.st_dev, info.st_ino))
+        return character_info(info, rdev) if rdev is not None else info
+
+    def device_fstat(fd):
+        info = real_fstat(fd)
+        rdev = char_devices.get((info.st_dev, info.st_ino))
+        return character_info(info, rdev) if rdev is not None else info
+
+    monkeypatch.setattr(os, "stat", device_stat)
+    monkeypatch.setattr(os, "fstat", device_fstat)
     adapter = LinuxUsbHub(sysfs_root=root, usbfs_root=usbfs, camera_alias=tmp_path / "cam", led_alias=tmp_path / "led")
     child(root, 3, "303a", "1001")
     return adapter, root, statuses, calls
@@ -56,6 +92,114 @@ def child(root, port, vid, pid):
     (path / "devnum").write_text(str(10 + port))
     (path / "serial").write_text(f"unit-{port}")
     return path
+
+
+def camera(adapter, root, vid="0ac8", pid="0346", *, caps=0x80000001, device_caps=1, alias=False):
+    usb_child = child(root, 4, vid, pid)
+    interface = usb_child / "1-1.4:1.0"
+    interface.mkdir()
+    (interface / "bInterfaceClass").write_text("0e")
+    driver = root.parent / "drivers" / "uvcvideo"
+    driver.mkdir(parents=True, exist_ok=True)
+    (interface / "driver").symlink_to(driver)
+    video = interface / "video4linux" / "video0"
+    video.mkdir(parents=True)
+    (video / "index").write_text("0")
+    (video / "dev").write_text("81:0")
+    (video / "device").symlink_to(interface)
+    classes = root.parent.parent.parent / "class" / "video4linux"
+    classes.mkdir(parents=True, exist_ok=True)
+    (classes / "video0").symlink_to(video)
+    node = adapter.usbfs_root.parent.parent / "video0"
+    node.write_bytes(struct.pack("<II", caps, device_caps))
+    if alias:
+        adapter.aliases[4].symlink_to(node)
+    return usb_child, interface, video, node
+
+
+@pytest.mark.parametrize("vid,pid", [("0ac8", "0346"), ("0bdc", "2710"), ("1234", "5678")])
+@pytest.mark.parametrize("alias", [False, True])
+def test_camera_port_accepts_uvc_capture_independent_of_vid(tmp_path, monkeypatch, vid, pid, alias):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    camera(adapter, root, vid, pid, alias=alias)
+    snapshot = adapter.snapshot()
+    assert snapshot.valid, snapshot.reason
+    assert snapshot.ports[4].child_identity == (vid, pid)
+    assert snapshot.ports[4].child_address == (1, 14)
+    assert snapshot.ports[4].child_serial == "unit-4"
+    assert not snapshot.ports[4].candidate
+    assert any(request == 0x80685600 for request, _ in calls)
+
+
+@pytest.mark.parametrize("defect", ["non-video", "unbound", "wrong-driver", "index", "no-node", "no-class"])
+def test_camera_requires_complete_uvc_primary_node_evidence(tmp_path, monkeypatch, defect):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    usb_child, interface, video, node = camera(adapter, root)
+    if defect == "non-video":
+        (interface / "bInterfaceClass").write_text("ff")
+    elif defect == "unbound":
+        (interface / "driver").unlink()
+    elif defect == "wrong-driver":
+        (interface / "driver").unlink()
+        other = root.parent / "drivers" / "other"
+        other.mkdir()
+        (interface / "driver").symlink_to(other)
+    elif defect == "index":
+        (video / "index").write_text("1")
+    elif defect == "no-node":
+        node.unlink()
+    else:
+        (root.parent.parent.parent / "class" / "video4linux" / "video0").unlink()
+    assert not adapter.snapshot().valid
+
+
+@pytest.mark.parametrize("caps,device_caps", [(0x80000001, 0x00800000), (0x80000001, 0), (0x00800000, 1)])
+def test_camera_selected_node_must_have_its_own_capture_capability(tmp_path, monkeypatch, caps, device_caps):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    camera(adapter, root, caps=caps, device_caps=device_caps, alias=True)
+    assert not adapter.snapshot().valid
+
+
+@pytest.mark.parametrize("caps,device_caps", [(1, 0), (0x80001000, 0x1000)])
+def test_camera_accepts_legacy_or_multiplanar_capture_capability(tmp_path, monkeypatch, caps, device_caps):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    camera(adapter, root, caps=caps, device_caps=device_caps)
+    value = adapter.snapshot()
+    assert value.valid, value.reason
+
+
+def test_camera_alias_cannot_select_metadata_instead_of_capture(tmp_path, monkeypatch):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    usb_child, interface, video, node = camera(adapter, root)
+    metadata = video.parent / "video1"
+    metadata.mkdir()
+    (metadata / "index").write_text("1")
+    (metadata / "dev").write_text("81:1")
+    (metadata / "device").symlink_to(interface)
+    (root.parent.parent.parent / "class" / "video4linux" / "video1").symlink_to(metadata)
+    metadata_node = node.with_name("video1")
+    metadata_node.write_bytes(struct.pack("<II", 0x80000001, 0x00800000))
+    adapter.aliases[4].symlink_to(metadata_node)
+    assert not adapter.snapshot().valid
+
+
+@pytest.mark.parametrize("target", ["dangling", "regular", "other-child"])
+def test_camera_alias_rejects_dangling_noncharacter_and_other_child(tmp_path, monkeypatch, target):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    usb_child, interface, video, node = camera(adapter, root)
+    if target == "dangling":
+        adapter.aliases[4].symlink_to(node.with_name("missing"))
+    elif target == "regular":
+        regular = tmp_path / "regular-file"
+        regular.touch()
+        adapter.aliases[4].symlink_to(regular)
+    else:
+        other = child(root, 3, "303a", "1001") / "1-1.3:1.0"
+        other.mkdir()
+        (video / "device").unlink()
+        (video / "device").symlink_to(other)
+        adapter.aliases[4].symlink_to(node)
+    assert not adapter.snapshot().valid
 
 
 def test_snapshot_reads_all_ports_and_decodes_verified_candidate(tmp_path, monkeypatch):
@@ -90,7 +234,7 @@ def test_enabled_missing_child_is_not_candidate_and_existing_child_is_not_candid
     statuses[4] = 0x103
     assert not adapter.snapshot().ports[4].candidate
     statuses[4] = 0x101
-    child(root, 4, "0ac8", "0346")
+    camera(adapter, root)
     assert not adapter.snapshot().ports[4].candidate
 
 
@@ -161,7 +305,7 @@ def test_fixed_child_final_recheck_cancels_enum_race_and_unsafe_ports(tmp_path, 
     adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
     lock = _lock_operation(tmp_path / "state" / "state.json")
     if appeared:
-        child(root, 4, "0ac8", "0346")
+        camera(adapter, root)
         statuses[4] = 0x103
     if unsafe:
         statuses[1] = 0x101
@@ -186,7 +330,7 @@ def test_fixed_child_rejects_new_candidate_replacing_stable_camera_candidate(tmp
     assert tuple(p for p in (3, 4) if adapter.snapshot().ports[p].candidate) == (4,)
     # Between parent validation and child execution, the original candidate
     # recovers and a different port enters the disabled/missing-child state.
-    child(root, 4, "0ac8", "0346")
+    camera(adapter, root)
     statuses[4] = 0x103
     (root / "1-1.3" / "idVendor").unlink()
     (root / "1-1.3" / "idProduct").unlink()

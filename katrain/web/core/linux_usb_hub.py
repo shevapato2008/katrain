@@ -34,6 +34,24 @@ USBDEVFS_CONTROL = (3 << 30) | (ctypes.sizeof(UsbControl) << 16) | (ord("U") << 
 USBDEVFS_RESET = (ord("U") << 8) | 20
 
 
+class V4l2Capability(ctypes.Structure):
+    _fields_ = [
+        ("driver", ctypes.c_uint8 * 16),
+        ("card", ctypes.c_uint8 * 32),
+        ("bus_info", ctypes.c_uint8 * 32),
+        ("version", ctypes.c_uint32),
+        ("capabilities", ctypes.c_uint32),
+        ("device_caps", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32 * 3),
+    ]
+
+
+VIDIOC_QUERYCAP = (2 << 30) | (ctypes.sizeof(V4l2Capability) << 16) | (ord("V") << 8)
+V4L2_CAP_VIDEO_CAPTURE = 0x00000001
+V4L2_CAP_VIDEO_CAPTURE_MPLANE = 0x00001000
+V4L2_CAP_DEVICE_CAPS = 0x80000000
+
+
 @dataclass(frozen=True)
 class PortSnapshot:
     number: int
@@ -71,7 +89,8 @@ class HubSnapshot:
 
 class LinuxUsbHub:
     HUB_ID = ("1a40", "0101")
-    TARGETS = {3: ("303a", "1001"), 4: ("0ac8", "0346")}
+    # Port 4 is verified by its bound UVC capture node, independent of VID/PID.
+    TARGETS = {3: ("303a", "1001"), 4: None}
 
     def __init__(
         self,
@@ -164,6 +183,56 @@ class LinuxUsbHub:
         device = (class_root / class_name / target.name / "device").resolve(strict=True)
         return child.resolve() in (device, *device.parents)
 
+    def _camera_matches(self, child):
+        child = child.resolve(strict=True)
+        class_root = self.sysfs_root.parent.parent.parent / "class" / "video4linux"
+        alias = self.aliases[4]
+        target = alias.resolve(strict=True) if os.path.lexists(alias) else None
+        entries = [class_root / target.name] if target is not None else class_root.glob("video[0-9]*")
+        for entry in entries:
+            if not re.fullmatch(r"video[0-9]+", entry.name):
+                continue
+            interface = (entry / "device").resolve(strict=True)
+            if (
+                interface.parent != child
+                or not re.fullmatch(re.escape(child.name) + r":[0-9]+\.[0-9]+", interface.name)
+                or int(self._read(interface, "bInterfaceClass"), 16) != 0x0E
+                or (interface / "driver").resolve(strict=True)
+                != (self.sysfs_root.parent / "drivers" / "uvcvideo").resolve(strict=True)
+                or self._read(entry, "index") != "0"
+            ):
+                continue
+            node = target if target is not None else self.usbfs_root.parent.parent / entry.name
+            before = node.stat()
+            if not stat.S_ISCHR(before.st_mode):
+                continue
+            expected_dev = tuple(int(value) for value in self._read(entry, "dev").split(":"))
+            if (os.major(before.st_rdev), os.minor(before.st_rdev)) != expected_dev:
+                continue
+            fd = os.open(node, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
+            try:
+                opened = os.fstat(fd)
+                if not stat.S_ISCHR(opened.st_mode) or (before.st_dev, before.st_ino, before.st_rdev) != (
+                    opened.st_dev,
+                    opened.st_ino,
+                    opened.st_rdev,
+                ):
+                    raise ValueError("Video device changed during open")
+                capability = V4l2Capability()
+                if fcntl.ioctl(fd, VIDIOC_QUERYCAP, capability) != 0:
+                    raise ValueError("Invalid video capability response")
+                # Aggregate capabilities can include capture from a different node.
+                caps = (
+                    capability.device_caps
+                    if capability.capabilities & V4L2_CAP_DEVICE_CAPS
+                    else capability.capabilities
+                )
+                if caps & (V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_VIDEO_CAPTURE_MPLANE):
+                    return True
+            finally:
+                os.close(fd)
+        return False
+
     def _snapshot_fd(self, fd):
         if self._address() != self._opened_address:
             raise ValueError("USB address reused")
@@ -204,7 +273,11 @@ class LinuxUsbHub:
                 raise ValueError("Unsafe USB port status")
             if number not in self.TARGETS and (port.connected or ident):
                 raise ValueError("Unconfigured connected port")
-            if ident and (ident != self.TARGETS[number] or not port.connected):
+            if ident and (
+                not port.connected
+                or (number == 4 and not self._camera_matches(child))
+                or (number != 4 and ident != self.TARGETS[number])
+            ):
                 raise ValueError("USB child identity/status mismatch")
             if number in self.aliases and not self._alias_matches(self.aliases[number], child):
                 raise ValueError("Device alias does not identify expected USB child")

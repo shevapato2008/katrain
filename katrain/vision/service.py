@@ -641,6 +641,28 @@ class VisionService:
                 self._local_confirmation_game_id,
             ):
                 return True
+            session = self._bound_session
+            katrain = getattr(session, "katrain", None)
+            game = getattr(katrain, "game", None)
+            if (
+                enabled is True
+                and self._lighting_owner is not None
+                and not self._lighting_disabled
+                and session is not None
+                and session_id == self._bound_session_id
+                and self._worker is self._bound_worker
+                and self._bound_mode == self._binding_mode(session)
+                and binding_game_identity(session) == self._bound_game_identity
+                and getattr(katrain, "game_type", None) == "pvp_local"
+                and game is not None
+                and getattr(game, "game_id", None) == game_id
+            ):
+                # Startup's handshake has no reference receipt. Let an ordinary
+                # queued dark SHOW establish one before local bootstrap starts.
+                try:
+                    self._lighting_owner.clear(strict=False)
+                except Exception:
+                    logger.warning("local confirmation bootstrap LED clear failed", exc_info=True)
             mode_changed = (
                 self._bound_mode != self._binding_mode(self._bound_session)
                 or enabled != self._local_confirmation_mode

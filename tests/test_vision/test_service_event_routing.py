@@ -1,5 +1,7 @@
 """poll_events must never swallow ConfirmedMove; get_confirmed_move must be FIFO."""
 
+import pytest
+
 from katrain.vision.ipc import ConfirmedMove
 from katrain.vision.service import VisionService
 from katrain.vision.config_service import VisionServiceConfig
@@ -297,6 +299,85 @@ def test_local_mode_command_carries_current_reference_source_identity():
     nonce = svc._source_nonce
     assert svc.set_local_confirmation_mode(False, session_id="s", game_id="other")
     assert svc._worker.send_command.call_args.args[0].data["source_nonce"] == nonce
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "session_id",
+        "game_id",
+        "game",
+        "missing_game",
+        "worker",
+        "mode",
+        "game_type",
+        "disabled",
+        "no_owner",
+        "unsupported",
+        "unbound",
+    ],
+)
+def test_local_bootstrap_clear_rejects_stale_or_unavailable_physical_source(change):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    owner = MagicMock()
+    svc = VisionService(VisionServiceConfig(), lighting_owner=owner)
+    svc._worker = MagicMock(supports_local_confirmation=True)
+    session = SimpleNamespace(katrain=SimpleNamespace(game=SimpleNamespace(game_id="g"), game_type="pvp_local"))
+    if change == "game_type":
+        session.katrain.game_type = "play_ai"
+    svc.bind_session("s", session=session)
+    session_id, game_id = "s", "g"
+    if change == "session_id":
+        session_id = "stale"
+    elif change == "game_id":
+        game_id = "stale"
+    elif change == "game":
+        session.katrain.game = SimpleNamespace(game_id="g", replacement=True)
+    elif change == "missing_game":
+        session.katrain.game = None
+    elif change == "worker":
+        svc._worker = MagicMock(supports_local_confirmation=True)
+    elif change == "mode":
+        session.game_type = "changed"
+    elif change == "disabled":
+        svc._lighting_disabled = True
+    elif change == "no_owner":
+        svc._lighting_owner = None
+    elif change == "unsupported":
+        svc._worker.supports_local_confirmation = False
+    elif change == "unbound":
+        svc.unbind_session()
+        session_id = game_id = None
+    svc.set_local_confirmation_mode(True, session_id=session_id, game_id=game_id)
+    owner.clear.assert_not_called()
+
+
+def test_local_bootstrap_clear_precedes_mode_change_and_failure_does_not_abort_it(caplog):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from katrain.vision.ipc import CommandType
+
+    owner = MagicMock()
+    svc = VisionService(VisionServiceConfig(), lighting_owner=owner)
+    svc._worker = MagicMock(supports_local_confirmation=True)
+    session = SimpleNamespace(katrain=SimpleNamespace(game=SimpleNamespace(game_id="g"), game_type="pvp_local"))
+    svc.bind_session("s", session=session)
+    nonce = svc._source_nonce
+    svc._worker.send_command.reset_mock()
+
+    def failed_clear(*, strict):
+        assert strict is False and svc._source_nonce == nonce
+        svc._worker.send_command.assert_not_called()
+        raise RuntimeError("clear unavailable")
+
+    owner.clear.side_effect = failed_clear
+    assert svc.set_local_confirmation_mode(True, session_id="s", game_id="g")
+    owner.clear.assert_called_once_with(strict=False)
+    assert svc._source_nonce != nonce
+    assert svc._worker.send_command.call_args.args[0].action == CommandType.SET_LOCAL_CONFIRMATION_MODE
+    assert "clear unavailable" in caplog.text
 
 
 def test_local_completion_publishes_exact_target_before_complete_and_fences_replaced_source(monkeypatch):

@@ -1,6 +1,7 @@
 """Local confirmation uses the production pipeline, with one isolated observation window."""
 
 import time
+from threading import Event
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -68,13 +69,14 @@ def detection(row=3, col=3, color=1, confidence=0.9):
     )
 
 
-def worker(*, pose_locked=True):
+def worker(*, pose_locked=True, lighting_owner=None):
     camera = Camera()
     with patch("katrain.vision.worker_inprocess.StoneDetector"):
         result = InProcessAdapter(
             {"enhance": "off", "auto_exposure": "off", "reference_check": "on", "capture_fps": 100000},
             camera=camera,
-            lighting_disabled=True,
+            lighting_owner=lighting_owner,
+            lighting_disabled=lighting_owner is None,
         )
     camera.worker = result
     result._bound = True
@@ -504,10 +506,10 @@ def publish_local_target(service, expected_node_id=12):
     )
 
 
-def bound_local(result, session_id="session", game_id="game"):
-    service = VisionService(VisionServiceConfig(enabled=True))
+def bound_local(result, session_id="session", game_id="game", *, lighting_owner=None):
+    service = VisionService(VisionServiceConfig(enabled=True), lighting_owner=lighting_owner)
     service._worker = result
-    session = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+    session = SimpleNamespace(katrain=SimpleNamespace(game=SimpleNamespace(game_id=game_id), game_type="pvp_local"))
     service.bind_session(session_id, session=session)
     service.set_local_confirmation_mode(True, session_id=session_id, game_id=game_id)
     service.publish_expected_from_stones(service.capture_binding_source(session_id, session), [], expected_node_id=12)
@@ -516,15 +518,64 @@ def bound_local(result, session_id="session", game_id="game"):
     return service
 
 
-def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_idle_inference():
-    result, camera = worker(pose_locked=False)
-    service = bound_local(result)
+def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_idle_inference(monkeypatch):
+    from tests.test_led_service import BootFakeSerial, LedService, LedServiceConfig
+
+    serial = BootFakeSerial()
+    owner = LedService(LedServiceConfig(enabled=True, serial_port="local-bootstrap"), serial_factory=lambda: serial)
+    allow_queue = Event()
+    real_worker = owner._worker
+
+    def process_queue():
+        allow_queue.wait()
+        real_worker()
+
+    monkeypatch.setattr(owner, "_worker", process_queue)
+    monkeypatch.setattr(owner, "clear", MagicMock(wraps=owner.clear))
+    owner.start()
+    try:
+        _check_real_bind_bootstrap(owner, serial, allow_queue)
+    finally:
+        allow_queue.set()
+        owner.stop()
+
+
+def _check_real_bind_bootstrap(owner, serial, allow_queue):
+    assert serial.written == ["CLEAR", "SHOW", "BRIGHT 255"]
+    assert owner.is_connected() and not owner.reference_lighting_snapshot().all_dark
+    result, camera = worker(pose_locked=False, lighting_owner=owner)
+    service = bound_local(result, lighting_owner=owner)
     assert result._sync.state.value == "calibrating"
-    run(result, camera, n=4)
+    run(result, camera, n=2)
+    assert result._reference is None and not service.local_confirmation_ready
+    assert result._reference_attempt.spent == 0
+    owner.clear.assert_called_once_with(strict=False)
+    assert serial.written == ["CLEAR", "SHOW", "BRIGHT 255"]
+
+    allow_queue.set()
+    deadline = time.monotonic() + 2
+    while not owner.reference_lighting_snapshot().all_dark and time.monotonic() < deadline:
+        time.sleep(0.001)
+    lighting = owner.reference_lighting_snapshot()
+    assert lighting.all_dark and lighting.shown_at is not None
+    run(result, camera, identities=[(101, lighting.shown_at + 0.1, frame())])
+    assert result._reference is None and result._reference_attempt.spent == 0
+    time.sleep(max(0, lighting.shown_at + 0.201 - time.monotonic()))
+    run(result, camera, identities=[(102, time.monotonic(), frame())])
+    assert result._reference is None and result._reference_attempt.spent == 0
+    run(result, camera, identities=[(103, time.monotonic(), frame())])
     assert result._reference is not None and service.local_confirmation_ready
     assert result.get_status().pose_lock_status == "locked"
     assert result.get_status().sync_state == "synced"
-    assert result._detector.detect.call_count == 3 and events(result) == []
+    assert result._reference_attempt.spent == 1 and events(result) == []
+
+    reference = result._reference
+    service.set_local_confirmation_mode(True, session_id="session", game_id="game")
+    service.bind_session("session", session=service._bound_session)
+    publish_local_target(service)
+    result._drain_commands()
+    owner.clear.assert_called_once_with(strict=False)
+    assert result._reference is reference and service.local_confirmation_ready
 
     opened = time.monotonic()
     assert service.open_local_window(
@@ -544,6 +595,12 @@ def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_i
     inferences = result._detector.detect.call_count
     run(result, camera, n=3, image=changed)
     assert result._detector.detect.call_count == inferences and events(result) == []
+
+    service.set_local_confirmation_mode(False, session_id="session", game_id="game")
+    owner.clear.assert_called_once_with(strict=False)
+    service.set_local_confirmation_mode(True, session_id="session", game_id="game")
+    assert owner.clear.call_count == 2
+    assert owner.clear.call_args.kwargs == {"strict": False}
 
 
 def test_early_first_stone_rejects_reference_then_explicit_retry_prepares_real_empty_reference():

@@ -95,6 +95,7 @@ class RefreshRequest(BaseModel):
 
 class BoxBootstrapRequest(BaseModel):
     username: str
+    public_username: Optional[str] = None
     generation: int
     remote_access_token: str
     remote_refresh_token: str
@@ -212,14 +213,16 @@ def _is_admin_username(username: str) -> bool:
     return username.strip().lower().startswith("admin:")
 
 
-def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
+def _get_or_create_shadow_user(repo: Any, username: str, public_username: Optional[str] = None) -> dict:
     """Get existing local user or create a shadow user for board-mode auth (design 5.3)."""
     if _is_admin_username(username):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
     user_dict = repo.get_user_by_username(username)
     if user_dict:
-        return user_dict
-    return repo.create_user(username=username, hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
+        return repo.set_public_username(user_dict["id"], public_username)
+    return repo.create_user(
+        username=username, hashed_password=SHADOW_USER_NO_LOCAL_AUTH, public_username=public_username
+    )
 
 
 def _validate_guest_bootstrap_generation(generation: Any) -> int:
@@ -356,7 +359,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # reserved zero-persistence guest identity (see guest-mode spec CRO-1).
     _reject_reserved_username(body.username)
     remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
-    shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username)
+    shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username, body.public_username)
     # Tie the cloud session to this local user so per-user queued work (rank events)
     # can tell whose session is currently up on a shared board.
     remote_client.bind_user(shadow_user["id"])
@@ -446,7 +449,9 @@ async def login(request: Request, login_data: LoginRequest, response: Response) 
 
     # Server mode: local authentication
     repo = request.app.state.user_repo
-    user_dict = repo.get_user_by_username(login_data.username)
+    user_dict = repo.get_user_by_login_name(login_data.username)
+    if user_dict:
+        _reject_reserved_username(user_dict["username"])
     if not user_dict or not verify_password(login_data.password, user_dict["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -509,7 +514,9 @@ def _install_board_login(request: Request, response: Response, candidate) -> dic
         remote.assert_login_candidate(candidate)
         username = candidate.user["username"]
         _reject_reserved_username(username)
-        shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, username)
+        shadow_user = _get_or_create_shadow_user(
+            request.app.state.user_repo, username, candidate.user.get("public_username")
+        )
         if candidate.tokens.get("refresh_token"):
             save_refresh_token(settings.DEVICE_ID, candidate.tokens["refresh_token"])
         remote.install_login_candidate(candidate, user_id=shadow_user["id"])

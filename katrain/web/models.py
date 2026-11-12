@@ -206,6 +206,7 @@ class User(BaseModel):
     id: Optional[int] = None
     uuid: Optional[str] = None  # Unique UUID assigned at registration, used for KataGo requests
     username: str
+    public_username: Optional[str] = None
     rank: str = "20k"
     net_wins: int = 0
     elo_points: int = 0
@@ -229,6 +230,7 @@ class OnlineUser(BaseModel):
 
     id: int
     username: str
+    public_username: Optional[str] = None
     rank: str = "20k"
     elo_points: int = 0
     avatar_url: Optional[str] = None

@@ -75,6 +75,9 @@ class User(Base):
         String, unique=True, index=True, default=lambda: uuid_module.uuid4().hex
     )  # Unique UUID assigned at registration
     username = Column(String, unique=True, index=True, nullable=False)
+    # Server uniqueness is owned by a role-aware migration. Board shadows keep
+    # a nonunique trusted display cache on this same declarative model.
+    public_username = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     rank = Column(String, default="20k")
     net_wins = Column(Integer, default=0)

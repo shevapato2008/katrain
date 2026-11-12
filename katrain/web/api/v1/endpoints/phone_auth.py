@@ -37,11 +37,16 @@ class PrivatePhoneRoute(APIRoute):
                 # Pydantic's default errors include the submitted password/code/
                 # phone as `input`. Return only our small public error vocabulary.
                 fields = {item["loc"][-1] for item in error.errors()}
-                code = (
-                    "invalid_phone"
-                    if "phone" in fields
-                    else "invalid_code" if "code" in fields else "challenge_invalid"
-                )
+                if "phone" in fields:
+                    code = "invalid_phone"
+                elif "code" in fields:
+                    code = "invalid_code"
+                elif "public_username" in fields:
+                    code = "invalid_public_username"
+                elif "password" in fields:
+                    code = "invalid_password"
+                else:
+                    code = "challenge_invalid"
                 return JSONResponse(
                     status_code=400, content={"detail": {"code": code}}, headers={"Cache-Control": "no-store"}
                 )
@@ -80,6 +85,15 @@ class PhoneLoginRequest(BaseModel):
     flow_id: str = Field(strict=True, min_length=22, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
 
 
+class PhoneRegisterRequest(PhoneLoginRequest):
+    public_username: str = Field(strict=True, max_length=128)
+    password: str = Field(strict=True, max_length=1024)
+
+
+class PhoneRegisterResponse(Token):
+    signup_grant_credits: Literal[0, 5000]
+
+
 class PhoneBindRequest(PhoneLoginRequest):
     # Missing/empty passwords must reach the service's independently committed
     # reauthentication counter instead of bypassing it in request validation.
@@ -108,6 +122,8 @@ def _raise_service_error(error):
     detail = {"code": error.code}
     if error.retry_after is not None:
         detail["retry_after"] = error.retry_after
+    if error.mode in {"register", "complete"}:
+        detail["mode"] = error.mode
     raise HTTPException(status_code=error.status_code, detail=detail) from None
 
 
@@ -116,6 +132,12 @@ def _raise_remote_error(error):
         raise HTTPException(status_code=409, detail={"code": "identity_changed"}) from None
     if isinstance(error, httpx.HTTPStatusError):
         allowed = {
+            "profile_required",
+            "profile_already_complete",
+            "invalid_public_username",
+            "reserved_public_username",
+            "public_username_taken",
+            "invalid_password",
             "invalid_phone",
             "invalid_code",
             "challenge_invalid",
@@ -136,6 +158,8 @@ def _raise_remote_error(error):
             detail = error.response.json().get("detail")
             if isinstance(detail, dict) and detail.get("code") in allowed:
                 safe_detail = {"code": detail["code"]}
+                if detail.get("code") == "profile_required" and detail.get("mode") in {"register", "complete"}:
+                    safe_detail["mode"] = detail["mode"]
                 retry_after = detail.get("retry_after")
                 if type(retry_after) is int and 0 <= retry_after <= 86400:
                     safe_detail["retry_after"] = retry_after
@@ -219,6 +243,38 @@ async def phone_login(request: Request, response: Response, body: PhoneLoginRequ
     refresh = create_refresh_token(data={"sub": user["username"]})
     _issue_loopback_sso_cookie(request, response, access)
     return {"access_token": access, "refresh_token": refresh, "token_type": "bearer"}
+
+
+@router.post("/register", response_model=PhoneRegisterResponse)
+async def phone_register(request: Request, response: Response, body: PhoneRegisterRequest):
+    from katrain.web.core.phone_otp import PhoneOtpError
+
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=403, detail={"code": "bind_not_allowed"})
+    remote = getattr(request.app.state, "remote_client", None)
+    if remote is not None:
+        try:
+            candidate = await remote.phone_register(body.model_dump())
+        except (httpx.HTTPError, ValueError) as error:
+            _raise_remote_error(error)
+        grant = candidate.tokens.get("signup_grant_credits")
+        # Validate the authoritative outcome before changing local identity.
+        if type(grant) is not int or grant not in {0, 5000}:
+            raise HTTPException(status_code=503, detail={"code": "sms_unavailable"})
+        return {**_install_board_login(request, response, candidate), "signup_grant_credits": grant}
+    try:
+        user = get_phone_otp_service(request).register(**body.model_dump())
+    except PhoneOtpError as error:
+        _raise_service_error(error)
+    access = create_access_token(data={"sub": user["username"]})
+    refresh = create_refresh_token(data={"sub": user["username"]})
+    _issue_loopback_sso_cookie(request, response, access)
+    return {
+        "access_token": access,
+        "refresh_token": refresh,
+        "token_type": "bearer",
+        "signup_grant_credits": user["signup_grant_credits"],
+    }
 
 
 @router.get("/status", response_model=PhoneStatusResponse, response_model_exclude_none=True)

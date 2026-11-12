@@ -45,6 +45,9 @@ def otp_config(**overrides):
 def make_service(engine, sender=None, config=None):
     from katrain.web.core.phone_otp import PhoneOtpService
 
+    from katrain.web.core.migrations import migrate_public_username_schema
+
+    migrate_public_username_schema(engine, mode="server")
     sender = sender or FakeSender()
     sessions = sessionmaker(bind=engine, expire_on_commit=False)
     return PhoneOtpService(sessions, config or otp_config(), sender_factory=lambda config: sender), sender, sessions

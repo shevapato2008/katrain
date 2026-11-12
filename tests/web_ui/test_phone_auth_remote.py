@@ -204,3 +204,57 @@ async def test_bind_expired_bearer_still_refreshes_once_with_original_identity()
         assert remote.cloud_session_is(7) and not remote.auth_required
     finally:
         await remote.close()
+
+
+@pytest.mark.asyncio
+async def test_phone_profile_required_never_refreshes_or_installs():
+    seen = []
+
+    async def handler(request):
+        seen.append(request)
+        return httpx.Response(409, json={"detail": {"code": "profile_required", "mode": "register"}})
+
+    remote = await client_with_handler(handler)
+    remote.set_tokens("old-a", "old-refresh", user_id=7)
+    try:
+        with pytest.raises(httpx.HTTPStatusError):
+            await remote.phone_login({"challenge_id": "opaque", "code": "123456", "flow_id": "f" * 32})
+        assert len(seen) == 1 and not seen[0].url.query
+        assert remote.cloud_session_is(7) and remote._access_token == "old-a"
+    finally:
+        await remote.close()
+
+
+@pytest.mark.asyncio
+async def test_registration_candidate_retains_grant_and_public_name_before_install():
+    seen = []
+
+    async def handler(request):
+        seen.append(request)
+        if request.url.path.endswith("/phone/register"):
+            assert json.loads(request.content)["password"] == "Unicode密码也可以登录很好"
+            return httpx.Response(
+                200, json={"access_token": "new-a", "refresh_token": "new-r", "signup_grant_credits": 5000}
+            )
+        assert request.headers["authorization"] == "Bearer new-a"
+        return httpx.Response(200, json={"id": 17, "username": "u_" + "a" * 20, "public_username": "新棋手"})
+
+    remote = await client_with_handler(handler)
+    try:
+        candidate = await remote.phone_register(
+            {
+                "challenge_id": "opaque",
+                "code": "123456",
+                "flow_id": "f" * 32,
+                "public_username": "新棋手",
+                "password": "Unicode密码也可以登录很好",
+            }
+        )
+        assert candidate.tokens["signup_grant_credits"] == 5000
+        assert candidate.user["public_username"] == "新棋手" and not remote.is_authenticated
+        remote.begin_login_attempt()
+        with pytest.raises(CloudIdentityChangedError):
+            remote.install_login_candidate(candidate, user_id=7)
+        assert not remote.is_authenticated and len(seen) == 2
+    finally:
+        await remote.close()

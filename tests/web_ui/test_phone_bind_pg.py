@@ -212,7 +212,13 @@ def test_bind_commits_once_without_grant_and_keeps_old_identity_and_assets(bindi
         db.commit()
         assert db.query(models_db.PhoneSignupClaim).count() == 1
     login_challenge = issue(service)
-    rebuilt = service.login(challenge_id=login_challenge["challenge_id"], code=sender.calls[-1][1], flow_id=FLOW)
+    rebuilt = service.register(
+        challenge_id=login_challenge["challenge_id"],
+        code=sender.calls[-1][1],
+        flow_id=FLOW,
+        public_username="新手机棋手",
+        password="a-long-private-password",
+    )
     assert rebuilt["id"] != user_id and rebuilt["credits"] == 0
     with sessions() as db:
         assert db.query(models_db.CreditTransaction).count() == 0

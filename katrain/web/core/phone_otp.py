@@ -16,6 +16,7 @@ from . import billing, models_db, sms
 from .auth import get_password_hash, verify_password
 from .config import INSECURE_DEFAULT_SECRET_KEY
 from .phone import mask_phone, normalize_phone
+from .public_identity import is_generated_phone_username, validate_public_username, validate_signup_password
 
 
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
@@ -43,10 +44,11 @@ def _retry_until(end, now):
 
 
 class PhoneOtpError(Exception):
-    def __init__(self, code: str, status_code: int, retry_after: int | None = None):
+    def __init__(self, code: str, status_code: int, retry_after: int | None = None, *, mode: str | None = None):
         self.code = code
         self.status_code = status_code
         self.retry_after = retry_after
+        self.mode = mode
         super().__init__(code)
 
 
@@ -248,13 +250,14 @@ class PhoneOtpService:
         if phone is None:
             raise PhoneOtpError("challenge_invalid", 400)
         state = self._lock_phone(db, phone)
-        self._check_lock(state, now)
+        self._check_lock(state, _now())
         challenge = db.execute(
             select(models_db.SmsChallenge).where(models_db.SmsChallenge.id == challenge_id).with_for_update()
         ).scalar_one()
         if challenge.state == "consumed" and not allow_consumed:
             raise PhoneOtpError("challenge_used", 400)
-        if _utc(challenge.expires_at) <= now:
+        # Acquiring another worker's lock can outlive the proof TTL.
+        if _utc(challenge.expires_at) <= _now():
             raise PhoneOtpError("challenge_expired", 400)
         if (
             state.active_challenge_id != challenge.id
@@ -274,6 +277,7 @@ class PhoneOtpService:
                 "id",
                 "uuid",
                 "username",
+                "public_username",
                 "rank",
                 "net_wins",
                 "elo_points",
@@ -284,62 +288,143 @@ class PhoneOtpService:
             )
         }
 
-    def _create_user(self, db):
-        password_hash = get_password_hash(secrets.token_urlsafe(48))
+    @staticmethod
+    def _constraint(error):
+        return getattr(getattr(error.orig, "diag", None), "constraint_name", None)
+
+    @classmethod
+    def _is_public_name_conflict(cls, error):
+        return cls._constraint(error) == "uq_user_public_username" or (
+            cls._constraint(error) is None and str(error.orig) == "UNIQUE constraint failed: users.public_username"
+        )
+
+    def _create_user(self, db, *, public_username, password_hash):
         for _ in range(5):
             try:
                 with db.begin_nested():
                     user = models_db.User(
-                        username="u_" + secrets.token_hex(10), hashed_password=password_hash, credits=0, is_admin=False
+                        username="u_" + secrets.token_hex(10),
+                        public_username=public_username,
+                        hashed_password=password_hash,
+                        credits=0,
+                        is_admin=False,
                     )
                     db.add(user)
                     db.flush()
                 return user
-            except IntegrityError:
-                # Only generated handle collision is retryable. No caller input
-                # can select a guest/admin identity or visible OTP password.
-                continue
+            except IntegrityError as error:
+                # A name conflict is handled after the whole finalization rolls
+                # back. Only our random internal handle collision is retryable.
+                if self._constraint(error) not in {"ix_users_username", "users_username_key"} and not (
+                    self._constraint(error) is None and str(error.orig) == "UNIQUE constraint failed: users.username"
+                ):
+                    raise
         raise PhoneOtpError("sms_unavailable", 503)
+
+    def _proof_error(self, state, challenge, code, flow_digest, now):
+        candidate = code if isinstance(code, str) and _CODE.fullmatch(code) else ""
+        digest = self._code_digest(challenge.id, challenge.purpose, challenge.phone_e164, flow_digest, candidate)
+        if hmac.compare_digest(challenge.code_digest, digest):
+            return None
+        state.error_count += 1
+        if state.error_count >= _ERROR_LIMIT:
+            state.blocked_until = now + timedelta(seconds=_LOCK_SECONDS)
+            return PhoneOtpError("otp_locked", 429, _LOCK_SECONDS)
+        return PhoneOtpError("invalid_code", 400)
+
+    @staticmethod
+    def _phone_user(db, phone):
+        identity = db.execute(
+            select(models_db.PhoneIdentity).where(models_db.PhoneIdentity.phone_e164 == phone)
+        ).scalar_one_or_none()
+        if identity is None:
+            return None
+        # Match binding's lock order: phone -> challenge -> user.
+        user = db.execute(
+            select(models_db.User).where(models_db.User.id == identity.user_id).with_for_update()
+        ).scalar_one_or_none()
+        if user is None:
+            raise PhoneOtpError("sms_unavailable", 503)
+        return user
+
+    @staticmethod
+    def _needs_completion(db, user, phone):
+        if user.public_username is not None or user.is_admin or not is_generated_phone_username(user.username):
+            return False
+        claim = db.get(models_db.PhoneSignupClaim, phone)
+        return not (claim is not None and claim.user_id == user.id and claim.claim_type == "bound_existing")
 
     def login(self, *, challenge_id, code, flow_id):
         self._ensure_available()
         flow_digest = self._flow_digest(flow_id)
         now = _now()
-        error = None
         result = None
-        with self.session_factory() as db:
-            with db.begin():
-                state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
-                candidate = code if isinstance(code, str) and _CODE.fullmatch(code) else ""
-                digest = self._code_digest(
-                    challenge.id, challenge.purpose, challenge.phone_e164, flow_digest, candidate
-                )
-                if not hmac.compare_digest(challenge.code_digest, digest):
-                    state.error_count += 1
-                    if state.error_count >= _ERROR_LIMIT:
-                        state.blocked_until = now + timedelta(seconds=_LOCK_SECONDS)
-                        error = PhoneOtpError("otp_locked", 429, _LOCK_SECONDS)
-                    else:
-                        error = PhoneOtpError("invalid_code", 400)
+        with self.session_factory() as db, db.begin():
+            state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
+            error = self._proof_error(state, challenge, code, flow_digest, now)
+            if error is None:
+                user = self._phone_user(db, challenge.phone_e164)
+                now = _now()
+                if _utc(challenge.expires_at) <= now:
+                    raise PhoneOtpError("challenge_expired", 400)
+                if user is None or self._needs_completion(db, user, challenge.phone_e164):
+                    error = PhoneOtpError("profile_required", 409, mode="register" if user is None else "complete")
                 else:
                     challenge.state = "consumed"
                     challenge.consumed_at = now
-                    identity = db.execute(
-                        select(models_db.PhoneIdentity).where(
-                            models_db.PhoneIdentity.phone_e164 == challenge.phone_e164
-                        )
-                    ).scalar_one_or_none()
-                    if identity is not None:
-                        user = db.get(models_db.User, identity.user_id)
-                        if user is None:
-                            raise PhoneOtpError("sms_unavailable", 503)
-                    else:
-                        user = self._create_user(db)
+                    result = self._public_user(user)
+        # Wrong-code counters commit even when the caller receives an error.
+        if error:
+            raise error
+        return result
+
+    def register(self, *, challenge_id, code, flow_id, public_username, password):
+        self._ensure_available()
+        try:
+            validate_public_username(public_username)
+        except (ValueError, TypeError, AttributeError):
+            folded = public_username.casefold() if isinstance(public_username, str) else ""
+            reserved = folded in {"guest", "admin"} or folded.startswith(("admin:", "u_"))
+            raise PhoneOtpError("reserved_public_username" if reserved else "invalid_public_username", 400) from None
+        try:
+            validate_signup_password(password)
+        except (ValueError, TypeError, AttributeError):
+            raise PhoneOtpError("invalid_password", 400) from None
+        flow_digest = self._flow_digest(flow_id)
+        # Do not spend a slow password hash for an invalid/used proof. Release
+        # these short locks, hash, then recheck proof and account before writing.
+        with self.session_factory() as db, db.begin():
+            now = _now()
+            state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
+            error = self._proof_error(state, challenge, code, flow_digest, now)
+            if error is None:
+                user = self._phone_user(db, challenge.phone_e164)
+                now = _now()
+                if _utc(challenge.expires_at) <= now:
+                    raise PhoneOtpError("challenge_expired", 400)
+                if user is not None and not self._needs_completion(db, user, challenge.phone_e164):
+                    error = PhoneOtpError("profile_already_complete", 409)
+        if error:
+            raise error
+        password_hash = get_password_hash(password)
+        result = None
+        try:
+            with self.session_factory() as db, db.begin():
+                now = _now()
+                state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
+                error = self._proof_error(state, challenge, code, flow_digest, now)
+                if error is None:
+                    user = self._phone_user(db, challenge.phone_e164)
+                    now = _now()
+                    if _utc(challenge.expires_at) <= now:
+                        raise PhoneOtpError("challenge_expired", 400)
+                    grant = 0
+                    if user is None:
+                        user = self._create_user(db, public_username=public_username, password_hash=password_hash)
                         db.add(
                             models_db.PhoneIdentity(phone_e164=challenge.phone_e164, user_id=user.id, verified_at=now)
                         )
-                        claim = db.get(models_db.PhoneSignupClaim, challenge.phone_e164)
-                        if claim is None:
+                        if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
                             grant_ref = "phone_signup:" + secrets.token_hex(24)
                             db.add(
                                 models_db.PhoneSignupClaim(
@@ -351,11 +436,25 @@ class PhoneOtpService:
                             )
                             db.flush()
                             billing.apply_adjustment(db, user.id, _SIGNUP_CREDITS, "signup_grant", grant_ref)
-                        db.flush()
+                            grant = _SIGNUP_CREDITS
+                    else:
+                        if not self._needs_completion(db, user, challenge.phone_e164):
+                            raise PhoneOtpError("profile_already_complete", 409)
+                        user.public_username = public_username
+                        user.hashed_password = password_hash
+                    challenge.state = "consumed"
+                    challenge.consumed_at = now
+                    db.flush()
                     db.refresh(user)
-                    result = self._public_user(user)
-            # The error is deliberately raised after committing the wrong-code
-            # transaction, so an HTTP exception cannot erase the phone counter.
+                    # Public-name uniqueness can wait after the account lock.
+                    # Expiry here rolls back the grant and proof consumption too.
+                    if _utc(challenge.expires_at) <= _now():
+                        raise PhoneOtpError("challenge_expired", 400)
+                    result = {**self._public_user(user), "signup_grant_credits": grant}
+        except IntegrityError as error:
+            if self._is_public_name_conflict(error):
+                raise PhoneOtpError("public_username_taken", 409) from None
+            raise
         if error:
             raise error
         return result

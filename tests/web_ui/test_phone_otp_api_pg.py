@@ -13,6 +13,7 @@ from katrain.web.core import billing, models_db, phone_otp, sms
 from sqlalchemy.exc import DBAPIError
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token, get_password_hash
 from katrain.web.core.config import settings
+from katrain.web.core.migrations import migrate_public_username_schema
 from tests.web_ui.membership_test_support import membership_pg_engine
 from tests.web_ui.test_phone_otp_limits_pg import FLOW, PHONE, FakeSender
 
@@ -27,6 +28,7 @@ async def test_http_phone_signup_and_return_login_share_one_pg_claim_and_grant(m
     monkeypatch.setattr(settings, "SECRET_KEY", "isolated-pg-http-otp-secret-" * 3)
     now = datetime.now(timezone.utc)
     monkeypatch.setattr(phone_otp, "_now", lambda: now)
+    migrate_public_username_schema(membership_pg_engine, mode="server")
     sessions = sessionmaker(bind=membership_pg_engine, expire_on_commit=False)
     app = FastAPI()
     app.include_router(api_router, prefix="/api/v1")
@@ -41,7 +43,18 @@ async def test_http_phone_signup_and_return_login_share_one_pg_claim_and_grant(m
             "/api/v1/auth/phone/login",
             json={"challenge_id": challenge.json()["challenge_id"], "code": sender.calls[-1][1], "flow_id": FLOW},
         )
-        assert login.status_code == 200
+        assert login.status_code == 409 and login.json() == {"detail": {"code": "profile_required", "mode": "register"}}
+        login = await client.post(
+            "/api/v1/auth/phone/register",
+            json={
+                "challenge_id": challenge.json()["challenge_id"],
+                "code": sender.calls[-1][1],
+                "flow_id": FLOW,
+                "public_username": "真实棋手",
+                "password": "a-long-password-with-Unicode-棋",
+            },
+        )
+        assert login.status_code == 200 and login.json()["signup_grant_credits"] == 5000
         token = login.json()["access_token"]
         claims = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         assert claims["type"] == "access" and claims["sub"].startswith("u_")
@@ -84,6 +97,7 @@ async def test_database_failure_rolls_back_signup_and_is_private_at_http_boundar
     monkeypatch.setattr(settings, "KATRAIN_SMS_DAILY_LIMIT", 10)
     monkeypatch.setattr(settings, "KATRAIN_ENVIRONMENT", "test")
     monkeypatch.setattr(settings, "SECRET_KEY", "isolated-pg-http-otp-secret-" * 3)
+    migrate_public_username_schema(membership_pg_engine, mode="server")
     sessions = sessionmaker(bind=membership_pg_engine, expire_on_commit=False)
     app = FastAPI()
     app.include_router(api_router, prefix="/api/v1")
@@ -103,9 +117,15 @@ async def test_database_failure_rolls_back_signup_and_is_private_at_http_boundar
             "/api/v1/auth/phone/challenges", json={"phone": PHONE, "purpose": "login", "flow_id": FLOW}
         )
         assert challenge.status_code == 200
-        payload = {"challenge_id": challenge.json()["challenge_id"], "code": sender.calls[-1][1], "flow_id": FLOW}
+        payload = {
+            "challenge_id": challenge.json()["challenge_id"],
+            "code": sender.calls[-1][1],
+            "flow_id": FLOW,
+            "public_username": "真实棋手",
+            "password": "a-long-password-with-Unicode-棋",
+        }
         monkeypatch.setattr(billing, "apply_adjustment", fail_after_ledger_write)
-        failure = await client.post("/api/v1/auth/phone/login", json=payload)
+        failure = await client.post("/api/v1/auth/phone/register", json=payload)
         assert failure.status_code == 503 and failure.json() == {"detail": {"code": "sms_unavailable"}}
         assert failure.headers["cache-control"] == "no-store"
         assert PHONE not in failure.text + caplog.text and payload["code"] not in failure.text + caplog.text
@@ -117,7 +137,7 @@ async def test_database_failure_rolls_back_signup_and_is_private_at_http_boundar
             assert db.query(models_db.CreditTransaction).count() == 0
             assert db.get(models_db.SmsChallenge, payload["challenge_id"]).state == "sent"
         monkeypatch.setattr(billing, "apply_adjustment", apply_adjustment)
-        retry = await client.post("/api/v1/auth/phone/login", json=payload)
+        retry = await client.post("/api/v1/auth/phone/register", json=payload)
         assert retry.status_code == 200
     with sessions() as db:
         assert db.query(models_db.User).one().credits == 5000
@@ -134,6 +154,7 @@ async def test_existing_user_binds_then_otp_login_preserves_identity_and_balance
     monkeypatch.setattr(settings, "SECRET_KEY", "isolated-pg-http-otp-secret-" * 3)
     now = datetime.now(timezone.utc)
     monkeypatch.setattr(phone_otp, "_now", lambda: now)
+    migrate_public_username_schema(membership_pg_engine, mode="server")
     sessions = sessionmaker(bind=membership_pg_engine, expire_on_commit=False)
     with sessions() as db:
         user = models_db.User(

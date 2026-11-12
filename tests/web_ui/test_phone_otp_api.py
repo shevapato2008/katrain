@@ -182,18 +182,21 @@ async def test_database_error_is_contained_without_private_response_log_or_excep
 
 
 @pytest.mark.asyncio
-async def test_board_phone_login_keeps_candidate_private_until_canonical_confirmation(app, monkeypatch):
+@pytest.mark.parametrize("operation", ["login", "register"])
+async def test_board_phone_login_keeps_candidate_private_until_canonical_confirmation(app, monkeypatch, operation):
     entered, release = asyncio.Event(), asyncio.Event()
     saved = []
     monkeypatch.setattr("katrain.web.core.credentials.save_refresh_token", lambda *args: saved.append(args))
 
     async def handle(request):
-        if request.url.path.endswith("/phone/login"):
-            return httpx.Response(200, json={"access_token": "candidate-a", "refresh_token": "refresh-a"})
+        if request.url.path.endswith(f"/phone/{operation}"):
+            return httpx.Response(
+                200, json={"access_token": "candidate-a", "refresh_token": "refresh-a", "signup_grant_credits": 5000}
+            )
         assert request.url.path == "/api/v1/auth/me" and request.headers["authorization"] == "Bearer candidate-a"
         entered.set()
         await release.wait()
-        return httpx.Response(200, json={"username": "u_canonical_cloud", "id": 88})
+        return httpx.Response(200, json={"username": "u_canonical_cloud", "public_username": "远端棋手", "id": 88})
 
     remote = RemoteAPIClient("http://cloud.test", "phone-box")
     await remote._client.aclose()
@@ -203,7 +206,17 @@ async def test_board_phone_login_keeps_candidate_private_until_canonical_confirm
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
             pending = asyncio.create_task(
                 client.post(
-                    "/api/v1/auth/phone/login", json={"challenge_id": "a" * 48, "code": "123456", "flow_id": "f" * 32}
+                    f"/api/v1/auth/phone/{operation}",
+                    json={
+                        "challenge_id": "a" * 48,
+                        "code": "123456",
+                        "flow_id": "f" * 32,
+                        **(
+                            {"public_username": "远端棋手", "password": "private-long-password"}
+                            if operation == "register"
+                            else {}
+                        ),
+                    },
                 )
             )
             await asyncio.wait_for(entered.wait(), 2)
@@ -215,7 +228,10 @@ async def test_board_phone_login_keeps_candidate_private_until_canonical_confirm
         claims = jwt.decode(response.json()["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         assert claims["sub"] == "u_canonical_cloud"
         local = app.state.user_repo.get_user_by_username("u_canonical_cloud")
+        assert local["public_username"] == "远端棋手"
         assert remote.cloud_session_is(local["id"]) and len(saved) == 1
+        if operation == "register":
+            assert response.json()["signup_grant_credits"] == 5000
     finally:
         release.set()
         await remote.close()
@@ -501,3 +517,52 @@ async def test_board_bind_late_result_is_discarded_without_using_new_bearer(app)
     finally:
         release.set()
         await remote.close()
+
+
+@pytest.mark.asyncio
+async def test_board_profile_required_preserves_mode_and_existing_session(app):
+    seen = []
+
+    async def handle(request):
+        seen.append(request)
+        return httpx.Response(
+            409, json={"detail": {"code": "profile_required", "mode": "complete", "phone": "private"}}
+        )
+
+    remote = RemoteAPIClient("http://cloud.test", "phone-box")
+    await remote._client.aclose()
+    remote._client = httpx.AsyncClient(base_url="http://cloud.test", transport=httpx.MockTransport(handle))
+    remote.set_tokens("old-a", "old-r", user_id=7)
+    app.state.remote_client = remote
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/auth/phone/login", json={"challenge_id": "a" * 48, "code": "123456", "flow_id": "f" * 32}
+            )
+        assert response.status_code == 409 and response.json() == {
+            "detail": {"code": "profile_required", "mode": "complete"}
+        }
+        assert response.headers["cache-control"] == "no-store"
+        assert len(seen) == 1 and remote.cloud_session_is(7)
+        assert app.state.user_repo.get_user_by_username("u_canonical_cloud") is None
+    finally:
+        await remote.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field,expected", [("public_username", "invalid_public_username"), ("password", "invalid_password")]
+)
+async def test_register_validation_never_echoes_password_or_name(app, field, expected):
+    payload = {
+        "challenge_id": "a" * 48,
+        "code": "123456",
+        "flow_id": "f" * 32,
+        "public_username": "棋手",
+        "password": "do-not-echo-secret-password",
+    }
+    payload[field] = {"private": "do-not-echo-secret"}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/auth/phone/register", json=payload)
+    assert response.status_code == 400 and response.json() == {"detail": {"code": expected}}
+    assert response.headers["cache-control"] == "no-store" and "do-not-echo" not in response.text

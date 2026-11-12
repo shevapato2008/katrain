@@ -430,6 +430,9 @@ class RemoteAPIClient:
     async def phone_login(self, data: Dict[str, Any]) -> RemoteLoginCandidate:
         return await self._login_candidate("/api/v1/auth/phone/login", data)
 
+    async def phone_register(self, data: Dict[str, Any]) -> RemoteLoginCandidate:
+        return await self._login_candidate("/api/v1/auth/phone/register", data)
+
     async def phone_challenge(self, data: Dict[str, Any], *, expected_user_id=None) -> Dict:
         if data.get("purpose") == "bind":
             return await self._identity_bound_request(

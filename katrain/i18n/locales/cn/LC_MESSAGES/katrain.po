@@ -13423,3 +13423,87 @@ msgstr "完成"
 
 msgid "auth:bind_manage_at_home"
 msgstr "在主页管理手机号"
+
+msgid "auth:invalid_public_username"
+msgstr "用户名需为2–24个字母、数字、下划线或连字符"
+
+msgid "auth:reserved_public_username"
+msgstr "请换一个用户名"
+
+msgid "auth:public_username_taken"
+msgstr "用户名已被使用"
+
+msgid "auth:signup_grant_success"
+msgstr "注册成功，已赠送50积分"
+
+msgid "auth:profile_success"
+msgstr "设置完成"
+
+msgid "auth:signup_success"
+msgstr "注册成功"
+
+msgid "auth:verified_phone"
+msgstr "已验证手机号 {phone}"
+
+msgid "auth:phone_label"
+msgstr "手机号"
+
+msgid "auth:public_username"
+msgstr "用户名（昵称）"
+
+msgid "auth:public_username_placeholder"
+msgstr "设置公开用户名"
+
+msgid "auth:new_password_placeholder"
+msgstr "设置登录密码"
+
+msgid "auth:phone_placeholder"
+msgstr "中国大陆 +86"
+
+msgid "auth:code_label"
+msgstr "验证码"
+
+msgid "auth:code_placeholder"
+msgstr "6 位验证码"
+
+msgid "auth:complete_submit"
+msgstr "保存并登录"
+
+msgid "auth:register_submit"
+msgstr "注册并登录"
+
+msgid "auth:existing_login"
+msgstr "已有账号？去登录"
+
+msgid "auth:hide_password"
+msgstr "隐藏密码"
+
+msgid "auth:show_password"
+msgstr "显示密码"
+
+msgid "auth:named_register_title"
+msgstr "注册"
+
+msgid "auth:complete_title"
+msgstr "完成注册"
+
+msgid "auth:close"
+msgstr "关闭"
+
+msgid "auth:register_entry"
+msgstr "注册账号"
+
+msgid "auth:guest_entry"
+msgstr "访客登录"
+
+msgid "auth:login_entry"
+msgstr "返回登录"
+
+msgid "auth:account_label"
+msgstr "账号"
+
+msgid "auth:new_password_invalid"
+msgstr "密码至少15个字符"
+
+msgid "auth:password_too_long"
+msgstr "密码过长，请缩短"

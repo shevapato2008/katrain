@@ -8590,3 +8590,87 @@ msgstr "Listo"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Gestionar teléfono en el inicio"
+
+msgid "auth:invalid_public_username"
+msgstr "Usa de 2 a 24 letras, números, guiones bajos o guiones"
+
+msgid "auth:reserved_public_username"
+msgstr "Elige otro nombre de usuario"
+
+msgid "auth:public_username_taken"
+msgstr "Este nombre de usuario ya está en uso"
+
+msgid "auth:signup_grant_success"
+msgstr "Registro completado. Se han añadido 50 puntos"
+
+msgid "auth:profile_success"
+msgstr "Configuración completada"
+
+msgid "auth:signup_success"
+msgstr "Registro completado"
+
+msgid "auth:verified_phone"
+msgstr "Teléfono verificado {phone}"
+
+msgid "auth:phone_label"
+msgstr "Número de teléfono"
+
+msgid "auth:public_username"
+msgstr "Nombre de usuario (apodo)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Elige un nombre de usuario público"
+
+msgid "auth:new_password_placeholder"
+msgstr "Crea una contraseña de acceso"
+
+msgid "auth:phone_placeholder"
+msgstr "China continental +86"
+
+msgid "auth:code_label"
+msgstr "Código de verificación"
+
+msgid "auth:code_placeholder"
+msgstr "Código de 6 dígitos"
+
+msgid "auth:complete_submit"
+msgstr "Guardar e iniciar sesión"
+
+msgid "auth:register_submit"
+msgstr "Registrarse e iniciar sesión"
+
+msgid "auth:existing_login"
+msgstr "¿Ya tienes cuenta? Inicia sesión"
+
+msgid "auth:hide_password"
+msgstr "Ocultar contraseña"
+
+msgid "auth:show_password"
+msgstr "Mostrar contraseña"
+
+msgid "auth:named_register_title"
+msgstr "Registrarse"
+
+msgid "auth:complete_title"
+msgstr "Completar registro"
+
+msgid "auth:close"
+msgstr "Cerrar"
+
+msgid "auth:register_entry"
+msgstr "Crear una cuenta"
+
+msgid "auth:guest_entry"
+msgstr "Entrar como invitado"
+
+msgid "auth:login_entry"
+msgstr "Volver al inicio de sesión"
+
+msgid "auth:account_label"
+msgstr "Cuenta"
+
+msgid "auth:new_password_invalid"
+msgstr "La contraseña debe tener al menos 15 caracteres"
+
+msgid "auth:password_too_long"
+msgstr "La contraseña es demasiado larga. Acórtala"

@@ -8706,3 +8706,87 @@ msgstr "Tamam"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Ana sayfada telefonu yönet"
+
+msgid "auth:invalid_public_username"
+msgstr "2–24 harf, rakam, alt çizgi veya kısa çizgi kullanın"
+
+msgid "auth:reserved_public_username"
+msgstr "Başka bir kullanıcı adı seçin"
+
+msgid "auth:public_username_taken"
+msgstr "Bu kullanıcı adı zaten kullanılıyor"
+
+msgid "auth:signup_grant_success"
+msgstr "Kayıt tamamlandı. 50 puan eklendi"
+
+msgid "auth:profile_success"
+msgstr "Kurulum tamamlandı"
+
+msgid "auth:signup_success"
+msgstr "Kayıt tamamlandı"
+
+msgid "auth:verified_phone"
+msgstr "Doğrulanmış telefon {phone}"
+
+msgid "auth:phone_label"
+msgstr "Telefon numarası"
+
+msgid "auth:public_username"
+msgstr "Kullanıcı adı (takma ad)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Herkese açık bir kullanıcı adı seçin"
+
+msgid "auth:new_password_placeholder"
+msgstr "Giriş parolası belirleyin"
+
+msgid "auth:phone_placeholder"
+msgstr "Çin anakarası +86"
+
+msgid "auth:code_label"
+msgstr "Doğrulama kodu"
+
+msgid "auth:code_placeholder"
+msgstr "6 haneli kod"
+
+msgid "auth:complete_submit"
+msgstr "Kaydet ve giriş yap"
+
+msgid "auth:register_submit"
+msgstr "Kaydol ve giriş yap"
+
+msgid "auth:existing_login"
+msgstr "Zaten hesabınız var mı? Giriş yapın"
+
+msgid "auth:hide_password"
+msgstr "Parolayı gizle"
+
+msgid "auth:show_password"
+msgstr "Parolayı göster"
+
+msgid "auth:named_register_title"
+msgstr "Kaydol"
+
+msgid "auth:complete_title"
+msgstr "Kaydı tamamla"
+
+msgid "auth:close"
+msgstr "Kapat"
+
+msgid "auth:register_entry"
+msgstr "Hesap oluştur"
+
+msgid "auth:guest_entry"
+msgstr "Misafir olarak giriş yap"
+
+msgid "auth:login_entry"
+msgstr "Girişe dön"
+
+msgid "auth:account_label"
+msgstr "Hesap"
+
+msgid "auth:new_password_invalid"
+msgstr "Parola en az 15 karakter olmalıdır"
+
+msgid "auth:password_too_long"
+msgstr "Parola çok uzun. Kısaltın"

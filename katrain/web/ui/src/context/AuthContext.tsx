@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { API, ApiError, type PhoneLoginRequest } from '../api';
+import { API, ApiError, type AuthToken, type PhoneLoginRequest, type PhoneRegisterRequest } from '../api';
 import { setKioskIdentity } from '../kiosk/storage/kioskActivityStorage';
 
 // Define User type matching backend response
@@ -11,6 +11,7 @@ interface User {
     // stable across the box-SSO / cross-platform identity paths the way `uuid` is.
     uuid?: string;
     username: string;
+    public_username?: string | null;
     rank: string;
     credits: number;
     avatar_url?: string;
@@ -29,6 +30,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (username: string, password: string, signal?: AbortSignal) => Promise<void>;
     loginPhone: (request: PhoneLoginRequest, signal?: AbortSignal) => Promise<void>;
+    registerPhone: (request: PhoneRegisterRequest, signal?: AbortSignal) => Promise<{ signup_grant_credits: 0 | 5000 }>;
     logout: () => Promise<void>;
     token: string | null;
     // True for the shared zero-persistence `guest` account (box-SSO guest mode).
@@ -184,7 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const loginPhone = async (request: PhoneLoginRequest, signal?: AbortSignal) => {
+    const authenticatePhone = async <T extends AuthToken,>(candidateRequest: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> => {
         if (isStrictBoxKiosk) throw new ApiError(403, 'Direct login disabled', { code: 'identity_changed' });
         const requestGeneration = invalidatePending();
         const controller = new AbortController();
@@ -199,7 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         try {
             assertCurrent();
-            const candidate = await API.phoneLogin(request, controller.signal);
+            const candidate = await candidateRequest(controller.signal);
             assertCurrent();
             const response = await fetch('/api/v1/auth/me', {
                 headers: { Authorization: `Bearer ${candidate.access_token}` }, signal: controller.signal,
@@ -216,10 +218,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(canonical);
             setToken(candidate.access_token);
             setStatus('authenticated');
+            return candidate;
+        } catch (error) {
+            assertCurrent();
+            if (status === 'checking') setStatus('unavailable');
+            throw error;
         } finally {
             signal?.removeEventListener('abort', abort);
             if (activeController.current === controller) activeController.current = null;
         }
+    };
+
+    const loginPhone = async (request: PhoneLoginRequest, signal?: AbortSignal) => {
+        await authenticatePhone(candidateSignal => API.phoneLogin(request, candidateSignal), signal);
+    };
+
+    const registerPhone = async (request: PhoneRegisterRequest, signal?: AbortSignal) => {
+        const candidate = await authenticatePhone(candidateSignal => API.phoneRegister(request, candidateSignal), signal);
+        return { signup_grant_credits: candidate.signup_grant_credits };
     };
 
     const logout = useCallback(async () => {
@@ -257,7 +273,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         <AuthContext.Provider
             value={{ user, isAuthenticated: !!user, isLoading, status, retry,
                 identityKey: user ? user.uuid ?? `${user.id}:${user.username}` : null,
-                login, loginPhone, logout, token, isGuest, isStrictBoxKiosk }}
+                login, loginPhone, registerPhone, logout, token, isGuest, isStrictBoxKiosk }}
         >
             {children}
         </AuthContext.Provider>

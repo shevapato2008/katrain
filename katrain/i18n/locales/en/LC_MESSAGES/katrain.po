@@ -14237,3 +14237,87 @@ msgstr "Done"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Manage phone on home page"
+
+msgid "auth:invalid_public_username"
+msgstr "Use 2–24 letters, numbers, underscores or hyphens"
+
+msgid "auth:reserved_public_username"
+msgstr "Choose another username"
+
+msgid "auth:public_username_taken"
+msgstr "This username is already taken"
+
+msgid "auth:signup_grant_success"
+msgstr "Registered successfully. 50 points added"
+
+msgid "auth:profile_success"
+msgstr "Setup complete"
+
+msgid "auth:signup_success"
+msgstr "Registered successfully"
+
+msgid "auth:verified_phone"
+msgstr "Verified phone {phone}"
+
+msgid "auth:phone_label"
+msgstr "Phone number"
+
+msgid "auth:public_username"
+msgstr "Username (nickname)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Choose a public username"
+
+msgid "auth:new_password_placeholder"
+msgstr "Set a sign-in password"
+
+msgid "auth:phone_placeholder"
+msgstr "Mainland China +86"
+
+msgid "auth:code_label"
+msgstr "Verification code"
+
+msgid "auth:code_placeholder"
+msgstr "6-digit code"
+
+msgid "auth:complete_submit"
+msgstr "Save and sign in"
+
+msgid "auth:register_submit"
+msgstr "Register and sign in"
+
+msgid "auth:existing_login"
+msgstr "Already have an account? Sign in"
+
+msgid "auth:hide_password"
+msgstr "Hide password"
+
+msgid "auth:show_password"
+msgstr "Show password"
+
+msgid "auth:named_register_title"
+msgstr "Register"
+
+msgid "auth:complete_title"
+msgstr "Complete registration"
+
+msgid "auth:close"
+msgstr "Close"
+
+msgid "auth:register_entry"
+msgstr "Create an account"
+
+msgid "auth:guest_entry"
+msgstr "Sign in as guest"
+
+msgid "auth:login_entry"
+msgstr "Back to sign in"
+
+msgid "auth:account_label"
+msgstr "Account"
+
+msgid "auth:new_password_invalid"
+msgstr "Password must be at least 15 characters"
+
+msgid "auth:password_too_long"
+msgstr "Password is too long. Shorten it"

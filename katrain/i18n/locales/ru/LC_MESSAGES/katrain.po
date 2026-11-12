@@ -8603,3 +8603,87 @@ msgstr "Готово"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Управлять телефоном на главной"
+
+msgid "auth:invalid_public_username"
+msgstr "Используйте от 2 до 24 букв, цифр, знаков подчёркивания или дефисов"
+
+msgid "auth:reserved_public_username"
+msgstr "Выберите другое имя пользователя"
+
+msgid "auth:public_username_taken"
+msgstr "Это имя пользователя уже занято"
+
+msgid "auth:signup_grant_success"
+msgstr "Регистрация завершена. Начислено 50 баллов"
+
+msgid "auth:profile_success"
+msgstr "Настройка завершена"
+
+msgid "auth:signup_success"
+msgstr "Регистрация завершена"
+
+msgid "auth:verified_phone"
+msgstr "Подтверждённый телефон {phone}"
+
+msgid "auth:phone_label"
+msgstr "Номер телефона"
+
+msgid "auth:public_username"
+msgstr "Имя пользователя (никнейм)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Выберите публичное имя пользователя"
+
+msgid "auth:new_password_placeholder"
+msgstr "Задайте пароль для входа"
+
+msgid "auth:phone_placeholder"
+msgstr "Материковый Китай +86"
+
+msgid "auth:code_label"
+msgstr "Код подтверждения"
+
+msgid "auth:code_placeholder"
+msgstr "6-значный код"
+
+msgid "auth:complete_submit"
+msgstr "Сохранить и войти"
+
+msgid "auth:register_submit"
+msgstr "Зарегистрироваться и войти"
+
+msgid "auth:existing_login"
+msgstr "Уже есть аккаунт? Войти"
+
+msgid "auth:hide_password"
+msgstr "Скрыть пароль"
+
+msgid "auth:show_password"
+msgstr "Показать пароль"
+
+msgid "auth:named_register_title"
+msgstr "Регистрация"
+
+msgid "auth:complete_title"
+msgstr "Завершить регистрацию"
+
+msgid "auth:close"
+msgstr "Закрыть"
+
+msgid "auth:register_entry"
+msgstr "Создать аккаунт"
+
+msgid "auth:guest_entry"
+msgstr "Войти как гость"
+
+msgid "auth:login_entry"
+msgstr "Назад ко входу"
+
+msgid "auth:account_label"
+msgstr "Аккаунт"
+
+msgid "auth:new_password_invalid"
+msgstr "Пароль должен содержать не менее 15 символов"
+
+msgid "auth:password_too_long"
+msgstr "Пароль слишком длинный. Сократите его"

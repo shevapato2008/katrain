@@ -46,6 +46,7 @@ import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';
+import { displayAccountName } from '../../../features/auth/accountDisplay';
 import PhoneBindingEntry from '../../../features/auth/PhoneBindingEntry';
 import { getGalaxyNavigation, isGalaxyNavigationActive } from './galaxyNavigation';
 import type { GalaxySidebarState } from './useGalaxySidebar';
@@ -424,7 +425,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
           <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.75rem' }}>{user.rank === '20k' ? '?' : user.rank}</Avatar>
             <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              <Typography variant="subtitle2" noWrap>{user.username}</Typography>
+              <Typography variant="subtitle2" noWrap>{displayAccountName(user, t('auth:account_label', '账号'))}</Typography>
               <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>{user.rank === '20k' ? t('No Rank', 'No Rank') : user.rank}</Typography>
             </Box>
             <IconButton aria-label={t('Logout', 'Logout')} size="small" onClick={handleLogout}><LogoutIcon fontSize="small" /></IconButton>

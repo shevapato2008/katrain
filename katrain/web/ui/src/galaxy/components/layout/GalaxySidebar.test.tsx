@@ -77,6 +77,13 @@ describe('GalaxySidebar', () => {
     expect(requestNavigation).toHaveBeenCalledWith('/research');
   });
 
+  it('shows the public account name and hides a canonical internal handle', () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { username: 'u_0123456789abcdefabcd', public_username: '公开棋手', rank: '20k' }, logout: vi.fn() } as never);
+    renderSidebar();
+    expect(screen.getByText('公开棋手')).toBeInTheDocument();
+    expect(screen.queryByText('u_0123456789abcdefabcd')).not.toBeInTheDocument();
+  });
+
   it('keeps the native 44px toggle centered on the sidebar edge when collapsed', () => {
     const sidebarState = state({ dockedWidth: 0, dockedExpanded: false });
     renderSidebar(sidebarState);

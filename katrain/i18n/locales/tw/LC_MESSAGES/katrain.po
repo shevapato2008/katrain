@@ -13530,3 +13530,87 @@ msgstr "完成"
 
 msgid "auth:bind_manage_at_home"
 msgstr "在主頁管理手機號碼"
+
+msgid "auth:invalid_public_username"
+msgstr "使用者名稱需為2–24個字母、數字、底線或連字號"
+
+msgid "auth:reserved_public_username"
+msgstr "請換一個使用者名稱"
+
+msgid "auth:public_username_taken"
+msgstr "使用者名稱已被使用"
+
+msgid "auth:signup_grant_success"
+msgstr "註冊成功，已贈送50積分"
+
+msgid "auth:profile_success"
+msgstr "設定完成"
+
+msgid "auth:signup_success"
+msgstr "註冊成功"
+
+msgid "auth:verified_phone"
+msgstr "已驗證手機號碼 {phone}"
+
+msgid "auth:phone_label"
+msgstr "手機號碼"
+
+msgid "auth:public_username"
+msgstr "使用者名稱（暱稱）"
+
+msgid "auth:public_username_placeholder"
+msgstr "設定公開使用者名稱"
+
+msgid "auth:new_password_placeholder"
+msgstr "設定登入密碼"
+
+msgid "auth:phone_placeholder"
+msgstr "中國大陸 +86"
+
+msgid "auth:code_label"
+msgstr "驗證碼"
+
+msgid "auth:code_placeholder"
+msgstr "6 位驗證碼"
+
+msgid "auth:complete_submit"
+msgstr "儲存並登入"
+
+msgid "auth:register_submit"
+msgstr "註冊並登入"
+
+msgid "auth:existing_login"
+msgstr "已有帳號？前往登入"
+
+msgid "auth:hide_password"
+msgstr "隱藏密碼"
+
+msgid "auth:show_password"
+msgstr "顯示密碼"
+
+msgid "auth:named_register_title"
+msgstr "註冊"
+
+msgid "auth:complete_title"
+msgstr "完成註冊"
+
+msgid "auth:close"
+msgstr "關閉"
+
+msgid "auth:register_entry"
+msgstr "註冊帳號"
+
+msgid "auth:guest_entry"
+msgstr "訪客登入"
+
+msgid "auth:login_entry"
+msgstr "返回登入"
+
+msgid "auth:account_label"
+msgstr "帳號"
+
+msgid "auth:new_password_invalid"
+msgstr "密碼至少15個字元"
+
+msgid "auth:password_too_long"
+msgstr "密碼過長，請縮短"

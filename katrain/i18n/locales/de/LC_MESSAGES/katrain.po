@@ -8783,3 +8783,87 @@ msgstr "Fertig"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Mobilnummer auf Startseite verwalten"
+
+msgid "auth:invalid_public_username"
+msgstr "Verwende 2–24 Buchstaben, Zahlen, Unterstriche oder Bindestriche"
+
+msgid "auth:reserved_public_username"
+msgstr "Wähle einen anderen Benutzernamen"
+
+msgid "auth:public_username_taken"
+msgstr "Dieser Benutzername ist bereits vergeben"
+
+msgid "auth:signup_grant_success"
+msgstr "Registrierung erfolgreich. 50 Punkte gutgeschrieben"
+
+msgid "auth:profile_success"
+msgstr "Einrichtung abgeschlossen"
+
+msgid "auth:signup_success"
+msgstr "Registrierung erfolgreich"
+
+msgid "auth:verified_phone"
+msgstr "Bestätigte Mobilnummer {phone}"
+
+msgid "auth:phone_label"
+msgstr "Mobilnummer"
+
+msgid "auth:public_username"
+msgstr "Benutzername (Spitzname)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Öffentlichen Benutzernamen wählen"
+
+msgid "auth:new_password_placeholder"
+msgstr "Anmeldepasswort festlegen"
+
+msgid "auth:phone_placeholder"
+msgstr "Festlandchina +86"
+
+msgid "auth:code_label"
+msgstr "Bestätigungscode"
+
+msgid "auth:code_placeholder"
+msgstr "6-stelliger Code"
+
+msgid "auth:complete_submit"
+msgstr "Speichern und anmelden"
+
+msgid "auth:register_submit"
+msgstr "Registrieren und anmelden"
+
+msgid "auth:existing_login"
+msgstr "Schon ein Konto? Anmelden"
+
+msgid "auth:hide_password"
+msgstr "Passwort ausblenden"
+
+msgid "auth:show_password"
+msgstr "Passwort anzeigen"
+
+msgid "auth:named_register_title"
+msgstr "Registrieren"
+
+msgid "auth:complete_title"
+msgstr "Registrierung abschließen"
+
+msgid "auth:close"
+msgstr "Schließen"
+
+msgid "auth:register_entry"
+msgstr "Konto erstellen"
+
+msgid "auth:guest_entry"
+msgstr "Als Gast anmelden"
+
+msgid "auth:login_entry"
+msgstr "Zurück zur Anmeldung"
+
+msgid "auth:account_label"
+msgstr "Konto"
+
+msgid "auth:new_password_invalid"
+msgstr "Das Passwort muss mindestens 15 Zeichen lang sein"
+
+msgid "auth:password_too_long"
+msgstr "Das Passwort ist zu lang. Bitte kürzen"

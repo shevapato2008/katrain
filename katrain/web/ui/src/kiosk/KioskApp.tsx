@@ -42,6 +42,7 @@ import { isStrictBoxKiosk } from './shell/boxUrls';
 import { kioskText } from './appearance/messages';
 import { DEVICE_UI_FONT, useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { displayAccountName } from '../features/auth/accountDisplay';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
@@ -103,7 +104,7 @@ export const KioskRoutes = () => {
   // never surface that raw string in the header — show the localized label.
   const headerUsername = status === 'checking' ? t('auth:checking_identity', '身份确认中')
     : status === 'unavailable' ? t('auth:unavailable_identity', '身份待确认')
-    : user?.username === 'guest' ? t('Guest', '访客') : user?.username;
+    : user?.username === 'guest' ? t('Guest', '访客') : user ? displayAccountName(user, t('auth:account_label', '账号')) : undefined;
 
   return (
     <Suspense fallback={null}><Routes>

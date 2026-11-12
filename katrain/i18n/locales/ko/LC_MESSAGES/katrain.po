@@ -13564,3 +13564,87 @@ msgstr "완료"
 
 msgid "auth:bind_manage_at_home"
 msgstr "홈에서 휴대폰 번호 관리"
+
+msgid "auth:invalid_public_username"
+msgstr "사용자 이름은 문자, 숫자, 밑줄 또는 하이픈으로 2~24자여야 합니다"
+
+msgid "auth:reserved_public_username"
+msgstr "다른 사용자 이름을 선택하세요"
+
+msgid "auth:public_username_taken"
+msgstr "이미 사용 중인 사용자 이름입니다"
+
+msgid "auth:signup_grant_success"
+msgstr "가입이 완료되어 50포인트가 지급되었습니다"
+
+msgid "auth:profile_success"
+msgstr "설정이 완료되었습니다"
+
+msgid "auth:signup_success"
+msgstr "가입이 완료되었습니다"
+
+msgid "auth:verified_phone"
+msgstr "인증된 휴대폰 번호 {phone}"
+
+msgid "auth:phone_label"
+msgstr "휴대폰 번호"
+
+msgid "auth:public_username"
+msgstr "사용자 이름(닉네임)"
+
+msgid "auth:public_username_placeholder"
+msgstr "공개 사용자 이름 설정"
+
+msgid "auth:new_password_placeholder"
+msgstr "로그인 비밀번호 설정"
+
+msgid "auth:phone_placeholder"
+msgstr "중국 본토 +86"
+
+msgid "auth:code_label"
+msgstr "인증번호"
+
+msgid "auth:code_placeholder"
+msgstr "6자리 인증번호"
+
+msgid "auth:complete_submit"
+msgstr "저장 후 로그인"
+
+msgid "auth:register_submit"
+msgstr "가입 후 로그인"
+
+msgid "auth:existing_login"
+msgstr "이미 계정이 있나요? 로그인"
+
+msgid "auth:hide_password"
+msgstr "비밀번호 숨기기"
+
+msgid "auth:show_password"
+msgstr "비밀번호 표시"
+
+msgid "auth:named_register_title"
+msgstr "가입"
+
+msgid "auth:complete_title"
+msgstr "가입 완료하기"
+
+msgid "auth:close"
+msgstr "닫기"
+
+msgid "auth:register_entry"
+msgstr "계정 만들기"
+
+msgid "auth:guest_entry"
+msgstr "게스트 로그인"
+
+msgid "auth:login_entry"
+msgstr "로그인으로 돌아가기"
+
+msgid "auth:account_label"
+msgstr "계정"
+
+msgid "auth:new_password_invalid"
+msgstr "비밀번호는 15자 이상이어야 합니다"
+
+msgid "auth:password_too_long"
+msgstr "비밀번호가 너무 깁니다. 줄여 주세요"

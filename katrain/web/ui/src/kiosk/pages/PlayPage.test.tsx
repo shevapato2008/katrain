@@ -39,6 +39,8 @@ const pageElement = () => (
 
 const renderPage = () => render(pageElement());
 
+
+
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -101,6 +103,16 @@ describe('PlayPage', () => {
     useEngineReadinessMock.mockReturnValue('ready');
     platformStatusMock.mockReset();
     platformStatusMock.mockResolvedValue({ platforms: [] });
+  });
+
+  it('shows the public account name in the greeting and hides canonical internal handles', async () => {
+    const internal = 'u_0123456789abcdefabcd';
+    platformStatusMock.mockResolvedValue({ platforms: [] });
+    useAuthMock.mockReturnValue({ user: { username: internal, public_username: '公开棋手' }, isAuthenticated: true, token: null });
+    let container!: HTMLElement;
+    await act(async () => { container = renderPage().container; });
+    expect(container.querySelector('.kiosk-greet')).toHaveTextContent('公开棋手');
+    expect(container.querySelector('.kiosk-greet')).not.toHaveTextContent(internal);
   });
 
   it('updates the greeting each hour without refreshing the page or refetching platforms', async () => {

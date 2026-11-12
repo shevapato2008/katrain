@@ -474,17 +474,20 @@ export interface AuthToken {
 export interface PhoneChallengeRequest { phone: string; purpose: 'login'; flow_id: string; }
 export interface PhoneChallenge { challenge_id: string; retry_after: number; expires_in: number; delivery: 'sent' | 'unknown'; }
 export interface PhoneLoginRequest { challenge_id: string; code: string; flow_id: string; }
+export interface PhoneRegisterRequest extends PhoneLoginRequest { public_username: string; password: string; }
+export interface PhoneRegisterToken extends AuthToken { signup_grant_credits: 0 | 5000; }
 export interface PhoneBindChallengeRequest { phone: string; purpose: 'bind'; flow_id: string; }
 export interface PhoneBindRequest extends PhoneLoginRequest { current_password: string; }
 export type PhoneBindingStatus = { bound: false } | { bound: true; masked_phone: string };
 export type PhoneAuthErrorCode = 'invalid_phone' | 'invalid_code' | 'challenge_invalid' | 'challenge_expired' |
   'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required' |
-  'authentication_required' | 'bind_not_allowed' | 'phone_in_use' | 'bind_reauth_failed' | 'bind_reauth_locked';
-export interface PhoneAuthErrorDetail { code: PhoneAuthErrorCode; retry_after?: number; }
+  'authentication_required' | 'bind_not_allowed' | 'phone_in_use' | 'bind_reauth_failed' | 'bind_reauth_locked' |
+  'profile_required' | 'invalid_public_username' | 'reserved_public_username' | 'public_username_taken' | 'invalid_password';
+export interface PhoneAuthErrorDetail { code: PhoneAuthErrorCode; retry_after?: number; mode?: 'register' | 'complete'; }
 
 // Auth errors carry only structured classifications, never raw upstream bodies
 // (which may contain private request data).
-async function phoneAuthPost<T>(path: string, payload: PhoneChallengeRequest | PhoneLoginRequest, signal?: AbortSignal): Promise<T> {
+async function phoneAuthPost<T>(path: string, payload: PhoneChallengeRequest | PhoneLoginRequest | PhoneRegisterRequest, signal?: AbortSignal): Promise<T> {
   if (isStrictBoxKiosk) throw new ApiError(403, 'Direct login disabled', { code: 'identity_changed' });
   const response = await fetch(`/api/v1/auth/phone/${path}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal,
@@ -585,6 +588,7 @@ export type RecoveryRefreshResult = 'applied' | 'already-current' | 'superseded'
 export const API = {
   createPhoneChallenge: (payload: PhoneChallengeRequest, signal?: AbortSignal): Promise<PhoneChallenge> => phoneAuthPost('challenges', payload, signal),
   phoneLogin: (payload: PhoneLoginRequest, signal?: AbortSignal): Promise<AuthToken> => phoneAuthPost('login', payload, signal),
+  phoneRegister: (payload: PhoneRegisterRequest, signal?: AbortSignal): Promise<PhoneRegisterToken> => phoneAuthPost('register', payload, signal),
   phoneStatus: (token: string | null, signal?: AbortSignal): Promise<PhoneBindingStatus> => privatePhoneRequest('status', token, signal),
   createPhoneBindChallenge: (payload: PhoneBindChallengeRequest, token: string | null, signal?: AbortSignal): Promise<PhoneChallenge> => privatePhoneRequest('challenges', token, signal, payload),
   phoneBind: (payload: PhoneBindRequest, token: string | null, signal?: AbortSignal): Promise<{ bound: true; masked_phone: string }> => privatePhoneRequest('bind', token, signal, payload),

@@ -6,6 +6,7 @@ import { useMembershipI18n } from '../../../features/membership/useMembershipI18
 import { useAiLadderStatus } from '../../../features/aiLadder/useAiLadderStatus';
 import { LAUNCHER_LOGIN_URL, LAUNCHER_REGISTER_URL, isStrictBoxKiosk, leaveToLauncher } from '../../shell/boxUrls';
 import KioskAiLadderRows from './KioskAiLadderRows';
+import { displayAccountName } from '../../../features/auth/accountDisplay';
 
 /**
  * 设置屏「账号与平台」那一组的前两行。
@@ -53,7 +54,7 @@ export default function AccountSection() {
     <>
       <div className="kiosk-row">
         <span className="kiosk-row__t">
-          <b>{isGuest ? t('Guest', '访客') : (user?.username ?? t('Guest', '访客'))}</b>
+          <b>{isGuest || !user ? t('Guest', '访客') : displayAccountName(user, t('auth:account_label', '账号'))}</b>
           <em>
             {isGuest
               ? t('Not signed in', '未登录')

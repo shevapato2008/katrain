@@ -8769,3 +8769,87 @@ msgstr "Terminé"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Gérer le téléphone depuis l’accueil"
+
+msgid "auth:invalid_public_username"
+msgstr "Utilisez 2 à 24 lettres, chiffres, traits de soulignement ou traits d’union"
+
+msgid "auth:reserved_public_username"
+msgstr "Choisissez un autre nom d’utilisateur"
+
+msgid "auth:public_username_taken"
+msgstr "Ce nom d’utilisateur est déjà utilisé"
+
+msgid "auth:signup_grant_success"
+msgstr "Inscription réussie. 50 points ajoutés"
+
+msgid "auth:profile_success"
+msgstr "Configuration terminée"
+
+msgid "auth:signup_success"
+msgstr "Inscription réussie"
+
+msgid "auth:verified_phone"
+msgstr "Téléphone vérifié {phone}"
+
+msgid "auth:phone_label"
+msgstr "Numéro de téléphone"
+
+msgid "auth:public_username"
+msgstr "Nom d’utilisateur (pseudo)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Choisissez un nom d’utilisateur public"
+
+msgid "auth:new_password_placeholder"
+msgstr "Définissez un mot de passe de connexion"
+
+msgid "auth:phone_placeholder"
+msgstr "Chine continentale +86"
+
+msgid "auth:code_label"
+msgstr "Code de vérification"
+
+msgid "auth:code_placeholder"
+msgstr "Code à 6 chiffres"
+
+msgid "auth:complete_submit"
+msgstr "Enregistrer et se connecter"
+
+msgid "auth:register_submit"
+msgstr "S’inscrire et se connecter"
+
+msgid "auth:existing_login"
+msgstr "Déjà un compte ? Connectez-vous"
+
+msgid "auth:hide_password"
+msgstr "Masquer le mot de passe"
+
+msgid "auth:show_password"
+msgstr "Afficher le mot de passe"
+
+msgid "auth:named_register_title"
+msgstr "S’inscrire"
+
+msgid "auth:complete_title"
+msgstr "Terminer l’inscription"
+
+msgid "auth:close"
+msgstr "Fermer"
+
+msgid "auth:register_entry"
+msgstr "Créer un compte"
+
+msgid "auth:guest_entry"
+msgstr "Se connecter en tant qu’invité"
+
+msgid "auth:login_entry"
+msgstr "Retour à la connexion"
+
+msgid "auth:account_label"
+msgstr "Compte"
+
+msgid "auth:new_password_invalid"
+msgstr "Le mot de passe doit comporter au moins 15 caractères"
+
+msgid "auth:password_too_long"
+msgstr "Le mot de passe est trop long. Raccourcissez-le"

@@ -1,228 +1,34 @@
 import { useEffect } from 'react';
-import { Box, Button, Typography, CircularProgress, useTheme } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { Box, CircularProgress } from '@mui/material';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTranslation } from '../../hooks/useTranslation';
-import { KIOSK_SERIF } from '../theme';
 import { LAUNCHER_LOGIN_URL } from '../shell/boxUrls';
 import LoginMethods from '../../features/auth/LoginMethods';
+import { KIOSK_SANS } from '../theme';
 
-// Brand lockup matches the Header (智星盒 / StellaBox).
-const BRAND_SERIF = KIOSK_SERIF;
-
-// Decision B (logout-then-register): in a strict box kiosk there is no local
-// auth form at all — the box identity lives solely in the HttpOnly cookie set
-// by the setup-wizard. Falling through here means that cookie is absent/expired,
-// so send the user to the wizard's launcher gate via a top-level navigation
-// instead of rendering a dead username/password form nobody can submit.
-const LoginPage = () => {
-  const theme = useTheme();
+export default function LoginPage() {
   const { isAuthenticated, isLoading, isStrictBoxKiosk, isGuest } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
-
   useEffect(() => {
-    if (isStrictBoxKiosk) {
-      window.location.href = LAUNCHER_LOGIN_URL;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (isStrictBoxKiosk) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          width: '100%',
-          height: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'background.default',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // 左半边与 launcher 登录页(setup-wizard `launcher.html` 的 `.auth-gate` / `.ag-*`)逐项一致:
-  // 用户刚从那一屏过来,这里长得不一样就像换了个产品。数值取自板上实测(1024×600)。
-  // Faint go-board grid — full-page like launcher's `.ag-goboard`; the opaque brand panel hides it on the left.
-  const gridBg = {
-    position: 'absolute',
-    inset: 0,
-    pointerEvents: 'none',
-    backgroundImage:
-      `linear-gradient(${theme.palette.divider} 1px, transparent 1px),` +
-      `linear-gradient(90deg, ${theme.palette.divider} 1px, transparent 1px)`,
-    backgroundSize: '46px 46px',
-    backgroundPosition: 'center',
-    opacity: 0.24,
-    maskImage: 'radial-gradient(ellipse 74% 64% at 50% 44%, #000 0%, transparent 78%)',
-    WebkitMaskImage: 'radial-gradient(ellipse 74% 64% at 50% 44%, #000 0%, transparent 78%)',
-  } as const;
-
-
-  // 已经登录的人不该停在登录页。两个构建都需要这一条:盒端会在挂载探针跑完之前
-  // 就把人弹到这里(守卫等 isLoading,但 `navigate('/kiosk/login')` 那几个调用点不等),
-  // 非盒端则是「cookie 还有效却手敲了 /kiosk/login」。少了它,这一屏对已登录用户
-  // 也是死的 —— 表单在盒端注定抛,在非盒端要他把已经有效的密码再输一遍。
+    if (isStrictBoxKiosk) window.location.href = LAUNCHER_LOGIN_URL;
+  }, [isStrictBoxKiosk]);
+  if (isStrictBoxKiosk) return <Box sx={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}><CircularProgress /></Box>;
   if (!isLoading && isAuthenticated && !isGuest) return <Navigate to="/kiosk/play" replace />;
-
-  return (
-    <Box
-      data-testid="kiosk-login-page"
-      sx={{
-        position: 'relative',
-        display: 'flex',
-        width: '100%',
-        minHeight: '100%',
-        flexDirection: { xs: 'column', sm: 'row' },
-        background: `radial-gradient(120% 140% at 50% -20%, #16201d 0%, ${theme.palette.background.default} 55%)`,
-      }}
-    >
-      <Box sx={gridBg} />
-      {/* ── Left: brand panel — centered lockup, enlarged mark ── */}
-      <Box
-        sx={{
-          position: 'relative',
-          flexShrink: 0,
-          // launcher 的 `.ag-brand` 是 content-box:42% + 左右各 40 内边距 + 1px 边线 = 板上 511px。
-          width: { xs: '100%', sm: 'calc(42% + 81px)' },
-          minWidth: { xs: 0, sm: 381 },
-          maxWidth: { xs: 'none', sm: 521 },
-          display: { xs: 'none', sm: 'flex' },
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          px: 5,
-          borderRight: '1px solid',
-          borderColor: 'divider',
-          background: `linear-gradient(158deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 82%)`,
-        }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background: `radial-gradient(circle 220px at 50% 42%, ${alpha(theme.palette.primary.main, 0.14)}, transparent 68%)`,
-          }}
-        />
-
-        <Box sx={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-          <Box
-            component="img"
-            src="/assets/img/logo-white.png"
-            alt="智星盒 StellaBox"
-            sx={{
-              width: 146,
-              height: 146,
-              objectFit: 'contain',
-              mb: '4px',
-              filter: `drop-shadow(0 0 22px ${alpha(theme.palette.primary.main, 0.32)})`,
-            }}
-          />
-          {/* top:6px —— launcher 的衬线栈里有思源宋体(CJK),撑高了行内内容区,基线比这里低 6px;
-              盒上两边都没有同一套 CJK 衬线,只能按实测对齐。用 relative 不占位,不挪 logo。 */}
-          <Box sx={{ position: 'relative', top: '6px', display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-            {/* 不能用 `.brand-zh` 类:它写的是 `var(--font-serif)`,而那个变量只定义在 `.kiosk` 上,
-                这一屏在 KioskLayout 外面 ⇒ 整条 font-family 计算期失效、退回继承的无衬线(板上实测)。 */}
-            <Box
-              component="span"
-              sx={{
-                fontFamily: `"SmartBox Brand LongCang", ${KIOSK_SERIF}`,
-                fontWeight: 400,
-                fontStyle: 'normal',
-                fontSynthesis: 'none',
-                fontSize: 48,
-                lineHeight: 1,
-                letterSpacing: '3px',
-                color: 'text.primary',
-              }}
-            >
-              智星盒
-            </Box>
-            <Typography
-              component="span"
-              sx={{ fontFamily: '"SmartBox Fondamento", serif', fontStyle: 'normal', fontWeight: 400, fontSynthesis: 'none', fontSize: 27, letterSpacing: '0.005em', color: 'text.secondary', position: 'relative', top: 2 }}
-            >
-              StellaBox
-            </Typography>
-          </Box>
-        </Box>
+  const enterPlay = () => navigate('/kiosk/play', { replace: true });
+  return <Box data-testid="kiosk-login-page" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '41% minmax(0, 1fr)' }, minHeight: '100dvh', width: '100%', bgcolor: '#101b16', fontFamily: KIOSK_SANS }}>
+    <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', borderRight: '1px solid #49634e' }}>
+      <Box sx={{ position: 'relative', width: 128, height: 144, '&:before': { position: 'absolute', content: '""', inset: '-28px -46px', background: 'radial-gradient(ellipse, #58b57a24, transparent 68%)' } }}>
+        <Box component="img" src="/assets/img/logo-white.png" alt="" sx={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain' }} />
       </Box>
-
-      {/* ── Right: sign-in form — 或者，在出厂盒子上，一扇指回 launcher 的门 ── */}
-      <Box sx={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: 410,
-            bgcolor: 'background.paper',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '16px',
-            p: { xs: 2.5, sm: 3 },
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-          }}
-        >
-          {isStrictBoxKiosk ? (
-            /*
-             * 出厂盒子上这里**不能画登录表单**：`login()` 第一行就抛
-             * (`AuthContext.tsx` 的 strict 分支)，后端 `POST /api/v1/auth/login` 也恒 403。
-             * 画了就是一个怎么填都只会跳「登录失败」的表单 ——
-             * 而这一屏在 `KioskLayout` **外面**(`KioskApp.tsx` 里两者平级)，
-             * 没顶栏、没 Dock、没主页键，人进来了就出不去。
-             *
-             * 没把 `signed_out` 与 `identity_unavailable` 分开画(横向规范 §8.1 规则 1)
-             * 是有意的：那条规则的理由是「后者用户解决不了，给登录 CTA 等于推责任」，
-             * 而在盒上两种情形的动作恰好相同且都有效：回主页。launcher 跑在另一个
-             * 进程(:8080)上，围棋这边挂了它照样开。分两屏只会多一个状态，
-             * 不多一条出路。(AuthContext 今天也区分不了这两者。)
-             */
-            <>
-              <Typography sx={{ fontFamily: BRAND_SERIF, fontSize: 22, fontWeight: 500 }}>
-                {t('login:box_gate_title', '请在智星盒主页登录')}
-              </Typography>
-              <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.9 }}>
-                {t(
-                  'login:box_gate_body',
-                  '智星盒的账号是整台设备共用的：在主页登录一次，围棋和其他棋类模块就都是同一个身份。',
-                )}
-              </Typography>
-              <Typography sx={{ fontSize: 13, color: 'text.disabled', lineHeight: 1.8 }}>
-                {t(
-                  'login:box_gate_hint',
-                  '如果你刚才还在下棋，多半是这台盒子上的会话过期了 —— 回主页重新进入围棋即可，已下的棋不会丢。',
-                )}
-              </Typography>
-              {/* 写成 `<a href>` 而不是 `onClick` —— 目标在另一个源上，
-                  这是一次**整页离开**，不是本 SPA 的路由。 */}
-              <Button
-                fullWidth
-                component="a"
-                href={LAUNCHER_LOGIN_URL}
-                variant="contained"
-                color="primary"
-                data-testid="login-go-launcher"
-                sx={{ minHeight: 52, mt: 0.5, fontSize: '1rem', letterSpacing: '0.1em' }}
-              >
-                {t('login:box_gate_cta', '前往智星盒主页')}
-              </Button>
-            </>
-          ) : (
-          <>
-          <LoginMethods onSuccess={() => navigate('/kiosk/play', { replace: true })} />
-          </>
-          )}
-        </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', whiteSpace: 'nowrap' }}>
+        <Box component="span" sx={{ fontFamily: '"SmartBox Brand LongCang", serif', fontSize: 36, lineHeight: 1.35, color: '#eef4ed', fontSynthesis: 'none' }}>智星盒</Box>
+        <Box component="span" sx={{ fontFamily: '"SmartBox Fondamento", serif', fontSize: 28, lineHeight: 1.35, color: '#b7cabb', fontSynthesis: 'none' }}>StellaBox</Box>
       </Box>
     </Box>
-  );
-};
-
-export default LoginPage;
+    <Box sx={{ display: 'flex', alignItems: 'safe center', justifyContent: 'center', minWidth: 0, p: { xs: '20px', sm: '26px 38px' }, overflowY: 'auto' }}>
+      <Box sx={{ width: '100%', maxWidth: 528, my: 'auto', bgcolor: '#1a2a21', border: '1px solid #49634e', borderRadius: '20px', p: '22px' }}>
+        <LoginMethods surface="kiosk" onSuccess={enterPlay} onGuest={enterPlay} />
+      </Box>
+    </Box>
+  </Box>;
+}

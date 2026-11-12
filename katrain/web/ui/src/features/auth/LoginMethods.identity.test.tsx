@@ -58,11 +58,11 @@ it.each(['password', 'phone'])('reports a canonical installed %s login as succes
     fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'private-password' } });
     fireEvent.click(screen.getByRole('button', { name: '登录' }));
   } else {
-    fireEvent.change(screen.getByLabelText('手机号（中国大陆 +86）'), { target: { value: '13800138000' } });
+    fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800138000' } });
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
-    await screen.findByText(/验证码已请求/);
-    fireEvent.change(screen.getByLabelText('短信验证码'), { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: '验证并登录' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /60/ })).toBeDisabled());
+    fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: '登录' }));
   }
   await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
   expect(auth.user?.username).toBe('u_canonical');

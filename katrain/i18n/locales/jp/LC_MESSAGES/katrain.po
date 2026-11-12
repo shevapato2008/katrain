@@ -13566,3 +13566,87 @@ msgstr "完了"
 
 msgid "auth:bind_manage_at_home"
 msgstr "ホームで携帯番号を管理"
+
+msgid "auth:invalid_public_username"
+msgstr "ユーザー名は文字・数字・アンダースコア・ハイフンの2～24文字で入力してください"
+
+msgid "auth:reserved_public_username"
+msgstr "別のユーザー名を選んでください"
+
+msgid "auth:public_username_taken"
+msgstr "このユーザー名はすでに使用されています"
+
+msgid "auth:signup_grant_success"
+msgstr "登録が完了し、50ポイントが付与されました"
+
+msgid "auth:profile_success"
+msgstr "設定が完了しました"
+
+msgid "auth:signup_success"
+msgstr "登録が完了しました"
+
+msgid "auth:verified_phone"
+msgstr "認証済みの携帯番号 {phone}"
+
+msgid "auth:phone_label"
+msgstr "携帯番号"
+
+msgid "auth:public_username"
+msgstr "ユーザー名（ニックネーム）"
+
+msgid "auth:public_username_placeholder"
+msgstr "公開ユーザー名を設定"
+
+msgid "auth:new_password_placeholder"
+msgstr "ログインパスワードを設定"
+
+msgid "auth:phone_placeholder"
+msgstr "中国本土 +86"
+
+msgid "auth:code_label"
+msgstr "認証コード"
+
+msgid "auth:code_placeholder"
+msgstr "6桁の認証コード"
+
+msgid "auth:complete_submit"
+msgstr "保存してログイン"
+
+msgid "auth:register_submit"
+msgstr "登録してログイン"
+
+msgid "auth:existing_login"
+msgstr "アカウントをお持ちですか？ログイン"
+
+msgid "auth:hide_password"
+msgstr "パスワードを非表示"
+
+msgid "auth:show_password"
+msgstr "パスワードを表示"
+
+msgid "auth:named_register_title"
+msgstr "新規登録"
+
+msgid "auth:complete_title"
+msgstr "登録を完了"
+
+msgid "auth:close"
+msgstr "閉じる"
+
+msgid "auth:register_entry"
+msgstr "アカウントを作成"
+
+msgid "auth:guest_entry"
+msgstr "ゲストとしてログイン"
+
+msgid "auth:login_entry"
+msgstr "ログインに戻る"
+
+msgid "auth:account_label"
+msgstr "アカウント"
+
+msgid "auth:new_password_invalid"
+msgstr "パスワードは15文字以上で入力してください"
+
+msgid "auth:password_too_long"
+msgstr "パスワードが長すぎます。短くしてください"

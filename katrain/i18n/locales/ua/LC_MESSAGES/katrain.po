@@ -8684,3 +8684,87 @@ msgstr "Готово"
 
 msgid "auth:bind_manage_at_home"
 msgstr "Керувати телефоном на головній"
+
+msgid "auth:invalid_public_username"
+msgstr "Використовуйте від 2 до 24 літер, цифр, знаків підкреслення або дефісів"
+
+msgid "auth:reserved_public_username"
+msgstr "Виберіть інше ім’я користувача"
+
+msgid "auth:public_username_taken"
+msgstr "Це ім’я користувача вже зайняте"
+
+msgid "auth:signup_grant_success"
+msgstr "Реєстрацію завершено. Нараховано 50 балів"
+
+msgid "auth:profile_success"
+msgstr "Налаштування завершено"
+
+msgid "auth:signup_success"
+msgstr "Реєстрацію завершено"
+
+msgid "auth:verified_phone"
+msgstr "Підтверджений телефон {phone}"
+
+msgid "auth:phone_label"
+msgstr "Номер телефону"
+
+msgid "auth:public_username"
+msgstr "Ім’я користувача (псевдонім)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Виберіть публічне ім’я користувача"
+
+msgid "auth:new_password_placeholder"
+msgstr "Задайте пароль для входу"
+
+msgid "auth:phone_placeholder"
+msgstr "Материковий Китай +86"
+
+msgid "auth:code_label"
+msgstr "Код підтвердження"
+
+msgid "auth:code_placeholder"
+msgstr "6-значний код"
+
+msgid "auth:complete_submit"
+msgstr "Зберегти й увійти"
+
+msgid "auth:register_submit"
+msgstr "Зареєструватися й увійти"
+
+msgid "auth:existing_login"
+msgstr "Уже маєте обліковий запис? Увійти"
+
+msgid "auth:hide_password"
+msgstr "Приховати пароль"
+
+msgid "auth:show_password"
+msgstr "Показати пароль"
+
+msgid "auth:named_register_title"
+msgstr "Реєстрація"
+
+msgid "auth:complete_title"
+msgstr "Завершити реєстрацію"
+
+msgid "auth:close"
+msgstr "Закрити"
+
+msgid "auth:register_entry"
+msgstr "Створити обліковий запис"
+
+msgid "auth:guest_entry"
+msgstr "Увійти як гість"
+
+msgid "auth:login_entry"
+msgstr "Повернутися до входу"
+
+msgid "auth:account_label"
+msgstr "Обліковий запис"
+
+msgid "auth:new_password_invalid"
+msgstr "Пароль має містити щонайменше 15 символів"
+
+msgid "auth:password_too_long"
+msgstr "Пароль задовгий. Скоротіть його"

@@ -9,7 +9,7 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 const challenge = { challenge_id: 'opaque-challenge', retry_after: 60, expires_in: 300, delivery: 'sent' as const };
 beforeEach(() => { vi.restoreAllMocks(); loginPhone.mockReset().mockResolvedValue(undefined); auth.identityKey = null; });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
-const fillPhone = () => fireEvent.change(screen.getByLabelText('手机号（中国大陆 +86）'), { target: { value: '13800138000' } });
+const fillPhone = () => fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800138000' } });
 
 describe('PhoneOtpForm', () => {
   it('uses a private random flow and one six-digit input, then submits the challenge without the phone', async () => {
@@ -22,11 +22,11 @@ describe('PhoneOtpForm', () => {
     expect(send.mock.calls[0][0]).toMatchObject({ phone: '13800138000', purpose: 'login' });
     const flow = send.mock.calls[0][0].flow_id;
     expect(flow).toMatch(/^[a-f0-9]{32}$/);
-    const code = screen.getByLabelText('短信验证码');
+    const code = screen.getByLabelText('验证码');
     expect(code).toHaveAttribute('autocomplete', 'one-time-code');
     expect(code).toHaveAttribute('inputmode', 'numeric');
     fireEvent.change(code, { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: '验证并登录' }));
+    fireEvent.click(screen.getByRole('button', { name: '登录' }));
     await waitFor(() => expect(loginPhone).toHaveBeenCalledWith({ challenge_id: 'opaque-challenge', code: '123456', flow_id: flow }, expect.any(AbortSignal)));
     expect(done).toHaveBeenCalledTimes(1);
   });
@@ -37,8 +37,8 @@ describe('PhoneOtpForm', () => {
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
     expect(await screen.findByText(/发送状态未确认/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /60/ })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('短信验证码'), { target: { value: '123456' } });
-    expect(screen.getByRole('button', { name: '验证并登录' })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
+    expect(screen.getByRole('button', { name: '登录' })).toBeEnabled();
     expect(send).toHaveBeenCalledTimes(1);
   });
 
@@ -47,8 +47,8 @@ describe('PhoneOtpForm', () => {
     render(<PhoneOtpForm onSuccess={() => {}} />); fillPhone();
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('短信发送被拒绝');
-    expect(screen.getByLabelText('手机号（中国大陆 +86）')).toBeEnabled();
-    expect(screen.getByRole('button', { name: '验证并登录' })).toBeDisabled();
+    expect(screen.getByLabelText('手机号')).toBeEnabled();
+    expect(loginPhone).not.toHaveBeenCalled();
   });
 
   it('discards a challenge returned after the phone changes and rotates the flow', async () => {
@@ -57,9 +57,9 @@ describe('PhoneOtpForm', () => {
     render(<PhoneOtpForm onSuccess={() => {}} />); fillPhone();
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
     const firstFlow = send.mock.calls[0][0].flow_id;
-    fireEvent.change(screen.getByLabelText('手机号（中国大陆 +86）'), { target: { value: '13900139000' } });
+    fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13900139000' } });
     await act(async () => resolve(challenge));
-    expect(screen.queryByText(/验证码已请求/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('验证码')).toHaveValue('');
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
     await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
     expect(send.mock.calls[1][0].flow_id).not.toBe(firstFlow);
@@ -70,9 +70,9 @@ describe('PhoneOtpForm', () => {
     loginPhone.mockImplementation(() => new Promise(() => {}));
     const { unmount } = render(<PhoneOtpForm onSuccess={() => {}} />); fillPhone();
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
-    await screen.findByText(/验证码已请求/);
-    fireEvent.change(screen.getByLabelText('短信验证码'), { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: '验证并登录' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /60/ })).toBeDisabled());
+    fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: '登录' }));
     unmount();
     expect(loginPhone.mock.calls[0][1].aborted).toBe(true);
   });
@@ -82,11 +82,11 @@ describe('PhoneOtpForm', () => {
     const send = vi.spyOn(API, 'createPhoneChallenge').mockResolvedValue(challenge);
     render(<PhoneOtpForm onSuccess={() => {}} />); fillPhone();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: '获取验证码' })); });
-    fireEvent.change(screen.getByLabelText('短信验证码'), { target: { value: '123456' } });
-    expect(screen.getByRole('button', { name: '验证并登录' })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
+    expect(screen.getByRole('button', { name: '登录' })).toBeEnabled();
     act(() => vi.advanceTimersByTime(300000));
     expect(screen.getByText('验证码已过期，请重新获取')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '验证并登录' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '登录' })).toBeDisabled();
     send.mockRejectedValueOnce(new TypeError('Network failure'));
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: '获取验证码' })); });
     expect(screen.getByRole('alert')).toHaveTextContent('短信服务暂不可用');
@@ -103,8 +103,8 @@ describe('PhoneOtpForm', () => {
     rerender(<PhoneOtpForm onSuccess={() => {}} />);
     expect(send.mock.calls[0][1]?.aborted).toBe(true);
     await act(async () => resolve(challenge));
-    expect(screen.getByLabelText('手机号（中国大陆 +86）')).toHaveValue('');
-    expect(screen.getByLabelText('短信验证码')).toHaveValue('');
-    expect(screen.getByRole('button', { name: '验证并登录' })).toBeDisabled();
+    expect(screen.getByLabelText('手机号')).toHaveValue('');
+    expect(screen.getByLabelText('验证码')).toHaveValue('');
+    expect(loginPhone).not.toHaveBeenCalled();
   });
 });

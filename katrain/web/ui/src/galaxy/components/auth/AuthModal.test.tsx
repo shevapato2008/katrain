@@ -1,0 +1,34 @@
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import LoginModal from './LoginModal';
+import { API } from '../../../api';
+vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ login: vi.fn(), loginPhone: vi.fn(), identityKey: null }) }));
+vi.mock('../../../context/SettingsContext', () => ({ useSettings: () => ({}) }));
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+it('defaults to phone verification and keeps password login in a separate tab without password registration', () => {
+  render(<LoginModal open onClose={() => {}} />);
+  expect(screen.getByRole('tab', { name: '短信验证码' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByLabelText('手机号')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('tab', { name: '账号密码' }));
+  expect(screen.getByLabelText('用户名')).toBeInTheDocument();
+  expect(screen.getByLabelText('密码')).toBeInTheDocument();
+  expect(screen.queryByLabelText(/确认密码/)).not.toBeInTheDocument();
+});
+it('retires pending phone work when switching tabs or closing and starts with an empty form on reopen', async () => {
+  let finish!: (value: { challenge_id: string; retry_after: number; expires_in: number; delivery: 'sent' }) => void;
+  const send = vi.spyOn(API, 'createPhoneChallenge').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const { rerender } = render(<LoginModal open onClose={() => {}} />);
+  fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800138000' } });
+  fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
+  fireEvent.click(screen.getByRole('tab', { name: '账号密码' }));
+  expect(send.mock.calls[0][1]?.aborted).toBe(true);
+  await act(async () => finish({ challenge_id: 'late', retry_after: 60, expires_in: 300, delivery: 'sent' }));
+  fireEvent.click(screen.getByRole('tab', { name: '短信验证码' }));
+  expect(screen.getByLabelText('手机号')).toHaveValue('');
+  fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13900139000' } });
+  fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
+  rerender(<LoginModal open={false} onClose={() => {}} />);
+  expect(send.mock.calls[1][1]?.aborted).toBe(true);
+  rerender(<LoginModal open onClose={() => {}} />);
+  expect(screen.getByLabelText('手机号')).toHaveValue('');
+});

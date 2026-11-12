@@ -29,6 +29,13 @@ beforeEach(() => {
 });
 
 describe('AccountSection ladder summary', () => {
+  it('displays the public account name while retaining canonical account data', () => {
+    authState.current = { token: undefined, user: { username: 'u_0123456789abcdefabcd', public_username: '公开棋手' }, isGuest: false, logout: vi.fn() };
+    statusHook.mockReturnValue({ status: { view_state: 'loading' }, retry });
+    render(<MemoryRouter><AccountSection /></MemoryRouter>);
+    expect(screen.getByText('公开棋手')).toBeInTheDocument();
+    expect(screen.queryByText('u_0123456789abcdefabcd')).not.toBeInTheDocument();
+  });
   it('shows placement progress using cookie-compatible status', () => {
     statusHook.mockReturnValue({ status: { view_state: 'ready', placement_state: { phase: 'placement', completed_games: 3, total_games: 5 }, current_opponent: { rung: 12, rank_name: '9级', certification_status: 'certified', availability: 'available', route: 'server' }, recent_ranked_results: ['win', 'loss'], net_score: 1, pending_settlement: false }, retry });
     render(<MemoryRouter><AccountSection /></MemoryRouter>);

@@ -222,12 +222,9 @@ class LinuxUsbHub:
                 if fcntl.ioctl(fd, VIDIOC_QUERYCAP, capability) != 0:
                     raise ValueError("Invalid video capability response")
                 # Aggregate capabilities can include capture from a different node.
-                caps = (
-                    capability.device_caps
-                    if capability.capabilities & V4L2_CAP_DEVICE_CAPS
-                    else capability.capabilities
-                )
-                if caps & (V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_VIDEO_CAPTURE_MPLANE):
+                if capability.capabilities & V4L2_CAP_DEVICE_CAPS and capability.device_caps & (
+                    V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_VIDEO_CAPTURE_MPLANE
+                ):
                     return True
             finally:
                 os.close(fd)

@@ -160,10 +160,16 @@ def test_camera_selected_node_must_have_its_own_capture_capability(tmp_path, mon
     assert not adapter.snapshot().valid
 
 
-@pytest.mark.parametrize("caps,device_caps", [(1, 0), (0x80001000, 0x1000)])
-def test_camera_accepts_legacy_or_multiplanar_capture_capability(tmp_path, monkeypatch, caps, device_caps):
+@pytest.mark.parametrize("caps,device_caps", [(1, 0), (1, 1), (0x1000, 0x1000)])
+def test_camera_rejects_aggregate_capture_without_device_caps_flag(tmp_path, monkeypatch, caps, device_caps):
     adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
     camera(adapter, root, caps=caps, device_caps=device_caps)
+    assert not adapter.snapshot().valid
+
+
+def test_camera_accepts_multiplanar_node_capture_capability(tmp_path, monkeypatch):
+    adapter, root, statuses, calls = fake_usb(tmp_path, monkeypatch)
+    camera(adapter, root, caps=0x80001000, device_caps=0x1000)
     value = adapter.snapshot()
     assert value.valid, value.reason
 

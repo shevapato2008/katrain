@@ -14,8 +14,8 @@
 
 ### Task 0: Approve this plan, at most two plan-review rounds
 
-- [ ] Independent Astra / Max reviews scope, contracts, security, device coordination and deploy compatibility. Fix blocking findings within two rounds; do not turn the display work into infrastructure redesign.
-- [ ] Record review result and commit only approved plan/spec/Artifact paths. No production implementation before plan approval.
+- [x] Independent Astra / Max reviewed scope, contracts, security, device coordination and deploy compatibility in two rounds; corrected the published-parent baseline dependency. Approved.
+- [x] Recorded review and committed plan/spec/Artifact before production implementation (`4ec4ded95`).
 
 ### Frozen account contract
 
@@ -163,3 +163,14 @@ npm run build:smartbox-kiosk-2d
 ```
 
 Exact additional file names and targeted commands may follow existing ownership, but cannot change the frozen security contract or enlarge deferred paid-worker scope. Parent tests use its own Python3.11 venv and `SUB2API_MOCK=1`. Stop the task-only local PG after validation; preserve private test credentials and all unrelated working-tree changes.
+
+## Execution evidence before publication
+
+- Tasks1–3 implemented. Existing `/register` remains compatible; continuation and optional password settings are integrated in React and the published legacy launcher. Auth independent review initially found stale private fields after proof expiry; both owners fixed it and Astra approved the frozen slice.
+- Backend auth:153 compatibility cases and61 final cases,159 unique tests. React auth:84 pass/6 mode skips before expiry fix,29 affected tests after fix. Parent:179 focused tests,55 affected tests after expiry fix. No actual SMS or payment.
+- Task4:73 SQLite/DTO/owner/OGS tests＋43 engine tests; additive legacy PostgreSQL migration1 passed. No old-source backfill or worker/ledger lifecycle changes.
+- Tasks5–6: integrated frontend349 passed/10 expected mode skips across29 files; final Galaxy visible-count correction27 tests passed. Startup/error focused7 passed; independent final reviewer reran100 report/startup tests and launcher checks.
+- Task7:37 new keys×11 locales=407 translations, all compiled and placeholder-checked; old values unchanged. Global `i18n.py` reproduces the same pre-existing catalog sync issues on the untouched baseline; scoped compilation/coverage passed without unrelated rewrites.
+- Full web and strict2D builds passed. Final artifacts will be generated from the frozen published commit after the final Galaxy-only correction. Unrelated untracked favicon is preserved separately and restored byte-for-byte after Vite cleanup.
+- Final independent Astra Max Approved on child `17760ba2f592c0feec4feb3f9059e933fec7eeee`, parent `6ea5780af16c775cf339d8628b2f24579682d4c8`; no remaining Critical/Important. Review: `docs/superpowers/reviews/2026-11-13-implicit-auth-report-final-astra.md`.
+- Initial RK deploymentPID121080 was respected; later read-only checks show no deployment processes and no launcher lock. Actual writes still require a fresh gate and native transaction. Current TEST/PROD Web remain ec6ca09d; complete actual configs are privately captured by the release preflight.

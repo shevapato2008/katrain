@@ -51,3 +51,21 @@ it('drops the previous game pending events before rebinding a new game in the sa
   expect(result.current.latestEvent).toBeNull();
   expect(result.current.syncEvents).toEqual([]);
 });
+it('ignores a previous game event delayed until after the same-session rebind', async () => {
+  vi.stubGlobal('WebSocket', Socket);
+  const {result, rerender} = renderHook(({game}) => useVisionSync('a', undefined, game), {initialProps:{game:'one'}});
+  await act(async () => {});
+  rerender({game:'two'});
+  await act(async () => {});
+  act(() => Socket.instances[0].onmessage?.({data:JSON.stringify({type:'move_pending',data:{},session_id:'a',game_id:'one'})}));
+  expect(result.current.latestEvent).toBeNull();
+  act(() => Socket.instances[0].onmessage?.({data:JSON.stringify({type:'move_pending',data:{},session_id:'a',game_id:'two'})}));
+  expect(result.current.latestEvent?.type).toBe('move_pending');
+});
+it.each([null, 'a'])('routes sessionless monitor events only to a sessionless consumer (%s)', async (sessionId) => {
+  vi.stubGlobal('WebSocket', Socket);
+  const {result} = renderHook(() => useVisionSync(sessionId));
+  await act(async () => {});
+  act(() => Socket.instances[0].onmessage?.({data:JSON.stringify({type:'move_pending',data:{},sessionless:true})}));
+  expect(result.current.latestEvent?.type ?? null).toBe(sessionId === null ? 'move_pending' : null);
+});

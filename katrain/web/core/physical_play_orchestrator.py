@@ -72,8 +72,8 @@ class PhysicalPlayOrchestrator:
     # board. Measured on RK3562 2026-09-20: a game that ended 15.5 min into the session
     # kept vision bound for another 26 min, producing 732 refused moves and 191 of the
     # session's 244 mismatch dialogs — 78% of the whole storm, at a mean detection
-    # confidence HIGHER than during play. It is a pause, not an unbind, because undo is
-    # still allowed after a result and must bring the physical board back to life.
+    # confidence HIGHER than during play. Suspend the game tick and its frame demand
+    # without unbinding; actually clearing a result can bring the board back to life.
     PAUSE_REASON_GAME_OVER = "game_over"
 
     def __init__(
@@ -252,9 +252,13 @@ class PhysicalPlayOrchestrator:
             except Exception as exc:
                 logger.debug("expected-board push failed: %s", exc)
 
+    @staticmethod
+    def _game_is_over(state: Dict) -> bool:
+        return bool(state.get("terminal_result") or state.get("end_result")) and not state.get("awaiting_count")
+
     def _apply_game_state(self, state: Dict) -> None:
         self._latest_state = state
-        ended = bool(state.get("terminal_result") or state.get("end_result")) and not state.get("awaiting_count")
+        ended = self._game_is_over(state)
         local_confirm = state.get("game_type") == "pvp_local" and not ended and not state.get("awaiting_count")
         if hasattr(self._vision, "set_game_over"):
             self._vision.set_game_over(ended, source=self._binding_source)
@@ -505,8 +509,9 @@ class PhysicalPlayOrchestrator:
               re-evaluates catch-up and clears the lag reason, so stopping it would
               make lag un-recoverable.
           (b) the worker's move-detection pause (Q4 redesign + hint) — paused while
-              ANY reason is active. While paused, the worker produces NO ConfirmedMove
-              — this replaces the unsound 'hold a confirmed move' design (MoveDetector
+              any nonterminal reason is active. Terminal has a binding-only demand gate,
+              so independent monitor/setup consumers can still run. While paused, the
+              worker produces NO ConfirmedMove — this replaces the unsound 'hold a confirmed move' design (MoveDetector
               advances its baseline at confirm time, so held moves could go
               stale/corrupt — review Blocker 1). A premature user stone simply stays
               unconfirmed and is picked up naturally after resume, against the
@@ -515,7 +520,9 @@ class PhysicalPlayOrchestrator:
         (self._paused_sent), so combining/dropping reasons that don't flip the
         aggregate never re-sends a duplicate pause/resume."""
         self._suspended = bool(self._pause_reasons - {self.PAUSE_REASON_LAG})
-        desired = bool(self._pause_reasons)
+        # Terminal processing has its own demand gate. It must not leave an unrelated
+        # monitor/setup paused merely because the finished game remains bound.
+        desired = bool(self._pause_reasons - {self.PAUSE_REASON_GAME_OVER})
         if desired == self._paused_sent:
             return
         self._paused_sent = desired
@@ -668,7 +675,7 @@ class PhysicalPlayOrchestrator:
     def _release_recovery_on_game_end(self) -> bool:
         """Release engine recovery pauses and clear lamps once the game ends."""
         state = self._latest_state
-        if not state or not state.get("end_result"):
+        if not state or not self._game_is_over(state):
             return False
         if (
             self.PAUSE_REASON_ENGINE_ERROR not in self._pause_reasons

@@ -990,7 +990,7 @@ class InProcessAdapter:
             or gray is None
             or source is None
             or target is None
-            or not self._bound
+            or not self._game_active
             or self._monitor
             or (self._paused and not self._local_confirmation_mode)
             or self._lit_points
@@ -1084,7 +1084,7 @@ class InProcessAdapter:
             or source is None
             or (not self._reference_candidate_enabled and self._local_window is None)
             or self._monitor
-            or not self._bound
+            or not self._game_active
             or self._lit_points
             or self._reference_candidate is not None
             or self._candidate_attempted_token == move.token
@@ -1201,7 +1201,7 @@ class InProcessAdapter:
                     f"({r},{c})={'ok' if x.ok else x.reason}:{x.score:.0f}/clip{clip:.3f}" for r, c, x, clip in readings
                 ),
             )
-        self._event_queue.put(
+        self._emit_event(
             {
                 "type": "led_glow",
                 "data": {
@@ -1447,13 +1447,24 @@ class InProcessAdapter:
             extractor._color_flip_streak.clear()
             extractor._color_flip_released.clear()
 
+    @property
+    def _game_active(self) -> bool:
+        return self._bound and not self._game_over
+
+    def _emit_event(self, event) -> None:
+        if isinstance(event, dict):
+            event = {**event, "binding_epoch": self._binding_epoch if self._game_active else 0}
+            if not self._game_active:
+                event["sessionless"] = True
+        self._event_queue.put(event)
+
     def _queue_move_event(self, event: dict) -> None:
         if self._local_confirmation_mode:
             if self._local_window is not None and event.get("type") == "ambiguous_stone":
                 data = event["data"]
                 self._local_window.ambiguous_points.add((int(data["row"]), int(data["col"])))
             return
-        self._event_queue.put(event)
+        self._emit_event(event)
 
     def _expire_local_activity(self, now: float) -> None:
         if self._local_bootstrap_state == "bootstrap" and now >= self._local_bootstrap_deadline:
@@ -1593,7 +1604,7 @@ class InProcessAdapter:
                             if self._expected_np is not None:
                                 self._move_detector.force_sync(self._expected_np)
                             self._observation_seq += 1
-                            self._event_queue.put(
+                            self._emit_event(
                                 LocalWindowObservation(
                                     token=window.token,
                                     board=[],
@@ -1628,7 +1639,7 @@ class InProcessAdapter:
                     # The user's "not a move" label and baipu monitor both use these unenhanced pixels.
                     want_gray = (
                         (self._ref_mode != "off" or self._denied or self._pending_denials or self._denial_unlit_wait)
-                        and (self._bound or self._monitor)
+                        and (self._game_active or self._monitor)
                         and (not self._paused or self._local_confirmation_mode)
                     )
                     self._observe_reference_source(warped, metadata)
@@ -1803,14 +1814,11 @@ class InProcessAdapter:
                     # bound → develop's confidence-gated game pipeline (ambiguous dialog / ConfirmedMove);
                     # monitor (physical tsumego) → our move_event dict, no ambiguous dialog (the tsumego
                     # frontend consumes move_confirmed).
-                    if not self._game_over and (
-                        local_window is not None
-                        or (
-                            self._sync.has_confirmed_move is not True
-                            and not self._local_confirmation_mode
-                            and should_detect_moves(
-                                self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
-                            )
+                    if local_window is not None or (
+                        self._sync.has_confirmed_move is not True
+                        and not self._local_confirmation_mode
+                        and should_detect_moves(
+                            self._game_active, self._monitor, self._paused, self._move_armed, self._sync.state.value
                         )
                     ):
                         conf_map = self._active_extractor().cell_confidences(detections, img_w=w, img_h=h)
@@ -1855,12 +1863,12 @@ class InProcessAdapter:
                             )
                         if move_result is not None:
                             row, col, color = move_result
-                            if not self._bound:
+                            if not self._game_active:
                                 # Monitor (physical tsumego): emit the confirmed move as a dict for
                                 # /ws/vision and advance the baseline (develop's MoveDetector no longer
                                 # self-advances) so the placed stone isn't re-detected every frame.
                                 logger.info("monitor move confirmed: (%d,%d) color=%d", row, col, color)
-                                self._event_queue.put(move_event(self._bound, row, col, color))
+                                self._emit_event(move_event(self._game_active, row, col, color))
                                 self._move_detector.force_sync(observed_board)
                             else:
                                 # A real stone that survived voting was detected in this frame or
@@ -1956,7 +1964,7 @@ class InProcessAdapter:
                                     else:
                                         if not self._monitor:
                                             self._sync.claim_confirmed_move(confirmed, observed_board)
-                                        self._event_queue.put(confirmed)
+                                        self._emit_event(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
@@ -1988,7 +1996,7 @@ class InProcessAdapter:
                             and int(observed_board[candidate.row, candidate.col]) != candidate.color
                         ):
                             local_window.candidate = None
-                        self._event_queue.put(
+                        self._emit_event(
                             LocalWindowObservation(
                                 token=local_window.token,
                                 board=observed_board.tolist(),
@@ -2022,8 +2030,9 @@ class InProcessAdapter:
 
             if (
                 not self._local_confirmation_mode
-                and not self._game_over
-                and should_feed_sync(self._bound, self._monitor, self._paused)
+                and should_feed_sync(
+                    self._game_active, self._monitor or self._sync.state == SyncState.SETUP_IN_PROGRESS, self._paused
+                )
                 and should_feed_sync_frame(frame is not None, motion_stable)
             ):
                 events = self._sync.update(
@@ -2036,7 +2045,7 @@ class InProcessAdapter:
                     # arm doesn't diff against a stale baseline.
                     self._move_detector.force_sync(observed_board)
                 for evt in events:
-                    self._event_queue.put(
+                    self._emit_event(
                         {
                             "type": evt.type.value,
                             "data": evt.data,
@@ -2484,7 +2493,7 @@ class InProcessAdapter:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target, setup_id=cmd.data.get("setup_id"))
                 self._invalidate_reference("setup mode")
-                if self._monitor and not self._bound:
+                if self._monitor and not self._game_active:
                     # A clean setup frame is the monitor's reference before the next guidance lamp lights.
                     self._expected_np = target
             elif cmd.action == CommandType.RESET_SYNC:
@@ -2533,7 +2542,7 @@ class InProcessAdapter:
                 if active != self._monitor:
                     self._sync.invalidate_confirmed_move()
                 self._monitor = active
-                if not self._monitor and not self._bound:
+                if not self._monitor and not self._game_active:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False
                     self._expected_np = None

@@ -228,3 +228,112 @@ def test_resume_does_not_replay_events_queued_during_the_terminal_pause():
     service.set_game_over(False)
     assert service.get_confirmed_move() is None
     assert service.poll_events() == []
+
+
+def test_terminal_game_does_not_block_real_monitor_setup_completion():
+    import queue
+    from katrain.vision.worker import ProcessingOverlay, _VisionWorkerLoop
+    from tests.test_vision.test_local_confirmation_window import command, detection, events, frame, run, worker
+
+    adapter, camera = worker()
+    command(adapter, "SET_GAME_OVER", ended=True, binding_epoch=1)
+    command(adapter, "SET_MONITOR", active=True)
+    command(adapter, "ENTER_SETUP_MODE", target_board=np.zeros((19, 19), int).tolist())
+    run(adapter, camera)
+    assert "setup_complete" in [e["type"] for e in events(adapter) if isinstance(e, dict)]
+    assert adapter._game_over is True
+    command(adapter, "SET_MOVE_ARMED", armed=True)
+    adapter._detector.detect.return_value = [detection()]
+    run(adapter, camera, n=8)
+    monitor_events = [e for e in events(adapter) if isinstance(e, dict) and e["type"] == "move_confirmed"]
+    assert monitor_events and monitor_events[0]["sessionless"] is True
+
+    result = _VisionWorkerLoop(queue.Queue(), queue.Queue(), queue.Queue(), queue.Queue(), {"auto_exposure": "off"})
+    import threading
+
+    result._overlay = ProcessingOverlay()
+    result._overlay_lock = threading.Lock()
+    result._camera = MagicMock()
+    result._camera.is_connected = True
+
+    def read():
+        result._running = False
+        return frame()
+
+    result._camera.read_frame.side_effect = read
+    result._board_finder = MagicMock()
+    result._board_finder.find_focus.return_value = (frame(), True)
+    result._motion_is_stable = lambda image: True
+    result._detector = MagicMock()
+    result._detector.detect.return_value = []
+    result._add_threshold = 0.4
+    result._enhance_mode = "off"
+    for action, data in [
+        (CommandType.BIND, {"binding_epoch": 4}),
+        (CommandType.SET_GAME_OVER, {"binding_epoch": 4, "ended": True}),
+        (CommandType.SET_MONITOR, {"active": True}),
+        (CommandType.ENTER_SETUP_MODE, {"target_board": np.zeros((19, 19), int).tolist()}),
+    ]:
+        result._cmd_queue.put(WorkerCommand(action, data))
+    result._running = True
+    result._processing_loop()
+    published = []
+    while not result._event_queue.empty():
+        published.append(result._event_queue.get_nowait())
+    assert "setup_complete" in [e["type"] for e in published if isinstance(e, dict)]
+    assert result._game_over is True
+    result._cmd_queue.put(WorkerCommand(CommandType.SET_MOVE_ARMED, {"armed": True}))
+    result._detector.detect.return_value = [detection()]
+    remaining = [8]
+
+    def read_monitor():
+        remaining[0] -= 1
+        result._running = remaining[0] > 0
+        return frame()
+
+    result._camera.read_frame.side_effect = read_monitor
+    result._running = True
+    result._processing_loop()
+    published = []
+    while not result._event_queue.empty():
+        published.append(result._event_queue.get_nowait())
+    assert any(
+        e.get("type") == "move_confirmed" and e.get("sessionless") is True for e in published if isinstance(e, dict)
+    )
+
+
+def test_unstamped_or_old_binding_game_events_do_not_cross_a_new_bind():
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+    from tests.test_vision.test_service_event_routing import FakeWorker
+
+    service = VisionService(VisionServiceConfig())
+    service.bind_session("old")
+    epoch = service.binding_epoch
+    service.set_game_over(True)
+    worker = FakeWorker(
+        [{"type": "move_pending", "data": {}}, {"type": "ambiguous_stone", "data": {}, "binding_epoch": epoch}]
+    )
+    worker.send_command = lambda command: None
+    service._worker = worker
+    service.bind_session("new")
+    assert service.poll_events() == []
+
+
+def test_production_pending_event_keeps_its_binding_identity_through_service():
+    from types import SimpleNamespace
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.service import VisionService
+    from tests.test_vision.test_local_confirmation_window import worker
+
+    adapter, _ = worker()
+    service = VisionService(VisionServiceConfig())
+    session = SimpleNamespace(katrain=SimpleNamespace(game=SimpleNamespace(game_id="game-one")))
+    service._worker = adapter
+    service.bind_session("one", session=session)
+    adapter._drain_commands()
+    adapter._queue_move_event({"type": "move_pending", "data": {"row": 1, "col": 2, "color": 1}})
+    event = service.poll_events()[0]
+    assert event["binding_epoch"] == service.binding_epoch
+    assert event["session_id"] == "one" and event["game_id"] == "game-one"
+    assert "sessionless" not in event

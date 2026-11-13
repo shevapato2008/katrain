@@ -849,7 +849,8 @@ class TestRecoveryReleasedOnGameEnd:
         # 而 game_over 是有意留下的 —— 它就是「终局后停止比对」那道闸
         # (PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER)。
         assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER}
-        assert vision.paused is True  # 比对已停,这正是目的
+        assert vision.game_over is True  # 本局需求已停，独立任务不被generic pause阻塞
+        assert vision.paused is False
         assert led.calls[-1] == ("clear",)
 
     def test_awaiting_removal_is_released_when_the_game_ends(self):
@@ -895,14 +896,16 @@ class TestGameOverStopsComparing:
 
         orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
         assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER in orch._pause_reasons
-        assert vision.paused is True
+        assert vision.game_over is True
+        assert vision.paused is False
 
     @pytest.mark.parametrize("game_type", ["free", "ai_ladder_ranked", "pvp_local", "pvp_lobby", "pvp_online"])
     def test_terminal_result_keeps_earlier_history_cursor_idle(self, game_type):
         orch, _, vision, _ = _orch()
         s = {**state([], end_result=None), "game_type": game_type, "terminal_result": "W+R"}
         orch.on_game_state(s)
-        assert vision.paused is True
+        assert vision.game_over is True
+        assert vision.paused is False
         assert vision.game_over is True
         orch.on_game_state({**s, "current_node_id": 2})
         assert vision.game_over is True
@@ -932,7 +935,8 @@ class TestGameOverStopsComparing:
         的理由就在这里:unbind 是单向门,悔棋回到可下局面后实体盘会一直是死的。"""
         orch, _, vision, _ = _orch()
         orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
-        assert vision.paused is True
+        assert vision.game_over is True
+        assert vision.paused is False
 
         orch.on_game_state(state([["B", [3, 15], None, 1]], end_result=None))
         assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
@@ -1011,3 +1015,22 @@ def test_ai_thread_queued_callback_retains_original_source_across_rebind():
         await orch.shutdown()
 
     asyncio.run(run())
+
+
+def test_terminal_history_releases_recovery_but_counting_keeps_it():
+    for awaiting_count, expected in [(False, True), (True, False)]:
+        orch, led, _, _ = _orch()
+        orch.on_game_state(state([]))
+        orch.enter_engine_error((3, 15), "token")
+        orch.enter_awaiting_removal((3, 15))
+        orch.on_game_state(
+            {
+                **state([], end_result=None if expected else "W+R"),
+                "terminal_result": "W+R",
+                "awaiting_count": awaiting_count,
+            }
+        )
+        assert orch._release_recovery_on_game_end() is expected
+        assert (orch._awaiting_removal_context is None) is expected
+        if expected:
+            assert led.calls[-1] == ("clear",)

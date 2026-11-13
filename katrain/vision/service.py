@@ -83,6 +83,7 @@ class VisionService:
         self._previous_reference_target: ReferenceTargetKey | None = None
         self._worker = None  # VisionWorkerProcess | InProcessAdapter
         self._game_over = False
+        self._bound_event_game_id = None
         self._bound_session_id: str | None = None
         self._bound_session = None
         self._bound_game_identity = None
@@ -543,6 +544,12 @@ class VisionService:
             self._published_expected = None
             self._reference_target = self._previous_reference_target = None
             self._game_over = False
+            game = getattr(getattr(session, "katrain", None), "game", None)
+            self._bound_event_game_id = (
+                (getattr(session, "last_state", None) or {}).get("game_id")
+                if getattr(session, "game_type", None) == "pvp_lobby"
+                else getattr(game, "game_id", None)
+            )
             self._bound_session_id = session_id
             self._bound_session = session
             self._bound_game_identity = identity
@@ -579,6 +586,7 @@ class VisionService:
             self._bound_worker = self._bound_mode = None
             self._reference_candidate_enabled = False
             self._game_over = False
+            self._bound_event_game_id = None
             self._bound_session_id = None
             self._bound_session = None
             self._bound_game_identity = None
@@ -921,6 +929,7 @@ class VisionService:
                 isinstance(evt, (ConfirmedMove, LocalWindowObservation))
                 or (
                     isinstance(evt, dict)
+                    and not evt.get("sessionless")
                     and evt.get("type")
                     in {"move_pending", "capture_pending", "illegal_change", "ambiguous_stone", "missing_stone"}
                 )
@@ -941,6 +950,19 @@ class VisionService:
                     self._pending_moves.append(evt)
             else:
                 epoch = evt.get("binding_epoch", 0) if isinstance(evt, dict) else 0
+                if epoch and epoch != self._binding_epoch:
+                    continue
+                if (
+                    isinstance(evt, dict)
+                    and self._bound_session_id
+                    and not epoch
+                    and not evt.get("sessionless")
+                    and evt.get("type")
+                    in {"move_pending", "capture_pending", "illegal_change", "ambiguous_stone", "missing_stone"}
+                ):
+                    continue
+                if isinstance(evt, dict) and epoch and self._bound_session_id:
+                    evt = {**evt, "session_id": self._bound_session_id, "game_id": self._bound_event_game_id}
                 recovery = self._expected_recovery
                 if recovery is not None and isinstance(evt, dict) and evt.get("type") == "synced":
                     data = evt.get("data") or {}

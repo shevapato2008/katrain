@@ -672,6 +672,12 @@ def _subprocess_motion_worker():
     from katrain.vision.worker import _VisionWorkerLoop
 
     w = _VisionWorkerLoop.__new__(_VisionWorkerLoop)
+    w._game_over = False
+    w._bound = False
+    w._monitor = False
+    w._viewer_active = True  # this harness exercises image processing, not demand ownership
+    w._binding_epoch = 0
+    w._expected_revision = 0
     w._board_locked = False
     w._board_finder = MagicMock()
     w._board_finder.camera_config = None

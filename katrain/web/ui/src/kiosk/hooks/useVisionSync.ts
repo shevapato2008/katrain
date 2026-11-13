@@ -26,6 +26,9 @@ export interface VisionSyncEvent {
   seq: number; // frontend-local monotonic sequence (survives MAX_EVENTS trimming)
   type: SyncEventType;
   data: Record<string, unknown>;
+  session_id?: string;
+  game_id?: string;
+  sessionless?: boolean;
 }
 
 export interface VisionSyncState {
@@ -55,6 +58,8 @@ export function useVisionSync(
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [connected, setConnected] = useState(false);
   const [bindState, setBindState] = useState<VisionSyncState['bindState']>(sessionId ? 'preparing' : 'idle');
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
   const gameIdRef = useRef(gameId);
   gameIdRef.current = gameId;
   const previousGameRef = useRef({ sessionId, gameId });
@@ -69,6 +74,9 @@ export function useVisionSync(
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const parsed = JSON.parse(event.data) as Omit<VisionSyncEvent, 'seq'>;
+      if (parsed.sessionless && sessionIdRef.current !== null) return;
+      if (parsed.session_id && parsed.session_id !== sessionIdRef.current) return;
+      if (parsed.game_id && gameIdRef.current && parsed.game_id !== gameIdRef.current) return;
       const evt: VisionSyncEvent = { ...parsed, seq: nextSeqRef.current++ };
       setLatestEvent(evt);
       setSyncEvents(prev => {

@@ -383,6 +383,7 @@ class GolaxyRestClient:
         self._client: Optional[httpx.AsyncClient] = None
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
+        self._identity_revision = 0
         self._user_code: Optional[str] = None
         self._username: Optional[str] = None  # Golaxy login principal, for /items/{username}
 
@@ -440,8 +441,7 @@ class GolaxyRestClient:
         )
         resp.raise_for_status()
         data = resp.json()
-        self._access_token = data.get("access_token")
-        self._refresh_token = data.get("refresh_token")
+        self.set_tokens(data.get("access_token"), data.get("refresh_token"))
         return data
 
     async def login_sms(self, phone: str, code: str) -> dict:
@@ -468,8 +468,7 @@ class GolaxyRestClient:
         )
         resp.raise_for_status()
         data = resp.json()
-        self._access_token = data.get("access_token")
-        self._refresh_token = data.get("refresh_token")
+        self.set_tokens(data.get("access_token"), data.get("refresh_token"))
         return data
 
     async def login_scan_code(self, uuid: str) -> dict:
@@ -496,8 +495,7 @@ class GolaxyRestClient:
         )
         resp.raise_for_status()
         data = resp.json()
-        self._access_token = data.get("access_token")
-        self._refresh_token = data.get("refresh_token")
+        self.set_tokens(data.get("access_token"), data.get("refresh_token"))
         return data
 
     async def request_sms_code(self, phone: str) -> bool:
@@ -537,6 +535,7 @@ class GolaxyRestClient:
 
     def set_tokens(self, access_token: str, refresh_token: str) -> None:
         if access_token != self._access_token:
+            self._identity_revision += 1
             self._user_code = None
         self._access_token = access_token
         self._refresh_token = refresh_token
@@ -563,6 +562,7 @@ class GolaxyRestClient:
         silently inherit whoever was connected through this SAME adapter
         instance before it (`GolaxyAdapter` is a per-platform singleton that
         outlives any one katrain user's session — see F1, task-6a review)."""
+        self._identity_revision += 1
         self._username = None
         self._user_code = None
 
@@ -572,6 +572,7 @@ class GolaxyRestClient:
     async def get_account_identity(self) -> dict[str, str]:
         """Read the nickname and login principal attached to the current token."""
         access_token = self._access_token
+        identity_revision = self._identity_revision
         if not access_token:
             raise GolaxyLobbyAuthError("Golaxy login required")
         client = await self._ensure_client()
@@ -598,8 +599,8 @@ class GolaxyRestClient:
             raise GolaxyLobbyError("Golaxy nickname unavailable")
         if not isinstance(username, str) or not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", username):
             raise GolaxyLobbyError("Golaxy login principal unavailable")
-        # A login can replace this singleton's credentials while the read is pending.
-        if access_token != self._access_token:
+        # Invalidate old reads as soon as another login starts, before its token arrives.
+        if identity_revision != self._identity_revision or access_token != self._access_token:
             raise GolaxyLobbyAuthError("Golaxy credential changed")
         self.set_username(username)
         user_code = body.get("usercode")
@@ -913,6 +914,7 @@ class GolaxyAdapter(PlatformAdapter):
         self._engine_seq = 0
 
     async def connect(self, credentials: PlatformCredentials) -> bool:
+        self._connected = False
         try:
             # F1 (task-6a review): forget whoever was connected through this
             # SAME adapter instance before — `GolaxyAdapter` is a per-platform
@@ -1272,15 +1274,24 @@ class GolaxyAdapter(PlatformAdapter):
         if not self.is_connected:
             return None
         access_token = self._rest.get_auth_data().get("access_token")
+        identity_revision = self._rest._identity_revision
         try:
             async with asyncio.timeout(3.0):
                 caller = await self._rest._get_user_code()
-                if not self.is_connected or access_token != self._rest.get_auth_data().get("access_token"):
+                if (
+                    not self.is_connected
+                    or identity_revision != self._rest._identity_revision
+                    or access_token != self._rest.get_auth_data().get("access_token")
+                ):
                     return None
                 profile = await self.get_player_profile(caller)
         except (GolaxyLobbyError, TimeoutError, httpx.HTTPError):
             return None
-        if not self.is_connected or access_token != self._rest.get_auth_data().get("access_token"):
+        if (
+            not self.is_connected
+            or identity_revision != self._rest._identity_revision
+            or access_token != self._rest.get_auth_data().get("access_token")
+        ):
             return None
         rank = profile.get("rank")
         if profile.get("is_self") is True and profile.get("user_id") == caller and rank in _LOBBY_RANKS.values():

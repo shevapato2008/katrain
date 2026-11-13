@@ -37,7 +37,14 @@ from katrain.web.platforms.golaxy.engine_client import (
     get_level,
     list_levels,
 )
-from katrain.web.platforms.models import OnlineUser, PlatformGameSession, PlatformMove, PlatformPass, PlatformResign
+from katrain.web.platforms.models import (
+    OnlineUser,
+    PlatformCredentials,
+    PlatformGameSession,
+    PlatformMove,
+    PlatformPass,
+    PlatformResign,
+)
 
 AI_COORD = 286  # arbitrary valid on-board coord used by the mocked engine
 
@@ -303,6 +310,123 @@ async def test_engine_game_pending_identity_cannot_pollute_switched_account_cach
         assert start.session.player_ranks["B"] is None
         assert adapter._rest._user_code == "new-self"
         assert adapter._rest._username == "0086-13000000002"
+    finally:
+        await adapter._rest.close()
+
+
+@pytest.mark.parametrize("auth_data", [{"password": "new-password"}, {"sms_code": "123456"}, {"scan_uuid": "new-uuid"}])
+async def test_new_login_rejects_old_identity_before_new_token_arrives(auth_data):
+    adapter = GolaxyAdapter()
+    adapter._connected = True
+    adapter._rest.set_tokens("old-token", "old-refresh")
+    adapter._rest.set_username("0086-13000000001")
+    identity_started = asyncio.Event()
+    login_started = asyncio.Event()
+    release_old_identity = asyncio.Event()
+    release_login = asyncio.Event()
+    profile_callers = []
+
+    async def handler(request):
+        if request.url.path == "/api/auth/oauth/token":
+            login_started.set()
+            await release_login.wait()
+            return httpx.Response(200, json={"access_token": "new-token", "refresh_token": "new-refresh"})
+        if request.url.path == "/api/auth/oauth/check_token":
+            old = httpx.QueryParams(request.content.decode())["token"] == "old-token"
+            if old:
+                identity_started.set()
+                await release_old_identity.wait()
+            return httpx.Response(
+                200,
+                json={
+                    "active": True,
+                    "username": "0086-13000000001" if old else "0086-13000000002",
+                    "nickname": "旧本人" if old else "新本人",
+                    "usercode": "old-self" if old else "new-self",
+                },
+            )
+        caller = request.url.path.rsplit("/", 1)[-1]
+        profile_callers.append(caller)
+        assert request.url.params["peer_user_code"] == caller
+        assert caller in ("old-self", "new-self")
+        return httpx.Response(
+            200,
+            json={
+                "code": 0,
+                "data": {
+                    "userCode": caller,
+                    "nickname": "本人",
+                    "level": 1500 if caller == "old-self" else 1900,
+                },
+            },
+        )
+
+    adapter._rest._client = httpx.AsyncClient(base_url="https://example.test", transport=httpx.MockTransport(handler))
+    old_rank_task = asyncio.create_task(adapter._get_engine_self_rank())
+    login_task = None
+    try:
+        await asyncio.wait_for(identity_started.wait(), 1)
+        login_task = asyncio.create_task(adapter.connect(PlatformCredentials("golaxy", "13000000002", auth_data)))
+        await asyncio.wait_for(login_started.wait(), 1)
+        assert adapter.is_connected is False
+        release_old_identity.set()
+        old_rank = await asyncio.wait_for(old_rank_task, 1)
+        identity_while_login_pending = (adapter._rest._user_code, adapter._rest._username)
+        release_login.set()
+        assert await asyncio.wait_for(login_task, 1) is True
+
+        start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+        assert (old_rank, start.session.player_ranks["B"]) == (None, "4段")
+        assert identity_while_login_pending == (None, "0086-13000000002")
+        assert adapter._rest._user_code == "new-self"
+        assert profile_callers == ["new-self"]
+    finally:
+        for task in (old_rank_task, login_task):
+            if task is not None and not task.done():
+                task.cancel()
+        await asyncio.gather(
+            *(task for task in (old_rank_task, login_task) if task is not None), return_exceptions=True
+        )
+        await adapter._rest.close()
+
+
+async def test_engine_self_rank_discards_profile_if_new_login_starts_before_token_changes():
+    adapter = make_adapter()
+
+    async def new_login_started(peer_code):
+        adapter._rest.clear_username()
+        adapter._rest.set_username("13000000002")
+        return {"user_id": "self-code", "is_self": True, "rank": "2段"}
+
+    adapter.get_player_profile = AsyncMock(side_effect=new_login_started)
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+
+
+@pytest.mark.parametrize(
+    "method,args",
+    [
+        ("login_password", ("13000000002", "new-password")),
+        ("login_sms", ("13000000002", "123456")),
+        ("login_scan_code", ("new-uuid",)),
+    ],
+)
+async def test_login_token_publication_invalidates_previous_user_code(method, args):
+    adapter = GolaxyAdapter()
+    adapter._rest.set_tokens("old-token", "old-refresh")
+    adapter._rest._user_code = "old-self"
+    adapter._rest._client = httpx.AsyncClient(
+        base_url="https://example.test",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200,
+                json={"access_token": "new-token", "refresh_token": "new-refresh"},
+            )
+        ),
+    )
+    try:
+        await getattr(adapter._rest, method)(*args)
+        assert adapter._rest._user_code is None
     finally:
         await adapter._rest.close()
 

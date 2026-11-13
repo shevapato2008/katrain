@@ -310,7 +310,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // This must stay above the loading return so the first game-state update never changes
   // GamePage's Hook sequence (a production build otherwise leaves the kiosk black).
   useEffect(() => {
-    if (sessionIsGameOver) setShowExitConfirm(false);
+    if (sessionIsGameOver) {
+      setShowExitConfirm(false);
+      setReminderOpen(false);
+      setEscalationOpen(false);
+      setCameraDisconnectToast(false);
+    }
   }, [sessionIsGameOver]);
 
   const [countError, setCountError] = useState<{ error: unknown } | null>(null);
@@ -1563,8 +1568,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {physicalPlay && !localConfirmationLayout && (
+      {physicalPlay && !isGameOver && !localConfirmationLayout && (
         <PhysicalPlayStatusChip
+          key={gameState.game_id}
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
           referenceStatus={visionStatus.referenceStatus}
@@ -1985,7 +1991,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={hintError} />
 
       {/* Camera disconnect toast */}
-      <Snackbar className="kiosk-game-toast" open={physicalPlay && cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
+      <Snackbar className="kiosk-game-toast" open={physicalPlay && !isGameOver && cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCameraDisconnectToast(false)}>
           {t('Camera disconnected, switched to touch mode', '摄像头断开，已切换为触屏模式')}
@@ -1995,7 +2001,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Physical catch-up reminder toast */}
       <Snackbar
         className="kiosk-game-toast"
-        open={physicalPlay && reminderOpen}
+        open={physicalPlay && !isGameOver && reminderOpen}
         autoHideDuration={8000}
         onClose={() => setReminderOpen(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
@@ -2004,7 +2010,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Physical desync escape hatch */}
       <PhysicalSyncEscalationDialog
-        open={physicalPlay && escalationOpen}
+        open={physicalPlay && !isGameOver && escalationOpen}
         toPlace={session.physicalReminder?.to_place ?? []}
         toRemove={session.physicalReminder?.to_remove ?? []}
         onClose={() => setEscalationOpen(false)}
@@ -2018,7 +2024,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           local dismissed-token bookkeeping (mirrors PhysicalSyncEscalationDialog's always-
           mounted pattern). */}
       <EngineMoveErrorDialog
-        error={physicalPlay ? session.physicalEngineError : null}
+        error={physicalPlay && !isGameOver ? session.physicalEngineError : null}
         sessionId={sessionId ?? null}
         token={token ?? undefined}
         boardSize={gameState.board_size[0]}

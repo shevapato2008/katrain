@@ -82,6 +82,7 @@ class VisionService:
         self._reference_target: ReferenceTargetKey | None = None
         self._previous_reference_target: ReferenceTargetKey | None = None
         self._worker = None  # VisionWorkerProcess | InProcessAdapter
+        self._game_over = False
         self._bound_session_id: str | None = None
         self._bound_session = None
         self._bound_game_identity = None
@@ -541,6 +542,7 @@ class VisionService:
             self._expected_revision = 0
             self._published_expected = None
             self._reference_target = self._previous_reference_target = None
+            self._game_over = False
             self._bound_session_id = session_id
             self._bound_session = session
             self._bound_game_identity = identity
@@ -576,6 +578,7 @@ class VisionService:
             self._reference_target = self._previous_reference_target = None
             self._bound_worker = self._bound_mode = None
             self._reference_candidate_enabled = False
+            self._game_over = False
             self._bound_session_id = None
             self._bound_session = None
             self._bound_game_identity = None
@@ -794,10 +797,36 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_MOVE_ARMED, data={"armed": armed}))
 
+    def set_game_over(self, ended: bool, *, source=None) -> None:
+        """Retire only this binding's processing demand, not the shared camera."""
+        with self._metadata_lock:
+            if source is not None and not self._source_is_current_locked(source, binding_game_identity(source.session)):
+                return
+            if self._game_over == bool(ended):
+                return
+            if self._game_over:
+                # Discard late worker output before reopening this binding (legacy undo).
+                self._drain_worker()
+            self._game_over = bool(ended)
+            self._pending_moves.clear()
+            self._pending_events.clear()
+            self._pending_local_observations.clear()
+            self._local_window_token = self._local_window_source = None
+            if self._worker:
+                self._worker.send_command(
+                    WorkerCommand(
+                        CommandType.SET_GAME_OVER, {"ended": bool(ended), "binding_epoch": self._binding_epoch}
+                    )
+                )
+
     def needs_frames(self) -> bool:
-        """此刻有没有人要看棋盘(实体对局 / 监视 / 摆棋准备 / 识别预览)。子进程模式读不到 ⇒ 保守答「要」。"""
+        """此刻有没有人要看棋盘(实体对局 / 监视 / 摆棋准备 / 识别预览)。子进程沿最新需帧状态，尚未上报时保守答「要」。"""
         needs = getattr(self._worker, "needs_frames", None)
-        return bool(needs()) if callable(needs) else self._worker is not None
+        if callable(needs):
+            return bool(needs())
+        self.refresh_status()
+        demand = self._latest_status.frame_demand
+        return bool(demand) if demand is not None else self._worker is not None
 
     def set_viewer_active(self, active: bool) -> None:
         """Tell worker whether MJPEG viewers are connected."""
@@ -888,6 +917,15 @@ class VisionService:
             evt = self._worker.get_event()
             if evt is None:
                 break
+            if self._game_over and (
+                isinstance(evt, (ConfirmedMove, LocalWindowObservation))
+                or (
+                    isinstance(evt, dict)
+                    and evt.get("type")
+                    in {"move_pending", "capture_pending", "illegal_change", "ambiguous_stone", "missing_stone"}
+                )
+            ):
+                continue
             if isinstance(evt, LocalWindowObservation):
                 if (
                     self._local_confirmation_mode

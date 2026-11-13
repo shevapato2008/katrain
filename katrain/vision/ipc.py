@@ -32,6 +32,7 @@ class CommandType(Enum):
     OPEN_LOCAL_WINDOW = "open_local_window"
     CANCEL_LOCAL_WINDOW = "cancel_local_window"
     COMPLETE_LOCAL_WINDOW = "complete_local_window"
+    SET_GAME_OVER = "set_game_over"
     PAUSE_DETECTION = "pause_detection"
     RESUME_DETECTION = "resume_detection"
     SET_LIT_POINTS = "set_lit_points"
@@ -90,6 +91,7 @@ class WorkerStatus:
     local_confirmation_mode_generation: int = 0
     local_confirmation_ready: bool = False
     local_confirmation_bootstrap_state: str = "idle"
+    frame_demand: bool | None = None  # subprocess reports whether any consumer needs processing
 
 
 @dataclass

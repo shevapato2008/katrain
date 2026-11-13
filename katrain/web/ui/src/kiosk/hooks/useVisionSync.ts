@@ -181,6 +181,10 @@ export function useVisionSync(
     const previous = previousGameRef.current;
     previousGameRef.current = { sessionId, gameId };
     if (sessionId && previous.sessionId === sessionId && previous.gameId !== gameId) {
+      setLatestEvent(null);
+      setSyncEvents([]);
+      setSetupProgress(null);
+      setIsSetupComplete(false);
       setBindState('preparing');
       void retryBindRef.current();
     }

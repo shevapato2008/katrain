@@ -27,10 +27,9 @@ CAMERA_AUTO_EXPOSURE_ON = 3.0
 # Use the same proven board-brightness band as software AE.  A short run of
 # consecutive in-band frames prevents locking on a transient while keeping the
 # successful startup path bounded to a few frames before/after the handoff.
-# 没人要画面超过这么久,读线程就只出队不解码,每 CAMERA_IDLE_DECODE_INTERVAL_S 解一帧(保证有人来取时
-# 拿到的不超过 1 s 前的画面)。RK3562 实测:停在启动器时 1080p 持续解码占 katrain CPU 的 33%。
+# 没人要画面超过这么久,读线程只出队不解码；恢复取帧时等待新画面。
+# RK3562 实测:停在启动器时 1080p 持续解码占 katrain CPU 的 33%。
 CAMERA_IDLE_AFTER_S = 3.0
-CAMERA_IDLE_DECODE_INTERVAL_S = 1.0
 HARDWARE_AE_TARGET_LO = 120.0
 HARDWARE_AE_TARGET_HI = 170.0
 HARDWARE_AE_STABLE_FRAMES = 3
@@ -186,9 +185,9 @@ class CameraManager:
         self._stream_generation = 0
         self._frame_seq = 0  # increments per frame read (under _frame_lock)
         self._frame_ts = 0.0  # time.monotonic() when the frame was read
-        # 最近一次有人要画面(read_frame / grab_fresh)的时刻;超过 CAMERA_IDLE_AFTER_S 没人要就降到每秒解码一帧。
+        # 最近一次有人要画面(read_frame / grab_fresh)的时刻;超过 CAMERA_IDLE_AFTER_S 没人要就停止解码，只排空缓冲。
         self._last_demand = time.monotonic()
-        self._last_idle_decode = 0.0
+        self._fresh_after = 0.0
         self._frame_lock = threading.Lock()
         # Runtime camera controls (software AE): requests are queued here and applied
         # by the reader thread between reads — cv2.VideoCapture is not thread-safe.
@@ -468,35 +467,55 @@ class CameraManager:
             and not os.path.exists(self._capture_arg)
         )
 
+    def _request_frame(self) -> None:
+        now = time.monotonic()
+        with self._frame_lock:
+            if now - self._last_demand > CAMERA_IDLE_AFTER_S:
+                # The old cache survived while the reader was only draining UVC buffers.
+                self._fresh_after = now
+            self._last_demand = now
+
     def read_frame(self) -> np.ndarray | None:
         """Return the latest frame captured by the background thread.
 
         Always returns the freshest available frame, never a stale buffered
         one.  Returns None if the camera is disconnected.
         """
-        self._last_demand = time.monotonic()
+        self._request_frame()
         if not self._connected:
             return self._try_reconnect()
 
         with self._frame_lock:
-            return self._latest_frame.copy() if self._latest_frame is not None else None
+            return (
+                self._latest_frame.copy()
+                if self._latest_frame is not None and (not self._fresh_after or self._frame_ts > self._fresh_after)
+                else None
+            )
 
     def read_frame_identified(self) -> tuple[np.ndarray | None, int, float]:
         """read_frame() plus the frame's reader sequence and monotonic timestamp, taken under one lock."""
-        self._last_demand = time.monotonic()
+        self._request_frame()
         if not self._connected:
             return self._try_reconnect(), self._frame_seq, self._frame_ts
         with self._frame_lock:
-            frame = self._latest_frame.copy() if self._latest_frame is not None else None
+            frame = (
+                self._latest_frame.copy()
+                if self._latest_frame is not None and (not self._fresh_after or self._frame_ts > self._fresh_after)
+                else None
+            )
             return frame, self._frame_seq, self._frame_ts
 
     def read_frame_with_metadata(self) -> tuple[np.ndarray | None, FrameMetadata | None]:
         """Return a copied frame and its immutable owner facts from one publication."""
-        self._last_demand = time.monotonic()
+        self._request_frame()
         if not self._connected:
             self._try_reconnect()
         with self._frame_lock:
-            if self._latest_frame is None or self._latest_metadata is None:
+            if (
+                self._latest_frame is None
+                or self._latest_metadata is None
+                or (self._fresh_after and self._frame_ts <= self._fresh_after)
+            ):
                 return None, None
             return self._latest_frame.copy(), self._latest_metadata
 
@@ -553,7 +572,7 @@ class CameraManager:
             now = time.monotonic()
             idle = now - self._last_demand > CAMERA_IDLE_AFTER_S
             grab = getattr(cap, "grab", None)
-            if idle and grab is not None and now - self._last_idle_decode < CAMERA_IDLE_DECODE_INTERVAL_S:
+            if idle and callable(grab):
                 # 没人要画面:只出队不解码。缓冲照常清空 —— grab_fresh 的时间戳闸靠「读出即盖章」,
                 # 不能让缓冲里攒下旧帧、恢复时被盖上新时间。RK3562 上 1080p 解码占 katrain 的 33%。
                 try:
@@ -567,8 +586,6 @@ class CameraManager:
                     self._mark_disconnected()
                     return
                 continue
-            if idle:
-                self._last_idle_decode = now
             # Keep the pre-read owner: a request or completed operation during
             # native read makes this frame ambiguous, even if effectiveness is
             # True both before and after the transition.
@@ -828,22 +845,21 @@ class CameraManager:
         reader stamps ``time.monotonic()`` on every frame it reads, waiting for
         ``ts > after_ts + settle`` guarantees a frame captured after the LED was
         lit and settled — regardless of any OpenCV buffer depth (plan §3.1). On
-        timeout it returns the latest frame available (or ``(None, seq, ts)``).
+        timeout it returns ``(None, seq, ts)``; an old frame is never fresh.
         """
-        self._last_demand = time.monotonic()
+        self._request_frame()
         if after_ts is None:
             after_ts = time.monotonic()
-        target = after_ts + settle_ms / 1000.0
+        target = max(after_ts + settle_ms / 1000.0, self._fresh_after)
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
+            self._request_frame()
             with self._frame_lock:
                 frame, seq, ts = self._latest_frame, self._frame_seq, self._frame_ts
             if frame is not None and ts > target:
                 return frame.copy(), seq, ts
             time.sleep(0.005)
         with self._frame_lock:
-            if self._latest_frame is not None:
-                return self._latest_frame.copy(), self._frame_seq, self._frame_ts
             return None, self._frame_seq, self._frame_ts
 
     # ------------------------------------------------------------------
@@ -869,7 +885,12 @@ class CameraManager:
         try:
             if self._connected:
                 with self._frame_lock:
-                    return self._latest_frame.copy() if self._latest_frame is not None else None
+                    return (
+                        self._latest_frame.copy()
+                        if self._latest_frame is not None
+                        and (not self._fresh_after or self._frame_ts > self._fresh_after)
+                        else None
+                    )
             return self._reconnect_locked()
         finally:
             self._lifecycle_lock.release()

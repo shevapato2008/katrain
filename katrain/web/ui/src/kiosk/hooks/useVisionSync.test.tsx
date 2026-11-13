@@ -40,3 +40,14 @@ it('reconnects, preserves sequence, and cancels old socket handlers and timers',
   expect(Socket.instances).toHaveLength(3);
   expect(third.onclose).toBeNull();
 });
+it('drops the previous game pending events before rebinding a new game in the same session', async () => {
+  vi.stubGlobal('WebSocket', Socket);
+  const {result, rerender} = renderHook(({game}) => useVisionSync('a', undefined, game), {initialProps:{game:'one'}});
+  await act(async () => {});
+  act(() => Socket.instances[0].onmessage?.({data:JSON.stringify({type:'move_pending',data:{}})}));
+  expect(result.current.latestEvent?.type).toBe('move_pending');
+  rerender({game:'two'});
+  await act(async () => {});
+  expect(result.current.latestEvent).toBeNull();
+  expect(result.current.syncEvents).toEqual([]);
+});

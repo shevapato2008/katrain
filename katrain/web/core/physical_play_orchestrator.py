@@ -254,9 +254,10 @@ class PhysicalPlayOrchestrator:
 
     def _apply_game_state(self, state: Dict) -> None:
         self._latest_state = state
-        local_confirm = (
-            state.get("game_type") == "pvp_local" and not state.get("end_result") and not state.get("awaiting_count")
-        )
+        ended = bool(state.get("terminal_result") or state.get("end_result")) and not state.get("awaiting_count")
+        local_confirm = state.get("game_type") == "pvp_local" and not ended and not state.get("awaiting_count")
+        if hasattr(self._vision, "set_game_over"):
+            self._vision.set_game_over(ended, source=self._binding_source)
         if hasattr(self._vision, "set_local_confirmation_mode"):
             self._vision.set_local_confirmation_mode(
                 local_confirm, session_id=self._session_id, game_id=state.get("game_id")
@@ -271,8 +272,9 @@ class PhysicalPlayOrchestrator:
         # `end_result` alone is NOT the end: after two passes the result is already
         # written while `awaiting_count` is still true, and the board is still live for
         # counting. Pausing on `end_result` would let one glare phantom kill vision
-        # mid-count. Both halves, and reversible — undo clears it on the next broadcast.
-        if state.get("end_result") and not state.get("awaiting_count"):
+        # mid-count. The game-level terminal_result survives history navigation; only
+        # actually clearing the final result (legacy undo) can reopen processing.
+        if ended:
             self._add_pause_reason(self.PAUSE_REASON_GAME_OVER)
             # 一局已经结束就不再欠任何落子/提子 ⇒ lag 没有意义了。而且清它的是 `_tick_once`,
             # 那一步被 `_suspended`(game_over 就会置真)挡住 ⇒ 不在这里清掉,lag 会永远留着。

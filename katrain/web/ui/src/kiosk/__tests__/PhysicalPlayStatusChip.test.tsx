@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
 
 it('shows on move_pending and hides when the node advances', () => {
@@ -43,4 +43,23 @@ it('keeps move confirmation ahead of the reference notice', () => {
     referenceStatus="limited" referenceTargetActive />);
   expect(screen.getByText('确认中…')).toBeTruthy();
   expect(screen.queryByText(referenceNotice)).toBeNull();
+});
+
+
+it('keeps the hide deadline when an unrelated event arrives without advancing the node', () => {
+  vi.useFakeTimers();
+  try {
+    const { rerender } = render(<PhysicalPlayStatusChip latestEvent={{type:'move_pending',data:{}}} currentNodeId={1} />);
+    act(() => vi.advanceTimersByTime(100));
+    rerender(<PhysicalPlayStatusChip latestEvent={{type:'capture_pending',data:{}}} currentNodeId={1} />);
+    act(() => vi.advanceTimersByTime(6000));
+    expect(screen.queryByText('确认中…')).toBeNull();
+  } finally { vi.useRealTimers(); }
+});
+
+
+it('clears pending when its source is reset for another game', () => {
+  const {rerender} = render(<PhysicalPlayStatusChip latestEvent={{type:'move_pending',data:{}}} currentNodeId={1} />);
+  rerender(<PhysicalPlayStatusChip latestEvent={null} currentNodeId={1} />);
+  expect(screen.queryByText('确认中…')).toBeNull();
 });

@@ -456,6 +456,7 @@ class InProcessAdapter:
         self._observer_interval = 0.5
         self._observer_last = 0.0
         self._viewer_active = False
+        self._game_over = False
         self._bound = False
         self._monitor = False
         self._paused = False
@@ -1802,11 +1803,14 @@ class InProcessAdapter:
                     # bound → develop's confidence-gated game pipeline (ambiguous dialog / ConfirmedMove);
                     # monitor (physical tsumego) → our move_event dict, no ambiguous dialog (the tsumego
                     # frontend consumes move_confirmed).
-                    if local_window is not None or (
-                        self._sync.has_confirmed_move is not True
-                        and not self._local_confirmation_mode
-                        and should_detect_moves(
-                            self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                    if not self._game_over and (
+                        local_window is not None
+                        or (
+                            self._sync.has_confirmed_move is not True
+                            and not self._local_confirmation_mode
+                            and should_detect_moves(
+                                self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                            )
                         )
                     ):
                         conf_map = self._active_extractor().cell_confidences(detections, img_w=w, img_h=h)
@@ -2018,6 +2022,7 @@ class InProcessAdapter:
 
             if (
                 not self._local_confirmation_mode
+                and not self._game_over
                 and should_feed_sync(self._bound, self._monitor, self._paused)
                 and should_feed_sync_frame(frame is not None, motion_stable)
             ):
@@ -2059,7 +2064,7 @@ class InProcessAdapter:
         """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
         return bool(
             self._usb_waiting_fresh
-            or self._bound
+            or (self._bound and not self._game_over)
             or self._monitor
             or self._viewer_active
             or self._sync.state == SyncState.SETUP_IN_PROGRESS
@@ -2147,6 +2152,7 @@ class InProcessAdapter:
                 and not self._usb_waiting_fresh
             ),
             observation_seq=self._observation_seq,
+            frame_demand=self.needs_frames(),
             local_confirmation_mode=self._local_confirmation_mode,
             local_confirmation_session_id=self._local_confirmation_session_id,
             local_confirmation_game_id=self._local_confirmation_game_id,
@@ -2206,6 +2212,7 @@ class InProcessAdapter:
                 self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
                 self._expected_revision = 0
                 self._sync.invalidate_confirmed_move()
+                self._game_over = False
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
@@ -2227,6 +2234,7 @@ class InProcessAdapter:
                 self._local_confirmation_game_id = None
                 self._local_window = None
                 self._local_bootstrap_state = "idle"
+                self._game_over = False
                 self._bound = False
                 self._sync = SyncStateMachine()
                 self._motion_filter.reset()
@@ -2534,6 +2542,23 @@ class InProcessAdapter:
                 self._paused = cmd.data.get("paused", False)
             elif cmd.action == CommandType.SET_MOVE_ARMED:
                 self._move_armed = cmd.data.get("armed", False)
+            elif cmd.action == CommandType.SET_GAME_OVER:
+                if int(cmd.data.get("binding_epoch", 0)) != self._binding_epoch:
+                    continue
+                self._game_over = bool(cmd.data.get("ended", False))
+                if self._game_over:
+                    self._sync.invalidate_confirmed_move()
+                    if self._expected_np is not None:
+                        self._move_detector.force_sync(self._expected_np)
+                    else:
+                        self._move_detector.reset_suspicion()
+                    self._prev_observed_board = None
+                    self._prev_conf_map = {}
+                    self._ambig_last_emit = {}
+                    self._averager.reset()
+                    self._promoter.reset()
+                    self._local_window = None
+                    self._reference_candidate = None
             elif cmd.action == CommandType.PAUSE_DETECTION:
                 self._paused = True
             elif cmd.action == CommandType.RESUME_DETECTION:

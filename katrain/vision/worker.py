@@ -104,6 +104,7 @@ class _VisionWorkerLoop:
 
         self._running = False
         self._viewer_active = False
+        self._game_over = False
         self._bound = False
         self._monitor = False
         self._paused = False
@@ -275,6 +276,10 @@ class _VisionWorkerLoop:
         Results written to shared overlay state for preview thread to consume."""
         while self._running:
             self._process_commands()
+            if not self.needs_frames():
+                self._maybe_publish_status()
+                time.sleep(0.25)
+                continue
 
             frame = self._camera.read_frame()
             board_detected = False
@@ -385,7 +390,8 @@ class _VisionWorkerLoop:
                     # game pipeline (ambiguous dialog / ConfirmedMove); monitor (physical tsumego) →
                     # our move_event dict, no ambiguous dialog (the tsumego frontend consumes move_confirmed).
                     if (
-                        should_detect_moves(
+                        not self._game_over
+                        and should_detect_moves(
                             self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
                         )
                         and self._sync.has_confirmed_move is not True
@@ -574,8 +580,10 @@ class _VisionWorkerLoop:
                         }
 
             # Sync state machine update
-            if should_feed_sync(self._bound, self._monitor, self._paused) and should_feed_sync_frame(
-                frame is not None, stable_ok
+            if (
+                not self._game_over
+                and should_feed_sync(self._bound, self._monitor, self._paused)
+                and should_feed_sync_frame(frame is not None, stable_ok)
             ):
                 events = self._sync.update(
                     observed_board=observed_board,
@@ -698,12 +706,14 @@ class _VisionWorkerLoop:
                 self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
                 self._expected_revision = 0
                 self._sync.invalidate_confirmed_move()
+                self._game_over = False
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
                 self._binding_epoch = 0
                 self._expected_revision = 0
+                self._game_over = False
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
                 self._reset_motion_region()
@@ -796,6 +806,21 @@ class _VisionWorkerLoop:
                 self._paused = cmd.data.get("paused", False)
             elif cmd.action == CommandType.SET_MOVE_ARMED:
                 self._move_armed = cmd.data.get("armed", False)
+            elif cmd.action == CommandType.SET_GAME_OVER:
+                if int(cmd.data.get("binding_epoch", 0)) != self._binding_epoch:
+                    continue
+                self._game_over = bool(cmd.data.get("ended", False))
+                if self._game_over:
+                    self._sync.invalidate_confirmed_move()
+                    if self._expected_np is not None:
+                        self._move_detector.force_sync(self._expected_np)
+                    else:
+                        self._move_detector.reset_suspicion()
+                    self._prev_observed_board = None
+                    self._prev_conf_map = {}
+                    self._ambig_last_emit = {}
+                    self._averager.reset()
+                    self._promoter.reset()
             elif cmd.action == CommandType.PAUSE_DETECTION:
                 self._paused = True
             elif cmd.action == CommandType.RESUME_DETECTION:
@@ -900,6 +925,14 @@ class _VisionWorkerLoop:
 
             time.sleep(interval)
 
+    def needs_frames(self) -> bool:
+        return bool(
+            (self._bound and not self._game_over)
+            or self._monitor
+            or self._viewer_active
+            or self._sync.state == SyncState.SETUP_IN_PROGRESS
+        )
+
     def _maybe_publish_status(self) -> None:
         """Publish status to main process every ~1 second."""
         now = time.monotonic()
@@ -919,6 +952,7 @@ class _VisionWorkerLoop:
             model_ready=self._detector is not None,
             recognition_ready=bool(self._camera.is_connected and self._detector is not None),
             observation_seq=self._observation_seq,
+            frame_demand=self.needs_frames(),
         )
 
         # Overwrite: drain old, put new

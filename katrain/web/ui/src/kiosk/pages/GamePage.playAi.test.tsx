@@ -54,7 +54,7 @@ vi.mock('../utils/activeSession', async (importOriginal) => {
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: vi.fn().mockResolvedValue({}) } }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: vi.fn() }));
 
-const vision = vi.hoisted(() => ({ enabled: false, poseLocked: true, realSync: false }));
+const vision = vi.hoisted(() => ({ enabled: false, poseLocked: true, realSync: false, pending: false }));
 const visionBinding = vi.hoisted(() => vi.fn());
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
@@ -73,7 +73,7 @@ vi.mock('../hooks/useVisionSync', async (importOriginal) => {
       visionBinding(sessionId);
       return vision.realSync
         ? actual.useVisionSync(sessionId)
-        : { syncEvents: [], latestEvent: null, setupProgress: null, isSetupComplete: false };
+        : { syncEvents: [], latestEvent: vision.pending ? {type:'move_pending',data:{}} : null, setupProgress: null, isSetupComplete: false };
     },
   };
 });
@@ -280,6 +280,7 @@ beforeEach(() => {
   sessionMock.physicalReminder = null;
   vision.enabled = false;
   vision.realSync = false;
+  vision.pending = false;
   vision.poseLocked = true;
   localStorage.clear();
   sessionStorage.clear();
@@ -718,4 +719,16 @@ describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
       vi.unstubAllGlobals();
     }
   });
+});
+
+
+it.each(['free','ai_ladder_ranked','pvp_local','pvp_lobby','pvp_online'] as const)('terminal %s history hides stale confirming and recovery prompts', (game_type) => {
+  vision.enabled = true;
+  vision.pending = true;
+  sessionStorage.setItem('kiosk_play_on_board:play-ai-s1', '1');
+  sessionMock.gameState = makeState({game_type,end_result:null,terminal_result:'W+R'});
+  sessionMock.physicalReminder = {kind:'escalation',to_place:[[3,3]],to_remove:[]};
+  renderPage();
+  expect(screen.queryByText('确认中…')).toBeNull();
+  expect(screen.queryByRole('button',{name:'改用屏幕落子'})).toBeNull();
 });

@@ -83,6 +83,10 @@ class FakeVision:
         self.calls = []  # ordered ("pause"|"resume") sequence — dup-call detector
         self.reset_sync_calls = []  # Task 8: resync() call tracker
         self.last_motion_at = None
+        self.game_over = False
+
+    def set_game_over(self, ended, *, source=None):
+        self.game_over = ended
 
     def get_detected_board(self):
         return self.detected
@@ -892,6 +896,24 @@ class TestGameOverStopsComparing:
         orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
         assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER in orch._pause_reasons
         assert vision.paused is True
+
+    @pytest.mark.parametrize("game_type", ["free", "ai_ladder_ranked", "pvp_local", "pvp_lobby", "pvp_online"])
+    def test_terminal_result_keeps_earlier_history_cursor_idle(self, game_type):
+        orch, _, vision, _ = _orch()
+        s = {**state([], end_result=None), "game_type": game_type, "terminal_result": "W+R"}
+        orch.on_game_state(s)
+        assert vision.paused is True
+        assert vision.game_over is True
+        orch.on_game_state({**s, "current_node_id": 2})
+        assert vision.game_over is True
+
+    def test_terminal_frame_demand_restores_when_new_game_has_no_result(self):
+        orch, _, vision, _ = _orch()
+        orch.on_game_state({**state([], end_result="W+R"), "terminal_result": "W+R"})
+        assert vision.game_over is True
+        orch.on_game_state({**state([]), "game_id": "next-game"})
+        assert vision.game_over is False
+        assert vision.paused is False
 
     def test_counting_is_not_a_finished_game(self):
         """两次虚手之后 `end_result` 已经写上,而 `awaiting_count` 还是真、盘面仍然活着。

@@ -19,13 +19,18 @@ interface Props {
 const PhysicalPlayStatusChip = ({ latestEvent, currentNodeId, referenceStatus, referenceTargetActive = false, suppressReferenceNotice = false }: Props) => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (latestEvent?.type === 'move_pending') {
+    if (latestEvent === null) {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      setVisible(false);
+    } else if (latestEvent?.type === 'move_pending') {
       setVisible(true);
-      const timer = setTimeout(() => setVisible(false), 6000);
-      return () => clearTimeout(timer);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      hideTimer.current = setTimeout(() => setVisible(false), 6000);
     }
   }, [latestEvent]);
+  useEffect(() => () => { if (hideTimer.current) clearTimeout(hideTimer.current); }, []);
   // Skip the reset on initial mount — effects always fire on mount regardless of
   // deps, and without this guard it immediately clobbers the move_pending show
   // above. Only an actual currentNodeId change (the game state advancing) should hide.

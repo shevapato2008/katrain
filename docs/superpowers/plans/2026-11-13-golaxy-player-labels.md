@@ -46,6 +46,8 @@
 
 ## Chunk 3: 发布与设备部署门
 
+本轮用户要求在部署之前先通知，因此只执行前三步并在第四步前交接，不立即触发任何设备或云端部署。用户已在本会话明确第四步目标为RK3562；项目通用的云端部署目标不作为本次擅自扩大生产发布的依据。
+
 - [ ] 先fetch最新develop合入feature，核对冲突、验证后推feature。
 - [ ] 将feature合入并推远端develop。
 - [ ] 在隔离的smartbox-software工作树追main，更新vendor/katrain到发布的develop，推main，保留原父仓WIP。

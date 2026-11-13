@@ -1,4 +1,5 @@
-import type { ReportGameStatus } from '../../../features/report/reportModel';
+import { presentReportTier, type ReportGameStatus } from '../../../features/report/reportModel';
+import { reportPlatformLabel } from '../../../features/report/reportOrigin';
 import type { UserGameSummary } from '../../../api/userGamesApi';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { interpolate } from '../../utils/interpolate';
@@ -105,6 +106,8 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
     const name = game.title || [game.player_black, game.player_white].filter(Boolean).join(' — ');
     return name ? `${t('review:row_research', '研究存档')} · ${name}` : t('review:row_research', '研究存档');
   }
+  const platform = reportPlatformLabel(game, t);
+  if (platform) return platform;
   // 判不出「你」的时候没有「对手」可言,退回两个名字并排 —— 不挑一方当对手。
   const opponent = opponentLabel(game, mine, t)
     || [game.player_black, game.player_white].filter(Boolean).join(' — ');
@@ -121,6 +124,9 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
 
 /** Keep the game mode visible on history cards, even when the SGF also has a title or event. */
 export function historyCardTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn): string {
+  if (game.source === 'import' || game.source === 'kifu_library' || game.source === 'research') return game.event || game.title || rowTitle(game, mine, t);
+  const platform = reportPlatformLabel(game, t);
+  if (platform) return platform;
   if (isRankedGameType(game.game_type)) return t('review:row_ranked', '升降级对弈');
   if (game.source === 'play_local' || game.source === 'play_human') return t('review:row_human', '人人对弈');
   if (game.source === 'play_ai') {
@@ -193,47 +199,26 @@ export type RowState =
   | { kind: 'unanalyzed' }
   | { kind: 'unfinished' };
 
-/**
- * 这一局的分析到哪一步了。规范 §11 要求**四种状态各有各的样子**,
- * 「算了一半没算完」最容易被糊弄成「已分析」——它必须自己一档。
- *
- * 后端没有「暂停」这个状态:跑了一半断掉的任务落在 `failed` 上,
- * 而 `analyzed_moves` 还留着。**所以 `failed` 要按有没有进度分成两档** ——
- * 有进度的那档重试会从断点续算(`cron/jobs/report_analyze.py:195` 的 `_get_resume_move_number`),
- * 说「继续分析」是准的,说「重试」反而像要从头再来。
- */
+/** Failed frontiers remain visible; paid retry uses refund and fresh authorization, not implied continuation. */
 export function rowState(game: UserGameSummary, state: ReportGameStatus): RowState {
-  const done = state.completedDeep ?? state.completedNormal;
-  if (done) {
-    // ⚠️ **`taskId` 按档发,同一局可以同时挂着标准和精读两份完成报告** ——
-    // 那时一个「查看报告」键指不了两个 id。`taskId` 保留成「最细的那一份」(深读优先),
-    // `taskIds` 把两档都带出来,由行尾决定是画一个键还是两个。
-    const taskIds = [
-      state.completedNormal ? { tier: 'normal' as const, id: state.completedNormal.id } : null,
-      state.completedDeep ? { tier: 'deep' as const, id: state.completedDeep.id } : null,
-    ].filter((x): x is { tier: 'normal' | 'deep'; id: number } => x !== null);
-    return { kind: 'analyzed', taskId: done.id, taskIds };
-  }
-  const active = state.activeDeep ?? state.activeNormal;
+  const normal = presentReportTier(state, 'normal', game.move_count);
+  const deep = presentReportTier(state, 'deep', game.move_count);
+  const tiers = [deep, normal];
+  const active = tiers.find(tier => tier.status === 'running' || tier.status === 'pending');
   if (active) {
-    return {
-      kind: 'running',
-      taskId: active.id,
-      analyzed: active.analyzed_moves,
-      total: active.total_moves > 0 ? active.total_moves : game.move_count,
-    };
+    return { kind: 'running', taskId: active.task!.id, analyzed: active.analyzed, total: active.total };
   }
-  const failed = state.failedDeep ?? state.failedNormal;
+  const done = tiers.find(tier => tier.viewable);
+  if (done) {
+    const taskIds = [normal, deep].filter(tier => tier.viewable)
+      .map(tier => ({ tier: tier.tier, id: tier.task!.id }));
+    return { kind: 'analyzed', taskId: done.task!.id, taskIds };
+  }
+  const failed = tiers.find(tier => tier.status === 'failed');
   if (failed) {
-    if (failed.analyzed_moves > 0) {
-      return {
-        kind: 'partial',
-        taskId: failed.id,
-        analyzed: failed.analyzed_moves,
-        total: failed.total_moves > 0 ? failed.total_moves : game.move_count,
-      };
-    }
-    return { kind: 'failed', taskId: failed.id };
+    return failed.analyzed > 0
+      ? { kind: 'partial', taskId: failed.task!.id, analyzed: failed.analyzed, total: failed.total }
+      : { kind: 'failed', taskId: failed.task!.id };
   }
   // 「未终局」只给对弈局(P14)。它挡的是「半局的报告 + 离线算完再回去接着下」那条通道,
   // 导入的谱、棋谱库、研究存档没有「回去接着下」这回事 —— 没写结果照样能分析。

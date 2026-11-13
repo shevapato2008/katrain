@@ -12,7 +12,8 @@ import {
   UserGamesAPI, type DataAuthority, type UserGameDetail, type UserGameSummary,
 } from '../../api/userGamesApi';
 import { useAuth } from '../../context/AuthContext';
-import { toLibraryUserGameParams } from '../../features/report/reportModel';
+import { presentReportTier, toLibraryUserGameParams, type ReportGameStatus } from '../../features/report/reportModel';
+import { ReportProgressColumn } from '../../features/report/ReportProgressColumn';
 import { summarizeReportMoves } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -37,7 +38,7 @@ import { whenLabel } from '../utils/whenLabel';
 import { getListRank, listResult } from '../utils/listRecordPresentation';
 
 /**
- * 屏 19 · 复盘 `/kiosk/report` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680),**形态 2**:
+ * 屏 19 · 复盘 `/kiosk/report` —— approved report layout: 224 + 16 + 752,**形态 2**:
  * 头尾固定,只有中间那条会长的「历史对局」自己滚。
  *
  * 这一屏是本轮改动最大的一屏:现状是**左盘 54% + 右列表 46%**,和稿子左右对调。
@@ -420,24 +421,27 @@ export default function ReportsPage() {
           syncRight={railSync.right}
           statuses={cells}
         />
+        {selectedSummary && selectedSummary.source !== 'kifu_library' && <button type="button"
+          className="personal-game-delete personal-games-preview__delete" aria-label={t('review:delete_game', '删除对局')}
+          onClick={() => setDeleteTarget(selectedSummary.id)}><DeleteOutlineIcon aria-hidden="true" /></button>}
         <div className="personal-games-preview__actions">
           <button type="button" className="kiosk-btn" disabled={!selectedGame || selectedGame.id !== selectedGameId || !selectedBoard}
             onClick={() => navigate(`/kiosk/research?user_game_id=${encodeURIComponent(selectedGameId!)}`)}>{t('review:open_replay', '查看棋谱')}</button>
           <button type="button" className="kiosk-btn personal-games-report-trigger" aria-haspopup="menu" aria-expanded={reportMenuOpen} disabled={!selectedSummary}
             onClick={() => setReportMenuOpen(value => !value)}>{t('review:analysis_report', '分析报告')} <Icon name="caret-down" /></button>
-          {reportMenuOpen && <div className="personal-games-tier-menu" role="group" aria-label={t("分析报告档位", "分析报告档位")}>
+          {reportMenuOpen && <div className="personal-games-tier-menu" role="group" aria-label={t("report:tier_menu", "Report tier")}>
             {(['normal', 'deep'] as const).map(tier => {
-              const status = selectedGameId ? reportStatesByGame[selectedGameId] : undefined;
-              const completed = tier === 'normal' ? status?.completedNormal : status?.completedDeep;
-              const active = tier === 'normal' ? status?.activeNormal : status?.activeDeep;
-              const failed = tier === 'normal' ? status?.failedNormal : status?.failedDeep;
-              return <button key={tier} type="button" className="kiosk-btn" disabled={(!completed && Boolean(active)) || !canAnalyzeSelected}
+              const status = selectedGameId ? reportStatesByGame[selectedGameId] ?? {} : {};
+              const value = presentReportTier(status, tier, selectedSummary?.move_count ?? 0);
+              const active = value.status === 'pending' || value.status === 'running';
+              return <button key={tier} type="button" className="kiosk-btn" disabled={active || !canAnalyzeSelected}
                 onClick={() => {
-                  if (completed) navigate(`/kiosk/report/${completed.id}`);
-                  else if (failed) void retryReport(failed.id).catch(() => undefined);
+                  if (active) return;
+                  if (value.viewable) navigate(`/kiosk/report/${value.task!.id}`);
+                  else if (value.status === 'failed') void retryReport(value.task!.id).catch(() => undefined);
                   else if (selectedSummary) void createForGame(selectedSummary, tier).catch(() => undefined);
                   setReportMenuOpen(false);
-                }}><strong>{completed ? t('review:tier_view', '查看') : active ? t('review:tier_working', '分析中') : failed ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>{t("每手", "每手")} {tier === 'normal' ? 500 : 2000} {t("次", "次")}</span></button>;
+                }}><strong>{active ? t('review:tier_working', '分析中') : value.viewable ? t('review:tier_view', '查看') : value.status === 'failed' ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>{t("每手", "每手")} {tier === 'normal' ? 500 : 2000} {t("次", "次")}</span></button>;
             })}
           </div>}
         </div>
@@ -528,7 +532,7 @@ export default function ReportsPage() {
                       t={t}
                       lang={lang}
                       onSelect={() => setSelectedGameId(game.id)}
-                      onDelete={() => setDeleteTarget(game.id)}
+                      reportState={reportStatesByGame[game.id] || {}}
                     />
                   ))}
                 </div>
@@ -614,7 +618,7 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, selected, username, t, lang, onSelect, onDelete }: {
+function ReviewRow({ game, state, reportState, selected, username, t, lang, onSelect }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
@@ -622,7 +626,7 @@ function ReviewRow({ game, state, selected, username, t, lang, onSelect, onDelet
   t: (key: string, fallback?: string) => string;
   lang: string;
   onSelect: () => void;
-  onDelete: () => void;
+  reportState: ReportGameStatus;
 }) {
   const mine = yourColor(game, username);
   const ts = savedAt(game);
@@ -656,11 +660,7 @@ function ReviewRow({ game, state, selected, username, t, lang, onSelect, onDelet
           white={{ name: game.player_white || t('game:white_side', '白方'), rank: getListRank(null, game.white_rank, t, lang) }}
           result={result} />
       </button>
-      {selected && game.source !== 'kifu_library' && (
-        <button type="button" className="personal-game-delete" aria-label={t('review:delete_game', '删除对局')} title={t('review:delete_game', '删除对局')} onClick={onDelete}>
-          <DeleteOutlineIcon aria-hidden="true" />
-        </button>
-      )}
+      <ReportProgressColumn state={reportState} moveCount={game.move_count} surface="kiosk" t={t} />
     </div>
   );
 }

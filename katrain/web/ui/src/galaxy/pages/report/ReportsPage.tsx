@@ -1,6 +1,7 @@
 import { ConsumptionQuoteDialog } from '../../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SearchIcon from '@mui/icons-material/Search';
 import LoginIcon from '@mui/icons-material/Login';
 import {
@@ -16,6 +17,9 @@ import {
   DialogTitle,
   Fade,
   InputAdornment,
+  IconButton,
+  Menu,
+  MenuItem,
   Pagination,
   Stack,
   TextField,
@@ -35,6 +39,7 @@ import {
 } from '../../../api/userGamesApi';
 import { useReportTasks } from '../../../features/report/useReportTasks';
 import {
+  presentReportTier,
   toLibraryUserGameParams,
   toLocalUserGameParams,
 } from '../../../features/report/reportModel';
@@ -66,6 +71,7 @@ export default function ReportsPage() {
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const query = searchParams.get('q') || '';
 
+  const [reportMenuAnchor, setReportMenuAnchor] = useState<HTMLElement | null>(null);
   const [games, setGames] = useState<UserGameSummary[]>([]);
   const [totalGames, setTotalGames] = useState(0);
   const [gamesLoading, setGamesLoading] = useState(true);
@@ -352,6 +358,8 @@ export default function ReportsPage() {
   /* 状态位：选中那一局的报告状态。spec §2.4「状态放最右」，只留**一个**状态件不堆
      —— 队列汇总（几个生成中/排队中/失败）仍在右栏中段顶部，那是整页的状态，不是这一局的。 */
   const selectedReportState = selectedGameId ? reportStatesByGame[selectedGameId] : undefined;
+  useEffect(() => { setReportMenuAnchor(null); }, [selectedGameId, identityKey]);
+
   const plateStatus = (() => {
     const state = selectedReportState;
     if (!state) return undefined;
@@ -418,16 +426,25 @@ export default function ReportsPage() {
 
   return (
     <>
-      {/* 迁到统一的棋盘页外壳（spec §2.2/§2.3）。迁移前这一页是「左 预览卡 / 右 520 列表」，
-          棋盘只有 467 —— 全站最小的一块。现在棋盘吃满中间区（1440 档 828），
-          导入 / 搜索 / 列表 / 分页整块进右栏。
-
-          062b19c4 那轮为窄档手写的一整套 `@media (min-width:900px)` 断点在这里**整段没了**
-          —— `BoardPageShell` 自己就是按同一组断点写的（900 / 1200 / 1536），
-          两份实现收成一份。 */}
+      {/* Keep the shared shell; this report page reserves a 552px content rail for compact external tier status. */}
+      <Box sx={{ height: '100%', minHeight: 0,
+        '& [data-testid="board-page-shell"]': { '@media (min-width:900px)': { gridTemplateColumns: 'minmax(0,1fr) 592px' } },
+        '& [data-testid="board-rail-scroll"]': { scrollbarGutter: 'auto' },
+      }}>
       <BoardPageShell
         onBoardSizeChange={setBoardEdge}
-        board={previewLoading || gamesLoading ? (
+        board={(
+          <Box sx={{ width: '100%', height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <Box data-testid="reports-preview-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, minHeight: 44, flex: 'none' }}>
+              <Typography variant="h6">{t('review:rail_title', 'Selected game')}</Typography>
+              <Stack direction="row" alignItems="center" spacing={1}>{plateStatus}
+              {selectedSummary && selectedSummary.source !== 'kifu_library' && <IconButton
+                aria-label={t('report:delete_game', 'Delete game')} onClick={() => setDeleteTarget(selectedSummary.id)}
+                sx={{ width: 44, height: 44, color: 'text.secondary' }}><DeleteOutlineIcon /></IconButton>}
+              </Stack>
+            </Box>
+            <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'grid', placeItems: 'center' }}>
+        {previewLoading || gamesLoading ? (
           <CircularProgress data-testid="reports-preview-spinner" />
         ) : hasPreview ? (
           <LiveBoard
@@ -448,27 +465,32 @@ export default function ReportsPage() {
             {t('report:no_preview', 'No game to preview yet.')}
           </Typography>
         )}
+            </Box>
+            <Box sx={{ px: 2.5, flex: 'none' }}>
+              <Typography variant="body2" color="text.secondary" noWrap>{plateSubtitle}</Typography>
+              {hasPreview && <PlaybackBar currentMove={previewCurrentMove} totalMoves={previewMoves.length} onMoveChange={selectPreviewMove} />}
+              <Box data-testid="reports-preview-actions" sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                <Button variant="contained" aria-haspopup="menu" aria-expanded={Boolean(reportMenuAnchor)}
+                  disabled={!selectedSummary} sx={{ minHeight: 48, minWidth: 160 }}
+                  onClick={event => setReportMenuAnchor(event.currentTarget)}>
+                  {t('review:analysis_report', 'Analysis report')}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        )}
         modulePlate={(
-          <ModulePlate
-            title={t('report:my_reports', 'Review')}
-            subtitle={plateSubtitle}
-            status={plateStatus}
+          <Box sx={{ pt: 2 }}><ModulePlate
+            title={t('review:sec_games', 'History games')}
+            status={<Typography variant="caption" color="text.secondary">{t('review:all_games', '{n} games').replace('{n}', String(totalGames))}</Typography>}
             /* 复盘是一级导航页，没有上一级 —— 同棋谱库页 / 直播列表页。 */
             backTo="/report"
             showBack={false}
-          />
+          /></Box>
         )}
         railBody={(
           <>
-            <Box sx={{ pt: 2, pb: 1.5 }}>
-              {/* 这句提示原来在页头第二行、S8 那轮下沉到正文首行，现在跟着列表进右栏。
-                  措辞去掉了方位词：原文是「选择**右侧**棋局预览棋盘」，稿子改成
-                  「选一局在**左边**预览棋盘」—— 两个在 <900px 堆叠档下都是假的
-                  （列表在棋盘**下方**）。同 S4 棋谱库页那条「不带方位的说法」。 */}
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                {t('report:page_hint', 'Select a game to preview it. Reports are created from the game card.')}
-              </Typography>
-
+            <Box sx={{ pb: 2 }}>
               {(taskError || reportTasksError) && (
                 <Alert
                   severity="error"
@@ -482,25 +504,9 @@ export default function ReportsPage() {
                 </Alert>
               )}
 
-              {queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) && (
-                <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 0.75 }}>
-                  {queueSummary.running > 0 && (
-                    <Chip label={`${queueSummary.running} ${t('report:summary_running', 'running')}`} size="small" color="warning" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                  )}
-                  {queueSummary.pending > 0 && (
-                    <Chip label={`${queueSummary.pending} ${t('report:summary_queued', 'queued')}`} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                  )}
-                  {queueSummary.failed > 0 && (
-                    <Chip label={`${queueSummary.failed} ${t('report:summary_failed', 'failed')}`} size="small" color="error" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                  )}
-                </Stack>
-              )}
+
 
               <Stack spacing={1.5}>
-                <ReportImportMenu
-                  onImportLocal={() => setLocalImportOpen(true)}
-                  onImportLibrary={() => setLibraryImportOpen(true)}
-                />
                 <TextField
                   fullWidth
                   size="small"
@@ -521,24 +527,14 @@ export default function ReportsPage() {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
+                      height: 44,
                       bgcolor: 'rgba(255,255,255,0.03)',
                     },
                   }}
                 />
               </Stack>
 
-              {/* 局数与页码。选中棋局后模块牌副标题会换成对局双方，所以这一行是
-                  「一共多少局、看到第几页」唯一常驻的地方（同 S4 棋谱库页）。
-                  迁移前这句话住在右栏那个 h5「棋局列表」下面；h5 没了 —— 模块牌
-                  就是这一栏的标题，同一层级不写两遍。 */}
-              {!gamesLoading && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, fontSize: '0.72rem', opacity: 0.75 }}>
-                  {t('report:game_list_hint', '{count} games. Search by player, title, or event.').replace('{count}', totalGames.toLocaleString())}
-                  {totalPages > 1 && ` · ${t('kifu:page_x_of_y', '第 {page} / {total} 页')
-                    .replace('{page}', String(page))
-                    .replace('{total}', String(totalPages))}`}
-                </Typography>
-              )}
+
             </Box>
 
             {gamesError && (
@@ -559,7 +555,7 @@ export default function ReportsPage() {
                   </Typography>
                 </Box>
               ) : (
-                <Stack spacing={1.25}>
+                <Stack spacing={1}>
                   {games.map((game, index) => (
                     <Fade key={game.id} in timeout={200 + index * 40}>
                       <Box>
@@ -568,10 +564,6 @@ export default function ReportsPage() {
                           selected={game.id === selectedGameId}
                           reportState={reportStatesByGame[game.id] || {}}
                           onSelect={() => setSelectedGameId(game.id)}
-                          onCreateReport={(reportType) => handleCreateReport(game, reportType)}
-                          onOpenReport={(taskId) => navigate(`/report/${taskId}`)}
-                          onRetry={(taskId) => handleRetry(taskId)}
-                          onDelete={() => setDeleteTarget(game.id)}
                         />
                       </Box>
                     </Fade>
@@ -589,15 +581,47 @@ export default function ReportsPage() {
             )}
           </>
         )}
-        actions={hasPreview ? (
-          <PlaybackBar
-            currentMove={previewCurrentMove}
-            totalMoves={previewMoves.length}
-            onMoveChange={selectPreviewMove}
-          />
-        ) : null}
+        actions={(
+          <Box sx={{ py: 2 }}>
+              {queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) && (
+                <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 0.75 }}>
+                  {queueSummary.running > 0 && (
+                    <Chip label={`${queueSummary.running} ${t('report:summary_running', 'running')}`} size="small" color="warning" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                  )}
+                  {queueSummary.pending > 0 && (
+                    <Chip label={`${queueSummary.pending} ${t('report:summary_queued', 'queued')}`} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                  )}
+                  {queueSummary.failed > 0 && (
+                    <Chip label={`${queueSummary.failed} ${t('report:summary_failed', 'failed')}`} size="small" color="error" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                  )}
+                </Stack>
+              )}
+                <ReportImportMenu
+                  onImportLocal={() => setLocalImportOpen(true)}
+                  onImportLibrary={() => setLibraryImportOpen(true)}
+                />
+          </Box>
+        )}
       />
 
+      </Box>
+      <Menu anchorEl={reportMenuAnchor} open={Boolean(reportMenuAnchor)} onClose={() => setReportMenuAnchor(null)}>
+        {(['normal', 'deep'] as const).map(tier => {
+          const value = presentReportTier(selectedReportState ?? {}, tier, selectedSummary?.move_count ?? 0);
+          const active = value.status === 'pending' || value.status === 'running';
+          const action = active ? t('review:tier_working', 'Generating')
+            : value.viewable ? t('review:tier_view', 'View')
+              : value.status === 'failed' ? t('kifu:retry', 'Retry') : t('review:tier_generate', 'Generate');
+          const label = tier === 'normal' ? t('report:tier_normal', 'Normal report') : t('report:tier_deep', 'Advanced report');
+          return <MenuItem key={tier} disabled={active || !selectedSummary} sx={{ minHeight: '48px', '@media (min-width:600px)': { minHeight: '48px' } }} onClick={() => {
+            if (active || !selectedSummary) return;
+            setReportMenuAnchor(null);
+            if (value.viewable) navigate(`/report/${value.task!.id}`);
+            else if (value.status === 'failed') void handleRetry(value.task!.id);
+            else void handleCreateReport(selectedSummary, tier);
+          }}>{action} {label}</MenuItem>;
+        })}
+      </Menu>
       <ReportLocalImportDialog
         open={localImportOpen}
         loading={localImporting !== null}

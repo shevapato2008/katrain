@@ -26,7 +26,7 @@ describe('PhoneOtpForm', () => {
     expect(code).toHaveAttribute('autocomplete', 'one-time-code');
     expect(code).toHaveAttribute('inputmode', 'numeric');
     fireEvent.change(code, { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: '登录' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(loginPhone).toHaveBeenCalledWith({ challenge_id: 'opaque-challenge', code: '123456', flow_id: flow }, expect.any(AbortSignal)));
     expect(done).toHaveBeenCalledTimes(1);
   });
@@ -38,7 +38,7 @@ describe('PhoneOtpForm', () => {
     expect(await screen.findByText(/发送状态未确认/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /60/ })).toBeDisabled();
     fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
-    expect(screen.getByRole('button', { name: '登录' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     expect(send).toHaveBeenCalledTimes(1);
   });
 
@@ -72,7 +72,7 @@ describe('PhoneOtpForm', () => {
     fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
     await waitFor(() => expect(screen.getByRole('button', { name: /60/ })).toBeDisabled());
     fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
-    fireEvent.click(screen.getByRole('button', { name: '登录' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     unmount();
     expect(loginPhone.mock.calls[0][1].aborted).toBe(true);
   });
@@ -83,10 +83,11 @@ describe('PhoneOtpForm', () => {
     render(<PhoneOtpForm onSuccess={() => {}} />); fillPhone();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: '获取验证码' })); });
     fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
-    expect(screen.getByRole('button', { name: '登录' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     act(() => vi.advanceTimersByTime(300000));
     expect(screen.getByText('验证码已过期，请重新获取')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '登录' })).toBeDisabled();
+    expect(screen.getByLabelText('验证码')).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     send.mockRejectedValueOnce(new TypeError('Network failure'));
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: '获取验证码' })); });
     expect(screen.getByRole('alert')).toHaveTextContent('短信服务暂不可用');

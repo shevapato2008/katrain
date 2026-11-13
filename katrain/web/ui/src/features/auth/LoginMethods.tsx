@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhoneOtpForm, { type PhoneFormMode } from './PhoneOtpForm';
@@ -25,7 +25,7 @@ export default function LoginMethods({ onSuccess, surface = 'galaxy', onClose, o
     setUsername(''); setPassword(''); setError(false); setLoading(false);
   };
   useEffect(() => {
-    resetPrivateForm();
+    resetPrivateForm(); setMode('login');
     return () => { revision.current += 1; controller.current?.abort(); };
     // Each canonical identity owns its private fields and pending work.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,7 +47,7 @@ export default function LoginMethods({ onSuccess, surface = 'galaxy', onClose, o
     finally { if (revision.current === version) setLoading(false); }
   };
   return <div className="named-auth" data-surface={surface}>
-    <header className="named-auth-heading"><h1 id="named-auth-title">{mode === 'login' ? t('Login', '登录') : mode === 'register' ? t('auth:named_register_title', '注册') : t('auth:complete_title', '完成注册')}</h1>
+    <header className="named-auth-heading"><h1 id="named-auth-title">{mode === 'login' ? t('Login', '登录') : mode === 'register' ? t('auth:named_register_title', '注册') : mode === 'complete' ? t('auth:continue_legacy_title', 'Set username') : t('auth:continue_name_title', 'Set public username')}</h1>
       {onClose && <button type="button" className="named-auth-close" onClick={onClose} aria-label={t('auth:close', '关闭')}><X aria-hidden="true" /></button>}
     </header>
     {mode === 'login' && <div className="named-auth-tabs" role="tablist" aria-label={t('auth:otp_method', '登录方式')}>
@@ -63,11 +63,8 @@ export default function LoginMethods({ onSuccess, surface = 'galaxy', onClose, o
       {error && <p className="named-auth-message" role="alert">{t('Login failed', '登录失败')}</p>}
       <button type="submit" className="named-auth-primary" disabled={!username || !password || loading}>{loading ? t('Logging in...', '登录中...') : t('Login', '登录')}</button>
     </form>}
-    {mode !== 'complete' && <div className="named-auth-footer">
-      {mode === 'login' ? <>
-        <button type="button" className="named-auth-text" onClick={() => changeView('register')}>{t('auth:register_entry', '注册账号')}</button>
-        {surface === 'kiosk' && onGuest && <><span className="named-auth-divider" aria-hidden="true" /><button type="button" className="named-auth-text" onClick={onGuest}>{t('auth:guest_entry', '访客登录')}</button></>}
-      </> : <button type="button" className="named-auth-text" onClick={() => changeView('login')}><ArrowLeft aria-hidden="true" />{t('auth:login_entry', '返回登录')}</button>}
+    {mode === 'login' && surface === 'kiosk' && onGuest && <div className="named-auth-footer">
+      <button type="button" className="named-auth-text" onClick={onGuest}>{t('auth:guest_entry', '访客登录')}</button>
     </div>}
   </div>;
 }

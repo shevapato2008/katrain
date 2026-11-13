@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { API, ApiError, type AuthToken, type PhoneLoginRequest, type PhoneRegisterRequest } from '../api';
+import { API, ApiError, type AuthToken, type PhoneLoginRequest, type PhoneRegisterRequest, type PhoneContinueRequest } from '../api';
 import { setKioskIdentity } from '../kiosk/storage/kioskActivityStorage';
 
 // Define User type matching backend response
@@ -30,6 +30,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (username: string, password: string, signal?: AbortSignal) => Promise<void>;
     loginPhone: (request: PhoneLoginRequest, signal?: AbortSignal) => Promise<void>;
+    continuePhone: (request: PhoneContinueRequest, signal?: AbortSignal) => Promise<{ signup_grant_credits: 0 | 5000 }>;
     registerPhone: (request: PhoneRegisterRequest, signal?: AbortSignal) => Promise<{ signup_grant_credits: 0 | 5000 }>;
     logout: () => Promise<void>;
     token: string | null;
@@ -233,6 +234,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await authenticatePhone(candidateSignal => API.phoneLogin(request, candidateSignal), signal);
     };
 
+    const continuePhone = async (request: PhoneContinueRequest, signal?: AbortSignal) => {
+        const candidate = await authenticatePhone(candidateSignal => API.phoneContinue(request, candidateSignal), signal);
+        return { signup_grant_credits: candidate.signup_grant_credits };
+    };
+
     const registerPhone = async (request: PhoneRegisterRequest, signal?: AbortSignal) => {
         const candidate = await authenticatePhone(candidateSignal => API.phoneRegister(request, candidateSignal), signal);
         return { signup_grant_credits: candidate.signup_grant_credits };
@@ -273,7 +279,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         <AuthContext.Provider
             value={{ user, isAuthenticated: !!user, isLoading, status, retry,
                 identityKey: user ? user.uuid ?? `${user.id}:${user.username}` : null,
-                login, loginPhone, registerPhone, logout, token, isGuest, isStrictBoxKiosk }}
+                login, loginPhone, continuePhone, registerPhone, logout, token, isGuest, isStrictBoxKiosk }}
         >
             {children}
         </AuthContext.Provider>

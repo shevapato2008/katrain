@@ -8687,3 +8687,119 @@ msgstr "Пароль должен содержать не менее 15 симв
 
 msgid "auth:password_too_long"
 msgstr "Пароль слишком длинный. Сократите его"
+
+msgid "auth:continue_submit"
+msgstr "Продолжить"
+
+msgid "auth:continue_name_title"
+msgstr "Задать публичное имя пользователя"
+
+msgid "auth:continue_legacy_title"
+msgstr "Задать имя пользователя"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Ваше уникальное имя пользователя будет общедоступным."
+
+msgid "auth:continue_password_required"
+msgstr ""
+"Это имя пользователя уже существует. Подтвердите пароль исходного аккаунта."
+
+msgid "auth:continue_original_password"
+msgstr "Исходный пароль"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Введите пароль исходного аккаунта"
+
+msgid "auth:continue_change_phone"
+msgstr "Изменить номер телефона"
+
+msgid "auth:continue_original_login"
+msgstr "Войти в исходный аккаунт"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Этот аккаунт привязан к другому телефону. Войдите в исходный аккаунт, чтобы "
+"управлять номером."
+
+msgid "auth:continue_password_incorrect"
+msgstr "Неверный пароль исходного аккаунта. Попробуйте ещё раз."
+
+msgid "auth:continue_password_locked"
+msgstr "Слишком много попыток ввода пароля. Повторите через {seconds} сек."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Выберите уникальное публичное имя пользователя"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Подтверждён"
+
+msgid "auth:password_settings_title"
+msgstr "Задать или сбросить пароль"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Задайте пароль с помощью нового кода из SMS на текущий номер. Вход по SMS "
+"останется доступен."
+
+msgid "auth:password_new"
+msgstr "Новый пароль"
+
+msgid "auth:password_submit"
+msgstr "Сохранить пароль"
+
+msgid "auth:password_submitting"
+msgstr "Сохранение…"
+
+msgid "auth:password_success"
+msgstr "Пароль сохранён"
+
+msgid "auth:password_phone_required"
+msgstr "Привяжите телефон перед установкой пароля."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Используйте телефон, который сейчас привязан к этому аккаунту."
+
+msgid "auth:password_auth_required"
+msgstr "Войдите снова перед установкой пароля."
+
+msgid "auth:password_not_allowed"
+msgstr "Для этого аккаунта нельзя задать пароль здесь."
+
+msgid "auth:password_failed"
+msgstr "Не удалось сохранить пароль. Попробуйте ещё раз."
+
+msgid "report:tier_normal"
+msgstr "Обычный отчёт"
+
+msgid "report:tier_deep"
+msgstr "Расширенный отчёт"
+
+msgid "report:cross_platform"
+msgstr "Другая платформа · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "Архив исследований"
+
+msgid "report:tier_menu"
+msgstr "Уровень отчёта"
+
+msgid "startup:loading"
+msgstr "Загрузка…"
+
+msgid "startup:render_error"
+msgstr "Сейчас не удаётся отобразить страницу"
+
+msgid "startup:preload_error"
+msgstr "Не удалось загрузить некоторые страницы"
+
+msgid "startup:reload"
+msgstr "Перезагрузить"

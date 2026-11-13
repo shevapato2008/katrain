@@ -21,8 +21,10 @@ from katrain.web.platforms.golaxy.coords import katrain_to_golaxy
 from katrain.web.platforms.golaxy.engine_client import GenmoveResult
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.platforms.models import (
+    GamePhase,
     OnlineUser,
     PlatformGameSession,
+    PlatformGameSnapshot,
     PlatformMove,
     PlatformPass,
     PlatformResign,
@@ -272,6 +274,53 @@ class TestPlatformEngineColorRealSession:
     stay None for non-engine sessions, survive a later plain edit_game call (M6
     persistence), and never leak into a freshly-created session.
     """
+
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    async def test_origin_is_stamped_before_opening_move_and_new_game_starts_clean(self, human_color, monkeypatch):
+        from katrain.web.interface import WebKaTrain
+
+        original_call = WebKaTrain.__call__
+        opening_origins = []
+
+        def capture_opening(katrain, command, *args, **kwargs):
+            if command == "play":
+                opening_origins.append(katrain.game.root.get_property("KTP"))
+            return original_call(katrain, command, *args, **kwargs)
+
+        monkeypatch.setattr(WebKaTrain, "__call__", capture_opening)
+        sm, pm, adapter = _build_real_stack()
+        session_id = await pm.start_engine_game(
+            "golaxy", EngineGameConfig(level=1100, human_color=human_color), user_id=1
+        )
+        session = sm.get_session(session_id)
+        assert session.katrain.game.root.get_property("KTP") == "golaxy"
+        assert "KTP[golaxy]" in session.katrain.get_sgf()
+        assert opening_origins == (["golaxy"] if human_color == "W" else [])
+
+        await pm.end_platform_game(pm.get_game_context(session_id).remote_game_id, "B+R")
+        assert pm.get_game_context(session_id) is None
+        assert session.katrain.game.root.get_property("KTP") == "golaxy"
+        session.katrain("new_game")
+        assert session.katrain.game.root.get_property("KTP") is None
+        assert "KTP[" not in session.katrain.get_sgf()
+
+        fresh = sm.create_multiplayer_session(player_b_id=3, player_w_id=4, b_name="A", w_name="B")
+        assert fresh.katrain.game.root.get_property("KTP") is None
+
+    def test_ogs_snapshot_refresh_keeps_trusted_origin(self):
+        sm = SessionManager(enable_engine=False)
+        session = sm.create_multiplayer_session(
+            player_b_id=7, player_w_id=-1, b_name="Me", w_name="OGS opponent", initial_game_type="pvp_online"
+        )
+        game = make_session("B", board_size=9)
+        game.platform = "ogs"
+        snapshot = PlatformGameSnapshot("g", 9, (), (), GamePhase.PLAYING)
+
+        PlatformManager._restore_ogs_snapshot(session, snapshot, game)
+        assert session.katrain.game.root.get_property("KTP") == "ogs"
+        assert "KTP[ogs]" in session.katrain.get_sgf()
+        PlatformManager._restore_ogs_snapshot(session, snapshot, game)
+        assert session.katrain.game.root.get_property("KTP") == "ogs"
 
     @pytest.mark.parametrize("human_color", ["B", "W"])
     @pytest.mark.asyncio

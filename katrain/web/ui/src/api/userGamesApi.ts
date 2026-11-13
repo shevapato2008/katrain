@@ -6,6 +6,8 @@
 
 const API_BASE = '/api/v1/user-games';
 
+export type UserGamePlatform = 'golaxy' | 'ogs' | 'fox';
+
 export interface UserGameSummary {
   id: string;
   user_id: number;
@@ -22,6 +24,7 @@ export interface UserGameSummary {
   source: string;
   category: string;
   game_type: string | null;
+  platform?: UserGamePlatform | null;
   event: string | null;
   round_name: string | null;
   game_date: string | null;
@@ -88,6 +91,7 @@ export interface CreateUserGameParams {
   move_count?: number;
   category?: string;
   game_type?: string;
+  platform?: UserGamePlatform | null;
   event?: string;
   round_name?: string;
   game_date?: string;

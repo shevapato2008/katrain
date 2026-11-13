@@ -7,10 +7,11 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from katrain.web.core import models_db
 from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
-from katrain.web.api.v1.endpoints.user_games import UserGameCreate, create_user_game
+from katrain.web.api.v1.endpoints.user_games import UserGameCreate, create_user_game, get_user_game, list_user_games
 
 
 @pytest.fixture
@@ -61,6 +62,45 @@ def add_active_game(factory, user_id: int, game_id: str = "reserved-active"):
 
 
 class TestUserGameRepository:
+    @pytest.mark.parametrize("platform", ["golaxy", "ogs", "fox", None])
+    def test_post_get_and_list_keep_platform_without_changing_game_classification(self, db_session, platform):
+        factory, user_id = db_session
+        request = SimpleNamespace(
+            app=SimpleNamespace(state=SimpleNamespace(user_game_repo=UserGameRepository(factory)))
+        )
+        user = SimpleNamespace(id=user_id)
+        sgf = "(;FF[4]KTP[golaxy];B[aa])"
+        created = asyncio.run(
+            create_user_game(
+                request, UserGameCreate(sgf_content=sgf, source="play_ai", game_type="free", platform=platform), user
+            )
+        )
+        fetched = asyncio.run(get_user_game(request, created["id"], user))
+        listed = asyncio.run(list_user_games(request, current_user=user))["items"][0]
+
+        for game in (created, fetched, listed):
+            assert game["platform"] == platform
+            assert game["source"] == "play_ai"
+            assert game["game_type"] == "free"
+        assert fetched["sgf_content"] == sgf
+
+    def test_post_rejects_unknown_platform(self):
+        with pytest.raises(ValidationError):
+            UserGameCreate(sgf_content="(;FF[4])", source="play_ai", platform="guessed")
+
+    def test_imported_platform_sgf_does_not_claim_played_origin(self, db_session):
+        factory, user_id = db_session
+        repo = UserGameRepository(factory)
+        sgf = "(;FF[4]KTP[golaxy]PB[Me]RE[B+R];B[aa])"
+
+        game = repo.create(user_id=user_id, sgf_content=sgf, source="import")
+
+        assert game["platform"] is None
+        assert game["source"] == "import"
+        assert game["game_type"] is None
+        assert game["user_color"] is None
+        assert game["sgf_content"] == sgf
+
     def test_generic_create_cannot_claim_an_active_ranked_game_id(self, db_session):
         factory, user_id = db_session
         add_active_game(factory, user_id)

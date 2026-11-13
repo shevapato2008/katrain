@@ -9,6 +9,35 @@ from katrain.web.core.config import Settings
 from tests.web_ui.membership_test_support import membership_pg_schema_engine
 
 
+def test_postgres_platform_upgrade_preserves_legacy_origin_and_sgf(membership_pg_schema_engine):
+    engine = membership_pg_schema_engine
+    sgf, sgf_hash = "(;FF[4]KTP[golaxy]C[legacy])", "unchanged-hash"
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE user_games (id VARCHAR(32) PRIMARY KEY, user_id INTEGER, source VARCHAR(50), "
+                "sgf_content TEXT, sgf_hash VARCHAR(64))"
+            )
+        )
+        conn.execute(
+            text("INSERT INTO user_games VALUES ('old', 1, 'play_ai', :sgf, :hash)"),
+            {"sgf": sgf, "hash": sgf_hash},
+        )
+
+    migrations.add_missing_columns(engine)
+    migrations.add_missing_columns(engine)
+
+    inspector = inspect(engine)
+    column = next(c for c in inspector.get_columns("user_games") if c["name"] == "platform")
+    assert column["nullable"] and column["default"] is None
+    assert column["type"].length == 32
+    assert not any("platform" in index["column_names"] for index in inspector.get_indexes("user_games"))
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT source, sgf_content, sgf_hash, platform FROM user_games")).one() == (
+            "play_ai", sgf, sgf_hash, None,
+        )
+
+
 def test_postgres_membership_upgrade_twice_preserves_old_financial_facts(membership_pg_schema_engine):
     engine = membership_pg_schema_engine
     with engine.begin() as conn:

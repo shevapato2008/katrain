@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { GameNavigationProvider } from '../../context/GameNavigationContext';
 import { SettingsProvider } from '../../../context/SettingsContext';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -176,7 +176,7 @@ describe('ReportsPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Review')).toBeInTheDocument();
+      expect(screen.getByText('History games')).toBeInTheDocument();
     });
 
     await waitFor(() => {
@@ -186,7 +186,7 @@ describe('ReportsPage', () => {
     expect(screen.getAllByText('Report Game').length).toBeGreaterThan(0);
     expect(screen.getByTestId('mock-playback-bar')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Import game' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Analysis report' })).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Search by player, title, or event')).toBeInTheDocument();
   });
 
@@ -210,7 +210,7 @@ describe('ReportsPage', () => {
     expect(screen.getByRole('button', { name: 'Import & generate deep report' })).toBeInTheDocument();
   });
 
-  it('opens report-type menu from a game card', async () => {
+  it('opens report-type menu below the selected preview', async () => {
     render(
       <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
@@ -218,13 +218,15 @@ describe('ReportsPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Analysis report' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
 
-    expect(screen.getByRole('menuitem', { name: 'Normal' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Deep' })).toBeInTheDocument();
+    expect(screen.getByTestId('report-game-card').querySelector('button')).toBeNull();
+    expect(within(screen.getByTestId('reports-preview-actions')).getByRole('button', { name: 'Analysis report', hidden: true })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Generate Normal report' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Generate Advanced report' })).toBeInTheDocument();
   });
 
   it('imports sgf and immediately creates a normal report', async () => {
@@ -378,15 +380,15 @@ describe('ReportsPage', () => {
         <ReportsPage />
       </GameNavigationProvider></MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByText('0/2')).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('aria-valuenow', '0'));
 
     setReportTasks([{ ...runningTask, analyzed_moves: 1 }]);
     rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    expect(screen.getByText('1/2')).toBeInTheDocument();
+    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('aria-valuenow', '50');
 
     setReportTasks([{ ...runningTask, analyzed_moves: 2 }]);
     rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    expect(screen.getByText('2/2')).toBeInTheDocument();
+    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('aria-valuenow', '100');
   });
 
   it('does not show a completed badge when the same report type is still running', async () => {
@@ -418,10 +420,28 @@ describe('ReportsPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Normal Generating')).toBeInTheDocument();
+      expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('data-status', 'running');
     });
 
-    expect(screen.queryByRole('button', { name: 'Normal' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    expect(screen.getByRole('menuitem', { name: 'Generating Normal report' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByRole('menuitem', { name: 'View Normal report' })).not.toBeInTheDocument();
+  });
+
+  it('views a completed ordinary report while the advanced menu item remains disabled', async () => {
+    function LocationProbe() { return <div data-testid="report-location">{useLocation().pathname}</div>; }
+    setReportTasks([
+      { id: 31, user_game_id: 'game-1', status: 'completed', report_type: 'normal', total_moves: 2, analyzed_moves: 2, requested_visits: 500 },
+      { id: 32, user_game_id: 'game-1', status: 'running', report_type: 'deep', total_moves: 2, analyzed_moves: 2, requested_visits: 2000 },
+    ]);
+    render(<MemoryRouter><GameNavigationProvider><ReportsPage /><LocationProbe /></GameNavigationProvider></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Analysis report' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    expect(screen.getByRole('menuitem', { name: 'Generating Advanced report' })).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'View Normal report' }));
+    expect(screen.getByTestId('report-location')).toHaveTextContent('/report/31');
+    expect(mockCreateReport).not.toHaveBeenCalled();
+    expect(mockRetryReport).not.toHaveBeenCalled();
   });
 
   it('shows pending wording when a report is queued behind concurrency limit', async () => {
@@ -444,11 +464,11 @@ describe('ReportsPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Deep Queued')).toBeInTheDocument();
+      expect(screen.getByRole('progressbar', { name: 'Advanced report · Queued' })).toBeInTheDocument();
     });
 
     expect(screen.queryByText('Deep Generating')).not.toBeInTheDocument();
-    expect(screen.getByText('0/2')).toBeInTheDocument();
+    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('aria-valuenow', '0');
   });
 
   it('deletes a game after confirmation and refreshes the list', async () => {
@@ -463,6 +483,8 @@ describe('ReportsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
     });
+    expect(within(screen.getByTestId('report-game-card')).queryByRole('button', { name: 'Delete game' })).toBeNull();
+    expect(within(screen.getByTestId('reports-preview-title')).getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
 
@@ -503,7 +525,7 @@ describe('ReportsPage', () => {
     expect(screen.queryByRole('button', { name: 'Delete game' })).not.toBeInTheDocument();
   });
 
-  it('shows retry button for failed tasks and retries on click', async () => {
+  it('retries failed tasks from the selected preview menu', async () => {
     setReportTasks([
       {
         id: 15,
@@ -523,12 +545,13 @@ describe('ReportsPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Analysis report' })).toBeEnabled();
     });
 
     expect(screen.getByText('1 failed')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry normal' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Retry Normal report' }));
 
     await waitFor(() => {
       expect(mockRetryReport).toHaveBeenCalledWith(15);
@@ -565,15 +588,19 @@ describe('ReportsPage', () => {
     expect(screen.getByText('1 failed')).toBeInTheDocument();
 
     // Game 1: running progress
-    expect(screen.getByText('Normal Generating')).toBeInTheDocument();
-    expect(screen.getByText('5/10')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Normal report · Generating' })).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Normal report · Generating' })).toHaveAttribute('aria-valuetext', 'Generating · 5/10');
 
     // Game 2: pending
-    expect(screen.getByText('Deep Queued')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Advanced report · Queued' })).toBeInTheDocument();
 
     // Game 3: failed normal + completed deep
-    expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Deep' })).toBeInTheDocument();
+    const thirdCard = screen.getAllByTestId('report-game-card')[2];
+    expect(thirdCard.querySelector('button')).toBeNull();
+    fireEvent.click(within(thirdCard).getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    expect(screen.getByRole('menuitem', { name: 'Retry Normal report' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'View Advanced report' })).toBeInTheDocument();
   });
 
   it('reads search and pagination from the URL and preserves search while paging', async () => {
@@ -604,10 +631,10 @@ describe('ReportsPage', () => {
 
   it('creates a deep report with the selected game adapter arguments', async () => {
     render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Analysis report' })).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Deep' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Generate Advanced report' }));
     await waitFor(() => expect(mockCreateReport).toHaveBeenCalledWith({
       userGameId: 'game-1', reportType: 'deep', totalMoves: 2,
     }));
@@ -616,10 +643,10 @@ describe('ReportsPage', () => {
   it('removes a create failure alert when the shared hook recovers', async () => {
     mockCreateReport.mockRejectedValue(new Error('Create failed'));
     const { rerender } = render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Analysis report' })).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Normal' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Generate Normal report' }));
     await waitFor(() => expect(mockCreateReport).toHaveBeenCalled());
 
     reportTasksFixture = { ...reportTasksFixture, error: 'Create failed' };
@@ -633,9 +660,9 @@ describe('ReportsPage', () => {
 
   it('shows an optimistic queued report until creation reconciles with the server task', async () => {
     const { rerender } = render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Normal' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Analysis report' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Generate Normal report' }));
 
     expect(mockCreateReport).toHaveBeenCalledWith({
       userGameId: 'game-1', reportType: 'normal', totalMoves: 2,
@@ -645,14 +672,14 @@ describe('ReportsPage', () => {
       total_moves: 2, analyzed_moves: 0, requested_visits: 500,
     }]);
     rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    expect(screen.getByText('Normal Queued')).toBeInTheDocument();
+    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('data-status', 'pending');
 
     setReportTasks([{
       id: 41, user_game_id: 'game-1', status: 'running', report_type: 'normal',
       total_moves: 2, analyzed_moves: 1, requested_visits: 500,
     }]);
     rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    expect(screen.getByText('Normal Generating')).toBeInTheDocument();
+    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('data-status', 'running');
   });
 
   it('surfaces a delete rejection and keeps the game visible', async () => {
@@ -684,9 +711,10 @@ describe('ReportsPage', () => {
     }]);
     mockRetryReport.mockRejectedValue(new Error('Retry failed'));
     const { rerender } = render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Analysis report' })).toBeEnabled());
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry normal' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Retry Normal report' }));
     await waitFor(() => expect(mockRetryReport).toHaveBeenCalledWith(15));
 
     reportTasksFixture = { ...reportTasksFixture, error: 'Retry failed' };

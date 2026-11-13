@@ -97,7 +97,7 @@ async def test_phone_candidate_posts_only_opaque_challenge_and_confirms_me():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("operation", ["status", "bind_challenge", "bind"])
+@pytest.mark.parametrize("operation", ["status", "bind_challenge", "bind", "password"])
 async def test_private_phone_request_never_changes_to_new_users_bearer(operation):
     entered, release = asyncio.Event(), asyncio.Event()
     seen = []
@@ -113,7 +113,12 @@ async def test_private_phone_request_never_changes_to_new_users_bearer(operation
     try:
         method = getattr(
             remote,
-            {"status": "phone_status", "bind_challenge": "phone_challenge", "bind": "phone_bind"}[operation],
+            {
+                "status": "phone_status",
+                "bind_challenge": "phone_challenge",
+                "bind": "phone_bind",
+                "password": "phone_password",
+            }[operation],
             None,
         )
         assert callable(method), "identity-bound phone adapter is missing"
@@ -144,6 +149,66 @@ async def test_private_phone_request_never_changes_to_new_users_bearer(operation
         assert remote.cloud_session_is(8)
     finally:
         release.set()
+        await remote.close()
+
+
+@pytest.mark.asyncio
+async def test_continue_candidate_preserves_grant_and_confirms_canonical_me():
+    seen = []
+    payload = {
+        "challenge_id": "a" * 48,
+        "flow_id": "f" * 32,
+        "code": "123456",
+        "public_username": "棋手",
+        "current_password": None,
+    }
+
+    async def handler(request):
+        seen.append(request)
+        if request.url.path.endswith("/phone/continue"):
+            assert json.loads(request.content) == payload and "authorization" not in request.headers
+            return httpx.Response(200, json={"access_token": "candidate", "signup_grant_credits": 5000})
+        assert request.headers["authorization"] == "Bearer candidate"
+        return httpx.Response(200, json={"id": 17, "username": "u_" + "a" * 20, "public_username": "棋手"})
+
+    remote = await client_with_handler(handler)
+    remote.set_tokens("installed-a", "refresh-a", user_id=7)
+    try:
+        assert callable(getattr(remote, "phone_continue", None)), "continuation cloud adapter is missing"
+        candidate = await remote.phone_continue(payload)
+        assert candidate.tokens["signup_grant_credits"] == 5000 and candidate.user["public_username"] == "棋手"
+        assert remote._access_token == "installed-a" and remote.cloud_session_is(7)
+        assert len(seen) == 2
+    finally:
+        await remote.close()
+
+
+@pytest.mark.asyncio
+async def test_password_204_keeps_installed_identity_without_json_or_token_install():
+    seen = []
+
+    async def handler(request):
+        seen.append(request)
+        assert (
+            request.url.path == "/api/v1/auth/phone/password"
+            and request.headers["authorization"] == "Bearer installed-a"
+        )
+        assert json.loads(request.content)["new_password"] == "private-new-password"
+        return httpx.Response(204)
+
+    remote = await client_with_handler(handler)
+    remote.set_tokens("installed-a", "refresh-a", user_id=7)
+    generation = remote._identity_generation
+    try:
+        assert callable(getattr(remote, "phone_password", None)), "password cloud adapter is missing"
+        result = await remote.phone_password(
+            {"challenge_id": "a" * 48, "flow_id": "f" * 32, "code": "123456", "new_password": "private-new-password"},
+            expected_user_id=7,
+        )
+        assert result is None and len(seen) == 1
+        assert remote._access_token == "installed-a" and remote.cloud_session_is(7)
+        assert remote._identity_generation == generation
+    finally:
         await remote.close()
 
 

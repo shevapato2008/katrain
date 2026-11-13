@@ -8768,3 +8768,121 @@ msgstr "Пароль має містити щонайменше 15 символ�
 
 msgid "auth:password_too_long"
 msgstr "Пароль задовгий. Скоротіть його"
+
+msgid "auth:continue_submit"
+msgstr "Продовжити"
+
+msgid "auth:continue_name_title"
+msgstr "Задати публічне ім’я користувача"
+
+msgid "auth:continue_legacy_title"
+msgstr "Задати ім’я користувача"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Ваше унікальне ім’я користувача буде загальнодоступним."
+
+msgid "auth:continue_password_required"
+msgstr ""
+"Це ім’я користувача вже існує. Підтвердьте пароль початкового облікового "
+"запису."
+
+msgid "auth:continue_original_password"
+msgstr "Початковий пароль"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Введіть пароль початкового облікового запису"
+
+msgid "auth:continue_change_phone"
+msgstr "Змінити номер телефону"
+
+msgid "auth:continue_original_login"
+msgstr "Увійти в початковий обліковий запис"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Цей обліковий запис прив’язано до іншого телефону. Увійдіть у початковий "
+"обліковий запис, щоб керувати номером."
+
+msgid "auth:continue_password_incorrect"
+msgstr "Неправильний пароль початкового облікового запису. Спробуйте ще раз."
+
+msgid "auth:continue_password_locked"
+msgstr "Забагато спроб введення пароля. Повторіть через {seconds} с."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Виберіть унікальне публічне ім’я користувача"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Підтверджено"
+
+msgid "auth:password_settings_title"
+msgstr "Задати або скинути пароль"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Задайте пароль за допомогою нового коду із SMS на поточний номер. Вхід через"
+" SMS залишиться доступним."
+
+msgid "auth:password_new"
+msgstr "Новий пароль"
+
+msgid "auth:password_submit"
+msgstr "Зберегти пароль"
+
+msgid "auth:password_submitting"
+msgstr "Збереження…"
+
+msgid "auth:password_success"
+msgstr "Пароль збережено"
+
+msgid "auth:password_phone_required"
+msgstr "Прив’яжіть телефон перед установленням пароля."
+
+msgid "auth:password_phone_mismatch"
+msgstr ""
+"Використовуйте телефон, який зараз прив’язано до цього облікового запису."
+
+msgid "auth:password_auth_required"
+msgstr "Увійдіть знову перед установленням пароля."
+
+msgid "auth:password_not_allowed"
+msgstr "Для цього облікового запису тут не можна задати пароль."
+
+msgid "auth:password_failed"
+msgstr "Не вдалося зберегти пароль. Спробуйте ще раз."
+
+msgid "report:tier_normal"
+msgstr "Звичайний звіт"
+
+msgid "report:tier_deep"
+msgstr "Розширений звіт"
+
+msgid "report:cross_platform"
+msgstr "Інша платформа · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "Архів досліджень"
+
+msgid "report:tier_menu"
+msgstr "Рівень звіту"
+
+msgid "startup:loading"
+msgstr "Завантаження…"
+
+msgid "startup:render_error"
+msgstr "Зараз не вдається відобразити сторінку"
+
+msgid "startup:preload_error"
+msgstr "Не вдалося завантажити деякі сторінки"
+
+msgid "startup:reload"
+msgstr "Перезавантажити"

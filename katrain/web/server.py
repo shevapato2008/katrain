@@ -5435,6 +5435,9 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
     names = {"B": players["B"].name or "", "W": players["W"].name or ""}
     human_color = "W" if session.katrain.platform_engine_color == "B" else "B"
     names[human_color] = user.username
+    # Only this trusted platform-engine path reads KTP; imported SGFs never
+    # acquire played-game classification or authority from their metadata.
+    platform = session.katrain.game.root.get_property("KTP")
     await record(
         session,
         app,
@@ -5442,6 +5445,7 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
         result,
         data_overrides={
             "source": "play_ai",
+            "platform": platform if platform in ("golaxy", "ogs", "fox") else None,
             "player_black": names["B"],
             "player_white": names["W"],
             # 人坐的是引擎的另一边。两个座位都不标 human,这里是唯一知道这件事的地方。
@@ -5480,6 +5484,7 @@ async def _record_ogs_online_game(session, ctx, result: str, app: FastAPI) -> bo
         data_overrides={
             "id": local_game_id,
             "source": "play_human",
+            "platform": ctx.platform,
             "player_black": names["B"],
             "player_white": names["W"],
             "user_color": ctx.my_color,

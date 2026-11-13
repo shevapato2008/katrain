@@ -43,7 +43,9 @@ class PrivatePhoneRoute(APIRoute):
                     code = "invalid_code"
                 elif "public_username" in fields:
                     code = "invalid_public_username"
-                elif "password" in fields:
+                elif fields & {"password", "new_password"} or (
+                    "current_password" in fields and request.url.path.endswith("/continue")
+                ):
                     code = "invalid_password"
                 else:
                     code = "challenge_invalid"
@@ -94,6 +96,15 @@ class PhoneRegisterResponse(Token):
     signup_grant_credits: Literal[0, 5000]
 
 
+class PhoneContinueRequest(PhoneLoginRequest):
+    public_username: str = Field(strict=True, max_length=128)
+    current_password: str | None = Field(default=None, strict=True, max_length=1024)
+
+
+class PhonePasswordRequest(PhoneLoginRequest):
+    new_password: str = Field(strict=True, max_length=1024)
+
+
 class PhoneBindRequest(PhoneLoginRequest):
     # Missing/empty passwords must reach the service's independently committed
     # reauthentication counter instead of bypassing it in request validation.
@@ -137,6 +148,7 @@ def _raise_remote_error(error):
             "invalid_public_username",
             "reserved_public_username",
             "public_username_taken",
+            "account_password_required",
             "invalid_password",
             "invalid_phone",
             "invalid_code",
@@ -291,6 +303,56 @@ async def phone_status(request: Request, user: User = Depends(_phone_user)):
         return get_phone_otp_service(request).status(user_id=user.id)
     except PhoneOtpError as error:
         _raise_service_error(error)
+
+
+@router.post("/continue", response_model=PhoneRegisterResponse)
+async def phone_continue(request: Request, response: Response, body: PhoneContinueRequest):
+    from katrain.web.core.phone_otp import PhoneOtpError
+
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=403, detail={"code": "bind_not_allowed"})
+    remote = getattr(request.app.state, "remote_client", None)
+    if remote is not None:
+        try:
+            candidate = await remote.phone_continue(body.model_dump())
+        except (httpx.HTTPError, ValueError) as error:
+            _raise_remote_error(error)
+        grant = candidate.tokens.get("signup_grant_credits")
+        if type(grant) is not int or grant not in {0, 5000}:
+            raise HTTPException(status_code=503, detail={"code": "sms_unavailable"})
+        return {**_install_board_login(request, response, candidate), "signup_grant_credits": grant}
+    try:
+        user = get_phone_otp_service(request).continue_login(**body.model_dump())
+    except PhoneOtpError as error:
+        _raise_service_error(error)
+    access = create_access_token(data={"sub": user["username"]})
+    refresh = create_refresh_token(data={"sub": user["username"]})
+    _issue_loopback_sso_cookie(request, response, access)
+    return {
+        "access_token": access,
+        "refresh_token": refresh,
+        "token_type": "bearer",
+        "signup_grant_credits": user["signup_grant_credits"],
+    }
+
+
+@router.post("/password", status_code=204)
+async def phone_password(request: Request, body: PhonePasswordRequest, user: User = Depends(_phone_user)):
+    from katrain.web.core.phone_otp import PhoneOtpError
+
+    _require_bind_actor(user)
+    remote = getattr(request.app.state, "remote_client", None)
+    if remote is not None:
+        try:
+            await remote.phone_password(body.model_dump(), expected_user_id=user.id)
+        except (httpx.HTTPError, ValueError) as error:
+            _raise_remote_error(error)
+    else:
+        try:
+            get_phone_otp_service(request).set_password(user_id=user.id, **body.model_dump())
+        except PhoneOtpError as error:
+            _raise_service_error(error)
+    return Response(status_code=204)
 
 
 @router.post("/bind", response_model=PhoneStatusResponse, response_model_exclude_none=True)

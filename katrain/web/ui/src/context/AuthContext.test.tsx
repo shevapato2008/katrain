@@ -48,6 +48,32 @@ const nonStrictIt = isStrictBoxKiosk ? it.skip : it;
 const galaxyIt = isKioskBuild ? it.skip : it;
 
 describe('AuthContext', () => {
+  nonStrictIt('confirms continuation through canonical /me and retains the old UUID and grant', async () => {
+    mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/continue')
+      ? okJson({ access_token: 'continue-token', token_type: 'bearer', signup_grant_credits: 0 })
+      : hasAuthHeader(init) ? okJson({ ...meResponse, public_username: 'public-name' }) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => {
+      await expect(result.current.continuePhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: 'public-name', current_password: 'old secret' })).resolves.toEqual({ signup_grant_credits: 0 });
+    });
+    expect(result.current.identityKey).toBe(meResponse.uuid);
+    expect(result.current.user?.username).toBe(meResponse.username);
+    expect(result.current.user?.public_username).toBe('public-name');
+    expect(localStorage.getItem('token')).toBe('continue-token');
+  });
+  nonStrictIt('never installs a continuation token returned after logout', async () => {
+    let release!: (response: Response) => void;
+    mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/continue')
+      ? new Promise<Response>(resolve => { release = resolve; }) : hasAuthHeader(init) ? okJson(meResponse) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let pending!: Promise<unknown>;
+    act(() => { pending = result.current.continuePhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: 'public-name' }).catch(error => error); });
+    await act(async () => { await result.current.logout(); release(await okJson({ access_token: 'late-token', signup_grant_credits: 5000 })); });
+    expect(await pending).toMatchObject({ detail: { code: 'identity_changed' } });
+    expect(result.current.user).toBeNull(); expect(localStorage.getItem('token')).toBeNull();
+  });
   nonStrictIt('confirms a registration token through canonical /me and keeps its public name out of identityKey', async () => {
     mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/register')
       ? okJson({ access_token: 'register-token', token_type: 'bearer', signup_grant_credits: 5000 })

@@ -326,7 +326,7 @@ class RemoteAPIClient:
                 self._auth_required = True
         self._assert_cloud_identity(identity)
         response.raise_for_status()
-        result = response.json()
+        result = None if response.status_code == 204 else response.json()
         self._assert_cloud_identity(identity)
         return result
 
@@ -432,6 +432,14 @@ class RemoteAPIClient:
 
     async def phone_register(self, data: Dict[str, Any]) -> RemoteLoginCandidate:
         return await self._login_candidate("/api/v1/auth/phone/register", data)
+
+    async def phone_continue(self, data: Dict[str, Any]) -> RemoteLoginCandidate:
+        return await self._login_candidate("/api/v1/auth/phone/continue", data)
+
+    async def phone_password(self, data: Dict[str, Any], *, expected_user_id) -> None:
+        await self._identity_bound_request(
+            "POST", "/api/v1/auth/phone/password", json=data, expected_user_id=expected_user_id
+        )
 
     async def phone_challenge(self, data: Dict[str, Any], *, expected_user_id=None) -> Dict:
         if data.get("purpose") == "bind":

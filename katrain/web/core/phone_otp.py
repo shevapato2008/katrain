@@ -9,7 +9,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from . import billing, models_db, sms
@@ -485,6 +485,210 @@ class PhoneOtpService:
         if not valid_password:
             raise PhoneOtpError("bind_reauth_failed", 401)
         return password_hash
+
+    @staticmethod
+    def _login_name_users(db, name):
+        # Match the established password-login lookup, including legacy names
+        # which predate the validation rules for newly claimed public names.
+        return (
+            db.execute(
+                select(models_db.User)
+                .where(or_(models_db.User.username == name, models_db.User.public_username == name))
+                .limit(2)
+            )
+            .scalars()
+            .all()
+        )
+
+    @staticmethod
+    def _validate_new_name(name):
+        try:
+            validate_public_username(name)
+        except (ValueError, TypeError, AttributeError):
+            folded = name.casefold() if isinstance(name, str) else ""
+            reserved = folded in {"guest", "admin"} or folded.startswith(("admin:", "u_"))
+            raise PhoneOtpError("reserved_public_username" if reserved else "invalid_public_username", 400) from None
+
+    def continue_login(self, *, challenge_id, code, flow_id, public_username, current_password=None):
+        self._ensure_available()
+        flow_digest = self._flow_digest(flow_id)
+        target_id = None
+        error = None
+        with self.session_factory() as db, db.begin():
+            now = _now()
+            state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
+            error = self._proof_error(state, challenge, code, flow_digest, now)
+            if error is None:
+                user = self._phone_user(db, challenge.phone_e164)
+                if _utc(challenge.expires_at) <= _now():
+                    raise PhoneOtpError("challenge_expired", 400)
+                matches = self._login_name_users(db, public_username)
+                if user is not None:
+                    if not self._needs_completion(db, user, challenge.phone_e164):
+                        raise PhoneOtpError("profile_already_complete", 409)
+                    self._bind_actor(db, user.id, require_unbound=False)
+                    self._validate_new_name(public_username)
+                    if matches:
+                        raise PhoneOtpError("public_username_taken", 409)
+                    branch, target_id = "complete", user.id
+                elif matches:
+                    if len(matches) != 1:
+                        raise PhoneOtpError("public_username_taken", 409)
+                    try:
+                        self._bind_actor(db, matches[0].id, require_unbound=False)
+                    except PhoneOtpError:
+                        raise PhoneOtpError("public_username_taken", 409) from None
+                    branch, target_id = "bind", matches[0].id
+                else:
+                    self._validate_new_name(public_username)
+                    branch = "register"
+        if error:
+            raise error
+
+        # Password work holds no phone/account locks. Finalization checks every
+        # authority again, including the hash used by committed reauthentication.
+        password_hash = None
+        if branch == "bind":
+            if current_password is None or current_password == "":
+                raise PhoneOtpError("account_password_required", 409)
+            password_hash = self._bind_reauthentication(target_id, current_password, _now())
+        elif branch == "register":
+            password_hash = get_password_hash(secrets.token_urlsafe(48))
+
+        result = None
+        try:
+            with self.session_factory() as db, db.begin():
+                now = _now()
+                state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
+                error = self._proof_error(state, challenge, code, flow_digest, now)
+                if error is None:
+                    grant = 0
+                    if branch == "bind":
+                        db.execute(
+                            select(models_db.User).where(models_db.User.id == target_id).with_for_update()
+                        ).scalar_one_or_none()
+                        user = self._bind_actor(db, target_id, require_unbound=False)
+                        matches = self._login_name_users(db, public_username)
+                        if len(matches) != 1 or matches[0].id != target_id:
+                            raise PhoneOtpError("public_username_taken", 409)
+                        if not hmac.compare_digest(user.hashed_password, password_hash):
+                            raise PhoneOtpError("bind_reauth_failed", 401)
+                        target = db.execute(
+                            select(models_db.PhoneIdentity).where(
+                                models_db.PhoneIdentity.phone_e164 == challenge.phone_e164
+                            )
+                        ).scalar_one_or_none()
+                        own = db.execute(
+                            select(models_db.PhoneIdentity).where(models_db.PhoneIdentity.user_id == target_id)
+                        ).scalar_one_or_none()
+                        if (target is not None and target.user_id != target_id) or (
+                            own is not None and own.phone_e164 != challenge.phone_e164
+                        ):
+                            raise PhoneOtpError("phone_in_use", 409)
+                        if own is None:
+                            db.add(
+                                models_db.PhoneIdentity(
+                                    phone_e164=challenge.phone_e164, user_id=target_id, verified_at=now
+                                )
+                            )
+                        if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
+                            db.add(
+                                models_db.PhoneSignupClaim(
+                                    phone_e164=challenge.phone_e164, claim_type="bound_existing", user_id=target_id
+                                )
+                            )
+                    else:
+                        user = self._phone_user(db, challenge.phone_e164)
+                        if branch == "complete":
+                            if (
+                                user is None
+                                or user.id != target_id
+                                or not self._needs_completion(db, user, challenge.phone_e164)
+                            ):
+                                raise PhoneOtpError("profile_already_complete", 409)
+                            self._bind_actor(db, target_id, require_unbound=False)
+                        elif user is not None:
+                            raise PhoneOtpError("profile_already_complete", 409)
+                        if self._login_name_users(db, public_username):
+                            raise PhoneOtpError("public_username_taken", 409)
+                        if branch == "complete":
+                            user.public_username = public_username
+                        else:
+                            user = self._create_user(db, public_username=public_username, password_hash=password_hash)
+                            db.add(
+                                models_db.PhoneIdentity(
+                                    phone_e164=challenge.phone_e164, user_id=user.id, verified_at=now
+                                )
+                            )
+                            if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
+                                grant_ref = "phone_signup:" + secrets.token_hex(24)
+                                db.add(
+                                    models_db.PhoneSignupClaim(
+                                        phone_e164=challenge.phone_e164,
+                                        claim_type="signup_grant",
+                                        user_id=user.id,
+                                        grant_ref=grant_ref,
+                                    )
+                                )
+                                db.flush()
+                                billing.apply_adjustment(db, user.id, _SIGNUP_CREDITS, "signup_grant", grant_ref)
+                                grant = _SIGNUP_CREDITS
+                    challenge.state = "consumed"
+                    challenge.consumed_at = _now()
+                    db.flush()
+                    db.refresh(user)
+                    if _utc(challenge.expires_at) <= _now():
+                        raise PhoneOtpError("challenge_expired", 400)
+                    result = {**self._public_user(user), "signup_grant_credits": grant}
+        except IntegrityError as integrity_error:
+            if self._is_public_name_conflict(integrity_error):
+                raise PhoneOtpError("public_username_taken", 409) from None
+            if self._constraint(integrity_error) in {"uq_phone_identity_phone", "uq_phone_identity_user"}:
+                raise PhoneOtpError("phone_in_use", 409) from None
+            raise
+        if error:
+            raise error
+        return result
+
+    def set_password(self, *, user_id, challenge_id, code, flow_id, new_password):
+        self._ensure_available()
+        try:
+            validate_signup_password(new_password)
+        except (ValueError, TypeError, AttributeError):
+            raise PhoneOtpError("invalid_password", 400) from None
+        flow_digest = self._flow_digest(flow_id)
+        password_hash = None
+        # First validate without spending a slow hash on invalid proof. The
+        # second transaction repeats the actor/current-phone check after hashing.
+        for final in (False, True):
+            error = None
+            with self.session_factory() as db, db.begin():
+                now = _now()
+                state, challenge = self._locked_challenge(db, challenge_id, flow_digest, now)
+                error = self._proof_error(state, challenge, code, flow_digest, now)
+                if error is None:
+                    db.execute(
+                        select(models_db.User).where(models_db.User.id == user_id).with_for_update()
+                    ).scalar_one_or_none()
+                    user = self._bind_actor(db, user_id, require_unbound=False)
+                    phone = db.execute(
+                        select(models_db.PhoneIdentity.phone_e164).where(models_db.PhoneIdentity.user_id == user_id)
+                    ).scalar_one_or_none()
+                    if phone != challenge.phone_e164:
+                        raise PhoneOtpError("challenge_invalid", 400)
+                    if _utc(challenge.expires_at) <= _now():
+                        raise PhoneOtpError("challenge_expired", 400)
+                    if final:
+                        user.hashed_password = password_hash
+                        challenge.state = "consumed"
+                        challenge.consumed_at = _now()
+                        db.flush()
+                        if _utc(challenge.expires_at) <= _now():
+                            raise PhoneOtpError("challenge_expired", 400)
+            if error:
+                raise error
+            if not final:
+                password_hash = get_password_hash(new_password)
 
     def bind(self, *, user_id, challenge_id, code, flow_id, current_password=None):
         self._ensure_available()

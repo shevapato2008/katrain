@@ -45,6 +45,34 @@ def test_add_missing_columns_preserves_data(legacy_engine):
     assert row[2] in (0, False, None)  # default-ish, not crashing
 
 
+def test_nullable_platform_migration_preserves_legacy_sgf_hash_and_indexes():
+    engine = create_engine("sqlite:///:memory:")
+    sgf, sgf_hash = "(;FF[4]KTP[golaxy]C[legacy])", "unchanged-hash"
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE user_games (id VARCHAR(32) PRIMARY KEY, user_id INTEGER, source VARCHAR(50), "
+                "sgf_content TEXT, sgf_hash VARCHAR(64))"
+            )
+        )
+        conn.execute(
+            text("INSERT INTO user_games VALUES ('old', 1, 'play_ai', :sgf, :hash)"),
+            {"sgf": sgf, "hash": sgf_hash},
+        )
+
+    migrations.add_missing_columns(engine)
+    migrations.add_missing_columns(engine)
+
+    column = next(c for c in inspect(engine).get_columns("user_games") if c["name"] == "platform")
+    assert column["nullable"] and column["default"] is None
+    assert column["type"].length == 32
+    assert not any("platform" in index["column_names"] for index in inspect(engine).get_indexes("user_games"))
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT source, sgf_content, sgf_hash, platform FROM user_games")).one() == (
+            "play_ai", sgf, sgf_hash, None,
+        )
+
+
 def test_create_missing_indexes(legacy_engine):
     models_db.Base.metadata.create_all(bind=legacy_engine)
     migrations.add_missing_columns(legacy_engine)

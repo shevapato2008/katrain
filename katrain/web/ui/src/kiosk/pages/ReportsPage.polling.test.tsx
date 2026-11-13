@@ -104,6 +104,22 @@ describe('屏 19 接真的报告任务钩子', () => {
     expect(await screen.findByText('正在分析 1/3')).toBeInTheDocument();
   });
 
+  it('remount rehydrates both tiers through GET without creating or retrying a task', async () => {
+    const completed = task('completed', 3, 1);
+    const deep = { ...task('running', 1, 2), report_type: 'deep' as const };
+    mocks.reportList.mockResolvedValueOnce([completed, deep])
+      .mockResolvedValue([{ ...completed }, { ...deep, analyzed_moves: 2 }]);
+    const first = renderPage();
+    await waitFor(() => expect(document.querySelector('[data-tier="deep"]')).toHaveAttribute('aria-valuenow', '33'));
+    expect(document.querySelector('[data-tier="normal"]')).toHaveAttribute('aria-valuenow', '100');
+    first.unmount();
+    renderPage();
+    await waitFor(() => expect(document.querySelector('[data-tier="deep"]')).toHaveAttribute('aria-valuenow', '67'));
+    expect(mocks.reportList).toHaveBeenCalledTimes(2);
+    expect(mocks.reportCreate).not.toHaveBeenCalled();
+    expect(mocks.reportRetry).not.toHaveBeenCalled();
+  });
+
   it('两秒一轮跟进度,拿到终态就停', async () => {
     vi.useFakeTimers();
     mocks.reportList

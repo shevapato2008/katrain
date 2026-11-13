@@ -13648,3 +13648,114 @@ msgstr "비밀번호는 15자 이상이어야 합니다"
 
 msgid "auth:password_too_long"
 msgstr "비밀번호가 너무 깁니다. 줄여 주세요"
+
+msgid "auth:continue_submit"
+msgstr "계속"
+
+msgid "auth:continue_name_title"
+msgstr "공개 사용자 이름 설정"
+
+msgid "auth:continue_legacy_title"
+msgstr "사용자 이름 설정"
+
+msgid "auth:continue_public_name_hint"
+msgstr "사용자 이름은 중복될 수 없으며 공개됩니다."
+
+msgid "auth:continue_password_required"
+msgstr "이미 있는 사용자 이름입니다. 기존 계정의 비밀번호를 확인해 주세요."
+
+msgid "auth:continue_original_password"
+msgstr "기존 비밀번호"
+
+msgid "auth:continue_password_placeholder"
+msgstr "기존 계정의 비밀번호 입력"
+
+msgid "auth:continue_change_phone"
+msgstr "휴대폰 번호 변경"
+
+msgid "auth:continue_original_login"
+msgstr "기존 계정으로 로그인"
+
+msgid "auth:continue_phone_in_use"
+msgstr "이 계정에는 다른 휴대폰 번호가 연결되어 있습니다. 기존 계정으로 로그인하여 번호를 관리하세요."
+
+msgid "auth:continue_password_incorrect"
+msgstr "기존 계정의 비밀번호가 올바르지 않습니다. 다시 시도하세요."
+
+msgid "auth:continue_password_locked"
+msgstr "비밀번호 시도가 너무 많습니다. {seconds}초 후 다시 시도하세요."
+
+msgid "auth:continue_username_placeholder"
+msgstr "중복되지 않는 공개 사용자 이름 선택"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · 인증됨"
+
+msgid "auth:password_settings_title"
+msgstr "비밀번호 설정 또는 재설정"
+
+msgid "auth:password_settings_hint"
+msgstr "현재 연결된 휴대폰으로 받은 새 문자 인증번호로 비밀번호를 설정하세요. 이후에도 문자로 로그인할 수 있습니다."
+
+msgid "auth:password_new"
+msgstr "새 비밀번호"
+
+msgid "auth:password_submit"
+msgstr "비밀번호 저장"
+
+msgid "auth:password_submitting"
+msgstr "저장 중…"
+
+msgid "auth:password_success"
+msgstr "비밀번호가 저장되었습니다"
+
+msgid "auth:password_phone_required"
+msgstr "비밀번호를 설정하려면 먼저 휴대폰 번호를 연결하세요."
+
+msgid "auth:password_phone_mismatch"
+msgstr "이 계정에 현재 연결된 휴대폰 번호를 사용하세요."
+
+msgid "auth:password_auth_required"
+msgstr "다시 로그인한 후 비밀번호를 설정하세요."
+
+msgid "auth:password_not_allowed"
+msgstr "이 계정은 여기서 비밀번호를 설정할 수 없습니다."
+
+msgid "auth:password_failed"
+msgstr "비밀번호를 저장하지 못했습니다. 다시 시도하세요."
+
+msgid "report:tier_normal"
+msgstr "일반 보고서"
+
+msgid "report:tier_deep"
+msgstr "고급 보고서"
+
+msgid "report:cross_platform"
+msgstr "다른 플랫폼 · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "연구 보관함"
+
+msgid "report:tier_menu"
+msgstr "보고서 등급"
+
+msgid "startup:loading"
+msgstr "불러오는 중…"
+
+msgid "startup:render_error"
+msgstr "지금은 페이지를 표시할 수 없습니다"
+
+msgid "startup:preload_error"
+msgstr "일부 페이지를 불러오지 못했습니다"
+
+msgid "startup:reload"
+msgstr "다시 불러오기"

@@ -14321,3 +14321,118 @@ msgstr "Password must be at least 15 characters"
 
 msgid "auth:password_too_long"
 msgstr "Password is too long. Shorten it"
+
+msgid "auth:continue_submit"
+msgstr "Continue"
+
+msgid "auth:continue_name_title"
+msgstr "Set public username"
+
+msgid "auth:continue_legacy_title"
+msgstr "Set username"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Your unique username will be public."
+
+msgid "auth:continue_password_required"
+msgstr "This username exists. Verify the original account password."
+
+msgid "auth:continue_original_password"
+msgstr "Original password"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Enter the original account password"
+
+msgid "auth:continue_change_phone"
+msgstr "Change phone number"
+
+msgid "auth:continue_original_login"
+msgstr "Sign in to original account"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"This account is linked to another phone. Sign in to the original account to "
+"manage its phone."
+
+msgid "auth:continue_password_incorrect"
+msgstr "The original account password is incorrect. Try again."
+
+msgid "auth:continue_password_locked"
+msgstr "Too many password attempts. Try again in {seconds} seconds."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Choose a unique public username"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Verified"
+
+msgid "auth:password_settings_title"
+msgstr "Set or reset password"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Use a new SMS code sent to your current phone to set a password. SMS sign-in"
+" remains available."
+
+msgid "auth:password_new"
+msgstr "New password"
+
+msgid "auth:password_submit"
+msgstr "Save password"
+
+msgid "auth:password_submitting"
+msgstr "Saving…"
+
+msgid "auth:password_success"
+msgstr "Password saved"
+
+msgid "auth:password_phone_required"
+msgstr "Bind a phone before setting a password."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Use the phone currently linked to this account."
+
+msgid "auth:password_auth_required"
+msgstr "Sign in again before setting a password."
+
+msgid "auth:password_not_allowed"
+msgstr "This account cannot set a password here."
+
+msgid "auth:password_failed"
+msgstr "Could not save password. Try again."
+
+msgid "report:tier_normal"
+msgstr "Normal report"
+
+msgid "report:tier_deep"
+msgstr "Advanced report"
+
+msgid "report:cross_platform"
+msgstr "Cross-platform · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "Research archive"
+
+msgid "report:tier_menu"
+msgstr "Report tier"
+
+msgid "startup:loading"
+msgstr "Loading…"
+
+msgid "startup:render_error"
+msgstr "This page cannot be displayed right now"
+
+msgid "startup:preload_error"
+msgstr "Some pages could not be loaded"
+
+msgid "startup:reload"
+msgstr "Reload"

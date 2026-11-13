@@ -32,6 +32,33 @@ export interface ReportGameStatus {
   failedDeep?: ReportTaskSummary;
 }
 
+export interface ReportTierPresentation {
+  tier: ReportType;
+  task?: ReportTaskSummary;
+  status: 'missing' | 'pending' | 'running' | 'completed' | 'failed';
+  analyzed: number;
+  total: number;
+  percent: number;
+  viewable: boolean;
+}
+
+/** One tier never borrows another tier's completion or frontier. */
+export function presentReportTier(
+  state: ReportGameStatus,
+  tier: ReportType,
+  moveCount: number,
+): ReportTierPresentation {
+  const task = tier === 'normal'
+    ? state.activeNormal ?? state.completedNormal ?? state.failedNormal
+    : state.activeDeep ?? state.completedDeep ?? state.failedDeep;
+  const total = Math.max(0, task && task.total_moves > 0 ? task.total_moves : moveCount);
+  const analyzed = Math.max(0, Math.min(total, task?.analyzed_moves ?? 0));
+  const status = task ? (isActiveReportTask(task) ? task.status === 'running' ? 'running' : 'pending'
+    : task.status === 'completed' ? 'completed' : 'failed') : 'missing';
+  const percent = total > 0 ? Math.round(analyzed / total * 100) : 0;
+  return { tier, task, status, analyzed, total, percent, viewable: status === 'completed' };
+}
+
 export type ReportStatesByGame = Record<string, ReportGameStatus>;
 
 export interface OptimisticReportTask extends ReportTaskSummary {

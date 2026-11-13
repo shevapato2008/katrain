@@ -8790,3 +8790,118 @@ msgstr "Parola en az 15 karakter olmalıdır"
 
 msgid "auth:password_too_long"
 msgstr "Parola çok uzun. Kısaltın"
+
+msgid "auth:continue_submit"
+msgstr "Devam et"
+
+msgid "auth:continue_name_title"
+msgstr "Herkese açık kullanıcı adı belirle"
+
+msgid "auth:continue_legacy_title"
+msgstr "Kullanıcı adı belirle"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Benzersiz kullanıcı adınız herkese açık olacaktır."
+
+msgid "auth:continue_password_required"
+msgstr "Bu kullanıcı adı mevcut. Asıl hesabın parolasını doğrulayın."
+
+msgid "auth:continue_original_password"
+msgstr "Asıl parola"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Asıl hesabın parolasını girin"
+
+msgid "auth:continue_change_phone"
+msgstr "Telefon numarasını değiştir"
+
+msgid "auth:continue_original_login"
+msgstr "Asıl hesaba giriş yap"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Bu hesap başka bir telefona bağlı. Numarayı yönetmek için asıl hesaba giriş "
+"yapın."
+
+msgid "auth:continue_password_incorrect"
+msgstr "Asıl hesabın parolası yanlış. Tekrar deneyin."
+
+msgid "auth:continue_password_locked"
+msgstr "Çok fazla parola denemesi. {seconds} saniye sonra tekrar deneyin."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Benzersiz ve herkese açık bir kullanıcı adı seçin"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Doğrulandı"
+
+msgid "auth:password_settings_title"
+msgstr "Parola belirle veya sıfırla"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Mevcut telefonunuza gönderilen yeni SMS koduyla parola belirleyin. SMS ile "
+"giriş kullanıma açık kalır."
+
+msgid "auth:password_new"
+msgstr "Yeni parola"
+
+msgid "auth:password_submit"
+msgstr "Parolayı kaydet"
+
+msgid "auth:password_submitting"
+msgstr "Kaydediliyor…"
+
+msgid "auth:password_success"
+msgstr "Parola kaydedildi"
+
+msgid "auth:password_phone_required"
+msgstr "Parola belirlemeden önce bir telefon bağlayın."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Bu hesaba şu anda bağlı olan telefonu kullanın."
+
+msgid "auth:password_auth_required"
+msgstr "Parola belirlemeden önce yeniden giriş yapın."
+
+msgid "auth:password_not_allowed"
+msgstr "Bu hesap burada parola belirleyemez."
+
+msgid "auth:password_failed"
+msgstr "Parola kaydedilemedi. Tekrar deneyin."
+
+msgid "report:tier_normal"
+msgstr "Normal rapor"
+
+msgid "report:tier_deep"
+msgstr "Gelişmiş rapor"
+
+msgid "report:cross_platform"
+msgstr "Platformlar arası · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "İnceleme arşivi"
+
+msgid "report:tier_menu"
+msgstr "Rapor düzeyi"
+
+msgid "startup:loading"
+msgstr "Yükleniyor…"
+
+msgid "startup:render_error"
+msgstr "Bu sayfa şu anda görüntülenemiyor"
+
+msgid "startup:preload_error"
+msgstr "Bazı sayfalar yüklenemedi"
+
+msgid "startup:reload"
+msgstr "Yeniden yükle"

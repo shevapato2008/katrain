@@ -15,6 +15,7 @@ from katrain.web.core.remote_client import RemoteAPIClient
 from katrain.web.core.repository import RemoteUserGameRepository, RepositoryDispatcher, enqueue_sync_item
 from katrain.web.core.sync_worker import SyncWorker
 from katrain.web.core.user_game_repo import UserGameRepository
+from katrain.web.api.v1.endpoints.user_games import UserGameCreate
 
 JIA, YI = 7, 8
 CLOUD_ACCOUNT_BY_BEARER = {"tok-jia": "甲", "tok-jia-new": "甲", "tok-yi": "乙", "tok-yi-new": "乙"}
@@ -121,6 +122,40 @@ async def test_the_owners_own_session_still_goes_straight_to_the_cloud():
 
     assert box.library == {"甲": ["甲"]}
     assert _local_blacks(box, JIA) == [] and _queue(box) == []
+
+
+async def test_offline_platform_game_keeps_owner_and_metadata_through_cloud_validation():
+    received = []
+
+    def cloud(request):
+        received.append((request.headers["authorization"], UserGameCreate.model_validate_json(request.content)))
+        return httpx.Response(200, json={"id": "cloud-origin"})
+
+    box = _box(cloud_handler=cloud)
+    _sign_in(box, "tok-jia", JIA)
+    box.connectivity.is_online = False
+    data = {**_game("甲"), "platform": "golaxy", "user_color": "W", "game_type": "free"}
+    try:
+        local = await box.dispatcher.user_games_create(user_id=JIA, data=data)
+        assert local["platform"] == "golaxy"
+        assert local["user_id"] == JIA
+        with box.factory() as db:
+            queued = db.query(models_db.SyncQueueEntry).one()
+            assert queued.user_id == str(JIA)
+            assert queued.payload["platform"] == "golaxy"
+        _sign_in(box, "tok-yi", YI)
+        box.connectivity.is_online = True
+        assert await box.worker.run_sync() == 0
+        assert received == []
+        _sign_in(box, "tok-jia", JIA)
+        assert await box.worker.run_sync() == 1
+        token, saved = received[0]
+        assert token == "Bearer tok-jia"
+        assert saved.platform == "golaxy"
+        assert saved.user_color == "W"
+        assert saved.source == "play_ai" and saved.game_type == "free"
+    finally:
+        await box.remote.close()
 
 
 @pytest.mark.parametrize("pause_at", ["first_post", "refresh"])

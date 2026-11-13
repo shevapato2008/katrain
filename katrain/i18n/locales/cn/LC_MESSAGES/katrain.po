@@ -13507,3 +13507,114 @@ msgstr "密码至少15个字符"
 
 msgid "auth:password_too_long"
 msgstr "密码过长，请缩短"
+
+msgid "auth:continue_submit"
+msgstr "继续"
+
+msgid "auth:continue_name_title"
+msgstr "设置公开用户名"
+
+msgid "auth:continue_legacy_title"
+msgstr "设置用户名"
+
+msgid "auth:continue_public_name_hint"
+msgstr "用户名不可重复，并会公开显示。"
+
+msgid "auth:continue_password_required"
+msgstr "此用户名已存在，请验证原账号密码。"
+
+msgid "auth:continue_original_password"
+msgstr "原账号密码"
+
+msgid "auth:continue_password_placeholder"
+msgstr "输入原账号密码"
+
+msgid "auth:continue_change_phone"
+msgstr "更换手机号"
+
+msgid "auth:continue_original_login"
+msgstr "登录原账号"
+
+msgid "auth:continue_phone_in_use"
+msgstr "此账号已绑定其他手机号，请登录原账号管理手机号。"
+
+msgid "auth:continue_password_incorrect"
+msgstr "原账号密码不正确，请重试。"
+
+msgid "auth:continue_password_locked"
+msgstr "密码尝试次数过多，请在 {seconds} 秒后重试。"
+
+msgid "auth:continue_username_placeholder"
+msgstr "设置唯一的公开用户名"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · 已验证"
+
+msgid "auth:password_settings_title"
+msgstr "设置或重置密码"
+
+msgid "auth:password_settings_hint"
+msgstr "使用当前绑定手机号接收的新验证码设置密码，之后仍可通过短信验证码登录。"
+
+msgid "auth:password_new"
+msgstr "新密码"
+
+msgid "auth:password_submit"
+msgstr "保存密码"
+
+msgid "auth:password_submitting"
+msgstr "正在保存…"
+
+msgid "auth:password_success"
+msgstr "密码已保存"
+
+msgid "auth:password_phone_required"
+msgstr "请先绑定手机号，再设置密码。"
+
+msgid "auth:password_phone_mismatch"
+msgstr "请使用此账号当前绑定的手机号。"
+
+msgid "auth:password_auth_required"
+msgstr "请重新登录后再设置密码。"
+
+msgid "auth:password_not_allowed"
+msgstr "此账号无法在此设置密码。"
+
+msgid "auth:password_failed"
+msgstr "密码未能保存，请重试。"
+
+msgid "report:tier_normal"
+msgstr "普通报告"
+
+msgid "report:tier_deep"
+msgstr "高级报告"
+
+msgid "report:cross_platform"
+msgstr "跨平台 · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "星阵"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "野狐"
+
+msgid "report:title_research"
+msgstr "研究存档"
+
+msgid "report:tier_menu"
+msgstr "报告档位"
+
+msgid "startup:loading"
+msgstr "正在加载…"
+
+msgid "startup:render_error"
+msgstr "页面暂时无法显示"
+
+msgid "startup:preload_error"
+msgstr "部分页面加载失败"
+
+msgid "startup:reload"
+msgstr "重新加载"

@@ -13650,3 +13650,114 @@ msgstr "パスワードは15文字以上で入力してください"
 
 msgid "auth:password_too_long"
 msgstr "パスワードが長すぎます。短くしてください"
+
+msgid "auth:continue_submit"
+msgstr "続ける"
+
+msgid "auth:continue_name_title"
+msgstr "公開ユーザー名を設定"
+
+msgid "auth:continue_legacy_title"
+msgstr "ユーザー名を設定"
+
+msgid "auth:continue_public_name_hint"
+msgstr "ユーザー名は重複できず、公開されます。"
+
+msgid "auth:continue_password_required"
+msgstr "このユーザー名はすでに存在します。元のアカウントのパスワードで確認してください。"
+
+msgid "auth:continue_original_password"
+msgstr "元のパスワード"
+
+msgid "auth:continue_password_placeholder"
+msgstr "元のアカウントのパスワードを入力"
+
+msgid "auth:continue_change_phone"
+msgstr "携帯番号を変更"
+
+msgid "auth:continue_original_login"
+msgstr "元のアカウントでログイン"
+
+msgid "auth:continue_phone_in_use"
+msgstr "このアカウントには別の携帯番号が登録されています。番号の管理は元のアカウントでログインしてください。"
+
+msgid "auth:continue_password_incorrect"
+msgstr "元のアカウントのパスワードが違います。もう一度お試しください。"
+
+msgid "auth:continue_password_locked"
+msgstr "パスワードの試行回数が多すぎます。{seconds}秒後に再試行してください。"
+
+msgid "auth:continue_username_placeholder"
+msgstr "重複しない公開ユーザー名を設定"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · 認証済み"
+
+msgid "auth:password_settings_title"
+msgstr "パスワードの設定・再設定"
+
+msgid "auth:password_settings_hint"
+msgstr "現在登録されている携帯番号に届く新しいSMSコードでパスワードを設定します。設定後もSMSでログインできます。"
+
+msgid "auth:password_new"
+msgstr "新しいパスワード"
+
+msgid "auth:password_submit"
+msgstr "パスワードを保存"
+
+msgid "auth:password_submitting"
+msgstr "保存中…"
+
+msgid "auth:password_success"
+msgstr "パスワードを保存しました"
+
+msgid "auth:password_phone_required"
+msgstr "パスワードを設定する前に携帯番号を登録してください。"
+
+msgid "auth:password_phone_mismatch"
+msgstr "このアカウントに現在登録されている携帯番号を使用してください。"
+
+msgid "auth:password_auth_required"
+msgstr "パスワードを設定する前に再度ログインしてください。"
+
+msgid "auth:password_not_allowed"
+msgstr "このアカウントはここではパスワードを設定できません。"
+
+msgid "auth:password_failed"
+msgstr "パスワードを保存できませんでした。もう一度お試しください。"
+
+msgid "report:tier_normal"
+msgstr "通常レポート"
+
+msgid "report:tier_deep"
+msgstr "高度なレポート"
+
+msgid "report:cross_platform"
+msgstr "別プラットフォーム · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "野狐"
+
+msgid "report:title_research"
+msgstr "研究アーカイブ"
+
+msgid "report:tier_menu"
+msgstr "レポートの種類"
+
+msgid "startup:loading"
+msgstr "読み込み中…"
+
+msgid "startup:render_error"
+msgstr "現在このページを表示できません"
+
+msgid "startup:preload_error"
+msgstr "一部のページを読み込めませんでした"
+
+msgid "startup:reload"
+msgstr "再読み込み"

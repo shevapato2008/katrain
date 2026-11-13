@@ -8853,3 +8853,121 @@ msgstr "Le mot de passe doit comporter au moins 15 caractères"
 
 msgid "auth:password_too_long"
 msgstr "Le mot de passe est trop long. Raccourcissez-le"
+
+msgid "auth:continue_submit"
+msgstr "Continuer"
+
+msgid "auth:continue_name_title"
+msgstr "Définir un nom d’utilisateur public"
+
+msgid "auth:continue_legacy_title"
+msgstr "Définir un nom d’utilisateur"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Votre nom d’utilisateur sera unique et public."
+
+msgid "auth:continue_password_required"
+msgstr ""
+"Ce nom d’utilisateur existe déjà. Vérifiez le mot de passe du compte "
+"d’origine."
+
+msgid "auth:continue_original_password"
+msgstr "Mot de passe d’origine"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Saisissez le mot de passe du compte d’origine"
+
+msgid "auth:continue_change_phone"
+msgstr "Changer de numéro de téléphone"
+
+msgid "auth:continue_original_login"
+msgstr "Se connecter au compte d’origine"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Ce compte est associé à un autre numéro. Connectez-vous au compte d’origine "
+"pour gérer ce numéro."
+
+msgid "auth:continue_password_incorrect"
+msgstr "Le mot de passe du compte d’origine est incorrect. Réessayez."
+
+msgid "auth:continue_password_locked"
+msgstr ""
+"Trop de tentatives de mot de passe. Réessayez dans {seconds} secondes."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Choisissez un nom d’utilisateur public unique"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Vérifié"
+
+msgid "auth:password_settings_title"
+msgstr "Définir ou réinitialiser le mot de passe"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Définissez un mot de passe avec un nouveau code SMS envoyé à votre numéro "
+"actuel. La connexion par SMS reste disponible."
+
+msgid "auth:password_new"
+msgstr "Nouveau mot de passe"
+
+msgid "auth:password_submit"
+msgstr "Enregistrer le mot de passe"
+
+msgid "auth:password_submitting"
+msgstr "Enregistrement…"
+
+msgid "auth:password_success"
+msgstr "Mot de passe enregistré"
+
+msgid "auth:password_phone_required"
+msgstr "Associez un numéro de téléphone avant de définir un mot de passe."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Utilisez le numéro actuellement associé à ce compte."
+
+msgid "auth:password_auth_required"
+msgstr "Reconnectez-vous avant de définir un mot de passe."
+
+msgid "auth:password_not_allowed"
+msgstr "Ce compte ne peut pas définir de mot de passe ici."
+
+msgid "auth:password_failed"
+msgstr "Impossible d’enregistrer le mot de passe. Réessayez."
+
+msgid "report:tier_normal"
+msgstr "Rapport normal"
+
+msgid "report:tier_deep"
+msgstr "Rapport avancé"
+
+msgid "report:cross_platform"
+msgstr "Interplateforme · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "Archives d’étude"
+
+msgid "report:tier_menu"
+msgstr "Niveau du rapport"
+
+msgid "startup:loading"
+msgstr "Chargement…"
+
+msgid "startup:render_error"
+msgstr "Cette page ne peut pas être affichée pour le moment"
+
+msgid "startup:preload_error"
+msgstr "Certaines pages n’ont pas pu être chargées"
+
+msgid "startup:reload"
+msgstr "Recharger"

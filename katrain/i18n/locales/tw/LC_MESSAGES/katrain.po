@@ -13614,3 +13614,114 @@ msgstr "密碼至少15個字元"
 
 msgid "auth:password_too_long"
 msgstr "密碼過長，請縮短"
+
+msgid "auth:continue_submit"
+msgstr "繼續"
+
+msgid "auth:continue_name_title"
+msgstr "設定公開使用者名稱"
+
+msgid "auth:continue_legacy_title"
+msgstr "設定使用者名稱"
+
+msgid "auth:continue_public_name_hint"
+msgstr "使用者名稱不可重複，並會公開顯示。"
+
+msgid "auth:continue_password_required"
+msgstr "此使用者名稱已存在，請驗證原帳號密碼。"
+
+msgid "auth:continue_original_password"
+msgstr "原帳號密碼"
+
+msgid "auth:continue_password_placeholder"
+msgstr "輸入原帳號密碼"
+
+msgid "auth:continue_change_phone"
+msgstr "更換手機號碼"
+
+msgid "auth:continue_original_login"
+msgstr "登入原帳號"
+
+msgid "auth:continue_phone_in_use"
+msgstr "此帳號已綁定其他手機號碼，請登入原帳號管理手機號碼。"
+
+msgid "auth:continue_password_incorrect"
+msgstr "原帳號密碼不正確，請重試。"
+
+msgid "auth:continue_password_locked"
+msgstr "密碼嘗試次數過多，請在 {seconds} 秒後重試。"
+
+msgid "auth:continue_username_placeholder"
+msgstr "設定唯一的公開使用者名稱"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · 已驗證"
+
+msgid "auth:password_settings_title"
+msgstr "設定或重設密碼"
+
+msgid "auth:password_settings_hint"
+msgstr "使用目前綁定手機號碼收到的新驗證碼設定密碼，之後仍可透過簡訊驗證碼登入。"
+
+msgid "auth:password_new"
+msgstr "新密碼"
+
+msgid "auth:password_submit"
+msgstr "儲存密碼"
+
+msgid "auth:password_submitting"
+msgstr "正在儲存…"
+
+msgid "auth:password_success"
+msgstr "密碼已儲存"
+
+msgid "auth:password_phone_required"
+msgstr "請先綁定手機號碼，再設定密碼。"
+
+msgid "auth:password_phone_mismatch"
+msgstr "請使用此帳號目前綁定的手機號碼。"
+
+msgid "auth:password_auth_required"
+msgstr "請重新登入後再設定密碼。"
+
+msgid "auth:password_not_allowed"
+msgstr "此帳號無法在此設定密碼。"
+
+msgid "auth:password_failed"
+msgstr "密碼未能儲存，請重試。"
+
+msgid "report:tier_normal"
+msgstr "普通報告"
+
+msgid "report:tier_deep"
+msgstr "進階報告"
+
+msgid "report:cross_platform"
+msgstr "跨平台 · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "星陣"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "野狐"
+
+msgid "report:title_research"
+msgstr "研究存檔"
+
+msgid "report:tier_menu"
+msgstr "報告等級"
+
+msgid "startup:loading"
+msgstr "正在載入…"
+
+msgid "startup:render_error"
+msgstr "頁面暫時無法顯示"
+
+msgid "startup:preload_error"
+msgstr "部分頁面載入失敗"
+
+msgid "startup:reload"
+msgstr "重新載入"

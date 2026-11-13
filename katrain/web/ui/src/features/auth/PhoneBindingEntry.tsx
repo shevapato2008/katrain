@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { isStrictBoxKiosk as strictBuild, leaveToLauncher } from '../../kiosk/shell/boxUrls';
 import PhoneBindDialog, { canBindPhone } from './PhoneBindDialog';
+import PhonePasswordDialog from './PhonePasswordDialog';
 
 export default function PhoneBindingEntry({ kiosk = false }: { kiosk?: boolean }) {
   const { user, isGuest, isStrictBoxKiosk, identityKey, token } = useAuth();
@@ -15,9 +16,10 @@ export default function PhoneBindingEntry({ kiosk = false }: { kiosk?: boolean }
   const [snapshot, setSnapshot] = useState<{ identityKey: string | null; token: string | null; status: PhoneBindingStatus | null; error: boolean } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [container, setContainer] = useState<HTMLElement | null>(null);
   useEffect(() => {
-    setOpen(false); setSnapshot(null);
+    setOpen(false); setPasswordOpen(false); setSnapshot(null);
     if (!eligible || strict) return;
     const request = new AbortController(); const captured = { identityKey, token };
     const current = () => !request.signal.aborted && currentIdentity.current.identityKey === captured.identityKey && currentIdentity.current.token === captured.token;
@@ -37,12 +39,17 @@ export default function PhoneBindingEntry({ kiosk = false }: { kiosk?: boolean }
   };
   const content = <>
     {owned?.error && <Typography variant="body2" color="text.secondary">{t('auth:bind_load_error', '暂时无法读取手机号绑定状态')}</Typography>}
-    {mask ? <Typography variant="body2" color="text.secondary">{t('auth:bind_bound_label', '已绑定手机号')} {mask}</Typography>
+    {mask ? <>
+      <Typography variant="body2" color="text.secondary">{t('auth:bind_bound_label', '已绑定手机号')} {mask}</Typography>
+      {kiosk ? <button type="button" className="km-phone-binding-action" onClick={event => { setContainer(event.currentTarget.closest<HTMLElement>('.kiosk')); setPasswordOpen(true); }}>{t('auth:password_settings_title', 'Set or reset password')}</button>
+        : <Button fullWidth variant="text" onClick={() => setPasswordOpen(true)} sx={{ minHeight: 44, color: 'text.secondary', justifyContent: 'flex-start', px: 1.5 }}>{t('auth:password_settings_title', 'Set or reset password')}</Button>}
+    </>
       : kiosk ? <button type="button" className="km-phone-binding-action" disabled={!strict && !owned} onClick={action}>{!strict && !owned ? t('auth:bind_loading', '正在核对绑定状态…') : label}</button>
       : <Button fullWidth variant="text" disabled={!strict && !owned} onClick={action} sx={{ minHeight: 44, color: 'text.secondary', justifyContent: 'flex-start', px: 1.5 }}>{!strict && !owned ? t('auth:bind_loading', '正在核对绑定状态…') : label}</Button>}
   </>;
   return <>
     {kiosk ? <div className="km-phone-binding">{content}</div> : <Box sx={{ mt: 1, minWidth: 0 }}>{content}</Box>}
+    <PhonePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} kiosk={kiosk} container={container} />
     <PhoneBindDialog open={open} onClose={() => setOpen(false)} kiosk={kiosk} container={container} onBound={status => {
       if (currentIdentity.current.identityKey === identityKey && currentIdentity.current.token === token) setSnapshot({ identityKey, token, status, error: false });
     }} />

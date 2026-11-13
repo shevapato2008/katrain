@@ -8867,3 +8867,121 @@ msgstr "Das Passwort muss mindestens 15 Zeichen lang sein"
 
 msgid "auth:password_too_long"
 msgstr "Das Passwort ist zu lang. Bitte kürzen"
+
+msgid "auth:continue_submit"
+msgstr "Weiter"
+
+msgid "auth:continue_name_title"
+msgstr "Öffentlichen Benutzernamen festlegen"
+
+msgid "auth:continue_legacy_title"
+msgstr "Benutzernamen festlegen"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Dein eindeutiger Benutzername wird öffentlich angezeigt."
+
+msgid "auth:continue_password_required"
+msgstr ""
+"Dieser Benutzername existiert bereits. Bestätige das Passwort des "
+"ursprünglichen Kontos."
+
+msgid "auth:continue_original_password"
+msgstr "Ursprüngliches Passwort"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Passwort des ursprünglichen Kontos eingeben"
+
+msgid "auth:continue_change_phone"
+msgstr "Mobilnummer ändern"
+
+msgid "auth:continue_original_login"
+msgstr "Beim ursprünglichen Konto anmelden"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Dieses Konto ist mit einer anderen Mobilnummer verknüpft. Melde dich beim "
+"ursprünglichen Konto an, um die Nummer zu verwalten."
+
+msgid "auth:continue_password_incorrect"
+msgstr ""
+"Das Passwort des ursprünglichen Kontos ist falsch. Versuche es erneut."
+
+msgid "auth:continue_password_locked"
+msgstr "Zu viele Passwortversuche. Versuche es in {seconds} Sekunden erneut."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Eindeutigen öffentlichen Benutzernamen wählen"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Bestätigt"
+
+msgid "auth:password_settings_title"
+msgstr "Passwort festlegen oder zurücksetzen"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Lege mit einem neuen SMS-Code an deine aktuelle Mobilnummer ein Passwort "
+"fest. Die Anmeldung per SMS bleibt möglich."
+
+msgid "auth:password_new"
+msgstr "Neues Passwort"
+
+msgid "auth:password_submit"
+msgstr "Passwort speichern"
+
+msgid "auth:password_submitting"
+msgstr "Wird gespeichert…"
+
+msgid "auth:password_success"
+msgstr "Passwort gespeichert"
+
+msgid "auth:password_phone_required"
+msgstr "Verknüpfe zuerst eine Mobilnummer, bevor du ein Passwort festlegst."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Verwende die Mobilnummer, die aktuell mit diesem Konto verknüpft ist."
+
+msgid "auth:password_auth_required"
+msgstr "Melde dich erneut an, bevor du ein Passwort festlegst."
+
+msgid "auth:password_not_allowed"
+msgstr "Für dieses Konto kann hier kein Passwort festgelegt werden."
+
+msgid "auth:password_failed"
+msgstr "Das Passwort konnte nicht gespeichert werden. Versuche es erneut."
+
+msgid "report:tier_normal"
+msgstr "Normaler Bericht"
+
+msgid "report:tier_deep"
+msgstr "Erweiterter Bericht"
+
+msgid "report:cross_platform"
+msgstr "Plattformübergreifend · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "Studienarchiv"
+
+msgid "report:tier_menu"
+msgstr "Berichtsstufe"
+
+msgid "startup:loading"
+msgstr "Wird geladen…"
+
+msgid "startup:render_error"
+msgstr "Diese Seite kann gerade nicht angezeigt werden"
+
+msgid "startup:preload_error"
+msgstr "Einige Seiten konnten nicht geladen werden"
+
+msgid "startup:reload"
+msgstr "Neu laden"

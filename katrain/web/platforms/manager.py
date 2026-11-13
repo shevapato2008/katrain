@@ -282,6 +282,13 @@ class PlatformManager:
 
     # --- Bridge: platform game -> KaTrain session ---
 
+    @staticmethod
+    def _stamp_game_platform(session, platform: str) -> None:
+        """Keep trusted provenance on this game's root after its live context ends."""
+        game = getattr(session.katrain, "game", None)
+        if game is not None:
+            game.root.set_property("KTP", platform)
+
     async def start_platform_game(self, platform: str, game_session: PlatformGameSession, user_id: int) -> str:
         """Create one local online session for a verified remote game identity.
 
@@ -341,6 +348,7 @@ class PlatformManager:
                 existing.last_confirmed_move = snapshot.move_number
                 existing.game_phase = snapshot.phase
                 existing.needs_resync = False
+            self._stamp_game_platform(existing_session, platform)
             update_state = getattr(existing_session.katrain, "update_state", None)
             if update_state is not None:
                 update_state()
@@ -377,6 +385,7 @@ class PlatformManager:
             )
             if snapshot is not None:
                 self._restore_ogs_snapshot(session, snapshot, game_session)
+            self._stamp_game_platform(session, platform)
             session.katrain.platform_my_color = game_session.my_color
             session.katrain.platform_player_ranks = dict(game_session.player_ranks)
         except Exception:
@@ -421,7 +430,7 @@ class PlatformManager:
         def sgf_point(col: int, row: int) -> str:
             return chr(97 + col) + chr(97 + snapshot.board_size - row - 1)
 
-        root = [f"(;GM[1]FF[4]SZ[{snapshot.board_size}]KM[{game_session.komi}]RU[{game_session.rules}]",
+        root = [f"(;GM[1]FF[4]KTP[ogs]SZ[{snapshot.board_size}]KM[{game_session.komi}]RU[{game_session.rules}]",
                 f"HA[{game_session.handicap}]", "PL[W]" if game_session.handicap else "PL[B]"]
         for color, property_name in (("B", "AB"), ("W", "AW")):
             stones = [sgf_point(col, row) for c, col, row in snapshot.setup if c == color]
@@ -494,6 +503,8 @@ class PlatformManager:
             platform_engine_color=ai_color,
             platform_player_ranks=gs.player_ranks,
         )
+        # The first AI reply can immediately end the game and remove its context.
+        self._stamp_game_platform(session, platform)
 
         ctx = PlatformGameContext(
             session_id=session.session_id,

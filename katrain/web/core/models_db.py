@@ -1482,6 +1482,8 @@ class UserGame(Base):
     source = Column(String(50), nullable=False)  # play_ai / play_human / import / research
     category = Column(String(50), default="game")  # game / position
     game_type = Column(String(50), nullable=True)  # free / rated / null
+    # Display provenance only; legacy rows stay unknown and imports remain imports.
+    platform = Column(String(32), nullable=True)  # golaxy / ogs / fox
     # 这个用户坐哪一方('B' / 'W')。**算不出来就是 NULL,不猜** —— 面对面(两边都是人)、
     # 导入的谱、研究局都没有「你」这一方;拿玩家名去比就是在编(重名、没填名字)。
     # **必须可空**:非空列会让 `migrations.add_missing_columns` 补一个 `''` 默认值,

@@ -1,0 +1,92 @@
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { API, ApiError } from '../../api';
+import PhonePasswordDialog from './PhonePasswordDialog';
+
+const auth = { user: { username: 'existing-player', uuid: 'actor-a' }, isGuest: false, isStrictBoxKiosk: false, identityKey: 'actor-a', token: 'token-a' };
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
+const challenge = { challenge_id: 'fresh-password-proof', retry_after: 60, expires_in: 300, delivery: 'sent' as const };
+beforeEach(() => {
+  vi.restoreAllMocks(); Object.assign(auth, { user: { username: 'existing-player', uuid: 'actor-a' }, isGuest: false, isStrictBoxKiosk: false, identityKey: 'actor-a', token: 'token-a' });
+  vi.spyOn(API, 'phoneStatus').mockResolvedValue({ bound: true, masked_phone: '138****8000' });
+  vi.spyOn(API, 'createPhonePasswordChallenge').mockResolvedValue(challenge);
+  vi.spyOn(API, 'phonePassword').mockResolvedValue(undefined);
+});
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+const verify = async () => {
+  const phone = await screen.findByLabelText('手机号（中国大陆 +86）');
+  fireEvent.change(phone, { target: { value: '13800138000' } });
+  fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
+  await waitFor(() => expect(API.createPhonePasswordChallenge).toHaveBeenCalledOnce());
+  fireEvent.change(screen.getByLabelText('短信验证码'), { target: { value: '123456' } });
+  fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'new private password' } });
+};
+it('uses a new login-purpose OTP and the captured actor credential, then accepts empty success without switching identity', async () => {
+  render(<PhonePasswordDialog open onClose={() => {}} />); await verify();
+  expect(API.createPhonePasswordChallenge).toHaveBeenCalledWith({ phone: '13800138000', purpose: 'login', flow_id: expect.stringMatching(/^[a-f0-9]{32}$/) }, 'token-a', expect.any(AbortSignal));
+  expect(screen.queryByLabelText('当前账号密码')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('New password')).toHaveAttribute('autocomplete', 'new-password');
+  fireEvent.click(screen.getByRole('button', { name: 'Save password' }));
+  expect(await screen.findByText('Password saved')).toBeInTheDocument();
+  expect(API.phonePassword).toHaveBeenCalledWith({ challenge_id: challenge.challenge_id, code: '123456', flow_id: vi.mocked(API.createPhonePasswordChallenge).mock.calls[0][0].flow_id, new_password: 'new private password' }, 'token-a', expect.any(AbortSignal));
+  expect(auth.identityKey).toBe('actor-a'); expect(auth.token).toBe('token-a');
+  expect(screen.queryByDisplayValue('new private password')).not.toBeInTheDocument();
+});
+it.each(['challenge_used', 'challenge_invalid'])('shows concise password validation and requires fresh proof after %s', async code => {
+  vi.mocked(API.phonePassword).mockRejectedValueOnce(new ApiError(409, 'safe', { code }));
+  render(<PhonePasswordDialog open onClose={() => {}} />); await verify();
+  fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'short' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save password' }));
+  expect(screen.getByRole('alert')).toHaveTextContent('密码至少15个字符'); expect(API.phonePassword).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'new private password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save password' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(code === 'challenge_used' ? '验证码已使用' : '验证码已失效');
+  expect(vi.mocked(API.phonePassword).mock.calls[0][2]?.aborted).toBe(true);
+  expect(screen.getByLabelText('短信验证码')).toHaveValue('');
+  expect(screen.getByLabelText('New password')).toHaveValue('');
+  expect(screen.getByRole('button', { name: 'Save password' })).toBeDisabled();
+});
+it('retires an expired password proof, clears private fields and ignores a late save response', async () => {
+  let release!: () => void;
+  vi.mocked(API.phonePassword).mockImplementationOnce(() => new Promise(done => { release = done; }));
+  render(<PhonePasswordDialog open onClose={() => {}} />);
+  const phone = await screen.findByLabelText('手机号（中国大陆 +86）');
+  vi.useFakeTimers();
+  fireEvent.change(phone, { target: { value: '13800138000' } });
+  await act(async () => fireEvent.click(screen.getByRole('button', { name: '获取验证码' })));
+  fireEvent.change(screen.getByLabelText('短信验证码'), { target: { value: '123456' } });
+  fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'new private password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save password' }));
+  const signal = vi.mocked(API.phonePassword).mock.calls[0][2];
+  act(() => vi.advanceTimersByTime(300000));
+  expect(signal?.aborted).toBe(true);
+  expect(screen.getByLabelText('短信验证码')).toHaveValue('');
+  expect(screen.getByLabelText('New password')).toHaveValue('');
+  expect(screen.getByRole('alert')).toHaveTextContent('验证码已过期');
+  expect(screen.getByRole('button', { name: 'Save password' })).toBeDisabled();
+  expect(API.createPhonePasswordChallenge).toHaveBeenCalledOnce();
+  await act(async () => release());
+  expect(screen.queryByText('Password saved')).not.toBeInTheDocument();
+});
+it('clears and aborts requests on close and canonical identity changes, including ignored-abort transports', async () => {
+  let resolve!: () => void; vi.mocked(API.phonePassword).mockImplementation(() => new Promise(done => { resolve = done; }));
+  const view = render(<PhonePasswordDialog open onClose={() => {}} />); await verify();
+  fireEvent.click(screen.getByRole('button', { name: 'Save password' }));
+  auth.identityKey = 'actor-b'; auth.token = 'token-b'; view.rerender(<PhonePasswordDialog open onClose={() => {}} />);
+  expect(vi.mocked(API.phonePassword).mock.calls[0][2]?.aborted).toBe(true);
+  await act(async () => resolve()); expect(screen.queryByText('Password saved')).not.toBeInTheDocument();
+  expect(await screen.findByLabelText('手机号（中国大陆 +86）')).toHaveValue('');
+  expect(screen.getByLabelText('New password')).toHaveValue('');
+  view.rerender(<PhonePasswordDialog open={false} onClose={() => {}} />);
+  view.rerender(<PhonePasswordDialog open onClose={() => {}} />);
+  expect(await screen.findByLabelText('手机号（中国大陆 +86）')).toHaveValue('');
+});
+it.each(['guest', 'strict', 'unbound'])('does not offer a password form to %s accounts', async state => {
+  if (state === 'guest') auth.isGuest = true;
+  if (state === 'strict') auth.isStrictBoxKiosk = true;
+  if (state === 'unbound') vi.mocked(API.phoneStatus).mockResolvedValue({ bound: false });
+  render(<PhonePasswordDialog open onClose={() => {}} />);
+  if (state === 'unbound') await screen.findByText('Bind a phone before setting a password.');
+  expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
+  expect(API.createPhonePasswordChallenge).not.toHaveBeenCalled(); expect(API.phonePassword).not.toHaveBeenCalled();
+});

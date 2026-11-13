@@ -4,6 +4,7 @@ import type { ReportTaskMove, ReportTaskSummary } from '../../api/reportApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import {
   buildReportStatesByGame,
+  presentReportTier,
   createOptimisticReportTask,
   isActiveReportTask,
   nextReportCursor,
@@ -316,5 +317,35 @@ describe('report cursor updates', () => {
     expected,
   ) => {
     expect(nextReportCursor(previousCursor, previousFrontier, nextFrontier)).toBe(expected);
+  });
+});
+
+
+describe('independent report tier presentation', () => {
+  it('keeps ordinary completion alongside advanced running', () => {
+    const state = buildReportStatesByGame([
+      task({ id: 8, status: 'completed', analyzed_moves: 120 }),
+      task({ id: 9, report_type: 'deep', status: 'running', analyzed_moves: 53 }),
+    ])['game-1'];
+    expect(presentReportTier(state, 'normal', 120)).toMatchObject({ status: 'completed', percent: 100, viewable: true });
+    expect(presentReportTier(state, 'deep', 120)).toMatchObject({ status: 'running', analyzed: 53, percent: 44, viewable: false });
+  });
+
+  it('prefers each active task over the same tier previous completion, including running 100%', () => {
+    const state = buildReportStatesByGame([
+      task({ id: 2, status: 'completed', analyzed_moves: 120 }),
+      task({ id: 3, status: 'running', analyzed_moves: 120 }),
+      task({ id: 4, report_type: 'deep', status: 'running', analyzed_moves: 60 }),
+    ])['game-1'];
+    expect(presentReportTier(state, 'normal', 120)).toMatchObject({ task: { id: 3 }, status: 'running', percent: 100, viewable: false });
+    expect(presentReportTier(state, 'deep', 120)).toMatchObject({ task: { id: 4 }, percent: 50, viewable: false });
+  });
+
+  it('uses the real hand frontier without adding position zero and clamps all progress', () => {
+    expect(presentReportTier({ activeNormal: task({ status: 'running', analyzed_moves: 0 }) }, 'normal', 120).percent).toBe(0);
+    expect(presentReportTier({ activeNormal: task({ status: 'running', analyzed_moves: 200 }) }, 'normal', 120))
+      .toMatchObject({ analyzed: 120, total: 120, percent: 100 });
+    expect(presentReportTier({ failedNormal: task({ status: 'failed', analyzed_moves: -1, total_moves: 0 }) }, 'normal', 0))
+      .toMatchObject({ status: 'failed', percent: 0, viewable: false });
   });
 });

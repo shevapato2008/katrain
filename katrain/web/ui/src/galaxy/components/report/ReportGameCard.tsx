@@ -35,7 +35,9 @@ export default function ReportGameCard({ game, selected = false, reportState, on
   const platformLabel = reportPlatformLabel(game, t);
   const title = platformLabel || game.event || game.title || getGameDisplayTitle(game, t);
   const secondaryTitle = platformLabel ? game.event || game.title : null;
-  const failed = (['normal', 'deep'] as const).some(tier => presentReportTier(reportState, tier, game.move_count).status === 'failed');
+  const tiers = (['normal', 'deep'] as const).map(tier => presentReportTier(reportState, tier, game.move_count));
+  const activeTiers = tiers.filter(value => value.status === 'running' || value.status === 'pending');
+  const failed = tiers.some(value => value.status === 'failed');
 
   return <Box data-testid="report-game-row" sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 416px) 126px',
     gap: '10px', height: 104, minHeight: 104, alignItems: 'center', width: '100%' }}>
@@ -53,8 +55,12 @@ export default function ReportGameCard({ game, selected = false, reportState, on
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, height: 18, minWidth: 0 }}>
           {failed && <Typography variant="caption" color="error.main">{t('review:tag_failed', 'Analysis failed')}</Typography>}
-          {game.game_date && <Typography variant="caption" color="text.secondary" noWrap>{game.game_date}</Typography>}
-          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap', ml: 'auto' }}>{game.move_count} {t('report:moves_unit', 'moves')}</Typography>
+          {activeTiers.map(value => <Typography key={value.tier} component="span" variant="caption" color="text.secondary"
+            data-active-report-tier={value.tier} sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {value.tier === 'normal' ? t('report:tier_normal', 'Normal report') : t('report:tier_deep', 'Advanced report')} {value.analyzed}/{value.total}
+          </Typography>)}
+          {game.game_date && <Typography variant="caption" color="text.secondary" noWrap sx={{ minWidth: 0 }}>{game.game_date}</Typography>}
+          {activeTiers.length === 0 && <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap', ml: 'auto' }}>{game.move_count} {t('report:moves_unit', 'moves')}</Typography>}
           <Typography variant="caption" color="text.secondary" noWrap>{game.result ? translateResult(game.result, t, game.rules) : t('report:no_result', 'No result')}</Typography>
         </Box>
         <Box sx={{ display: 'grid', gridTemplateRows: '22px 22px', minWidth: 0 }}>

@@ -21,10 +21,23 @@ describe('Galaxy compact report card', () => {
     const card = screen.getByTestId('report-game-card');
     expect(card.querySelector('button')).toBeNull();
     expect(within(card).queryByRole('progressbar')).toBeNull();
-    expect(within(card).queryByText(/Generating|53\/120/)).toBeNull();
+    expect(within(card).getByText('Advanced report 53/120')).toBeVisible();
+    expect(within(card).queryByText(/Generating/)).toBeNull();
     expect(screen.getAllByRole('progressbar').map(bar => bar.getAttribute('aria-valuenow'))).toEqual(['100', '44']);
     fireEvent.click(within(card).getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
+  });
+
+  it('shows each active tier hand frontier as visible, noninteractive metadata', () => {
+    render(<ReportGameCard game={game} reportState={{
+      activeNormal: task({ status: 'running', analyzed_moves: 31 }),
+      activeDeep: task({ id: 2, report_type: 'deep', status: 'running', analyzed_moves: 53 }),
+    }} onSelect={vi.fn()} />);
+    const card = screen.getByTestId('report-game-card');
+    expect(within(card).getByText('Normal report 31/120')).toBeVisible();
+    expect(within(card).getByText('Advanced report 53/120')).toBeVisible();
+    expect(card.querySelector('button, [role="progressbar"]')).toBeNull();
+    expect(screen.getAllByRole('progressbar').map(bar => bar.getAttribute('aria-valuenow'))).toEqual(['26', '44']);
   });
 
   it('keeps running 100% readonly with no embedded old completed action', () => {

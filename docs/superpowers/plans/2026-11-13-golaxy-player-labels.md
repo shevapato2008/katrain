@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** RK3562星阵机器人对局的两张棋手卡显示公开用户名／“我”和“星阵·机器人名称”，补齐真人平台等级；所有对弈模式真正终局留盘后停止本局识别与漂移计算，并清除过期“确认中”。
+**Goal:** RK3562星阵机器人对局的两张棋手卡显示当前星阵昵称和“星阵·机器人名称”，补齐真人平台等级；所有对弈模式真正终局留盘后停止本局识别与漂移计算，并清除过期“确认中”。昵称不可用时诚实显示“星阵用户”。
 
-**Architecture:** 名称只修kiosk展示边界。GamePage已有登录用户；复用`displayAccountName(user, '')`获取公开显示名并传给GameControlPanel，在`engineMode`且`platform_engine_color`为B/W时，按该权威执色生成显示名。剥离机器人名称开头的`[golaxy]`技术前缀，复用`aiOpponentName`现有机器人名称翻译；等级继续使用`seatRank`，不复制等级表、不改后端姓名、棋谱或历史数据。
+**Architecture:** 最终名称来源按用户追加Chunk 6：复用本人星阵资料读取，验证`nickname`后经engine session与既有玩家名字管线传到卡片，移除盒内公开名覆盖。机器人继续剥离`[golaxy]`前缀并复用`aiOpponentName`；等级沿用`seatRank`和平台规范映射，不复制等级表、不迁移历史数据。Chunk 2保留最初实现记录，其真人名称规则已被Chunk 6替代。
 
 **Tech Stack:** React/TypeScript、Vitest、Python视觉服务及pytest、现有Playwright浏览器预览、Git跨仓库发布。追加等级和终局生命周期分别在Chunk 4、5实现；不修改反光识别或参考帧裁决规则。
 

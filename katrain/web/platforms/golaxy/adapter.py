@@ -6,6 +6,7 @@ Auth: phone number with selected international calling code.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import itertools
 import logging
@@ -570,13 +571,14 @@ class GolaxyRestClient:
 
     async def get_account_identity(self) -> dict[str, str]:
         """Read the nickname and login principal attached to the current token."""
-        if not self._access_token:
+        access_token = self._access_token
+        if not access_token:
             raise GolaxyLobbyAuthError("Golaxy login required")
         client = await self._ensure_client()
         try:
             response = await client.post(
                 "/api/auth/oauth/check_token",
-                data={"token": self._access_token},
+                data={"token": access_token},
                 headers={"Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}"},
                 timeout=8.0,
             )
@@ -596,6 +598,9 @@ class GolaxyRestClient:
             raise GolaxyLobbyError("Golaxy nickname unavailable")
         if not isinstance(username, str) or not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", username):
             raise GolaxyLobbyError("Golaxy login principal unavailable")
+        # A login can replace this singleton's credentials while the read is pending.
+        if access_token != self._access_token:
+            raise GolaxyLobbyAuthError("Golaxy credential changed")
         self.set_username(username)
         user_code = body.get("usercode")
         if isinstance(user_code, (str, int)) and not isinstance(user_code, bool) and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(user_code)):
@@ -1262,6 +1267,26 @@ class GolaxyAdapter(PlatformAdapter):
         """Return the full Golaxy AI level table (for the API layer)."""
         return engine_client.list_levels()
 
+    async def _get_engine_self_rank(self) -> Optional[str]:
+        """Read this connected account's rank once, within the new-game budget."""
+        if not self.is_connected:
+            return None
+        access_token = self._rest.get_auth_data().get("access_token")
+        try:
+            async with asyncio.timeout(3.0):
+                caller = await self._rest._get_user_code()
+                if not self.is_connected or access_token != self._rest.get_auth_data().get("access_token"):
+                    return None
+                profile = await self.get_player_profile(caller)
+        except (GolaxyLobbyError, TimeoutError, httpx.HTTPError):
+            return None
+        if not self.is_connected or access_token != self._rest.get_auth_data().get("access_token"):
+            return None
+        rank = profile.get("rank")
+        if profile.get("is_self") is True and profile.get("user_id") == caller and rank in _LOBBY_RANKS.values():
+            return rank
+        return None
+
     async def start_engine_game(self, config: EngineGameConfig) -> EngineGameStart:
         """Create a new engine game, seeding any handicap stones and letting the AI
         open when it is the side-to-move.
@@ -1273,6 +1298,7 @@ class GolaxyAdapter(PlatformAdapter):
         if not self._rest.is_authenticated:
             raise RuntimeError("not connected")
 
+        human_rank = await self._get_engine_self_rank()
         self._engine_seq += 1
         game_id = f"golaxy-engine-{self._engine_seq}"
         # Seed the N standard handicap stones (black) so the stateless tunnel and the
@@ -1307,7 +1333,7 @@ class GolaxyAdapter(PlatformAdapter):
             handicap=config.handicap,
             komi=config.komi,
             player_ranks={
-                config.human_color: None,
+                config.human_color: human_rank,
                 ("W" if config.human_color == "B" else "B"): (
                     level_row.get("level_name") if level_row is not None else None
                 ),

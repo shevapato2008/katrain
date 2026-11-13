@@ -1,8 +1,8 @@
 """Tests for the GolaxyAdapter human-vs-AI engine-play state machine.
 
-The network is mocked at the ``GolaxyRestClient.engine_genmove`` boundary
-(an ``AsyncMock`` set on ``adapter._rest.engine_genmove``) so these tests never
-touch httpx. The correctness core under test is the *proposed-moves discipline*:
+Engine and profile network boundaries are mocked; the identity-race case uses
+an httpx mock transport. These tests never contact Golaxy.
+The correctness core under test is the *proposed-moves discipline*:
 the human move is encoded into an immutable ``proposed_moves`` snapshot BEFORE the
 network call, ``ctx.moves`` is committed exactly once only after a valid AI coord
 comes back, and every retry reuses the SAME snapshot -- so a timeout/retry can
@@ -13,8 +13,10 @@ Tests are async (``asyncio_mode=auto`` in pyproject.toml).
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 
 from katrain.web.platforms.golaxy.adapter import (
@@ -23,6 +25,8 @@ from katrain.web.platforms.golaxy.adapter import (
     EngineGameStart,
     GolaxyAdapter,
     GolaxyEngineTerminal,
+    GolaxyLobbyAuthError,
+    GolaxyLobbyError,
 )
 from katrain.web.platforms.golaxy.coords import Move, golaxy_to_katrain, katrain_to_golaxy
 from katrain.web.platforms.golaxy.engine_client import (
@@ -39,9 +43,14 @@ AI_COORD = 286  # arbitrary valid on-board coord used by the mocked engine
 
 
 def make_adapter() -> GolaxyAdapter:
-    """Adapter marked connected by seeding a token on the REST client."""
+    """Connected adapter with caller/profile reads isolated from the network."""
     adapter = GolaxyAdapter()
     adapter._rest.set_tokens("tok", "refresh")
+    adapter._connected = True
+    adapter._rest._get_user_code = AsyncMock(return_value="self-code")
+    adapter._rest.get_player_profile = AsyncMock(
+        return_value={"userCode": "self-code", "nickname": "本人", "level": None}
+    )
     return adapter
 
 
@@ -129,6 +138,173 @@ async def test_player_ranks_only_include_verified_ai_level_name(monkeypatch, hum
         human_color: None,
         ai_color: "3d" if level_row and "level_name" in level_row else None,
     }
+
+
+@pytest.mark.parametrize("human_color", ["B", "W"])
+async def test_engine_game_uses_current_platform_self_rank_once(human_color):
+    adapter = make_adapter()
+    adapter._rest.get_player_profile.return_value["level"] = 1500
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=AI_COORD, prob=0.19))
+
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color=human_color))
+    ai_color = "W" if human_color == "B" else "B"
+    assert start.session.player_ranks == {human_color: "2段", ai_color: get_level(1100)["level_name"]}
+    adapter._rest.get_player_profile.assert_awaited_once_with("self-code")
+
+    await adapter.submit_engine_move(start.session.game_id, 3, 3)
+    adapter._rest.get_player_profile.assert_awaited_once_with("self-code")
+
+
+@pytest.mark.parametrize("level", [None, 2700, True, 1500.0, "1500.0", {"level": 1500}, []])
+async def test_engine_game_unknown_or_malformed_self_level_stays_unknown(level):
+    adapter = make_adapter()
+    adapter._rest.get_player_profile.return_value["level"] = level
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks == {"B": None, "W": get_level(1100)["level_name"]}
+    adapter._rest.get_player_profile.assert_awaited_once_with("self-code")
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        {"user_id": "self-code", "is_self": False, "rank": "2段"},
+        {"user_id": "self-code", "is_self": 1, "rank": "2段"},
+        {"user_id": "other-code", "is_self": True, "rank": "2段"},
+        {"user_id": "self-code", "is_self": True, "rank": "2d"},
+        {"user_id": "self-code", "is_self": True, "rank": 1500},
+        {"user_id": "self-code", "is_self": True},
+    ],
+)
+async def test_engine_game_rejects_unverified_or_noncanonical_self_rank(profile):
+    adapter = make_adapter()
+    adapter.get_player_profile = AsyncMock(return_value=profile)
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+    adapter.get_player_profile.assert_awaited_once_with("self-code")
+
+
+@pytest.mark.parametrize("stage", ["caller", "profile"])
+@pytest.mark.parametrize("error", [GolaxyLobbyError("unavailable"), GolaxyLobbyAuthError("expired"), TimeoutError()])
+async def test_engine_game_self_rank_failure_does_not_block_ai_opening(stage, error):
+    adapter = make_adapter()
+    lookup = adapter._rest._get_user_code if stage == "caller" else adapter._rest.get_player_profile
+    lookup.side_effect = error
+    adapter._rest.refresh_access_token = AsyncMock()
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=AI_COORD, prob=0.19))
+
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="W"))
+    assert start.session.player_ranks == {"W": None, "B": get_level(1100)["level_name"]}
+    assert start.first_ai_move.color == "B"
+    adapter._rest.refresh_access_token.assert_not_awaited()
+    lookup.assert_awaited_once()
+
+
+@pytest.mark.parametrize("stage", ["caller", "profile"])
+async def test_engine_game_self_rank_lookup_has_one_three_second_budget(monkeypatch, stage):
+    adapter = make_adapter()
+    real_timeout = asyncio.timeout
+    budgets = []
+
+    def short_timeout(seconds):
+        budgets.append(seconds)
+        return real_timeout(0.01)
+
+    async def pending(*args):
+        await asyncio.Event().wait()
+
+    lookup = adapter._rest._get_user_code if stage == "caller" else adapter._rest.get_player_profile
+    lookup.side_effect = pending
+    monkeypatch.setattr(asyncio, "timeout", short_timeout)
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+    assert budgets == [3.0]
+    lookup.assert_awaited_once()
+
+
+async def test_engine_game_discards_self_rank_when_credential_changes():
+    adapter = make_adapter()
+
+    async def changed_profile(peer_code):
+        adapter._rest.set_tokens("next-token", "next-refresh")
+        return {"user_id": "self-code", "is_self": True, "rank": "2段"}
+
+    adapter.get_player_profile = AsyncMock(side_effect=changed_profile)
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+    adapter.get_player_profile.assert_awaited_once_with("self-code")
+
+
+@pytest.mark.parametrize("change", ["disconnect", "credentials"])
+async def test_engine_game_stops_profile_lookup_if_identity_read_changes_connection(change):
+    adapter = make_adapter()
+
+    async def changed_caller():
+        if change == "disconnect":
+            adapter._connected = False
+        else:
+            adapter._rest.set_tokens("next-token", "next-refresh")
+        return "self-code"
+
+    adapter._rest._get_user_code.side_effect = changed_caller
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+    adapter._rest.get_player_profile.assert_not_awaited()
+
+
+async def test_engine_game_does_not_look_up_rank_while_disconnected():
+    adapter = make_adapter()
+    adapter._connected = False
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+    adapter._rest._get_user_code.assert_not_awaited()
+    adapter._rest.get_player_profile.assert_not_awaited()
+
+
+async def test_engine_game_discards_rank_when_disconnected_during_lookup():
+    adapter = make_adapter()
+
+    async def disconnected_profile(peer_code):
+        adapter._connected = False
+        return {"user_id": "self-code", "is_self": True, "rank": "2段"}
+
+    adapter.get_player_profile = AsyncMock(side_effect=disconnected_profile)
+    start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+    assert start.session.player_ranks["B"] is None
+    adapter.get_player_profile.assert_awaited_once_with("self-code")
+
+
+async def test_engine_game_pending_identity_cannot_pollute_switched_account_cache():
+    adapter = GolaxyAdapter()
+    adapter._connected = True
+    adapter._rest.set_tokens("old-token", "old-refresh")
+
+    async def switched_identity(request):
+        adapter._rest.set_tokens("new-token", "new-refresh")
+        adapter._rest.set_username("0086-13000000002")
+        adapter._rest._user_code = "new-self"
+        return httpx.Response(
+            200,
+            json={
+                "active": True,
+                "username": "0086-13000000001",
+                "nickname": "旧本人",
+                "usercode": "old-self",
+            },
+        )
+
+    adapter._rest._client = httpx.AsyncClient(
+        base_url="https://www.19x19.com", transport=httpx.MockTransport(switched_identity)
+    )
+    adapter._rest.get_player_profile = AsyncMock(
+        return_value={"userCode": "old-self", "nickname": "旧本人", "level": 1500}
+    )
+    try:
+        start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
+        assert start.session.player_ranks["B"] is None
+        assert adapter._rest._user_code == "new-self"
+        assert adapter._rest._username == "0086-13000000002"
+    finally:
+        await adapter._rest.close()
 
 
 # --------------------------------------------------------------------------- #

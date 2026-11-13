@@ -462,11 +462,12 @@ class PlatformManager:
         start = await adapter.start_engine_game(config)
         gs = start.session
         bot_name = f"[{platform}] {gs.opponent.username}"
+        human_name = gs.my_username or "Me"
         if gs.my_color == "B":
             session = self._session_manager.create_multiplayer_session(
                 player_b_id=user_id,
                 player_w_id=-1,
-                b_name="Me",
+                b_name=human_name,
                 w_name=bot_name,
                 skip_initial_analysis=True,
             )
@@ -475,7 +476,7 @@ class PlatformManager:
                 player_b_id=-1,
                 player_w_id=user_id,
                 b_name=bot_name,
-                w_name="Me",
+                w_name=human_name,
                 skip_initial_analysis=True,
             )
 

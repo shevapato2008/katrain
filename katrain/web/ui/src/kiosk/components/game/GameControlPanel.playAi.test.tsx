@@ -362,15 +362,15 @@ describe('星阵引擎局玩家显示名', () => {
       platform_player_ranks: { [engineColor]: botRank, [humanColor]: '5段' },
       players_info: {
         [engineColor]: seat('human', `[golaxy] ${botName}`),
-        [humanColor]: seat('human', 'Me'),
+        [humanColor]: seat('human', '星阵昵称'),
       } as GameState['players_info'],
     });
     const original = JSON.stringify(gs);
-    panel(gs, { engineMode: true, currentUserName: 'shuangmei' });
+    panel(gs, { engineMode: true });
 
     for (const [color, name, rank] of [
       [engineColor, `星阵·${botName}`, botRank],
-      [humanColor, 'shuangmei', '5段'],
+      [humanColor, '星阵昵称', '5段'],
     ]) {
       const card = screen.getByTestId(`player-card-${color}`);
       expect(card.querySelector('h4')).toHaveTextContent(name);
@@ -380,15 +380,15 @@ describe('星阵引擎局玩家显示名', () => {
     expect(JSON.stringify(gs)).toBe(original);
   });
 
-  test('真人没有公开显示名时显示我', () => {
+  test('真人没有星阵昵称时显示星阵用户', () => {
     panel(base({ platform_engine_color: 'B', players_info: { B: seat('human', '[golaxy] 星皮猴'), W: seat('human', 'Me') } }), { engineMode: true });
     const name = screen.getByTestId('player-card-W').querySelector('h4');
-    expect(name).toHaveTextContent('我');
-    expect(name).toHaveAttribute('title', '我');
+    expect(name).toHaveTextContent('星阵用户');
+    expect(name).toHaveAttribute('title', '星阵用户');
   });
 
   test('非引擎局保留原始玩家名称', () => {
-    panel(base({ players_info: { B: seat('player:human', 'Me'), W: seat('player:ai', 'Alice') } }), { currentUserName: 'shuangmei' });
+    panel(base({ players_info: { B: seat('player:human', 'Me'), W: seat('player:ai', 'Alice') } }));
     expect(screen.getByTestId('player-card-B').querySelector('h4')).toHaveTextContent('Me');
     expect(screen.getByTestId('player-card-W').querySelector('h4')).toHaveTextContent('Alice');
   });

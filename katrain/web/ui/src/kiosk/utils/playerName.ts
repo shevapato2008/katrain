@@ -6,14 +6,14 @@ export function seatName(
   state: GameState,
   color: 'B' | 'W',
   engineMode = false,
-  currentUserName?: string,
   t: RankTranslation = (key, fallback) => fallback ?? key,
 ): string {
   const name = state.players_info[color].name;
   const engineColor = state.platform_engine_color;
   if (!engineMode || (engineColor !== 'B' && engineColor !== 'W')) return name;
-  if (color !== engineColor) return currentUserName?.trim() || t('game:me', '我');
-  const botName = name.trim().replace(/^\[golaxy\]\s*/i, '');
+  const trimmedName = name.trim();
+  if (color !== engineColor) return trimmedName && trimmedName !== 'Me' ? trimmedName : t('星阵用户', '星阵用户');
+  const botName = trimmedName.replace(/^\[golaxy\]\s*/i, '');
   const brand = t('Golaxy', '星阵');
   return botName ? `${brand}·${aiOpponentName(botName, t)}` : brand;
 }

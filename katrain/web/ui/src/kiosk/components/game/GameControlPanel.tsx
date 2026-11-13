@@ -20,7 +20,6 @@ import { computeClock, type ClockView } from '../../../utils/gameClock';
 interface Props {
   gameState: GameState;
   playerRanks?: PlayerRanks;
-  currentUserName?: string;
   onAction: (action: string) => void;
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
@@ -318,7 +317,7 @@ function SeatRow({ gameState, color, displayName, turn, state, untimed, lang, t,
  * —— 这个数只在真浏览器里量,见 `tests/kiosk-screen-05-game.spec.ts` 的本地对局那几条。
  */
 const GameControlPanel = ({
-  gameState, playerRanks, currentUserName, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
+  gameState, playerRanks, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, analysisUnavailable = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
   onTimeout, counting = false, statusSlot = null, territory, platformClock = null, platformPhase = null,
@@ -598,12 +597,12 @@ const GameControlPanel = ({
         <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
           <SeatRow
             gameState={gameState} color="W" rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
-            displayName={engineMode ? seatName(gameState, 'W', engineMode, currentUserName, t) : undefined}
+            displayName={engineMode ? seatName(gameState, 'W', engineMode, t) : undefined}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout} paired
           />
           <SeatRow
             gameState={gameState} color="B" rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
-            displayName={engineMode ? seatName(gameState, 'B', engineMode, currentUserName, t) : undefined}
+            displayName={engineMode ? seatName(gameState, 'B', engineMode, t) : undefined}
             untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout} paired
           />
         </div>

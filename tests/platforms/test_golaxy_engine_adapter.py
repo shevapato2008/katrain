@@ -148,14 +148,17 @@ async def test_player_ranks_only_include_verified_ai_level_name(monkeypatch, hum
 
 
 @pytest.mark.parametrize("human_color", ["B", "W"])
-async def test_engine_game_uses_current_platform_self_rank_once(human_color):
+async def test_engine_game_uses_current_platform_self_nickname_and_rank_once(human_color):
     adapter = make_adapter()
-    adapter._rest.get_player_profile.return_value["level"] = 1500
+    adapter._rest.get_player_profile.return_value.update(
+        {"nickname": " 星阵昵称 ", "followAlias": "本人备注", "level": 1500}
+    )
     adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=AI_COORD, prob=0.19))
 
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color=human_color))
     ai_color = "W" if human_color == "B" else "B"
     assert start.session.player_ranks == {human_color: "2段", ai_color: get_level(1100)["level_name"]}
+    assert start.session.my_username == "星阵昵称"
     adapter._rest.get_player_profile.assert_awaited_once_with("self-code")
 
     await adapter.submit_engine_move(start.session.game_id, 3, 3)
@@ -168,7 +171,21 @@ async def test_engine_game_unknown_or_malformed_self_level_stays_unknown(level):
     adapter._rest.get_player_profile.return_value["level"] = level
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks == {"B": None, "W": get_level(1100)["level_name"]}
+    assert start.session.my_username == "本人"
     adapter._rest.get_player_profile.assert_awaited_once_with("self-code")
+
+
+@pytest.mark.parametrize(
+    "peer_code,is_self,expected", [("self-code", True, "星阵昵称"), ("other-code", False, "棋友备注")]
+)
+async def test_player_profile_only_prefers_follow_alias_for_other_players(peer_code, is_self, expected):
+    adapter = make_adapter()
+    adapter._rest.get_player_profile.return_value.update({"nickname": " 星阵昵称 ", "followAlias": "棋友备注"})
+
+    profile = await adapter.get_player_profile(peer_code)
+
+    assert profile["is_self"] is is_self
+    assert profile["username"] == expected
 
 
 @pytest.mark.parametrize(
@@ -184,9 +201,13 @@ async def test_engine_game_unknown_or_malformed_self_level_stays_unknown(level):
 )
 async def test_engine_game_rejects_unverified_or_noncanonical_self_rank(profile):
     adapter = make_adapter()
+    profile = {"username": "旧本人", **profile}
     adapter.get_player_profile = AsyncMock(return_value=profile)
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username == (
+        "旧本人" if profile.get("is_self") is True and profile["user_id"] == "self-code" else None
+    )
     adapter.get_player_profile.assert_awaited_once_with("self-code")
 
 
@@ -201,6 +222,7 @@ async def test_engine_game_self_rank_failure_does_not_block_ai_opening(stage, er
 
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="W"))
     assert start.session.player_ranks == {"W": None, "B": get_level(1100)["level_name"]}
+    assert start.session.my_username is None
     assert start.first_ai_move.color == "B"
     adapter._rest.refresh_access_token.assert_not_awaited()
     lookup.assert_awaited_once()
@@ -224,6 +246,7 @@ async def test_engine_game_self_rank_lookup_has_one_three_second_budget(monkeypa
     monkeypatch.setattr(asyncio, "timeout", short_timeout)
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username is None
     assert budgets == [3.0]
     lookup.assert_awaited_once()
 
@@ -233,11 +256,12 @@ async def test_engine_game_discards_self_rank_when_credential_changes():
 
     async def changed_profile(peer_code):
         adapter._rest.set_tokens("next-token", "next-refresh")
-        return {"user_id": "self-code", "is_self": True, "rank": "2段"}
+        return {"user_id": "self-code", "is_self": True, "username": "旧本人", "rank": "2段"}
 
     adapter.get_player_profile = AsyncMock(side_effect=changed_profile)
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username is None
     adapter.get_player_profile.assert_awaited_once_with("self-code")
 
 
@@ -255,6 +279,7 @@ async def test_engine_game_stops_profile_lookup_if_identity_read_changes_connect
     adapter._rest._get_user_code.side_effect = changed_caller
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username is None
     adapter._rest.get_player_profile.assert_not_awaited()
 
 
@@ -263,6 +288,7 @@ async def test_engine_game_does_not_look_up_rank_while_disconnected():
     adapter._connected = False
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username is None
     adapter._rest._get_user_code.assert_not_awaited()
     adapter._rest.get_player_profile.assert_not_awaited()
 
@@ -272,11 +298,12 @@ async def test_engine_game_discards_rank_when_disconnected_during_lookup():
 
     async def disconnected_profile(peer_code):
         adapter._connected = False
-        return {"user_id": "self-code", "is_self": True, "rank": "2段"}
+        return {"user_id": "self-code", "is_self": True, "username": "旧本人", "rank": "2段"}
 
     adapter.get_player_profile = AsyncMock(side_effect=disconnected_profile)
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username is None
     adapter.get_player_profile.assert_awaited_once_with("self-code")
 
 
@@ -308,6 +335,7 @@ async def test_engine_game_pending_identity_cannot_pollute_switched_account_cach
     try:
         start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
         assert start.session.player_ranks["B"] is None
+        assert start.session.my_username is None
         assert adapter._rest._user_code == "new-self"
         assert adapter._rest._username == "0086-13000000002"
     finally:
@@ -355,14 +383,14 @@ async def test_new_login_rejects_old_identity_before_new_token_arrives(auth_data
                 "code": 0,
                 "data": {
                     "userCode": caller,
-                    "nickname": "本人",
+                    "nickname": "旧本人" if caller == "old-self" else "新本人",
                     "level": 1500 if caller == "old-self" else 1900,
                 },
             },
         )
 
     adapter._rest._client = httpx.AsyncClient(base_url="https://example.test", transport=httpx.MockTransport(handler))
-    old_rank_task = asyncio.create_task(adapter._get_engine_self_rank())
+    old_profile_task = asyncio.create_task(adapter._get_engine_self_profile())
     login_task = None
     try:
         await asyncio.wait_for(identity_started.wait(), 1)
@@ -370,22 +398,23 @@ async def test_new_login_rejects_old_identity_before_new_token_arrives(auth_data
         await asyncio.wait_for(login_started.wait(), 1)
         assert adapter.is_connected is False
         release_old_identity.set()
-        old_rank = await asyncio.wait_for(old_rank_task, 1)
+        old_profile = await asyncio.wait_for(old_profile_task, 1)
         identity_while_login_pending = (adapter._rest._user_code, adapter._rest._username)
         release_login.set()
         assert await asyncio.wait_for(login_task, 1) is True
 
         start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
-        assert (old_rank, start.session.player_ranks["B"]) == (None, "4段")
+        assert (old_profile, start.session.player_ranks["B"]) == ((None, None), "4段")
+        assert start.session.my_username == "新本人"
         assert identity_while_login_pending == (None, "0086-13000000002")
         assert adapter._rest._user_code == "new-self"
         assert profile_callers == ["new-self"]
     finally:
-        for task in (old_rank_task, login_task):
+        for task in (old_profile_task, login_task):
             if task is not None and not task.done():
                 task.cancel()
         await asyncio.gather(
-            *(task for task in (old_rank_task, login_task) if task is not None), return_exceptions=True
+            *(task for task in (old_profile_task, login_task) if task is not None), return_exceptions=True
         )
         await adapter._rest.close()
 
@@ -396,11 +425,12 @@ async def test_engine_self_rank_discards_profile_if_new_login_starts_before_toke
     async def new_login_started(peer_code):
         adapter._rest.clear_username()
         adapter._rest.set_username("13000000002")
-        return {"user_id": "self-code", "is_self": True, "rank": "2段"}
+        return {"user_id": "self-code", "is_self": True, "username": "旧本人", "rank": "2段"}
 
     adapter.get_player_profile = AsyncMock(side_effect=new_login_started)
     start = await adapter.start_engine_game(EngineGameConfig(level=1100, human_color="B"))
     assert start.session.player_ranks["B"] is None
+    assert start.session.my_username is None
 
 
 @pytest.mark.parametrize(

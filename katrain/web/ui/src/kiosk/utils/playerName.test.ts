@@ -9,13 +9,17 @@ const engineState = (over: Partial<GameState> = {}) => ({
 } as unknown as GameState);
 
 describe('星阵引擎局席位名称', () => {
-  it.each(['B', 'W'] as const)('真人执%s时使用公开显示名', (color) => {
-    const state = engineState({ platform_engine_color: color === 'B' ? 'W' : 'B' });
-    expect(seatName(state, color, true, ' shuangmei ')).toBe('shuangmei');
+  it.each(['B', 'W'] as const)('真人执%s时使用当前星阵昵称', (color) => {
+    const state = engineState({
+      platform_engine_color: color === 'B' ? 'W' : 'B',
+      players_info: { B: { name: ' 星阵昵称 ' }, W: { name: ' 星阵昵称 ' } } as GameState['players_info'],
+    });
+    expect(seatName(state, color, true)).toBe('星阵昵称');
   });
 
-  it.each([undefined, '', '   '])('公开显示名为 %s 时回落我', (name) => {
-    expect(seatName(engineState(), 'W', true, name)).toBe('我');
+  it.each(['Me', ' Me ', '', '   '])('真人名字为旧占位 %s 时回落星阵用户', (name) => {
+    const state = engineState({ players_info: { B: { name: '[golaxy] 星皮猴' }, W: { name } } as GameState['players_info'] });
+    expect(seatName(state, 'W', true)).toBe('星阵用户');
   });
 
   it.each([
@@ -27,10 +31,10 @@ describe('星阵引擎局席位名称', () => {
   });
 
   it('复用机器人名称翻译，并翻译品牌和真人回落文案', () => {
-    const words: Record<string, string> = { Golaxy: 'Golaxy', 星皮猴: 'Star Monkey', 'game:me': 'Me' };
+    const words: Record<string, string> = { Golaxy: 'Golaxy', 星皮猴: 'Star Monkey', '星阵用户': 'Golaxy player' };
     const t = (key: string, fallback?: string) => words[key] ?? fallback ?? key;
-    expect(seatName(engineState(), 'B', true, undefined, t)).toBe('Golaxy·Star Monkey');
-    expect(seatName(engineState(), 'W', true, undefined, t)).toBe('Me');
+    expect(seatName(engineState(), 'B', true, t)).toBe('Golaxy·Star Monkey');
+    expect(seatName(engineState(), 'W', true, t)).toBe('Golaxy player');
   });
 
   it.each(['', '[golaxy]   '])('机器人名称为空时只显示星阵 (%s)', (name) => {
@@ -53,7 +57,7 @@ describe('星阵引擎局席位名称', () => {
       platform_engine_color: engineColor as GameState['platform_engine_color'],
       players_info: { B: { name: 'Alice' }, W: { name: 'Me' } } as GameState['players_info'],
     });
-    expect(seatName(state, 'B', engineMode, 'shuangmei')).toBe('Alice');
-    expect(seatName(state, 'W', engineMode, 'shuangmei')).toBe('Me');
+    expect(seatName(state, 'B', engineMode)).toBe('Alice');
+    expect(seatName(state, 'W', engineMode)).toBe('Me');
   });
 });

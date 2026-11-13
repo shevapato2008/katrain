@@ -106,6 +106,20 @@ def setup():
 
 
 class TestStartEngineGame:
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    @pytest.mark.asyncio
+    async def test_verified_platform_nickname_is_used_for_human_seat(self, setup, human_color):
+        pm, sm, adapter = setup
+        gs = make_session(human_color)
+        gs.my_username = "星阵昵称"
+        adapter.start_engine_game.return_value = EngineGameStart(session=gs, first_ai_move=None)
+
+        await pm.start_engine_game("golaxy", object(), user_id=7)
+
+        ai_color = "W" if human_color == "B" else "B"
+        assert sm.create_calls[0][f"{human_color.lower()}_name"] == "星阵昵称"
+        assert sm.create_calls[0][f"{ai_color.lower()}_name"] == "[golaxy] 星阵-7"
+
     @pytest.mark.asyncio
     async def test_human_black_start(self, setup):
         pm, sm, adapter = setup
@@ -258,6 +272,24 @@ class TestPlatformEngineColorRealSession:
     stay None for non-engine sessions, survive a later plain edit_game call (M6
     persistence), and never leak into a freshly-created session.
     """
+
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    @pytest.mark.asyncio
+    async def test_verified_nickname_reaches_real_game_state(self, human_color):
+        sm, pm, adapter = _build_real_stack()
+        adapter._connected = True
+        adapter._rest._get_user_code = AsyncMock(return_value="self-code")
+        adapter._rest.get_player_profile = AsyncMock(
+            return_value={"userCode": "self-code", "nickname": "星阵昵称", "followAlias": "备注", "level": None}
+        )
+
+        session_id = await pm.start_engine_game(
+            "golaxy", EngineGameConfig(level=1100, human_color=human_color), user_id=1
+        )
+
+        state = sm.get_session(session_id).katrain.get_state()
+        assert state["players_info"][human_color]["name"] == "星阵昵称"
+        assert state["platform_player_ranks"][human_color] is None
 
     @pytest.mark.asyncio
     async def test_human_black_get_state_platform_engine_color_is_white(self):

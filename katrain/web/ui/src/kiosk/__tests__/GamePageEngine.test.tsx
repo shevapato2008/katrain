@@ -237,21 +237,33 @@ describe('GamePage engine mode', () => {
     });
     afterEach(() => { mockGameState.players_info = originalPlayers; });
 
-    it.each([
-      ['u_0123456789abcdefabcd', 'shuangmei', 'shuangmei'],
-      ['shuangmei', null, 'shuangmei'],
-      ['u_0123456789abcdefabcd', null, '我'],
-    ])('账号 %s / 公开名 %s 实际贯通到真人卡片', (username, publicUsername, displayName) => {
-      authMock.username = username;
-      authMock.publicUsername = publicUsername;
+    it.each(['B', 'W'] as const)('真人执%s时平台昵称贯通卡片，盒内公开名不覆盖', (humanColor) => {
+      const engineColor = humanColor === 'B' ? 'W' : 'B';
+      authMock.username = 'u_0123456789abcdefabcd';
+      authMock.publicUsername = '盒内公开名';
+      mockGameState.platform_engine_color = engineColor;
+      mockGameState.players_info = {
+        [engineColor]: { ...originalPlayers.B, name: '[golaxy] 星皮猴', player_type: 'human' },
+        [humanColor]: { ...originalPlayers.W, name: '星阵昵称', player_type: 'human' },
+      } as GameState['players_info'];
+      renderPage(true);
+
+      const humanName = screen.getByTestId(`player-card-${humanColor}`).querySelector('h4');
+      expect(humanName).toHaveTextContent('星阵昵称');
+      expect(humanName).toHaveAttribute('title', '星阵昵称');
+      const botName = screen.getByTestId(`player-card-${engineColor}`).querySelector('h4');
+      expect(botName).toHaveTextContent('星阵·星皮猴');
+      expect(botName).toHaveAttribute('title', '星阵·星皮猴');
+    });
+
+    it.each(['Me', ''])('平台昵称未知时旧占位 %s 诚实回落', (name) => {
+      authMock.publicUsername = '盒内公开名';
+      mockGameState.players_info.W.name = name;
       renderPage(true);
 
       const humanName = screen.getByTestId('player-card-W').querySelector('h4');
-      expect(humanName).toHaveTextContent(displayName);
-      expect(humanName).toHaveAttribute('title', displayName);
-      const botName = screen.getByTestId('player-card-B').querySelector('h4');
-      expect(botName).toHaveTextContent('星阵·星皮猴');
-      expect(botName).toHaveAttribute('title', '星阵·星皮猴');
+      expect(humanName).toHaveTextContent('星阵用户');
+      expect(humanName).toHaveAttribute('title', '星阵用户');
     });
   });
 

@@ -1016,13 +1016,14 @@ class GolaxyAdapter(PlatformAdapter):
 
     async def get_player_profile(self, peer_code: str) -> dict:
         row = await self._rest.get_player_profile(peer_code)
-        name = row.get("followAlias") or row.get("nickname")
+        is_self = peer_code == await self._rest._get_user_code()
+        name = row.get("nickname") if is_self else row.get("followAlias") or row.get("nickname")
         if not isinstance(name, str) or not name.strip():
             raise GolaxyLobbyError("Golaxy profile malformed")
         follow_type = row.get("followType")
         return {
             "user_id": peer_code,
-            "is_self": peer_code == await self._rest._get_user_code(),
+            "is_self": is_self,
             "username": name.strip(),
             "rank": _lobby_label(row.get("level"), _LOBBY_RANKS),
             "wins": _lobby_count(row.get("winNum")),
@@ -1269,10 +1270,10 @@ class GolaxyAdapter(PlatformAdapter):
         """Return the full Golaxy AI level table (for the API layer)."""
         return engine_client.list_levels()
 
-    async def _get_engine_self_rank(self) -> Optional[str]:
-        """Read this connected account's rank once, within the new-game budget."""
+    async def _get_engine_self_profile(self) -> tuple[Optional[str], Optional[str]]:
+        """Read this connected account's nickname and rank within the new-game budget."""
         if not self.is_connected:
-            return None
+            return None, None
         access_token = self._rest.get_auth_data().get("access_token")
         identity_revision = self._rest._identity_revision
         try:
@@ -1283,20 +1284,22 @@ class GolaxyAdapter(PlatformAdapter):
                     or identity_revision != self._rest._identity_revision
                     or access_token != self._rest.get_auth_data().get("access_token")
                 ):
-                    return None
+                    return None, None
                 profile = await self.get_player_profile(caller)
         except (GolaxyLobbyError, TimeoutError, httpx.HTTPError):
-            return None
+            return None, None
         if (
             not self.is_connected
             or identity_revision != self._rest._identity_revision
             or access_token != self._rest.get_auth_data().get("access_token")
         ):
-            return None
+            return None, None
+        if profile.get("is_self") is not True or profile.get("user_id") != caller:
+            return None, None
+        name = profile.get("username")
+        name = name.strip() if isinstance(name, str) and name.strip() else None
         rank = profile.get("rank")
-        if profile.get("is_self") is True and profile.get("user_id") == caller and rank in _LOBBY_RANKS.values():
-            return rank
-        return None
+        return name, rank if rank in _LOBBY_RANKS.values() else None
 
     async def start_engine_game(self, config: EngineGameConfig) -> EngineGameStart:
         """Create a new engine game, seeding any handicap stones and letting the AI
@@ -1309,7 +1312,7 @@ class GolaxyAdapter(PlatformAdapter):
         if not self._rest.is_authenticated:
             raise RuntimeError("not connected")
 
-        human_rank = await self._get_engine_self_rank()
+        human_name, human_rank = await self._get_engine_self_profile()
         self._engine_seq += 1
         game_id = f"golaxy-engine-{self._engine_seq}"
         # Seed the N standard handicap stones (black) so the stateless tunnel and the
@@ -1343,6 +1346,7 @@ class GolaxyAdapter(PlatformAdapter):
             ranked=False,
             handicap=config.handicap,
             komi=config.komi,
+            my_username=human_name,
             player_ranks={
                 config.human_color: human_rank,
                 ("W" if config.human_color == "B" else "B"): (

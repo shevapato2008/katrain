@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** RK3562星阵机器人对局的两张棋手卡显示实际用户名／“我”和“星阵·机器人名称”，保留平台真实等级。
+**Goal:** RK3562星阵机器人对局的两张棋手卡显示公开用户名／“我”和“星阵·机器人名称”，补齐真人平台等级；所有对弈模式真正终局留盘后停止本局识别与漂移计算，并清除过期“确认中”。
 
-**Architecture:** 只修kiosk展示边界。GamePage已有登录用户；复用`displayAccountName(user, '')`获取公开显示名并传给GameControlPanel，在`engineMode`且`platform_engine_color`为B/W时，按该权威执色生成显示名。剥离机器人名称开头的`[golaxy]`技术前缀，复用`aiOpponentName`现有机器人名称翻译；等级继续使用`seatRank`，不复制等级表、不改后端姓名、棋谱或历史数据。
+**Architecture:** 名称只修kiosk展示边界。GamePage已有登录用户；复用`displayAccountName(user, '')`获取公开显示名并传给GameControlPanel，在`engineMode`且`platform_engine_color`为B/W时，按该权威执色生成显示名。剥离机器人名称开头的`[golaxy]`技术前缀，复用`aiOpponentName`现有机器人名称翻译；等级继续使用`seatRank`，不复制等级表、不改后端姓名、棋谱或历史数据。
 
-**Tech Stack:** React/TypeScript、Vitest、现有Playwright浏览器预览、Git跨仓库发布。
+**Tech Stack:** React/TypeScript、Vitest、Python视觉服务及pytest、现有Playwright浏览器预览、Git跨仓库发布。追加等级和终局生命周期分别在Chunk 4、5实现；不修改反光识别或参考帧裁决规则。
 
 ## Chunk 1: 根因和已批准范围
 
@@ -66,9 +66,36 @@
 - [ ] `GolaxyLobbyError`、超时等资料不可用情况只降级展示，不修改既有登录/refresh/引擎走子行为；测试全部mock网络，不引入后台轮询或新公共API。
 - [ ] 独立规格核对与最终代码审核覆盖此追加；运行adapter和engine integration相关聚焦测试。
 
-## Chunk 5: 用户追加——终局留盘停止识别（待只读调查完善后实施）
+## Chunk 5: 用户追加——终局留盘停止本局识别
 
-- [ ] 原始截图`ended-before.png`：两张卡均为“本局结束”，第183手仍出现“确认中”；同期仍bound且日志继续模型推理。
-- [ ] 覆盖所有对弈子模式，终局权威同时考虑`end_result`、对局级`terminal_result`及未完成数子状态；留盘回看历史不能重新激活识别。
-- [ ] 调查并分别修复终局仍绑定/推理、漂移检测继续读帧、“确认中”提示残留，以及无需求共享取帧的闲时解码；不关闭其他合法预览、标定、摆谱所需的共享相机。
-- [ ] 以新局恢复、活动局暂停仍可恢复、终局回看不推理、无需求不解码且其他消费者仍取得新鲜帧为验收；具体变更边界及命令待调查报告后补齐并独立审计划。
+**Evidence:** 原始截图`ended-before.png`两张卡均为“本局结束”，第183手仍出现“确认中”；同期vision bound、capture_pending且日志继续推理。静态缺陷及无硬件复现记录在`output/golaxy-player-labels/ended-vision-investigation.md`。现场终局是否由历史游标触发尚缺同时间state，不能把该路径当成已证实的现场唯一原因。
+
+**Files:**
+- Modify: `katrain/web/core/physical_play_orchestrator.py`，统一最终终局判定及本局需帧状态。
+- Modify: `katrain/vision/ipc.py`、`service.py`、`worker_inprocess.py`、`worker.py`，窄终局状态及命令消费。
+- Modify: `katrain/vision/camera.py`，沿既有需求超时去掉无需求周期解码，保留共享reader与USB缓冲排空。
+- Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`、`components/physical/PhysicalPlayStatusChip.tsx`，终局提示生命周期及timer。
+- Extend: `tests/test_physical_play_orchestrator.py`、`tests/test_vision/test_vision_idle.py`、相关既有service/worker测试；`PhysicalPlayStatusChip.test.tsx`及`GamePage.playAi.test.tsx`/`GamePage.test.tsx`的现有共享路径。相机共享和drift已有测试按实际改动聚焦运行，不另建测试框架。
+
+### Task 3: 权威终局与本局需帧的闭环
+
+- [ ] 先写失败用例：`end_result`最终结束、只有`terminal_result`的历史节点仍结束、`awaiting_count`不结束、新绑定/新game恢复、旧无terminal_result记录真正清除结果可恢复。
+- [ ] orchestrator以`bool(terminal_result or end_result) and not awaiting_count`认定最终终局；local-confirmation开关也使用该条件，关闭本局确认窗口。不要用UI文字或普通暂停推断终局。
+- [ ] 通过VisionService发一个窄的本局terminal/frame-demand状态，终局时关闭“绑定对局”这个需帧来源；保持generic pause语义不变，lag/removal/hint仍可读取用于恢复。新bind/unbind重置终局状态。命令处理只在worker线程修改推理状态，两种worker均明确消费命令；subprocess实现须使用相同终局停推理边界，不借机重构整个架构。
+- [ ] 在本局终局且无monitor/viewer/setup/USB恢复等独立需求时，worker不得继续read、warp、enhance、detect或提交旧候选；清理本局过期pending/window，保留既有source epoch和identity隔离。drift经现有`vision.needs_frames()`返回false同步停止。合法独立消费者仍保有自己的需求；绝不close/stop共享CameraHub。
+- [ ] 无其他需求3秒后CameraManager闲时只grab/drain，不每秒cap.read解码；其它消费者读取即唤醒。长闲时恢复首帧须来自恢复后的新读取，不把闲前缓存当新帧；`grab_fresh`超时不返回旧图，保留既有timeout契约。沿现有`_last_demand`和帧时间戳窄改，不新增consumer注册框架。不承诺USB断电或整个进程零CPU。
+- [ ] 前端沿既有sessionIsGameOver/isGameOver条件排除本局“确认中”、恢复弹窗等进行中视觉提示；必要时终止本页绑定，但不得修改全局`useVisionSync(null)`仍连接WS的语义（做题/摆谱依赖）。Chip的6秒隐藏deadline不被无关后续事件取消，换节点/卸载仍正常清理；旧pending不跨新game。
+- [ ] 用明确camera fake避免MagicMock伪造`read_frame_with_metadata`导致的既有fixture线程异常。测试实际read/enhance/detect调用数、普通pause仍观察、新bind恢复、monitor/viewer/setup独立需求、共享consumer fresh wake；不能只断言paused/needs_frames布尔值。
+- [ ] 聚焦验证命令（按最终实际测试文件补充必要service/worker用例）：
+  ```sh
+  python -m pytest -q tests/test_physical_play_orchestrator.py tests/test_vision/test_vision_idle.py
+  python -m pytest -q tests/test_geometry_calibration_service.py tests/test_camera_hub.py tests/test_vision/test_shared_camera.py
+  npm run test -- src/kiosk/__tests__/PhysicalPlayStatusChip.test.tsx src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/__tests__/GamePage.test.tsx
+  ```
+  根据真实路径对free/ranked/pvp/platform engine共享终局条件做最小参数化，不重复每模式全量截图。最终UI构建与Chunk 2一起跑一次。
+- [ ] 独立实施者TDD并提交，独立规格核对，最后以新的Astra Max代理审核合并后的名称、等级、终局三项；修正阻塞发现直至通过。
+- [ ] 主代理用一个1024×600本地真实组件预览验证终局提示隐藏、名字/平台等级可读；设备有活动局，不在RK操作或重启。开发及前三步发布完成后先通知，设备验收留到用户批准部署且空闲时。
+
+## 独立只读调查（不混入本次产品变更）
+
+升降级反光、假阳性和“盘面与对局不一致”由独立代理产出`output/golaxy-player-labels/ranked-glare-report.md`。主代理补充只读现场状态与运行版本。没有逐格证据前不把反光、参考帧分支、性能负载写成确定唯一原因；本轮不改相关识别裁决规则。

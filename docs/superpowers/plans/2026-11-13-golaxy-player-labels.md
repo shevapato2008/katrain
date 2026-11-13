@@ -74,8 +74,8 @@
 - Modify: `katrain/web/core/physical_play_orchestrator.py`，统一最终终局判定及本局需帧状态。
 - Modify: `katrain/vision/ipc.py`、`service.py`、`worker_inprocess.py`、`worker.py`，窄终局状态及命令消费。
 - Modify: `katrain/vision/camera.py`，沿既有需求超时去掉无需求周期解码，保留共享reader与USB缓冲排空。
-- Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`、`components/physical/PhysicalPlayStatusChip.tsx`，终局提示生命周期及timer。
-- Extend: `tests/test_physical_play_orchestrator.py`、`tests/test_vision/test_vision_idle.py`、相关既有service/worker测试；`PhysicalPlayStatusChip.test.tsx`及`GamePage.playAi.test.tsx`/`GamePage.test.tsx`的现有共享路径。相机共享和drift已有测试按实际改动聚焦运行，不另建测试框架。
+- Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`、`components/physical/PhysicalPlayStatusChip.tsx`，终局提示生命周期及timer；`hooks/useVisionSync.ts`仅在既有gameId重绑边界清理旧事件，保留null/WS默认语义。
+- Extend: `tests/test_physical_play_orchestrator.py`、`tests/test_vision/test_vision_idle.py`、相关既有service/worker测试；`PhysicalPlayStatusChip.test.tsx`、`useVisionSync.test.tsx`及`GamePage.playAi.test.tsx`/`GamePage.test.tsx`的现有共享路径。相机共享和drift已有测试按实际改动聚焦运行，不另建测试框架。
 
 ### Task 3: 权威终局与本局需帧的闭环
 

@@ -4,7 +4,7 @@
 
 **Goal:** RK3562星阵机器人对局的两张棋手卡显示实际用户名／“我”和“星阵·机器人名称”，保留平台真实等级。
 
-**Architecture:** 只修kiosk展示边界。GamePage已有登录用户；把可选用户名传给GameControlPanel，在`engineMode`且`platform_engine_color`为B/W时，按该权威执色生成显示名。剥离机器人名称开头的`[golaxy]`技术前缀，复用`aiOpponentName`现有机器人名称翻译；等级继续使用`seatRank`，不复制等级表、不改后端姓名、棋谱或历史数据。
+**Architecture:** 只修kiosk展示边界。GamePage已有登录用户；复用`displayAccountName(user, '')`获取公开显示名并传给GameControlPanel，在`engineMode`且`platform_engine_color`为B/W时，按该权威执色生成显示名。剥离机器人名称开头的`[golaxy]`技术前缀，复用`aiOpponentName`现有机器人名称翻译；等级继续使用`seatRank`，不复制等级表、不改后端姓名、棋谱或历史数据。
 
 **Tech Stack:** React/TypeScript、Vitest、现有Playwright浏览器预览、Git跨仓库发布。
 
@@ -22,7 +22,7 @@
 **Files:**
 - Create: `katrain/web/ui/src/kiosk/utils/playerName.ts`、对应`playerName.test.ts`。
 - Modify: `katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx`（显示名透传，不改时钟和布局）。
-- Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`（传已有`user?.username`）。
+- Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`（用已有`displayAccountName(user, '')`传公开显示名，避免展示内部账号句柄）。
 - Extend: `katrain/web/ui/src/kiosk/__tests__/GamePageEngine.test.tsx`、`components/game/GameControlPanel.playAi.test.tsx`，按需要选择最小测试位置。
 
 - [ ] 先补失败用例：真人执黑／执白、用户名有值／为空、当前现场`[golaxy] 星皮猴 + 2段`、3星`星猛虎`、非engine原样显示。
@@ -35,7 +35,7 @@
   return bot ? `${t('Golaxy', '星阵')}·${aiOpponentName(bot, t)}` : t('Golaxy', '星阵');
   ```
 - [ ] 不改GameState、不覆盖players_info，不新增请求、状态或机器人名称／等级副本。显示名贯通PlayerRow的可见文本和title；保留rank、时钟、提子等现有逻辑。
-- [ ] 页面级用例证明登录用户名真正传到卡片；组件级用例证明真人无用户名时“我”、机器人正确名称与原平台等级都可见，普通自由对弈、OGS和本地对局名字不变。
+- [ ] 页面级用例证明登录公开用户名真正传到卡片，内部账号句柄复用既有规则回落“我”；组件级用例证明真人无用户名时“我”、机器人正确名称与原平台等级都可见，普通自由对弈、OGS和本地对局名字不变。
 - [ ] 运行聚焦检查：
   ```sh
   npm run test -- src/kiosk/utils/playerName.test.ts src/kiosk/utils/playerRank.test.ts src/kiosk/components/game/GameControlPanel.playAi.test.tsx src/kiosk/__tests__/GamePageEngine.test.tsx

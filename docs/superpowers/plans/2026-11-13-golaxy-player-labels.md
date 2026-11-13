@@ -99,3 +99,16 @@
 ## 独立只读调查（不混入本次产品变更）
 
 升降级反光、假阳性和“盘面与对局不一致”由独立代理产出`output/golaxy-player-labels/ranked-glare-report.md`。主代理补充只读现场状态与运行版本。没有逐格证据前不把反光、参考帧分支、性能负载写成确定唯一原因；本轮不改相关识别裁决规则。
+
+## Chunk 6: 用户修订——真人显示星阵昵称
+
+此追加取代Chunk 2里真人取盒内公开名／“我”的规则。用户明确希望尝试取得当前登录星阵账号的昵称，不能用盒内账号名冒充平台身份。已有同一次本人资料读取返回`username`，无需新增网络请求、公共API或轮询。
+
+**Files:** `platforms/golaxy/adapter.py`、`platforms/models.py`、`platforms/manager.py`及对应adapter/engine-manager测试；前端`utils/playerName.ts`、`GameControlPanel.tsx`、`GamePage.tsx`及已有相关测试。
+
+- [ ] 将现有一次、3秒总预算的本人资料读取扩展为返回本次验证过的昵称和等级；沿用身份代次/token/connected守卫，拒绝旧账号结果。未知等级仍可保留有效昵称。不得通过adapter可变缓存跨请求传递昵称，也不得取登录principal/手机号作显示名。
+- [ ] `PlatformGameSession`增加有默认值的可选`my_username`，只在engine开局把已验证本人昵称传给manager；manager按真人执黑/执白设置对应原始玩家名字。其它平台/对局默认行为不变，失败沿用旧占位来源，不能阻止正常开局或AI首手。
+- [ ] frontend的真人engine卡读取该席位的真实名字，移除用盒内公开名覆盖它的路径；旧`Me`/空名字占位在中文下回落“星阵用户”，不展示假用户名或“我”。机器人名称与等级规则保持当前已审实现。非engine名字不变。复用原GameState玩家名字，不新增前端状态字段或请求。
+- [ ] 先写定向红测，覆盖真人两色正确昵称、等级未知但昵称有效、资料失败/身份切换时昵称不泄漏、manager传递及页面真实贯通、未知昵称诚实回落、非engine不变。保留已修复的三种登录竞态回归。
+- [ ] 独立实施者最小实现并提交；独立Astra Max审核追加范围直至通过。运行adapter/manager和现有名字相关前端聚焦套件，最终kiosk构建；只做一份1024×600真实卡片组件预览，无需扩展全模式视觉矩阵。
+- [ ] 追加发布同样先追develop、推feature、合并推develop、更新父仓main的submodule；RK和云仍不部署，按用户先通知门交接。本轮黑屏/反光只读报告不因此扩成规则修改。

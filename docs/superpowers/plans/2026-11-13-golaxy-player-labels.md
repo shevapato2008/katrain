@@ -53,3 +53,22 @@
 - [ ] 在隔离的smartbox-software工作树追main，更新vendor/katrain到发布的develop，推main，保留原父仓WIP。
 - [ ] 向用户报告开发／审核和发布commits，**在部署RK之前停止并通知**。用户当前对局不得中断；单有vision unbound不足以证明没有在标定或创建对局。
 - [ ] 之后获准且设备空闲时才部署；使用发布版本构建和现有有界部署流程，保留USB兼容修复、识别逻辑和用户数据，验收当前1024×600页面实际名称。此次到通知阶段前不进行设备写入。
+
+## Chunk 4: 用户追加——真人的星阵等级
+
+现场已通过现有owner-bound用户列表及资料接口只读确认：星阵本人`shuang`，`is_self=true`，等级`2段`。证据在`output/golaxy-player-labels/self-rank-live-evidence.json`。根因是`GolaxyAdapter.start_engine_game`把真人`player_ranks`写成None；前端已有正确的平台等级展示管线。
+
+**Files:** `katrain/web/platforms/golaxy/adapter.py`、`tests/platforms/test_golaxy_engine_adapter.py`（必要时仅补相关fixture）。
+
+- [ ] 使用TDD：真人B/W从已连接本人资料取得2段，机器人等级不变；无资料、未知level、超时、auth错误时仍可按原流程开局且真人等级未知。
+- [ ] 在新开局时用现有`_rest._get_user_code()`和`get_player_profile()`读取一次本人资料，复用现有`_LOBBY_RANKS`；整次读取设置约3秒总上限，不在每帧／每手／每次渲染请求。
+- [ ] 只有确认本人资料才填真人执色，另一色仍来自原AI level表；凭据在请求期间变更时不使用旧结果。不把盒内段位或AI强度当本人平台等级，不输出凭据、电话或完整响应到日志。
+- [ ] `GolaxyLobbyError`、超时等资料不可用情况只降级展示，不修改既有登录/refresh/引擎走子行为；测试全部mock网络，不引入后台轮询或新公共API。
+- [ ] 独立规格核对与最终代码审核覆盖此追加；运行adapter和engine integration相关聚焦测试。
+
+## Chunk 5: 用户追加——终局留盘停止识别（待只读调查完善后实施）
+
+- [ ] 原始截图`ended-before.png`：两张卡均为“本局结束”，第183手仍出现“确认中”；同期仍bound且日志继续模型推理。
+- [ ] 覆盖所有对弈子模式，终局权威同时考虑`end_result`、对局级`terminal_result`及未完成数子状态；留盘回看历史不能重新激活识别。
+- [ ] 调查并分别修复终局仍绑定/推理、漂移检测继续读帧、“确认中”提示残留，以及无需求共享取帧的闲时解码；不关闭其他合法预览、标定、摆谱所需的共享相机。
+- [ ] 以新局恢复、活动局暂停仍可恢复、终局回看不推理、无需求不解码且其他消费者仍取得新鲜帧为验收；具体变更边界及命令待调查报告后补齐并独立审计划。

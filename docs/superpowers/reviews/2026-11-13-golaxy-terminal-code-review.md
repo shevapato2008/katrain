@@ -35,3 +35,44 @@ Vitest：useVisionSync.test.tsx，仅迟到旧 game 与 sessionless 路由用例
 ```
 
 未发现上述修复引入的新阻塞。其余已独立审过的名称、公开名、等级管线、相机 idle/fresh wake 和 Chip timer 结论沿用；未重复全套测试、构建或视觉预览。本轮只追加审核文档，未修改产品代码、未 SSH、未操作设备、未 push 或部署。本结论为代码审核与 M1 规格通过，不等同设备验收；发布仍须遵守代码整合/push 后先通知用户、RK 与云均不部署的当前门禁。
+
+
+## Platform nickname addendum
+
+# 星阵昵称追加独立代码审核
+
+审核日期：2026-11-13。审核对象：`f548cbca5..db5dec650` 的 11 个文件，仅对应已批准计划 Chunk 6。先核对修订规格与两轮计划审核，再检查实现、调用链和定向回归；不重复旧终局、反光或黑屏审核。
+
+**结论：Approved。未发现需阻塞此次昵称追加的正确性或规格问题。**
+
+- 本人来源正确：`GolaxyAdapter.get_player_profile()` 本人分支只取原始 `nickname`，其他用户仍保留 `followAlias or nickname`。REST 层校验响应 `userCode`；engine 层再确认 `is_self is True` 与 caller 一致，没有采用登录 principal、手机号或盒内公开名。
+- 身份与预算正确：`_get_engine_self_profile()` 保留整次 3 秒上限及读取前后的 connected、identity revision、token 检查。昵称随本次返回值传递，没有跨请求昵称缓存；凭据切换或资料失败时同时丢弃结果。未知等级仍能保留已验证昵称。正常开局及 AI 首手保持既有降级路径。
+- 传递正确：默认 `None` 的 `PlatformGameSession.my_username` 不改变其他构造路径；manager 根据真人执色设置既有玩家名字，真实 Session/GameState 验证了两种执色。前端移除了盒内公开名覆盖，直接使用席位名字；旧 `Me`／空名回落“星阵用户”。机器人名称、等级及非 engine 名字规则未改变。
+- 范围适当：没有新增网络请求、公共接口、GameState 字段或轮询；未发现此次改动需要扩展资料架构或增加额外状态。
+
+**本次独立验证**（均在本地、网络 mock 下运行）：
+
+```text
+python -m pytest -q tests/platforms/test_golaxy_engine_adapter.py \
+  -k 'self or nickname or follow_alias or new_login or credential or identity_read'
+32 passed, 37 deselected
+
+python -m pytest -q tests/platforms/test_engine_manager.py -k 'nickname'
+4 passed, 17 deselected
+
+python -m pytest -q tests/web_ui/test_golaxy_lobby.py \
+  -k 'player_profile or self_profile or profile_read'
+5 passed, 91 deselected
+
+npm run test -- src/kiosk/utils/playerName.test.ts \
+  src/kiosk/__tests__/GamePageEngine.test.tsx \
+  -t '星阵.*名称|星阵.*显示名|星阵引擎局席位名称'
+20 passed, 67 skipped
+
+git diff --check f548cbca5..db5dec650
+通过
+```
+
+另外直接调用真实 adapter，验证 `nickname` 为 `None`、空串、纯空白、数字且存在有效 `followAlias` 的 4 种情况：均未采用备注，正常创建对局，每次仅读取一次资料。
+
+以上数量仅为本审核者实际运行结果，未把实施者报告的整组通过数作为本次独立执行证据。按任务边界未重复全套测试、构建或浏览器预览；计划要求的最终构建与一次 1024×600 真实卡片预览由主代理统一完成。本审核未修改产品、操作设备、SSH、推送或部署；自动生成的 `engine_game_state.json` 不作为产品改动审查。

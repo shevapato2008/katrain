@@ -106,9 +106,9 @@
 
 **Files:** `platforms/golaxy/adapter.py`、`platforms/models.py`、`platforms/manager.py`及对应adapter/engine-manager测试；前端`utils/playerName.ts`、`GameControlPanel.tsx`、`GamePage.tsx`及已有相关测试。
 
-- [ ] 将现有一次、3秒总预算的本人资料读取扩展为返回本次验证过的昵称和等级；沿用身份代次/token/connected守卫，拒绝旧账号结果。本人显示名必须来自资料的`nickname`，不能使用现有`followAlias or nickname`的优先映射；可将`get_player_profile`的本人分支改为只取`nickname`，保留其他用户的备注名映射。未知等级仍可保留有效昵称。不得通过adapter可变缓存跨请求传递昵称，也不得取登录principal/手机号作显示名。
-- [ ] `PlatformGameSession`增加有默认值的可选`my_username`，只在engine开局把已验证本人昵称传给manager；manager按真人执黑/执白设置对应原始玩家名字。其它平台/对局默认行为不变，失败沿用旧占位来源，不能阻止正常开局或AI首手。
-- [ ] frontend的真人engine卡读取该席位的真实名字，移除用盒内公开名覆盖它的路径；旧`Me`/空名字占位在中文下回落“星阵用户”，不展示假用户名或“我”。机器人名称与等级规则保持当前已审实现。非engine名字不变。复用原GameState玩家名字，不新增前端状态字段或请求。
-- [ ] 先写定向红测，覆盖真人两色正确昵称、等级未知但昵称有效、资料失败/身份切换时昵称不泄漏、manager传递及页面真实贯通、未知昵称诚实回落、非engine不变。保留已修复的三种登录竞态回归。
-- [ ] 独立实施者最小实现并提交；独立Astra Max审核追加范围直至通过。运行adapter/manager和现有名字相关前端聚焦套件，最终kiosk构建；只做一份1024×600真实卡片组件预览，无需扩展全模式视觉矩阵。
-- [ ] 追加发布同样先追develop、推feature、合并推develop、更新父仓main的submodule；RK和云仍不部署，按用户先通知门交接。本轮黑屏/反光只读报告不因此扩成规则修改。
+- [x] 将现有一次、3秒总预算的本人资料读取扩展为返回本次验证过的昵称和等级；沿用身份代次/token/connected守卫，拒绝旧账号结果。本人显示名必须来自资料的`nickname`，不能使用现有`followAlias or nickname`的优先映射；可将`get_player_profile`的本人分支改为只取`nickname`，保留其他用户的备注名映射。未知等级仍可保留有效昵称。不得通过adapter可变缓存跨请求传递昵称，也不得取登录principal/手机号作显示名。
+- [x] `PlatformGameSession`增加有默认值的可选`my_username`，只在engine开局把已验证本人昵称传给manager；manager按真人执黑/执白设置对应原始玩家名字。其它平台/对局默认行为不变，失败沿用旧占位来源，不能阻止正常开局或AI首手。
+- [x] frontend的真人engine卡读取该席位的真实名字，移除用盒内公开名覆盖它的路径；旧`Me`/空名字占位在中文下回落“星阵用户”，不展示假用户名或“我”。机器人名称与等级规则保持当前已审实现。非engine名字不变。复用原GameState玩家名字，不新增前端状态字段或请求。
+- [x] 先写定向红测，覆盖真人两色正确昵称、等级未知但昵称有效、资料失败/身份切换时昵称不泄漏、manager传递及页面真实贯通、未知昵称诚实回落、非engine不变。保留已修复的三种登录竞态回归。
+- [x] 独立实施者最小实现并提交；独立Astra Max审核追加范围直至通过。运行adapter/manager和现有名字相关前端聚焦套件，最终kiosk构建；只做一份1024×600真实卡片组件预览，无需扩展全模式视觉矩阵。
+- [x] 追加发布同样先追develop、推feature、合并推develop、更新父仓main的submodule；RK和云仍不部署，按用户先通知门交接。本轮黑屏/反光只读报告不因此扩成规则修改。

@@ -7,6 +7,7 @@ import { KioskActions, type KioskAction } from '../../shell/KioskActions';
 import { PlayerCardSurface } from '../../shell/PlayerCardSurface';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
 import { presentPlayerRank, seatRank, UNKNOWN_RANK, type PlayerRank, type PlayerRanks } from '../../utils/playerRank';
+import { seatName } from '../../utils/playerName';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { autoCountEligible } from '../../hooks/useAutoCount';
 import type { EngineItemCounts, GameState, PlatformClockState, PlayerInfo } from '../../../api';
@@ -19,6 +20,7 @@ import { computeClock, type ClockView } from '../../../utils/gameClock';
 interface Props {
   gameState: GameState;
   playerRanks?: PlayerRanks;
+  currentUserName?: string;
   onAction: (action: string) => void;
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
@@ -199,11 +201,12 @@ function useClientElapsed(snapshot: object | undefined, running: boolean): numbe
  * 不是另起一块面板;规则和贴目同理,它们是**这一局开局时定死的**,写在页控条副标里
  * 一次就够。两处都占 0 高度,这正是右栏 516 能装下胜率块的原因。
  */
-function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_RANK, t, paired = false, untimedClock = false }: {
+function PlayerRow({ color, info, displayName, captures, turn, state, clock, rank = UNKNOWN_RANK, t, paired = false, untimedClock = false }: {
   color: 'B' | 'W';
   paired?: boolean;
   untimedClock?: boolean;
   info: PlayerInfo;
+  displayName?: string;
   captures: number;
   turn: boolean;
   state: string;
@@ -219,7 +222,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_R
   // ⇒ 铸 `game:black_side` / `game:white_side`,和屏 04 用同一个词。
   // (2026-08-26 一度把 fallback 改成「黑棋」去迁就 PO —— 那是把这处不一致钉死了:
   //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
-  const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
+  const name = displayName || info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
   if (paired) {
     return (
       <div className={`pcard ai-player-card kiosk-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
@@ -262,10 +265,11 @@ function PlayerRow({ color, info, captures, turn, state, clock, rank = UNKNOWN_R
  * 一方的玩家卡 + 时钟(A18)。时钟跟着本地时间走,所以 hook 挂在每张卡自己身上 ——
  * 放在父组件里算,每 250ms 一次的重渲会把胜率图、棋谱一起带着重画。
  */
-function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, paired = false, rank }: {
+function SeatRow({ gameState, color, displayName, turn, state, untimed, lang, t, onTimeout, paired = false, rank }: {
   gameState: GameState;
   paired?: boolean;
   rank?: PlayerRank;
+  displayName?: string;
   color: 'B' | 'W';
   turn: boolean;
   state: string;
@@ -293,7 +297,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, p
     };
   return (
     <PlayerRow
-      color={color} info={gameState.players_info[color]} captures={gameState.prisoner_count[color]}
+      color={color} info={gameState.players_info[color]} displayName={displayName} captures={gameState.prisoner_count[color]}
       turn={turn} state={state} clock={clock} rank={rank ?? seatRank(gameState, color, false, lang)} t={t} paired={paired} untimedClock={reading === null}
     />
   );
@@ -314,7 +318,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout, p
  * —— 这个数只在真浏览器里量,见 `tests/kiosk-screen-05-game.spec.ts` 的本地对局那几条。
  */
 const GameControlPanel = ({
-  gameState, playerRanks, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
+  gameState, playerRanks, currentUserName, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, analysisUnavailable = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
   onTimeout, counting = false, statusSlot = null, territory, platformClock = null, platformPhase = null,
@@ -594,10 +598,12 @@ const GameControlPanel = ({
         <div className="ai-player-cards kiosk-player-pair" role="group" aria-label={t('game:players', '对局双方')}>
           <SeatRow
             gameState={gameState} color="W" rank={playerRanks?.W ?? seatRank(gameState, 'W', engineMode, lang)} turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+            displayName={engineMode ? seatName(gameState, 'W', engineMode, currentUserName, t) : undefined}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout} paired
           />
           <SeatRow
             gameState={gameState} color="B" rank={playerRanks?.B ?? seatRank(gameState, 'B', engineMode, lang)} turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+            displayName={engineMode ? seatName(gameState, 'B', engineMode, currentUserName, t) : undefined}
             untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout} paired
           />
         </div>

@@ -62,9 +62,9 @@ vi.mock('../context/VisionContext', () => ({
 }));
 
 // Strict kiosk sessions are authenticated through a cookie while token stays null.
-const authMock = vi.hoisted(() => ({ token: 'mock-token' as string | null, isAuthenticated: true, userId: 1 }));
+const authMock = vi.hoisted(() => ({ token: 'mock-token' as string | null, isAuthenticated: true, userId: 1, username: 'test', publicUsername: null as string | null }));
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: authMock.token, isAuthenticated: authMock.isAuthenticated, user: { id: authMock.userId, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
+  useAuth: () => ({ token: authMock.token, isAuthenticated: authMock.isAuthenticated, user: { id: authMock.userId, username: authMock.username, public_username: authMock.publicUsername }, login: vi.fn(), logout: vi.fn() }),
 }));
 
 // Mock Board with a lightweight stub that exposes a button to trigger onMove(3, 3) —
@@ -195,6 +195,8 @@ describe('GamePage engine mode', () => {
     authMock.token = 'mock-token';
     authMock.isAuthenticated = true;
     authMock.userId = 1;
+    authMock.username = 'test';
+    authMock.publicUsername = null;
     mockOnMove.mockReset();
     mockPhysicalEngineError = null;
     mockAwaitingRemovalReminder = null;
@@ -221,6 +223,36 @@ describe('GamePage engine mode', () => {
       { node_id: 0, score: 0, winrate: 0.5 },
       { node_id: 1, score: 0.3, winrate: 0.52 },
     ];
+  });
+
+  describe('星阵玩家卡的账号显示名', () => {
+    const originalPlayers = mockGameState.players_info;
+
+    beforeEach(() => {
+      mockGameState.platform_engine_color = 'B';
+      mockGameState.players_info = {
+        B: { ...originalPlayers.B, name: '[golaxy] 星皮猴', player_type: 'human' },
+        W: { ...originalPlayers.W, name: 'Me', player_type: 'human' },
+      };
+    });
+    afterEach(() => { mockGameState.players_info = originalPlayers; });
+
+    it.each([
+      ['u_0123456789abcdefabcd', 'shuangmei', 'shuangmei'],
+      ['shuangmei', null, 'shuangmei'],
+      ['u_0123456789abcdefabcd', null, '我'],
+    ])('账号 %s / 公开名 %s 实际贯通到真人卡片', (username, publicUsername, displayName) => {
+      authMock.username = username;
+      authMock.publicUsername = publicUsername;
+      renderPage(true);
+
+      const humanName = screen.getByTestId('player-card-W').querySelector('h4');
+      expect(humanName).toHaveTextContent(displayName);
+      expect(humanName).toHaveAttribute('title', displayName);
+      const botName = screen.getByTestId('player-card-B').querySelector('h4');
+      expect(botName).toHaveTextContent('星阵·星皮猴');
+      expect(botName).toHaveAttribute('title', '星阵·星皮猴');
+    });
   });
 
   it('星阵人机局保留灰色悔棋并显示三个可用动作；停一手走会话动作，认输仍走确认框', async () => {

@@ -9,6 +9,7 @@ import { EmojiEvents } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
+import { displayAccountName } from '../../features/auth/accountDisplay';
 import { usePlayerRanks } from '../hooks/usePlayerRanks';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
@@ -1678,6 +1679,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           />
           <GameControlPanel
             playerRanks={playerRanks}
+            currentUserName={displayAccountName(user, '')}
             onTimeout={localGame || onlineGame ? undefined : handleClockExpired}
             onTimeExpired={localGame ? handleTimeExpired : undefined}
             gameState={gameState}

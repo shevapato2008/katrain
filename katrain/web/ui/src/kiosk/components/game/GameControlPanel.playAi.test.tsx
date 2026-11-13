@@ -350,3 +350,46 @@ describe('N14 + A11 · 右栏按对局类型', () => {
     expect(document.querySelector('.kiosk-fold[data-fold="eval"]')).not.toBeNull();
   });
 });
+
+describe('星阵引擎局玩家显示名', () => {
+  test.each([
+    ['B', '星皮猴', '2段'],
+    ['W', '星猛虎', '星阵3星'],
+  ] as const)('AI 执%s时显示真实机器人名、等级和真人用户名', (engineColor, botName, botRank) => {
+    const humanColor = engineColor === 'B' ? 'W' : 'B';
+    const gs = base({
+      platform_engine_color: engineColor,
+      platform_player_ranks: { [engineColor]: botRank, [humanColor]: '5段' },
+      players_info: {
+        [engineColor]: seat('human', `[golaxy] ${botName}`),
+        [humanColor]: seat('human', 'Me'),
+      } as GameState['players_info'],
+    });
+    const original = JSON.stringify(gs);
+    panel(gs, { engineMode: true, currentUserName: 'shuangmei' });
+
+    for (const [color, name, rank] of [
+      [engineColor, `星阵·${botName}`, botRank],
+      [humanColor, 'shuangmei', '5段'],
+    ]) {
+      const card = screen.getByTestId(`player-card-${color}`);
+      expect(card.querySelector('h4')).toHaveTextContent(name);
+      expect(card.querySelector('h4')).toHaveAttribute('title', name);
+      expect(card.querySelector('.kiosk-player-rank')).toHaveTextContent(rank);
+    }
+    expect(JSON.stringify(gs)).toBe(original);
+  });
+
+  test('真人没有公开显示名时显示我', () => {
+    panel(base({ platform_engine_color: 'B', players_info: { B: seat('human', '[golaxy] 星皮猴'), W: seat('human', 'Me') } }), { engineMode: true });
+    const name = screen.getByTestId('player-card-W').querySelector('h4');
+    expect(name).toHaveTextContent('我');
+    expect(name).toHaveAttribute('title', '我');
+  });
+
+  test('非引擎局保留原始玩家名称', () => {
+    panel(base({ players_info: { B: seat('player:human', 'Me'), W: seat('player:ai', 'Alice') } }), { currentUserName: 'shuangmei' });
+    expect(screen.getByTestId('player-card-B').querySelector('h4')).toHaveTextContent('Me');
+    expect(screen.getByTestId('player-card-W').querySelector('h4')).toHaveTextContent('Alice');
+  });
+});

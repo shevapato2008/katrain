@@ -1,6 +1,6 @@
 # Report access guidance Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** kiosk复盘普通/深度报告因额度或免费资格被拒绝时，立即显示与既有弹窗同样式的原因说明和账户入口。
 
@@ -36,9 +36,9 @@ export function reportAccessIssueFor(error: unknown): ReportAccessIssue | null;
 ```
 复用membershipErrorCode(error,'quote_failed')，明确status401返回null；只返回这两种已知业务原因，不读错误文案、不按前端余额推断。为Dialog提供六个键：membership:report_insufficient_title/body、membership:report_verification_title/body、membership:report_view_membership、membership:report_view_account；取消复用membership:cancel。
 
-- [ ] 写红测：402/insufficient_credits、403/verification_required；401、503、未知错误均null。
-- [ ] 最小实现并绿测，添加六键的十一语译文，PO可解析；不改现有全局错误映射或报价接口。
-- [ ] 显式只提交本人文件，报告测试。
+- [x] 写红测：402/insufficient_credits、403/verification_required；401、503、未知错误均null。
+- [x] 最小实现并绿测，添加六键的十一语译文，PO可解析；不改现有全局错误映射或报价接口。
+- [x] 显式只提交本人文件，报告测试。
 
 ### Task B: 弹窗与页面贯通
 
@@ -46,17 +46,17 @@ export function reportAccessIssueFor(error: unknown): ReportAccessIssue | null;
 
 冻结props：`issue: ReportAccessIssue | null`、`onClose: () => void`、`onAccount: () => void`。使用useMembershipI18n和上述键，英文fallback；issue为null不渲染。
 
-- [ ] 先写红测：真实页面生成普通/深度和失败任务重试收到这两种错误后弹窗可见；取消不创建/重试/下单；主按钮只导航现有会员页。
-- [ ] 为用户主动报告菜单的create/retry Promise添加一个局部失败处理，使用Task A分类；普通后台列表刷新不弹窗。有效身份下由弹窗接管这两类错误时，先clearTasksError()再打开弹窗，取消后不留下误导登录提示；其它错误仍保留原错误状态。保留正常报价/创建逻辑，不改共享hook或Galaxy页面。
-- [ ] 请求开始记录当前identityKey/auth status，失败回调仅在仍同身份时打开弹窗；身份变化清理弹窗。复用现有ref/effect写法，不新增请求生命周期框架。
-- [ ] 用同样式cdlg实现弹窗，给标题/正文正确aria关联；不增加自定义CSS。覆盖401/503不误弹、正常报价仍可确认、账号切换晚到失败不弹。
-- [ ] 显式只提交本人文件，报告聚焦测试。Task A独占helper/locale，Task B独占Dialog/Page，禁止共享文件并行改动。
+- [x] 先写红测：真实页面生成普通/深度和失败任务重试收到这两种错误后弹窗可见；取消不创建/重试/下单；主按钮只导航现有会员页。
+- [x] 为用户主动报告菜单的create/retry Promise添加一个局部失败处理，使用Task A分类；普通后台列表刷新不弹窗。有效身份下由弹窗接管这两类错误时，先clearTasksError()再打开弹窗，取消后不留下误导登录提示；其它错误仍保留原错误状态。保留正常报价/创建逻辑，不改共享hook或Galaxy页面。
+- [x] 请求开始记录当前identityKey/auth status，失败回调仅在仍同身份时打开弹窗；身份变化清理弹窗。复用现有ref/effect写法，不新增请求生命周期框架。
+- [x] 用同样式cdlg实现弹窗，给标题/正文正确aria关联；不增加自定义CSS。覆盖401/503不误弹、正常报价仍可确认、账号切换晚到失败不弹。
+- [x] 显式只提交本人文件，报告聚焦测试。Task A独占helper/locale，Task B独占Dialog/Page，禁止共享文件并行改动。
 
 ## Chunk 3: 最小验证、审核及发布
 
-- [ ] 主代理先核对规格，再由全新独立Astra Max对本次整体代码审核，修正实质问题直至通过；不重复旧识别/计费架构审核。计划审核仅一轮，建议若必要在同次反馈中收敛。
-- [ ] 聚焦检查：`npm run test -- src/features/report/reportAccessIssue.test.ts src/kiosk/components/report/ReportAccessDialog.test.tsx src/kiosk/pages/ReportsPage.test.tsx`；保留原成功报价和两秒进度轮询测试，不额外建测试层。
-- [ ] 运行`npm run build:smartbox-kiosk-2d`。主代理一次1024×600真实弹窗组件预览，对照既有消费确认框的样式，检查正文、两个按钮和触控尺寸；这是沿用既有设计的局部前端任务，没有本次后端实施阶段或新的视觉审批门。
+- [x] 主代理先核对规格，再由全新独立Astra Max对本次整体代码审核，修正实质问题直至通过；不重复旧识别/计费架构审核。计划审核仅一轮，建议若必要在同次反馈中收敛。
+- [x] 聚焦检查：`npm run test -- src/features/report/reportAccessIssue.test.ts src/kiosk/components/report/ReportAccessDialog.test.tsx src/kiosk/pages/ReportsPage.test.tsx`；保留原成功报价和两秒进度轮询测试，不额外建测试层。
+- [x] 运行`npm run build:smartbox-kiosk-2d`。主代理一次1024×600真实弹窗组件预览，对照既有消费确认框的样式，检查正文、两个按钮和触控尺寸；这是沿用既有设计的局部前端任务，没有本次后端实施阶段或新的视觉审批门。
 - [ ] fetch并合并最新develop到feature，解决冲突、复验、推feature；合入并推develop。
 - [ ] 隔离smartbox-software工作树，更新vendor/katrain到发布develop，推main；保留其它WIP。
 - [ ] 确认无其它部署进程、设备不在对局/标定，使用已发布准确源码及标准app发布事务部署rk3562-local；复用已验证构建，空间不足按用户已有授权清理过期发布产物，保留活动数据和当前资源。

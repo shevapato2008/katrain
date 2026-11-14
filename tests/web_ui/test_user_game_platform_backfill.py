@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, event, select, update
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import UserGame
+from scripts import backfill_user_game_platform as repair
 from scripts.backfill_user_game_platform import RepairError, apply_manifest, dry_run, main, rollback_batch
 
 
@@ -236,3 +237,62 @@ def test_cli_refuses_unscoped_or_unbacked_actions_before_opening_database():
         with pytest.raises(SystemExit) as exc:
             main(arguments)
         assert exc.value.code == 2
+
+
+@pytest.mark.parametrize("operation", ["apply", "rollback"])
+def test_concurrent_edit_between_snapshot_and_write_preserves_edit_and_rolls_back_batch(
+    db, tmp_path, monkeypatch, operation
+):
+    add_game(db)
+    add_game(db, "second")
+    manifest = dry_run(db, user_id=7)
+    path = tmp_path / "backup.json"
+    if operation == "rollback":
+        apply_manifest(db, manifest, confirmed_game_ids=["hint", "second"], backup_path=path)
+        backup = json.loads(path.read_text())
+    else:
+        db.rollback()  # Dry-run and mutation use separate transactions.
+    competing_engine = create_engine(db.bind.url)
+    edited_at = datetime(2026, 11, 15)
+
+    def concurrent_edit():
+        with Session(competing_engine) as competing:
+            competing.execute(
+                update(UserGame.__table__)
+                .where(UserGame.id == "second")
+                .values(user_id=8, platform="ogs", updated_at=edited_at)
+            )
+            competing.commit()
+
+    if operation == "apply":
+        original_write_backup = repair.write_private_json
+
+        def race_during_backup(*args):
+            original_write_backup(*args)
+            concurrent_edit()
+
+        monkeypatch.setattr(repair, "write_private_json", race_during_backup)
+    else:
+        original_write_platform = repair._write_platform
+        raced = False
+
+        def race_before_first_write(session, current, platform):
+            nonlocal raced
+            if not raced:
+                raced = True
+                concurrent_edit()
+            return original_write_platform(session, current, platform)
+
+        monkeypatch.setattr(repair, "_write_platform", race_before_first_write)
+    try:
+        with pytest.raises(RepairError, match="Concurrent"):
+            if operation == "apply":
+                apply_manifest(db, manifest, confirmed_game_ids=["hint", "second"], backup_path=path)
+            else:
+                rollback_batch(db, backup)
+        # The first row's earlier write in this batch must be rolled back too.
+        assert row(db)["platform"] == (None if operation == "apply" else "golaxy")
+        edited = row(db, "second")
+        assert (edited["user_id"], edited["platform"], edited["updated_at"]) == (8, "ogs", edited_at)
+    finally:
+        competing_engine.dispose()

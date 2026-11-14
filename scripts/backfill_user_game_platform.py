@@ -14,7 +14,7 @@ import sys
 import uuid
 from pathlib import Path
 
-from sqlalchemy import inspect, select, text, update
+from sqlalchemy import DateTime, String, cast, inspect, or_, select, text, update
 
 
 class RepairError(ValueError):
@@ -156,10 +156,20 @@ def write_private_json(path, document):
 
 def _write_platform(session, row, platform):
     table = _table()
+    # SQLite ignores FOR UPDATE. Compare every actual original column atomically
+    # so edits committed after our snapshot cannot be overwritten on either DB.
+    unchanged = []
+    for column in table.columns:
+        value = row[column.name]
+        matches = column == value
+        if session.get_bind().dialect.name == "sqlite" and isinstance(column.type, DateTime) and value is not None:
+            # SQLite CURRENT_TIMESTAMP omits .000000, unlike bound datetimes.
+            # Accept that exact zero-microsecond spelling without rounding times.
+            if value.microsecond == 0:
+                matches = or_(matches, cast(column, String) == value.strftime("%Y-%m-%d %H:%M:%S"))
+        unchanged.append(matches)
     # Explicit updated_at suppresses SQLAlchemy's onupdate=func.now().
-    result = session.execute(
-        update(table).where(table.c.id == row["id"]).values(platform=platform, updated_at=row["updated_at"])
-    )
+    result = session.execute(update(table).where(*unchanged).values(platform=platform, updated_at=row["updated_at"]))
     if result.rowcount != 1:
         raise RepairError(f"Concurrent/missing game: {row['id']}")
 

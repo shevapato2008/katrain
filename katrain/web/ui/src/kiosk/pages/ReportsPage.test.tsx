@@ -587,8 +587,48 @@ describe('屏 19 · 行的五种状态', () => {
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'running'));
     expect(within(rows()[0]).getByText('正在分析 31/187')).toBeInTheDocument();
+    expect(rows()[0]).toHaveAttribute('data-has-running-report', 'true');
+    expect(within(rows()[0]).getAllByRole('progressbar')).toHaveLength(1);
     expect(within(rows()[0]).queryByRole('button', { name: '查看报告' })).toBeNull();
     expect(within(rows()[0]).queryByRole('button', { name: '继续分析' })).toBeNull();
+  });
+
+  it.each([
+    {},
+    { completedNormal: task() },
+    { failedNormal: task({ status: 'failed', analyzed_moves: 0 }) },
+    { activeNormal: task({ status: 'pending', analyzed_moves: 0 }) },
+  ])('没有实际运行的报告时卡片占满整行: %j', async (state) => {
+    withState(state);
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(rows()[0]).toHaveAttribute('data-has-running-report', 'false');
+    expect(within(rows()[0]).queryByRole('progressbar')).toBeNull();
+  });
+
+  it('排队任务在卡内明确写排队中，不冒充正在分析', async () => {
+    withState({ activeNormal: task({ status: 'pending', analyzed_moves: 0 }) });
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(within(rows()[0]).getByText('排队中')).toBeVisible();
+    expect(within(rows()[0]).queryByText(/正在分析/)).toBeNull();
+  });
+
+  it('一个档位运行、另一个排队时仍保留排队反馈', async () => {
+    withState({ activeNormal: task({ status: 'running', analyzed_moves: 31 }),
+      activeDeep: task({ id: 42, report_type: 'deep', status: 'pending', analyzed_moves: 0 }) });
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(within(rows()[0]).getByText(/正在分析 31\/187 · 排队中/)).toBeVisible();
+    expect(within(rows()[0]).getAllByRole('progressbar')).toHaveLength(1);
+  });
+
+  it('手数在棋手之间的结果区域，表头不再重复', async () => {
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    const center = rows()[0].querySelector('.record-match__result')!;
+    expect(center).toHaveTextContent('187 手');
+    expect(rows()[0].querySelector('.personal-game-head')).not.toHaveTextContent('187 手');
   });
 
   it('选中未分析行后从左侧菜单开始标准分析', async () => {

@@ -10,3 +10,6 @@
 .record-match__result-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .record-match__stone{display:inline-block;flex:none;width:13px;height:13px;border:1px solid #95a49b;border-radius:50%;background:#080b09}
 .record-match__stone--white{background:#f2f4ef;border-color:#d5ddd5}
+
+.record-match--history .record-match__result{gap:5px;padding:3px 6px}
+.record-match__detail{flex-shrink:0;font-size:12px;font-weight:400;white-space:nowrap;color:var(--dim)}

@@ -650,6 +650,9 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
   reportState: ReportGameStatus;
 }) {
   const mine = yourColor(game, username);
+  const tiers = (['deep', 'normal'] as const).map(tier => presentReportTier(reportState, tier, game.move_count));
+  const running = tiers.find(tier => tier.status === 'running');
+  const queued = tiers.some(tier => tier.status === 'pending');
   const ts = savedAt(game);
   const rawResult = game.result?.trim();
   const result = (lang !== 'cn' && lang !== 'tw') || !rawResult || /^void$/i.test(rawResult)
@@ -664,22 +667,23 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="personal-game-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind}>
+    <div className="personal-game-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind} data-has-running-report={running ? 'true' : 'false'}>
       <button type="button" className="kiosk-row rvpick personal-game-card" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
         <span className="personal-game-description">{sub}</span>
         <span className="personal-game-head">
-          <Icon name="books" /><b>{historyCardTitle(game, mine, t)}</b>
+          <Icon name="books" /><b title={historyCardTitle(game, mine, t)}>{historyCardTitle(game, mine, t)}</b>
           <span className="personal-game-state">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
-            : state.kind === 'running' ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })
+            : running ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: running.analyzed, b: running.total })
+            : queued ? t('report:queuing', '排队中')
             : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
             : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
-            : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}</span>
-          <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
+            : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}{running && queued && <> · {t('report:queuing', '排队中')}</>}</span>
+          <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))}</small>
         </span>
         <RecordMatchLine variant="history"
           black={{ name: game.player_black || t('game:black_side', '黑方'), rank: getListRank(null, game.black_rank, t, lang) }}
           white={{ name: game.player_white || t('game:white_side', '白方'), rank: getListRank(null, game.white_rank, t, lang) }}
-          result={result} />
+          result={result} detail={`${game.move_count} ${t('report:moves_unit', '手')}`} />
       </button>
       <ReportProgressColumn state={reportState} moveCount={game.move_count} surface="kiosk" t={t} />
     </div>

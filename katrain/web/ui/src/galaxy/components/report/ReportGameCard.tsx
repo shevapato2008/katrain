@@ -1,5 +1,6 @@
 import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
-import { Box, Card, Typography } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Box, Card, IconButton, Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
 import type { UserGameSummary } from '../../../api/userGamesApi';
@@ -16,6 +17,7 @@ interface ReportGameCardProps {
   selected?: boolean;
   reportState: ReportGameStatus;
   onSelect: () => void;
+  onDelete?: () => void;
 }
 
 function getGameDisplayTitle(game: UserGameSummary, t: (key: string, fallback?: string) => string): string {
@@ -31,8 +33,9 @@ function getGameDisplayTitle(game: UserGameSummary, t: (key: string, fallback?: 
 }
 
 
-export default function ReportGameCard({ game, selected = false, reportState, onSelect }: ReportGameCardProps) {
+export default function ReportGameCard({ game, selected = false, reportState, onSelect, onDelete }: ReportGameCardProps) {
   const { t } = useTranslation();
+  const canDelete = Boolean(onDelete) && game.source !== 'kifu_library';
   const platformLabel = reportPlatformLabel(game, t);
   const title = platformLabel || game.event || game.title || getGameDisplayTitle(game, t);
   const secondaryTitle = platformLabel ? game.event || game.title : null;
@@ -47,13 +50,13 @@ export default function ReportGameCard({ game, selected = false, reportState, on
   return <Box data-testid="report-game-row" data-has-running-report={hasRunningReport ? 'true' : 'false'}
     sx={{ display: 'grid', gridTemplateColumns: hasRunningReport ? 'minmax(0, 1fr) 126px' : 'minmax(0, 1fr)',
     gap: hasRunningReport ? '10px' : 0, height: 104, minHeight: 104, alignItems: 'center', width: '100%' }}>
-    <Card data-testid="report-game-card" sx={{ height: 104, width: '100%', minWidth: 0, boxSizing: 'border-box', p: '6px 10px',
+    <Card data-testid="report-game-card" sx={{ position: 'relative', height: 104, width: '100%', minWidth: 0, boxSizing: 'border-box', p: '6px 10px',
       bgcolor: selected ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.05)', border: '1px solid',
       borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.1)', borderRadius: '8px',
       '&:hover': { borderColor: selected ? 'primary.main' : 'rgba(255,255,255,0.2)' } }}>
       <Box role="button" tabIndex={0} aria-pressed={selected} onClick={onSelect} onKeyDown={event => {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(); }
-      }} sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px',
+      }} sx={{ height: '100%', mr: canDelete ? '48px' : 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px',
         cursor: 'pointer', '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main' } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, height: 20, minWidth: 0 }}>
           <Typography noWrap title={title} sx={{ fontSize: 18, lineHeight: '20px', fontWeight: 600, minWidth: 0 }}>{title}</Typography>
@@ -86,6 +89,10 @@ export default function ReportGameCard({ game, selected = false, reportState, on
           </Box>
         </Box>
       </Box>
+      {canDelete && <IconButton aria-label={t('report:delete_game', 'Delete game')} onClick={onDelete}
+        sx={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 44, height: 44, color: 'error.main' }}>
+        <DeleteOutlineIcon />
+      </IconButton>}
     </Card>
     <ReportProgressColumn state={reportState} moveCount={game.move_count} surface="galaxy" t={t} />
   </Box>;

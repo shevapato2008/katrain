@@ -2,7 +2,6 @@ import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
 import { ConsumptionQuoteDialog } from '../../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SearchIcon from '@mui/icons-material/Search';
 import LoginIcon from '@mui/icons-material/Login';
 import {
@@ -18,7 +17,6 @@ import {
   DialogTitle,
   Fade,
   InputAdornment,
-  IconButton,
   Menu,
   MenuItem,
   Pagination,
@@ -438,11 +436,7 @@ export default function ReportsPage() {
           <Box sx={{ width: '100%', height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <Box data-testid="reports-preview-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2.5, minHeight: 44, flex: 'none' }}>
               <Typography variant="h6">{t('review:rail_title', 'Selected game')}</Typography>
-              <Stack direction="row" alignItems="center" spacing={1}>{plateStatus}
-              {selectedSummary && selectedSummary.source !== 'kifu_library' && <IconButton
-                aria-label={t('report:delete_game', 'Delete game')} onClick={() => setDeleteTarget(selectedSummary.id)}
-                sx={{ width: 44, height: 44, color: 'text.secondary' }}><DeleteOutlineIcon /></IconButton>}
-              </Stack>
+              {plateStatus}
             </Box>
             <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'grid', placeItems: 'center' }}>
         {previewLoading || gamesLoading ? (
@@ -565,6 +559,7 @@ export default function ReportsPage() {
                           selected={game.id === selectedGameId}
                           reportState={reportStatesByGame[game.id] || {}}
                           onSelect={() => setSelectedGameId(game.id)}
+                          onDelete={() => setDeleteTarget(game.id)}
                         />
                       </Box>
                     </Fade>

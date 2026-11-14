@@ -441,9 +441,6 @@ export default function ReportsPage() {
           syncRight={railSync.right}
           statuses={cells}
         />
-        {selectedSummary && selectedSummary.source !== 'kifu_library' && <button type="button"
-          className="personal-game-delete personal-games-preview__delete" aria-label={t('review:delete_game', '删除对局')}
-          onClick={() => setDeleteTarget(selectedSummary.id)}><DeleteOutlineIcon aria-hidden="true" /></button>}
         <div className="personal-games-preview__actions">
           <button type="button" className="kiosk-btn" disabled={!selectedGame || selectedGame.id !== selectedGameId || !selectedBoard}
             onClick={() => navigate(`/kiosk/research?user_game_id=${encodeURIComponent(selectedGameId!)}`)}>{t('review:open_replay', '查看棋谱')}</button>
@@ -552,6 +549,7 @@ export default function ReportsPage() {
                       t={t}
                       lang={lang}
                       onSelect={() => setSelectedGameId(game.id)}
+                      onDelete={() => setDeleteTarget(game.id)}
                       reportState={reportStatesByGame[game.id] || {}}
                     />
                   ))}
@@ -640,7 +638,7 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, reportState, selected, username, t, lang, onSelect }: {
+function ReviewRow({ game, state, reportState, selected, username, t, lang, onSelect, onDelete }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
@@ -648,6 +646,7 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
   t: (key: string, fallback?: string) => string;
   lang: string;
   onSelect: () => void;
+  onDelete: () => void;
   reportState: ReportGameStatus;
 }) {
   const mine = yourColor(game, username);
@@ -669,23 +668,27 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
 
   return (
     <div className="personal-game-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind} data-has-running-report={running ? 'true' : 'false'}>
-      <button type="button" className="kiosk-row rvpick personal-game-card" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
-        <span className="personal-game-description">{sub}</span>
-        <span className="personal-game-head">
-          <Icon name="books" /><b title={historyCardTitle(game, mine, t)}>{historyCardTitle(game, mine, t)}</b>
-          <span className="personal-game-state">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
-            : running ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: running.analyzed, b: running.total })
-            : queued ? t('report:queuing', '排队中')
-            : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
-            : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
-            : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}{running && queued && <> · {t('report:queuing', '排队中')}</>}</span>
-          <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))}</small>
-        </span>
-        <RecordMatchLine variant="history"
-          black={{ name: displayGamePlayerName(game, 'B', t('game:black_side', '黑方')), rank: getListRank(null, game.black_rank, t, lang) }}
-          white={{ name: displayGamePlayerName(game, 'W', t('game:white_side', '白方')), rank: getListRank(null, game.white_rank, t, lang) }}
-          result={result} detail={`${game.move_count} ${t('report:moves_unit', '手')}`} />
-      </button>
+      <div className="personal-game-card-frame" data-deletable={game.source !== 'kifu_library' ? 'true' : 'false'}>
+        <button type="button" className="kiosk-row rvpick personal-game-card" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
+          <span className="personal-game-description">{sub}</span>
+          <span className="personal-game-head">
+            <Icon name="books" /><b title={historyCardTitle(game, mine, t)}>{historyCardTitle(game, mine, t)}</b>
+            <span className="personal-game-state">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
+              : running ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: running.analyzed, b: running.total })
+              : queued ? t('report:queuing', '排队中')
+              : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
+              : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
+              : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}{running && queued && <> · {t('report:queuing', '排队中')}</>}</span>
+            <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))}</small>
+          </span>
+          <RecordMatchLine variant="history"
+            black={{ name: displayGamePlayerName(game, 'B', t('game:black_side', '黑方')), rank: getListRank(null, game.black_rank, t, lang) }}
+            white={{ name: displayGamePlayerName(game, 'W', t('game:white_side', '白方')), rank: getListRank(null, game.white_rank, t, lang) }}
+            result={result} detail={`${game.move_count} ${t('report:moves_unit', '手')}`} />
+        </button>
+        {game.source !== 'kifu_library' && <button type="button" className="personal-game-delete"
+          aria-label={t('review:delete_game', '删除对局')} onClick={onDelete}><DeleteOutlineIcon aria-hidden="true" /></button>}
+      </div>
       <ReportProgressColumn state={reportState} moveCount={game.move_count} surface="kiosk" t={t} />
     </div>
   );

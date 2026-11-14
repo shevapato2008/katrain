@@ -223,7 +223,7 @@ describe('ReportsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
 
-    expect(screen.getByTestId('report-game-card').querySelector('button')).toBeNull();
+    expect(screen.getByTestId('report-game-card').querySelector('button')).toHaveAttribute('aria-label', 'Delete game');
     expect(within(screen.getByTestId('reports-preview-actions')).getByRole('button', { name: 'Analysis report', hidden: true })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Generate Normal report' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Generate Advanced report' })).toBeInTheDocument();
@@ -483,8 +483,8 @@ describe('ReportsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
     });
-    expect(within(screen.getByTestId('report-game-card')).queryByRole('button', { name: 'Delete game' })).toBeNull();
-    expect(within(screen.getByTestId('reports-preview-title')).getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
+    expect(within(screen.getByTestId('report-game-card')).getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
+    expect(within(screen.getByTestId('reports-preview-title')).queryByRole('button', { name: 'Delete game' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
 
@@ -510,6 +510,30 @@ describe('ReportsPage', () => {
       expect(mockUserGamesList.mock.calls.length).toBeGreaterThan(callsBefore);
     });
     expect(mockTaskRefresh).toHaveBeenCalled();
+  });
+
+  it('offers deletion on every eligible card and confirms the unselected target without selecting it', async () => {
+    const other = { ...gameSummary, id: 'game-2', title: 'Other game' };
+    mockUserGamesList.mockResolvedValue({ items: [gameSummary, other], total: 2, page: 1, page_size: 12 });
+    mockUserGamesDelete.mockResolvedValue({ status: 'ok' });
+    render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
+    await waitFor(() => expect(screen.getAllByTestId('report-game-card')).toHaveLength(2));
+    const [selected, unselected] = screen.getAllByTestId('report-game-card');
+    await waitFor(() => expect(within(selected).getByRole('button', { pressed: true })).toBeInTheDocument());
+    expect(within(selected).getByRole('button', { name: 'Delete game' })).toBeVisible();
+    const deleteOther = within(unselected).getByRole('button', { name: 'Delete game' });
+    const getCalls = mockUserGamesGet.mock.calls.length;
+    fireEvent.click(deleteOther);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    expect(mockUserGamesDelete).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(within(unselected).getByRole('button', { pressed: false })).toBeInTheDocument();
+    fireEvent.click(deleteOther);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete game' }));
+    await waitFor(() => expect(mockUserGamesDelete).toHaveBeenCalledExactlyOnceWith('token', 'game-2'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(within(selected).getByRole('button', { pressed: true })).toBeInTheDocument();
+    expect(mockUserGamesGet).toHaveBeenCalledTimes(getCalls);
   });
 
   it('does not offer deletion for a game imported from the kifu library', async () => {
@@ -596,8 +620,8 @@ describe('ReportsPage', () => {
 
     // Game 3: failed normal + completed deep
     const thirdCard = screen.getAllByTestId('report-game-card')[2];
-    expect(thirdCard.querySelector('button')).toBeNull();
-    fireEvent.click(within(thirdCard).getByRole('button'));
+    expect(within(thirdCard).getByRole('button', { name: 'Delete game' })).toBeInTheDocument();
+    fireEvent.click(within(thirdCard).getByRole('button', { pressed: false }));
     fireEvent.click(screen.getByRole('button', { name: 'Analysis report' }));
     expect(screen.getByRole('menuitem', { name: 'Retry Normal report' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'View Advanced report' })).toBeInTheDocument();

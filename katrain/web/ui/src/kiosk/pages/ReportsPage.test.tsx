@@ -835,17 +835,26 @@ describe('屏 19 · 生成报告那一组', () => {
 });
 
 describe('屏 19 · 删除', () => {
-  // 五十二高的行上并排三个可点的东西,误触的是最不能误触的那个 ——
-  // 所以删除只挂在**选中**的那一行上。
-  it('删除移到预览标题并始终针对选中棋局', async () => {
+  it('每张可删除卡都有独立按钮，未选中卡取消或确认删除都不切换选中项', async () => {
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    expect(document.querySelector('.personal-games-preview__delete')).toBe(screen.getByRole('button', { name: '删除对局' }));
-    expect(within(rows()[1]).queryByRole('button', { name: '删除对局' })).toBeNull();
-    fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
-    await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
-    expect(within(rows()[0]).queryByRole('button', { name: '删除对局' })).toBeNull();
-    expect(document.querySelector('.personal-games-preview__delete')).toBe(screen.getByRole('button', { name: '删除对局' }));
+    expect(document.querySelector('.personal-games-preview__delete')).toBeNull();
+    for (const row of rows()) {
+      const remove = within(row).getByRole('button', { name: '删除对局' });
+      const select = within(row).getByRole('button', { pressed: row.dataset.selected === 'true' });
+      expect(select).not.toContainElement(remove);
+      expect(remove.parentElement).toBe(select.parentElement);
+    }
+    const getCalls = mocks.get.mock.calls.length;
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: '删除对局' }));
+    expect(rows()[0]).toHaveAttribute('data-selected', 'true');
+    fireEvent.click(within(screen.getByRole('dialog', { name: '确认删除' })).getByRole('button', { name: '取消' }));
+    expect(mocks.deleteGame).not.toHaveBeenCalled();
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: '删除对局' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: '确认删除' })).getByRole('button', { name: '删除对局' }));
+    await waitFor(() => expect(mocks.deleteGame).toHaveBeenCalledExactlyOnceWith('token', 'b'));
+    expect(rows()[0]).toHaveAttribute('data-selected', 'true');
+    expect(mocks.get).toHaveBeenCalledTimes(getCalls);
   });
 
   it('棋谱库导入的职业棋局不显示删除，个人升降级对局显示删除', async () => {
@@ -859,14 +868,14 @@ describe('屏 19 · 删除', () => {
     expect(within(rows()[0]).queryByRole('button', { name: '删除对局' })).toBeNull();
     fireEvent.click(within(rows()[1]).getByRole('button', { name: /升降级对弈/ }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
-    expect(document.querySelector('.personal-games-preview__delete')).toBe(screen.getByRole('button', { name: '删除对局' }));
+    expect(within(rows()[1]).getByRole('button', { name: '删除对局' })).toBeVisible();
   });
 
   it('确认之后才删,删完重新拉列表', async () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    fireEvent.click(screen.getByRole('button', { name: '删除对局' }));
+    fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除对局' }));
     expect(mocks.deleteGame).not.toHaveBeenCalled();
     fireEvent.click(within(await screen.findByRole('dialog', { name: '确认删除' })).getByRole('button', { name: '删除对局' }));
     await waitFor(() => expect(mocks.deleteGame).toHaveBeenCalledWith('token', 'a'));
@@ -878,7 +887,7 @@ describe('屏 19 · 删除', () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
-    fireEvent.click(screen.getByRole('button', { name: '删除对局' }));
+    fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除对局' }));
     fireEvent.click(within(await screen.findByRole('dialog', { name: '确认删除' })).getByRole('button', { name: '删除对局' }));
     expect(await screen.findByText('删除对局失败')).toBeInTheDocument();
     expect(screen.queryByText('删不掉')).toBeNull();

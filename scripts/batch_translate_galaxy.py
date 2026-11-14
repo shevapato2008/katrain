@@ -22,6 +22,46 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # First verified phone gift: pre-bind eligibility and actual server result.
+    "auth:bind_gift_hint": {
+        "en": "Verify your phone for the first time to get 50 credits. No repeat gifts.",
+        "cn": "首次验证手机号送50积分，已领取不再赠送。",
+        "tw": "首次驗證手機號碼送50積分，已領取不再贈送。",
+        "jp": "電話番号の初回認証で50ポイント。受取済みの場合は再付与されません。",
+        "ko": "휴대전화 번호를 처음 인증하면 50포인트를 드립니다. 이미 받았다면 다시 지급되지 않습니다.",
+        "de": "Für die erste Telefonnummernbestätigung gibt es 50 Punkte. Kein erneutes Geschenk.",
+        "es": "Recibe 50 puntos al verificar tu teléfono por primera vez. El regalo no se repite.",
+        "fr": "Recevez 50 points à la première vérification de votre téléphone. Aucun nouveau cadeau si déjà reçu.",
+        "ru": "За первое подтверждение телефона — 50 баллов. Повторно подарок не выдаётся.",
+        "tr": "Telefon numaranızı ilk kez doğruladığınızda 50 puan kazanın. Hediye tekrar verilmez.",
+        "ua": "За перше підтвердження телефону — 50 балів. Повторно подарунок не надається.",
+    },
+    "auth:bind_success_gift": {
+        "en": "Phone bound successfully. 50 credits added.",
+        "cn": "手机号绑定成功，已赠送50积分",
+        "tw": "手機號碼綁定成功，已贈送50積分",
+        "jp": "電話番号を連携し、50ポイントを付与しました。",
+        "ko": "휴대전화 번호가 연결되었으며 50포인트가 지급되었습니다.",
+        "de": "Telefonnummer verknüpft. 50 Punkte gutgeschrieben.",
+        "es": "Teléfono vinculado. Se han añadido 50 puntos.",
+        "fr": "Téléphone associé. 50 points ajoutés.",
+        "ru": "Телефон привязан. Начислено 50 баллов.",
+        "tr": "Telefon bağlandı. 50 puan eklendi.",
+        "ua": "Телефон прив’язано. Нараховано 50 балів.",
+    },
+    "auth:bind_policy": {
+        "en": "Use SMS codes to sign in after binding. Your balance and membership stay unchanged.",
+        "cn": "绑定后可用短信验证码登录，原有余额和会员保留。",
+        "tw": "綁定後可用簡訊驗證碼登入，原有餘額和會員保留。",
+        "jp": "連携後はSMS認証コードでログインできます。残高と会員情報は引き継がれます。",
+        "ko": "연결 후 SMS 인증 코드로 로그인할 수 있습니다. 기존 잔액과 멤버십은 유지됩니다.",
+        "de": "Nach der Verknüpfung kannst du dich per SMS-Code anmelden. Guthaben und Mitgliedschaft bleiben erhalten.",
+        "es": "Tras vincularlo puedes iniciar sesión con un código SMS. Conservas tu saldo y membresía.",
+        "fr": "Après l’association, connectez-vous par code SMS. Votre solde et votre abonnement sont conservés.",
+        "ru": "После привязки можно входить по SMS-коду. Баланс и подписка сохраняются.",
+        "tr": "Bağladıktan sonra SMS koduyla giriş yapabilirsiniz. Bakiyeniz ve üyeliğiniz korunur.",
+        "ua": "Після прив’язки можна входити за SMS-кодом. Баланс і підписка зберігаються.",
+    },
     # Phone continuation, password settings, report tiers and visible startup failures.
     "auth:continue_submit": {
         "en": "Continue", "cn": "继续", "tw": "繼續", "jp": "続ける", "ko": "계속",

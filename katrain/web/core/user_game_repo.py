@@ -2,10 +2,11 @@
 
 import hashlib
 from typing import List, Dict, Any, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 from sqlalchemy.sql import func
 from sqlalchemy import or_
 from katrain.web.core import models_db
+from katrain.web.core.public_identity import display_account_name
 
 
 class ReservedAiLadderGameIdError(ValueError):
@@ -516,6 +517,24 @@ class UserGameRepository:
             "created_at": str(game.created_at) if game.created_at else None,
             "updated_at": str(game.updated_at) if game.updated_at else None,
         }
+        if game.source in ("play_ai", "play_human") and not game.platform and game.game_type != "pvp_online":
+            # Existing source names remain canonical and immutable. Only a stored
+            # owner/seat (or ranked ledger) can project the account's public label.
+            color = game.user_color
+            if color not in ("B", "W") and game.game_type == "ai_ladder_ranked":
+                db = object_session(game)
+                ledger = (
+                    db.query(models_db.AiLadderGameLedger).filter_by(game_id=game.id, user_id=game.user_id).first()
+                    if db is not None
+                    else None
+                )
+                color = ledger.user_color if ledger is not None else None
+            for side in ("black", "white"):
+                d[f"display_player_{side}"] = display_account_name(d[f"player_{side}"]) or ""
+            if color in ("B", "W") and game.user is not None:
+                owner = game.user
+                side = "black" if color == "B" else "white"
+                d[f"display_player_{side}"] = display_account_name(owner.username, owner.public_username) or ""
         if include_sgf:
             d["sgf_content"] = game.sgf_content
         return d

@@ -319,3 +319,23 @@ it('drops old account rows and ignores late list and rank responses', async () =
   expect(screen.queryByText('同段')).not.toBeInTheDocument();
   expect(screen.getByText('我的段位').parentElement).toHaveTextContent('3段');
 });
+
+it('shows public names in lobby cards and invitation dialogs without changing target IDs', async () => {
+  const internal = 'u_0123456789abcdefabcd';
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/users/online')
+    ? [{ id: 7, username: internal, public_username: '公开棋友', presence: 'idle' }]
+    : [{ session_id: 'public-room', player_b: internal, player_w: 'old-player', player_b_public_username: '公开棋友', player_b_id: 7, player_w_id: 8, move_count: 3 }]) })));
+  page();
+  const peer = await screen.findByTestId('lobby-player-7');
+  expect(peer).toHaveTextContent('公开棋友');
+  expect(document.body).not.toHaveTextContent(internal);
+  await userEvent.click(within(peer).getByRole('button', { name: '邀请' }));
+  expect(screen.getByRole('dialog')).toHaveAccessibleName('邀请 公开棋友 对局');
+  await userEvent.click(screen.getByRole('button', { name: '发送邀请' }));
+  expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 7 });
+  await showGames();
+  expect(screen.getByTestId('lobby-game')).toHaveAccessibleName(/公开棋友 对 old-player/);
+  act(() => push({ type: 'invitation', from_id: 7, from_name: internal }));
+  expect(screen.getByRole('dialog')).toHaveTextContent('公开棋友邀你下一局');
+  expect(document.body).not.toHaveTextContent(internal);
+});

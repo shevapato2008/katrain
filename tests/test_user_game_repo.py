@@ -406,3 +406,61 @@ class TestUserGameAnalysisRepository:
         assert result["top_moves"] is not None
         assert result["is_brilliant"] is True
         assert result["is_mistake"] is False
+
+
+def test_historical_display_uses_owner_and_saved_seat_without_changing_stored_names(db_session):
+    factory, user_id = db_session
+    internal = "u_0123456789abcdefabcd"
+    with factory() as db:
+        user = db.get(models_db.User, user_id)
+        user.username = internal
+        user.public_username = "公开棋手"
+        db.commit()
+    repo = UserGameRepository(factory)
+    saved = repo.create(
+        user_id, "(;SZ[19]PB[old];B[aa])", "play_ai", player_black=internal, player_white="KataGo", user_color="B"
+    )
+    for row in (repo.get(saved["id"], user_id), repo.list(user_id)["items"][0]):
+        assert row["display_player_black"] == "公开棋手"
+        assert row["player_black"] == internal
+        assert row["display_player_white"] == "KataGo"
+    with factory() as db:
+        assert db.get(models_db.UserGame, saved["id"]).player_black == internal
+    # No saved seat means no nickname-based account guess.
+    unknown = repo.create(user_id, "(;SZ[19];B[bb])", "play_human", player_black=internal, player_white="公开棋手")
+    assert unknown["display_player_black"] == ""
+    assert unknown["display_player_white"] == "公开棋手"
+    for source, platform in [("import", None), ("research", None), ("play_local", None), ("play_human", "ogs")]:
+        external = repo.create(
+            user_id,
+            f"(;SZ[19]GC[{source}-{platform}];B[cc])",
+            source,
+            player_black=internal,
+            user_color="B",
+            platform=platform,
+        )
+        assert external.get("display_player_black", external["player_black"]) == internal
+
+
+def test_new_native_multiplayer_records_keep_the_authoritative_owner_seat(db_session):
+    from katrain.web.core.game_repo import GameRepository
+
+    factory, black_id = db_session
+    with factory() as db:
+        white = models_db.User(username="u_aaaaaaaaaaaaaaaaaaaa", public_username="白棋手", hashed_password="unused")
+        db.add(white)
+        db.commit()
+        white_id = white.id
+    GameRepository(factory).record_multiplayer_game(
+        "(;SZ[19]RE[B+R])",
+        "B+R",
+        "free",
+        black_id,
+        white_id,
+        black_name="testuser",
+        white_name="u_aaaaaaaaaaaaaaaaaaaa",
+    )
+    rows = UserGameRepository(factory)
+    assert rows.list(black_id)["items"][0]["user_color"] == "B"
+    assert rows.list(white_id)["items"][0]["user_color"] == "W"
+    assert rows.list(white_id)["items"][0]["display_player_white"] == "白棋手"

@@ -14183,9 +14183,7 @@ msgid "auth:bind_password"
 msgstr "Current account password"
 
 msgid "auth:bind_policy"
-msgstr ""
-"After binding, you can sign in with an SMS code. Your balance and membership"
-" are retained; binding does not award repeat points."
+msgstr "Use SMS codes to sign in after binding. Your balance and membership stay unchanged."
 
 msgid "auth:bind_submit"
 msgstr "Confirm binding"
@@ -14436,3 +14434,9 @@ msgstr "Some pages could not be loaded"
 
 msgid "startup:reload"
 msgstr "Reload"
+
+msgid "auth:bind_gift_hint"
+msgstr "Verify your phone for the first time to get 50 credits. No repeat gifts."
+
+msgid "auth:bind_success_gift"
+msgstr "Phone bound successfully. 50 credits added."

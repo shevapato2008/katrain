@@ -136,8 +136,8 @@ def test_existing_login_name_requires_password_before_any_phone_conflict(
         assert (result["id"], result["uuid"], result["credits"], result["signup_grant_credits"]) == (
             user_id,
             user_uuid,
-            123456,
-            0,
+            128456,
+            5000,
         )
     with sessions() as db:
         user = db.get(models_db.User, user_id)
@@ -149,7 +149,7 @@ def test_existing_login_name_requires_password_before_any_phone_conflict(
         )
         assert db.get(models_db.SmsChallenge, values["challenge_id"]).expires_at == expires
         assert db.query(models_db.User).count() == 1
-        ledger = db.query(models_db.CreditTransaction).one()
+        ledger = db.query(models_db.CreditTransaction).filter_by(ref_id="historical-ledger").one()
         assert (ledger.user_id, ledger.ref_id, ledger.delta, ledger.balance_after) == (
             user_id,
             "historical-ledger",
@@ -173,6 +173,7 @@ def test_existing_login_name_requires_password_before_any_phone_conflict(
         else:
             assert db.query(models_db.PhoneIdentity).one().user_id == user_id
             assert db.query(models_db.PhoneSignupClaim).one().claim_type == "bound_existing"
+            assert db.query(models_db.CreditTransaction).count() == 2
 
 
 def test_alias_lookup_and_ambiguity_do_not_select_or_merge_another_account(membership_pg_engine, password_hash):
@@ -187,7 +188,7 @@ def test_alias_lookup_and_ambiguity_do_not_select_or_merge_another_account(membe
     with sessions() as db, db.begin():
         db.get(models_db.User, other_id).username = "another-canonical"
     result = service.continue_login(**values, public_username="名人", current_password=PASSWORD)
-    assert result["username"] == "old-canonical" and result["signup_grant_credits"] == 0
+    assert result["username"] == "old-canonical" and result["signup_grant_credits"] == 5000
 
 
 @pytest.mark.parametrize(
@@ -288,15 +289,17 @@ def test_wrong_password_budget_is_persistent_across_workers(membership_pg_engine
         assert db.get(models_db.SmsChallenge, values["challenge_id"]).state == "sent"
 
 
-def test_old_claim_suppresses_grant_for_new_account(membership_pg_engine):
+def test_old_zero_claim_allows_fresh_account_grant_and_keeps_original_attribution(membership_pg_engine):
     service, sender, sessions = make_service(membership_pg_engine)
     with sessions() as db, db.begin():
         db.add(models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type="bound_existing", user_id=999))
     result = service.continue_login(**proof(service, sender), public_username="新棋手")
-    assert result["signup_grant_credits"] == result["credits"] == 0
+    assert result["signup_grant_credits"] == result["credits"] == 5000
     with sessions() as db:
         assert db.query(models_db.PhoneSignupClaim).one().user_id == 999
-        assert db.query(models_db.CreditTransaction).count() == 0
+        claim = db.query(models_db.PhoneSignupClaim).one()
+        ledger = db.query(models_db.CreditTransaction).one()
+        assert claim.claim_type == "bound_existing" and claim.grant_ref == ledger.ref_id
 
 
 @pytest.mark.parametrize("race", ["same_proof", "same_name", "same_account"])
@@ -330,7 +333,7 @@ def test_concurrent_continuations_create_or_bind_at_most_once(membership_pg_engi
     with sessions() as db:
         assert db.query(models_db.User).count() == db.query(models_db.PhoneIdentity).count() == 1
         assert db.query(models_db.PhoneSignupClaim).count() == 1
-        assert db.query(models_db.CreditTransaction).count() == (0 if race == "same_account" else 1)
+        assert db.query(models_db.CreditTransaction).count() == 1
 
 
 def test_signup_failure_rolls_back_everything_including_proof(membership_pg_engine, monkeypatch):

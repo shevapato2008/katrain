@@ -1,3 +1,4 @@
+import { displayAccountName } from '../../features/auth/accountDisplay';
 import { useState, useEffect } from 'react';
 import { Box, Typography, List, ListItem, ListItemAvatar, ListItemText, Avatar, Divider, Chip, CircularProgress, Alert, IconButton } from '@mui/material';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -94,11 +95,11 @@ const FriendsPanel = ({ noBorder }: { noBorder?: boolean }) => {
                         >
                             <ListItemAvatar>
                                 <Avatar src={friend.avatar_url} sx={{ bgcolor: 'primary.main' }}>
-                                    {friend.username[0].toUpperCase()}
+                                    {displayAccountName(friend, i18n.t('auth:account_label', '账号'))[0].toUpperCase()}
                                 </Avatar>
                             </ListItemAvatar>
                             <ListItemText 
-                                primary={friend.username}
+                                primary={displayAccountName(friend, i18n.t('auth:account_label', '账号'))}
                                 secondary={
                                     <Chip label={friend.rank} size="small" variant="outlined" sx={{ height: 16, fontSize: '0.65rem' }} />
                                 }

@@ -210,7 +210,9 @@ def test_ledger_failure_rolls_back_user_identity_claim_and_consumption(membershi
 
 
 @pytest.mark.parametrize("claim_type", ["signup_grant", "bound_existing"])
-def test_permanent_claim_without_identity_rebuilds_zero_grant(membership_pg_engine, claim_type):
+def test_permanent_claim_without_identity_checks_actual_gift_and_preserves_attribution(
+    membership_pg_engine, claim_type
+):
     service, sender, sessions = make_service(membership_pg_engine)
     with sessions() as db:
         db.add(models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type=claim_type, user_id=999))
@@ -219,12 +221,17 @@ def test_permanent_claim_without_identity_rebuilds_zero_grant(membership_pg_engi
         db.commit()
         old_id = old.id
     result = register(service, sender, issue(service))
-    assert result["signup_grant_credits"] == 0
-    assert result["credits"] == 0 and result["id"] != old_id
+    expected = 5000 if claim_type == "bound_existing" else 0
+    assert result["signup_grant_credits"] == expected
+    assert result["credits"] == expected and result["id"] != old_id
     with sessions() as db:
         assert db.get(models_db.User, old_id).credits == 9876
         assert db.query(models_db.PhoneSignupClaim).count() == 1
-        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.query(models_db.CreditTransaction).count() == (1 if expected else 0)
+        claim = db.query(models_db.PhoneSignupClaim).one()
+        assert claim.user_id == 999 and claim.claim_type == claim_type
+        if expected:
+            assert claim.grant_ref == db.query(models_db.CreditTransaction).one().ref_id
 
 
 @pytest.mark.parametrize("bad", ["pending", "expired", "flow", "purpose", "superseded"])

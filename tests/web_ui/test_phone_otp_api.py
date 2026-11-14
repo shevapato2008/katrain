@@ -124,6 +124,46 @@ async def test_phone_status_requires_auth_and_returns_only_private_mask(app, mon
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("grant", ["missing", 0, 5000, False, "5000", 10000])
+async def test_board_bind_preserves_authoritative_additive_grant_result(app, grant):
+    user = app.state.user_repo.create_user("binding-owner", "hidden-hash")
+    cloud_result = {"bound": True, "masked_phone": "+86 138****8000"}
+    if grant != "missing":
+        cloud_result["signup_grant_credits"] = grant
+
+    async def handle(request):
+        assert request.url.path.endswith("/phone/bind")
+        return httpx.Response(200, json=cloud_result)
+
+    remote = RemoteAPIClient("http://cloud.test", "phone-box")
+    await remote._client.aclose()
+    remote._client = httpx.AsyncClient(base_url="http://cloud.test", transport=httpx.MockTransport(handle))
+    remote.set_tokens("owner-token", "owner-refresh", user_id=user["id"])
+    app.state.remote_client = remote
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/auth/phone/bind",
+                json={
+                    "challenge_id": "a" * 48,
+                    "code": "123456",
+                    "flow_id": "f" * 32,
+                    "current_password": "private-password",
+                },
+                headers={"Authorization": f"Bearer {create_access_token({'sub': 'binding-owner'})}"},
+            )
+        if type(grant) is int and grant in {0, 5000} or grant == "missing":
+            assert response.status_code == 200
+            assert response.json() == {**cloud_result, "signup_grant_credits": 0 if grant == "missing" else grant}
+        else:
+            assert response.status_code == 503 and response.json() == {"detail": {"code": "sms_unavailable"}}
+        assert response.headers["cache-control"] == "no-store"
+        assert remote.cloud_session_is(user["id"]) and remote._access_token == "owner-token"
+    finally:
+        await remote.close()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "payload",
     [

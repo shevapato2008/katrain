@@ -1,3 +1,4 @@
+import { displayAccountName } from '../../features/auth/accountDisplay';
 import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { rankLabel } from '../utils/playerRank';
 import { interpolate } from '../utils/interpolate';
@@ -12,8 +13,8 @@ import { isStrictBoxKiosk } from '../shell/boxUrls';
 import './LobbyPage.css';
 import './platformReviewed.css';
 
-type Person = { id: number; username: string; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
-type Game = { session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number; spectator_count?: number };
+type Person = { id: number; username: string; public_username?: string | null; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
+type Game = { player_b_public_username?: string | null; player_w_public_username?: string | null; session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number; spectator_count?: number };
 const isPerson = (v: unknown): v is Person => !!v && typeof v === 'object' && typeof (v as Person).id === 'number' && typeof (v as Person).username === 'string';
 const isGame = (v: unknown): v is Game => !!v && typeof v === 'object' && typeof (v as Game).session_id === 'string' && typeof (v as Game).player_b === 'string' && typeof (v as Game).player_w === 'string';
 const BACK = { backTo: '/kiosk/play/pvp/lobby' };
@@ -38,6 +39,7 @@ function LobbyDialog({ title, onClose, children }: { title: string; onClose: () 
 }
 export default function LobbyPage() {
   const { t } = useTranslation();
+  const accountName = (username: string, public_username?: string | null) => displayAccountName({ username, public_username }, t('auth:account_label', '账号'));
   const navigate = useNavigate();
   const { user, token, isAuthenticated } = useAuth();
   const scope = JSON.stringify([isAuthenticated, user?.id, token]);
@@ -224,7 +226,7 @@ export default function LobbyPage() {
     else if (dialog === 'matching') stop();
     else setDialog(null);
   };
-  const title = invite ? interpolate(t("{value1}邀你下一局", "{value1}邀你下一局"), { value1: invite.from_name }) : outgoing ? interpolate(t("邀请 {value1} 对局", "邀请 {value1} 对局"), { value1: outgoing.username })
+  const title = invite ? interpolate(t("{value1}邀你下一局", "{value1}邀你下一局"), { value1: accountName(invite.from_name, users.find((person) => person.id === invite.from_id)?.public_username) }) : outgoing ? interpolate(t("邀请 {value1} 对局", "邀请 {value1} 对局"), { value1: accountName(outgoing.username, outgoing.public_username) })
     : dialog === 'placement' ? t("需要先完成定级", "需要先完成定级") : t("正在寻找同段位对手", "正在寻找同段位对手");
   if (!isAuthenticated) return <div className="pvp-kiosk pvp-kiosk--guest" data-testid="lobby-guest">
     <header className="pvp-kiosk__bar"><button type="button" onClick={() => navigate('/kiosk/play')}>{t("← 返回对弈", "← 返回对弈")}</button><h1>{t("在线大厅", "在线大厅")}</h1></header>
@@ -278,20 +280,22 @@ export default function LobbyPage() {
               {!loaded && <p className="pvp-kiosk__empty">{t("正在读取对局…", "正在读取对局…")}</p>}
               {loaded && !loadError && !games.length && <p className="pvp-kiosk__empty">{t("当前没有进行中的对局。", "当前没有进行中的对局。")}</p>}
               <div className="pvp-kiosk__grid">{games.map((game) => {
+                const black = accountName(game.player_b, game.player_b_public_username);
+                const white = accountName(game.player_w, game.player_w_public_username);
                 const mine = centralId !== null && (game.player_b_id === centralId || game.player_w_id === centralId);
                 const count = verifiedSpectatorCount(game.spectator_count);
                 const viewers = count === undefined ? t("观战人数未返回", "观战人数未返回") : interpolate(t("{count} 人观战", "{count} 人观战"), { count: count });
                 return <button key={game.session_id} data-testid="lobby-game" className="pvp-kiosk__game" type="button"
-                  aria-label={interpolate(t("{value1} {player_b} 对 {player_w}，{viewers}", "{value1} {player_b} 对 {player_w}，{viewers}"), { value1: mine ? t('返回对局', '返回对局') : t('观战', '观战'), player_b: game.player_b, player_w: game.player_w, viewers: viewers })}
+                  aria-label={interpolate(t("{value1} {player_b} 对 {player_w}，{viewers}", "{value1} {player_b} 对 {player_w}，{viewers}"), { value1: mine ? t('返回对局', '返回对局') : t('观战', '观战'), player_b: black, player_w: white, viewers: viewers })}
                   onClick={() => mine ? navigate(`/kiosk/play/pvp/room/${game.session_id}`, { state: BACK }) : navigate(`/kiosk/play/pvp/watch/${game.session_id}`)}>
                   <span className="pvp-kiosk__room-top"><b><span className="pvp-kiosk__room-number">{game.session_id.slice(0, 4)}</span> {t("房", "房")}</b>
                     <span className="pvp-kiosk__tag">{t("分先", "分先")}</span><span className="pvp-kiosk__tag">{t("19 路", "19 路")}</span>
                     <span className="pvp-kiosk__viewers"><Eye /><span>{viewers}</span></span>
                   </span>
                   <span className="pvp-kiosk__room-body">
-                    <span className="pvp-kiosk__seat"><span className="pvp-kiosk__avatar">{game.player_b.slice(-1)}<Stone color="black" /></span><span className="pvp-kiosk__seat-name"><b>{game.player_b}</b><small>{t("执黑", "执黑")}{game.player_b_rank_label ? ` · ${rankLabel(game.player_b_rank_label, t)}` : ''}</small></span></span>
+                    <span className="pvp-kiosk__seat"><span className="pvp-kiosk__avatar">{black.slice(-1)}<Stone color="black" /></span><span className="pvp-kiosk__seat-name"><b>{black}</b><small>{t("执黑", "执黑")}{game.player_b_rank_label ? ` · ${rankLabel(game.player_b_rank_label, t)}` : ''}</small></span></span>
                     <span className="pvp-kiosk__phase"><span className="pvp-kiosk__mini-board" aria-hidden="true"><Stone color="black" /><Stone color="white" /></span><span>{game.move_count} {t("手", "手")}</span></span>
-                    <span className="pvp-kiosk__seat pvp-kiosk__seat--white"><span className="pvp-kiosk__avatar">{game.player_w.slice(-1)}<Stone color="white" /></span><span className="pvp-kiosk__seat-name"><b>{game.player_w}</b><small>{game.player_w_rank_label ? `${rankLabel(game.player_w_rank_label, t)} · ` : ''}{t("执白", "执白")}</small></span></span>
+                    <span className="pvp-kiosk__seat pvp-kiosk__seat--white"><span className="pvp-kiosk__avatar">{white.slice(-1)}<Stone color="white" /></span><span className="pvp-kiosk__seat-name"><b>{white}</b><small>{game.player_w_rank_label ? `${rankLabel(game.player_w_rank_label, t)} · ` : ''}{t("执白", "执白")}</small></span></span>
                   </span>
                 </button>;
               })}</div>
@@ -305,11 +309,12 @@ export default function LobbyPage() {
               {!loaded && <p className="pvp-kiosk__empty">{t("正在读取棋友…", "正在读取棋友…")}</p>}
               {loaded && !loadError && !ordered.length && <p className="pvp-kiosk__empty">{t("当前筛选下没有在线棋友。", "当前筛选下没有在线棋友。")}</p>}
               <div className="pvp-kiosk__grid">{ordered.map((person) => {
+                const name = accountName(person.username, person.public_username);
                 const me = centralId !== null && person.id === centralId;
                 const busy = person.presence !== 'idle';
                 return <div key={person.id} data-testid={`lobby-player-${person.id}`} className="pvp-kiosk__peer">
-                  <span className="pvp-kiosk__avatar">{person.username.slice(-1)}</span>
-                  <span className="pvp-kiosk__peer-name"><b>{person.username}</b><small>{(person.rank_label ? rankLabel(person.rank_label, t) : null) || t("尚未定级", "尚未定级")}</small></span>
+                  <span className="pvp-kiosk__avatar">{name.slice(-1)}</span>
+                  <span className="pvp-kiosk__peer-name"><b>{name}</b><small>{(person.rank_label ? rankLabel(person.rank_label, t) : null) || t("尚未定级", "尚未定级")}</small></span>
                   <span className={`pvp-kiosk__peer-state${busy ? ' is-busy' : ''}`}>{busy ? t("对局中", "对局中") : t("空闲", "空闲")}</span>
                   {me ? <span className="pvp-kiosk__self">{t("这是你", "这是你")}</span> : <button type="button" disabled={busy || centralId === null || connection !== 'connected'} onClick={() => { inviteSent.current = false; setOutgoing(person); }}>{t("邀请", "邀请")}</button>}
                 </div>;

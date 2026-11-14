@@ -352,7 +352,75 @@ class PhoneOtpService:
         if user.public_username is not None or user.is_admin or not is_generated_phone_username(user.username):
             return False
         claim = db.get(models_db.PhoneSignupClaim, phone)
-        return not (claim is not None and claim.user_id == user.id and claim.claim_type == "bound_existing")
+        if claim is None or claim.claim_type != "bound_existing":
+            return True
+        if claim.user_id == user.id:
+            return False
+        if claim.grant_ref is None:
+            return True
+        # A reused zero claim retains its original audit owner. Only its actual
+        # committed gift receipt can identify a later old-account binding.
+        receipt = db.execute(
+            select(models_db.CreditTransaction.id).where(
+                models_db.CreditTransaction.ref_id == claim.grant_ref,
+                models_db.CreditTransaction.user_id == user.id,
+                models_db.CreditTransaction.reason == "signup_grant",
+                models_db.CreditTransaction.delta > 0,
+                models_db.CreditTransaction.status == "committed",
+            )
+        ).scalar_one_or_none()
+        return receipt is None
+
+    @staticmethod
+    def _grant_first_phone(db, user, phone, *, claim_type="signup_grant"):
+        """Record one first-verification gift, inside the identity transaction.
+
+        Call only for a fresh binding, with phone -> proof -> account locked.
+        Permanent phone receipts survive account/ledger deletion; account gift
+        history stays in the immutable ledger, independent of current balance.
+        """
+        claim = db.get(models_db.PhoneSignupClaim, phone)
+        if claim is not None and (claim.claim_type == "signup_grant" or claim.grant_ref is not None):
+            return 0
+        account_gift = db.execute(
+            select(models_db.CreditTransaction.id)
+            .where(
+                models_db.CreditTransaction.user_id == user.id,
+                models_db.CreditTransaction.delta > 0,
+                models_db.CreditTransaction.status == "committed",
+                # opening_balance records the old unledgered default credits.
+                # Purchases/admin adjustments are distinct ledger reasons.
+                models_db.CreditTransaction.reason.in_(("signup", "signup_grant", "opening_balance")),
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+        account_claim = db.execute(
+            select(models_db.PhoneSignupClaim.phone_e164)
+            .where(
+                models_db.PhoneSignupClaim.user_id == user.id,
+                models_db.PhoneSignupClaim.claim_type == "signup_grant",
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+        if account_gift is not None or account_claim is not None:
+            if claim is None:
+                db.add(models_db.PhoneSignupClaim(phone_e164=phone, claim_type="bound_existing", user_id=user.id))
+            return 0
+
+        grant_ref = "phone_signup:" + secrets.token_hex(24)
+        if claim is None:
+            db.add(
+                models_db.PhoneSignupClaim(
+                    phone_e164=phone, claim_type=claim_type, user_id=user.id, grant_ref=grant_ref
+                )
+            )
+        else:
+            # A zero-grant binding is verification history, not a gift receipt.
+            # Add its first receipt without rewriting the original attribution.
+            claim.grant_ref = grant_ref
+        db.flush()
+        billing.apply_adjustment(db, user.id, _SIGNUP_CREDITS, "signup_grant", grant_ref)
+        return _SIGNUP_CREDITS
 
     def login(self, *, challenge_id, code, flow_id):
         self._ensure_available()
@@ -424,19 +492,7 @@ class PhoneOtpService:
                         db.add(
                             models_db.PhoneIdentity(phone_e164=challenge.phone_e164, user_id=user.id, verified_at=now)
                         )
-                        if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
-                            grant_ref = "phone_signup:" + secrets.token_hex(24)
-                            db.add(
-                                models_db.PhoneSignupClaim(
-                                    phone_e164=challenge.phone_e164,
-                                    claim_type="signup_grant",
-                                    user_id=user.id,
-                                    grant_ref=grant_ref,
-                                )
-                            )
-                            db.flush()
-                            billing.apply_adjustment(db, user.id, _SIGNUP_CREDITS, "signup_grant", grant_ref)
-                            grant = _SIGNUP_CREDITS
+                        grant = self._grant_first_phone(db, user, challenge.phone_e164)
                     else:
                         if not self._needs_completion(db, user, challenge.phone_e164):
                             raise PhoneOtpError("profile_already_complete", 409)
@@ -568,6 +624,9 @@ class PhoneOtpService:
                             select(models_db.User).where(models_db.User.id == target_id).with_for_update()
                         ).scalar_one_or_none()
                         user = self._bind_actor(db, target_id, require_unbound=False)
+                        now = _now()
+                        if _utc(challenge.expires_at) <= now:
+                            raise PhoneOtpError("challenge_expired", 400)
                         matches = self._login_name_users(db, public_username)
                         if len(matches) != 1 or matches[0].id != target_id:
                             raise PhoneOtpError("public_username_taken", 409)
@@ -591,7 +650,8 @@ class PhoneOtpService:
                                     phone_e164=challenge.phone_e164, user_id=target_id, verified_at=now
                                 )
                             )
-                        if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
+                            grant = self._grant_first_phone(db, user, challenge.phone_e164, claim_type="bound_existing")
+                        elif db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
                             db.add(
                                 models_db.PhoneSignupClaim(
                                     phone_e164=challenge.phone_e164, claim_type="bound_existing", user_id=target_id
@@ -599,6 +659,9 @@ class PhoneOtpService:
                             )
                     else:
                         user = self._phone_user(db, challenge.phone_e164)
+                        now = _now()
+                        if _utc(challenge.expires_at) <= now:
+                            raise PhoneOtpError("challenge_expired", 400)
                         if branch == "complete":
                             if (
                                 user is None
@@ -620,19 +683,7 @@ class PhoneOtpService:
                                     phone_e164=challenge.phone_e164, user_id=user.id, verified_at=now
                                 )
                             )
-                            if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
-                                grant_ref = "phone_signup:" + secrets.token_hex(24)
-                                db.add(
-                                    models_db.PhoneSignupClaim(
-                                        phone_e164=challenge.phone_e164,
-                                        claim_type="signup_grant",
-                                        user_id=user.id,
-                                        grant_ref=grant_ref,
-                                    )
-                                )
-                                db.flush()
-                                billing.apply_adjustment(db, user.id, _SIGNUP_CREDITS, "signup_grant", grant_ref)
-                                grant = _SIGNUP_CREDITS
+                            grant = self._grant_first_phone(db, user, challenge.phone_e164)
                     challenge.state = "consumed"
                     challenge.consumed_at = _now()
                     db.flush()
@@ -721,6 +772,9 @@ class PhoneOtpService:
                         select(models_db.User).where(models_db.User.id == user_id).with_for_update()
                     ).scalar_one_or_none()
                     user = self._bind_actor(db, user_id, require_unbound=False)
+                    now = _now()
+                    if _utc(challenge.expires_at) <= now:
+                        raise PhoneOtpError("challenge_expired", 400)
                     if not hmac.compare_digest(user.hashed_password, password_hash):
                         raise PhoneOtpError("bind_reauth_failed", 401)
                     target = db.execute(
@@ -735,13 +789,15 @@ class PhoneOtpService:
                         own is not None and own.phone_e164 != challenge.phone_e164
                     ):
                         raise PhoneOtpError("phone_in_use", 409)
+                    grant = 0
                     if own is None:
                         if challenge.state == "consumed":
                             raise PhoneOtpError("challenge_used", 400)
                         db.add(
                             models_db.PhoneIdentity(phone_e164=challenge.phone_e164, user_id=user_id, verified_at=now)
                         )
-                    if db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
+                        grant = self._grant_first_phone(db, user, challenge.phone_e164, claim_type="bound_existing")
+                    elif db.get(models_db.PhoneSignupClaim, challenge.phone_e164) is None:
                         db.add(
                             models_db.PhoneSignupClaim(
                                 phone_e164=challenge.phone_e164, claim_type="bound_existing", user_id=user_id
@@ -750,7 +806,13 @@ class PhoneOtpService:
                     challenge.state = "consumed"
                     challenge.consumed_at = challenge.consumed_at or now
                     db.flush()
-                    result = {"bound": True, "masked_phone": mask_phone(challenge.phone_e164)}
+                    if _utc(challenge.expires_at) <= _now():
+                        raise PhoneOtpError("challenge_expired", 400)
+                    result = {
+                        "bound": True,
+                        "masked_phone": mask_phone(challenge.phone_e164),
+                        "signup_grant_credits": grant,
+                    }
         except IntegrityError as integrity_error:
             constraint = getattr(getattr(integrity_error.orig, "diag", None), "constraint_name", None)
             if constraint in {"uq_phone_identity_phone", "uq_phone_identity_user"}:

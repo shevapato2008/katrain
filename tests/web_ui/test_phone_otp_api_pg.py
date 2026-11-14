@@ -189,9 +189,17 @@ async def test_existing_user_binds_then_otp_login_preserves_identity_and_balance
         bound = await client.post(
             "/api/v1/auth/phone/bind", json={**payload, "current_password": "existing-password"}, headers=headers
         )
-        assert bound.status_code == 200 and bound.json() == {"bound": True, "masked_phone": "+86 138****0011"}
+        assert bound.status_code == 200 and bound.json() == {
+            "bound": True,
+            "masked_phone": "+86 138****0011",
+            "signup_grant_credits": 5000,
+        }
         status = await client.get("/api/v1/auth/phone/status", headers=headers)
-        assert status.status_code == 200 and status.json() == bound.json()
+        assert status.status_code == 200 and status.json() == {"bound": True, "masked_phone": "+86 138****0011"}
+        replay = await client.post(
+            "/api/v1/auth/phone/bind", json={**payload, "current_password": "existing-password"}, headers=headers
+        )
+        assert replay.status_code == 200 and replay.json()["signup_grant_credits"] == 0
         now += timedelta(seconds=61)
         login_challenge = await client.post(
             "/api/v1/auth/phone/challenges", json={"phone": PHONE, "purpose": "login", "flow_id": FLOW}
@@ -204,10 +212,10 @@ async def test_existing_user_binds_then_otp_login_preserves_identity_and_balance
         assert login.status_code == 200
         me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {login.json()['access_token']}"})
         assert me.status_code == 200
-        assert (me.json()["id"], me.json()["uuid"], me.json()["credits"]) == (user_id, user_uuid, 12345)
+        assert (me.json()["id"], me.json()["uuid"], me.json()["credits"]) == (user_id, user_uuid, 17345)
     with sessions() as db:
         stored = db.get(models_db.User, user_id)
-        assert stored.uuid == user_uuid and stored.credits == 12345 and stored.membership_revision == 3
+        assert stored.uuid == user_uuid and stored.credits == 17345 and stored.membership_revision == 3
         assert db.query(models_db.PhoneIdentity).one().user_id == user_id
         assert db.query(models_db.PhoneSignupClaim).one().claim_type == "bound_existing"
-        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.query(models_db.CreditTransaction).count() == 1

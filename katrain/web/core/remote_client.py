@@ -454,9 +454,13 @@ class RemoteAPIClient:
         return await self._identity_bound_request("GET", "/api/v1/auth/phone/status", expected_user_id=expected_user_id)
 
     async def phone_bind(self, data: Dict[str, Any], *, expected_user_id) -> Dict:
-        return await self._identity_bound_request(
+        result = await self._identity_bound_request(
             "POST", "/api/v1/auth/phone/bind", json=data, expected_user_id=expected_user_id
         )
+        grant = result.get("signup_grant_credits", 0) if isinstance(result, dict) else None
+        if type(grant) is not int or grant not in {0, 5000}:
+            raise ValueError("Invalid cloud phone binding response")
+        return result
 
     async def register(self, username: str, password: str) -> Dict[str, Any]:
         resp = await self._request(

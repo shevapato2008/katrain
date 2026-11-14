@@ -36,7 +36,9 @@ class WebSession:
     session_id: str
     katrain: WebKaTrain
     user_id: Optional[int] = None  # Primary user (usually for AI play)
-    owner_user_id: Optional[int] = None  # Transient management owner (guest OR real); independent of user_id persistence key
+    owner_user_id: Optional[int] = (
+        None  # Transient management owner (guest OR real); independent of user_id persistence key
+    )
     player_b_id: Optional[int] = None  # For HvH
     player_w_id: Optional[int] = None  # For HvH
     mode: str = "play"  # "play" or "research"
@@ -72,6 +74,7 @@ class SessionManager:
         self.on_game_ended: Optional[Callable[[WebSession, GameEnd], Awaitable[None]]] = None
         self.on_session_removed: Optional[Callable[[WebSession], None]] = None
         self.on_session_state: Optional[Callable[[str], None]] = None
+        self.public_account_resolver: Optional[Callable[[int], Optional[Dict]]] = None
 
     def attach_loop(self, loop):
         self._loop = loop
@@ -85,6 +88,8 @@ class SessionManager:
         skip_initial_analysis: bool = False,
         _rank_owner_eligible: bool = True,
     ) -> WebSession:
+        # Resolve display data before entering any runtime/manager lock.
+        public_profiles = self._public_profiles((user_id,)) if _rank_owner_eligible else {}
         evicted: List[WebSession] = []
         with self._lock:
             if len(self._sessions) >= self.max_sessions:
@@ -102,6 +107,7 @@ class SessionManager:
             # Engine UUID and authenticated account identity are unrelated. Set
             # eligibility before start() can publish its very first state.
             katrain.account_user_id = user_id
+            katrain.account_public_profiles = public_profiles
             katrain.membership_guard_active = getattr(self, "membership_guard_active", False)
             katrain._rank_owner_session_eligible = _rank_owner_eligible and initial_game_type in (
                 "free",
@@ -119,7 +125,9 @@ class SessionManager:
 
         try:
             session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
-            session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
+            session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(
+                sid, msg_type, data
+            )
             session.katrain.game_ended_callback = lambda end, sid=session_id: self._on_game_ended(sid, end)
             katrain.start(game_type=initial_game_type, skip_initial_analysis=skip_initial_analysis)
             session.last_state = katrain.get_state()
@@ -127,6 +135,15 @@ class SessionManager:
             self.remove_session(session_id)
             raise
         return session
+
+    def _public_profiles(self, user_ids):
+        profiles = {}
+        for user_id in user_ids:
+            if type(user_id) is not int or user_id <= 0:
+                continue
+            row = self.public_account_resolver(user_id) if self.public_account_resolver else None
+            profiles[user_id] = row.get("public_username") if row and row.get("id") == user_id else None
+        return profiles
 
     def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
         session = self.create_session(katago_uuid=katago_uuid, user_id=user_id, _rank_owner_eligible=False)
@@ -143,6 +160,7 @@ class SessionManager:
         skip_initial_analysis: bool = False,
         initial_game_type: str = "free",
     ) -> WebSession:
+        public_profiles = self._public_profiles((player_b_id, player_w_id)) if initial_game_type != "pvp_online" else {}
         primary_user_id = player_b_id if player_b_id >= 0 else player_w_id if player_w_id >= 0 else None
         session = self.create_session(
             user_id=primary_user_id,
@@ -151,6 +169,10 @@ class SessionManager:
             _rank_owner_eligible=False,
         )
         try:
+            session.katrain.account_public_profiles = public_profiles
+            session.katrain.native_account_player_ids = (
+                {"B": player_b_id, "W": player_w_id} if initial_game_type != "pvp_online" else {}
+            )
             session.player_b_id = player_b_id
             session.player_w_id = player_w_id
             session.game_type = initial_game_type
@@ -572,7 +594,9 @@ class Matchmaker:
         self._active_users: Dict[int, str] = {}
         self._lock = threading.Lock()
 
-    def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket, *, rung: int | None = None) -> Optional[Match]:
+    def add_to_queue(
+        self, user_id: int, game_type: str, websocket: WebSocket, *, rung: int | None = None
+    ) -> Optional[Match]:
         import logging
 
         logger = logging.getLogger("katrain_web")

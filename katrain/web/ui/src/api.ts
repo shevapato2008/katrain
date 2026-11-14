@@ -7,6 +7,8 @@ export interface PlayerInfo {
   player_type: string;
   player_subtype: string;
   name: string;
+  user_id?: number | string | null;
+  public_username?: string | null;
   calculated_rank: string | null;  // pre-existing quirk: typed string|null though backend emits int|None; NOT changed here
   rank_display?: string | null;    // NEW: ladder 段位 (optional to avoid breaking existing PlayerInfo literals)
   periods_used: number;
@@ -481,6 +483,7 @@ export interface PhoneRegisterToken extends AuthToken { signup_grant_credits: 0 
 export interface PhoneBindChallengeRequest { phone: string; purpose: 'bind'; flow_id: string; }
 export interface PhoneBindRequest extends PhoneLoginRequest { current_password: string; }
 export type PhoneBindingStatus = { bound: false } | { bound: true; masked_phone: string };
+export type PhoneBindingResult = { bound: true; masked_phone: string; signup_grant_credits?: 0 | 5000 };
 export type PhoneAuthErrorCode = 'invalid_phone' | 'invalid_code' | 'challenge_invalid' | 'challenge_expired' |
   'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required' |
   'authentication_required' | 'bind_not_allowed' | 'phone_in_use' | 'bind_reauth_failed' | 'bind_reauth_locked' |
@@ -597,7 +600,7 @@ export const API = {
   phoneRegister: (payload: PhoneRegisterRequest, signal?: AbortSignal): Promise<PhoneRegisterToken> => phoneAuthPost('register', payload, signal),
   phoneStatus: (token: string | null, signal?: AbortSignal): Promise<PhoneBindingStatus> => privatePhoneRequest('status', token, signal),
   createPhoneBindChallenge: (payload: PhoneBindChallengeRequest, token: string | null, signal?: AbortSignal): Promise<PhoneChallenge> => privatePhoneRequest('challenges', token, signal, payload),
-  phoneBind: (payload: PhoneBindRequest, token: string | null, signal?: AbortSignal): Promise<{ bound: true; masked_phone: string }> => privatePhoneRequest('bind', token, signal, payload),
+  phoneBind: (payload: PhoneBindRequest, token: string | null, signal?: AbortSignal): Promise<PhoneBindingResult> => privatePhoneRequest('bind', token, signal, payload),
   engineHealth: async (): Promise<EngineHealthResponse> => {
     const response = await fetch('/api/v1/health');
     if (!response.ok) throw new Error(`Failed to get engine health (${response.status})`);

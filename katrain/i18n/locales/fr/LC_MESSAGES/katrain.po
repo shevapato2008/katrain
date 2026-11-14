@@ -8714,10 +8714,7 @@ msgid "auth:bind_password"
 msgstr "Mot de passe actuel du compte"
 
 msgid "auth:bind_policy"
-msgstr ""
-"Après association, vous pourrez vous connecter par code SMS. Votre solde et "
-"votre adhésion sont conservés ; l’association n’offre pas de points "
-"supplémentaires."
+msgstr "Après l’association, connectez-vous par code SMS. Votre solde et votre abonnement sont conservés."
 
 msgid "auth:bind_submit"
 msgstr "Confirmer l’association"
@@ -8971,3 +8968,9 @@ msgstr "Certaines pages n’ont pas pu être chargées"
 
 msgid "startup:reload"
 msgstr "Recharger"
+
+msgid "auth:bind_gift_hint"
+msgstr "Recevez 50 points à la première vérification de votre téléphone. Aucun nouveau cadeau si déjà reçu."
+
+msgid "auth:bind_success_gift"
+msgstr "Téléphone associé. 50 points ajoutés."

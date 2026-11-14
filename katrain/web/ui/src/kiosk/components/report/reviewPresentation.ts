@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
 import { presentReportTier, type ReportGameStatus } from '../../../features/report/reportModel';
 import { reportPlatformLabel } from '../../../features/report/reportOrigin';
 import type { UserGameSummary } from '../../../api/userGamesApi';
@@ -58,7 +59,7 @@ export function yourColor(game: UserGameSummary, username?: string | null): 'B' 
 }
 
 const seat = (game: UserGameSummary, color: 'B' | 'W') => ({
-  name: color === 'B' ? game.player_black : game.player_white,
+  name: displayGamePlayerName(game, color, ''),
   rank: color === 'B' ? game.black_rank : game.white_rank,
 });
 
@@ -103,14 +104,14 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
   if (game.source === 'research') {
     // galaxy 研究页存下来的局面(`galaxy/pages/ResearchPage.tsx` 存盘时 `source: 'research'`)。
     // 以前落到最后那一支,被念成「人机对弈」。
-    const name = game.title || [game.player_black, game.player_white].filter(Boolean).join(' — ');
+    const name = game.title || [displayGamePlayerName(game, 'B', ''), displayGamePlayerName(game, 'W', '')].filter(Boolean).join(' — ');
     return name ? `${t('review:row_research', '研究存档')} · ${name}` : t('review:row_research', '研究存档');
   }
   const platform = reportPlatformLabel(game, t);
   if (platform) return platform;
   // 判不出「你」的时候没有「对手」可言,退回两个名字并排 —— 不挑一方当对手。
   const opponent = opponentLabel(game, mine, t)
-    || [game.player_black, game.player_white].filter(Boolean).join(' — ');
+    || [displayGamePlayerName(game, 'B', ''), displayGamePlayerName(game, 'W', '')].filter(Boolean).join(' — ');
   if (isRankedGameType(game.game_type)) {
     return opponent
       ? `${t('review:row_ranked', '升降级对弈')} · ${opponent}`

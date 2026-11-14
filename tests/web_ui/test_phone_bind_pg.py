@@ -2,12 +2,12 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
-from threading import Barrier
+from threading import Barrier, Event
 
 import pytest
 from sqlalchemy import event, select
 
-from katrain.web.core import models_db, phone_otp
+from katrain.web.core import billing, models_db, phone_otp
 from katrain.web.core.auth import get_password_hash, verify_password
 from tests.web_ui.membership_test_support import membership_pg_engine
 from tests.web_ui.test_phone_otp_limits_pg import FLOW, PHONE, issue, make_service
@@ -175,22 +175,23 @@ def test_existing_permanent_signup_claim_is_preserved_when_binding(binding):
         assert db.query(models_db.CreditTransaction).count() == 0
 
 
-def test_bind_commits_once_without_grant_and_keeps_old_identity_and_assets(binding, monkeypatch):
+def test_bind_grants_once_and_keeps_old_identity_and_assets(binding):
     service, sender, sessions, user_id, user_uuid = binding
     challenge_id, code = bind_challenge(binding)
     result = submit(binding, challenge_id, code)
-    assert result == {"bound": True, "masked_phone": "+86 138****0011"}
-    assert submit(binding, challenge_id, code) == result
+    assert result == {"bound": True, "masked_phone": "+86 138****0011", "signup_grant_credits": 5000}
+    assert submit(binding, challenge_id, code) == {**result, "signup_grant_credits": 0}
     with sessions() as db:
         assert db.query(models_db.PhoneIdentity).count() == 1
         claim = db.query(models_db.PhoneSignupClaim).one()
-        assert (claim.claim_type, claim.user_id, claim.grant_ref) == ("bound_existing", user_id, None)
-        assert db.query(models_db.CreditTransaction).count() == 0
+        ledger = db.query(models_db.CreditTransaction).one()
+        assert (claim.claim_type, claim.user_id, claim.grant_ref) == ("bound_existing", user_id, ledger.ref_id)
+        assert (ledger.delta, ledger.reason, ledger.status) == (5000, "signup_grant", "committed")
         old = db.get(models_db.User, user_id)
         assert (old.uuid, old.username, old.credits, old.rank, old.membership_revision) == (
             user_uuid,
             "old-canonical-owner",
-            123456,
+            128456,
             "5d",
             7,
         )
@@ -204,7 +205,7 @@ def test_bind_commits_once_without_grant_and_keeps_old_identity_and_assets(bindi
         user_id,
         user_uuid,
         "old-canonical-owner",
-        123456,
+        128456,
     )
     with sessions() as db:
         db.delete(db.query(models_db.PhoneIdentity).one())
@@ -221,7 +222,79 @@ def test_bind_commits_once_without_grant_and_keeps_old_identity_and_assets(bindi
     )
     assert rebuilt["id"] != user_id and rebuilt["credits"] == 0
     with sessions() as db:
-        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.query(models_db.CreditTransaction).count() == 1
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+@pytest.mark.parametrize("historical_zero_claim", [False, True])
+def test_generated_legacy_account_binding_does_not_require_new_profile(binding, continuation, historical_zero_claim):
+    service, sender, sessions, user_id, _ = binding
+    canonical = "u_" + "a" * 20
+    with sessions() as db, db.begin():
+        db.get(models_db.User, user_id).username = canonical
+        if historical_zero_claim:
+            db.add(models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type="bound_existing", user_id=999))
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    result = (
+        service.continue_login(
+            challenge_id=challenge_id, code=code, flow_id=FLOW, public_username=canonical, current_password=PASSWORD
+        )
+        if continuation
+        else submit(binding, challenge_id, code)
+    )
+    assert result["signup_grant_credits"] == 5000
+    with sessions() as db, db.begin():
+        db.get(models_db.SmsPhoneState, PHONE).last_send_at -= timedelta(seconds=61)
+    challenge = issue(service)
+    logged_in = service.login(challenge_id=challenge["challenge_id"], code=sender.calls[-1][1], flow_id=FLOW)
+    assert logged_in["id"] == user_id and logged_in["username"] == canonical
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+def test_ambiguous_zero_claim_profile_completion_keeps_same_account_and_never_grants(binding, continuation):
+    service, sender, sessions, user_id, user_uuid = binding
+    canonical = "u_" + "a" * 20
+    with sessions() as db, db.begin():
+        db.get(models_db.User, user_id).username = canonical
+        db.add(models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type="bound_existing", user_id=999))
+        db.add(
+            models_db.CreditTransaction(
+                user_id=user_id,
+                delta=10000,
+                reason="signup",
+                status="committed",
+                ref_id="old-account-gift",
+                balance_after=10000,
+            )
+        )
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    result = (
+        service.continue_login(
+            challenge_id=challenge_id, code=code, flow_id=FLOW, public_username=canonical, current_password=PASSWORD
+        )
+        if continuation
+        else submit(binding, challenge_id, code)
+    )
+    assert result["signup_grant_credits"] == 0
+    with sessions() as db, db.begin():
+        db.get(models_db.SmsPhoneState, PHONE).last_send_at -= timedelta(seconds=61)
+    challenge = issue(service)
+    values = dict(challenge_id=challenge["challenge_id"], code=sender.calls[-1][1], flow_id=FLOW)
+    with pytest.raises(phone_otp.PhoneOtpError) as caught:
+        service.login(**values)
+    assert caught.value.code == "profile_required"
+    completed = service.continue_login(**values, public_username="真实公开名字")
+    assert (completed["id"], completed["uuid"], completed["credits"], completed["signup_grant_credits"]) == (
+        user_id,
+        user_uuid,
+        123456,
+        0,
+    )
+    with sessions() as db:
+        assert db.get(models_db.User, user_id).username == canonical
+        assert db.query(models_db.CreditTransaction).count() == 1
+        claim = db.get(models_db.PhoneSignupClaim, PHONE)
+        assert claim.user_id == 999 and claim.grant_ref is None
 
 
 def test_bind_failure_rolls_back_consumption_and_identity_but_not_reauth_budget(binding):
@@ -386,7 +459,7 @@ def test_one_user_two_phones_concurrent_submissions_bind_only_once(binding):
     with sessions() as db:
         assert db.query(models_db.PhoneIdentity).count() == 1
         assert db.query(models_db.PhoneSignupClaim).count() == 1
-        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.query(models_db.CreditTransaction).count() == 1
     assert reauth_count(sessions, user_id) == 2
 
 
@@ -418,4 +491,256 @@ def test_one_phone_two_users_only_active_actor_challenge_can_bind(binding, passw
         identity = db.query(models_db.PhoneIdentity).one()
         assert identity.user_id == other_id
         assert db.query(models_db.PhoneSignupClaim).count() == 1
+        assert db.query(models_db.CreditTransaction).count() == 1
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+@pytest.mark.parametrize(
+    "reason,delta,status,expected",
+    [
+        ("signup", 10000, "committed", 0),
+        ("signup", 100, "committed", 0),
+        ("signup_grant", 5000, "committed", 0),
+        ("opening_balance", 10000, "committed", 0),
+        ("signup", 0, "committed", 5000),
+        ("signup", 5000, "refunded", 5000),
+        ("signup", 5000, "reserved", 5000),
+        ("opening_balance", -100, "committed", 5000),
+        ("order", 10000, "committed", 5000),
+        ("admin_grant", 10000, "committed", 5000),
+    ],
+)
+def test_binding_eligibility_uses_committed_gift_history_not_balance(
+    binding, continuation, reason, delta, status, expected
+):
+    service, _, sessions, user_id, _ = binding
+    with sessions() as db, db.begin():
+        # Spending every prior credit must not restore gift eligibility.
+        db.get(models_db.User, user_id).credits = 0
+        db.add(
+            models_db.CreditTransaction(
+                user_id=user_id,
+                delta=delta,
+                reason=reason,
+                status=status,
+                ref_id="historical-gift-evidence",
+                balance_after=max(0, delta),
+            )
+        )
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    result = (
+        service.continue_login(
+            challenge_id=challenge_id,
+            code=code,
+            flow_id=FLOW,
+            public_username="old-canonical-owner",
+            current_password=PASSWORD,
+        )
+        if continuation
+        else submit(binding, challenge_id, code)
+    )
+    assert result["signup_grant_credits"] == expected
+    with sessions() as db:
+        assert db.get(models_db.User, user_id).credits == expected
+        assert db.query(models_db.CreditTransaction).count() == (2 if expected else 1)
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+def test_account_permanent_gift_claim_on_another_phone_blocks_repeat(binding, continuation):
+    service, _, sessions, user_id, _ = binding
+    with sessions() as db, db.begin():
+        db.add(
+            models_db.PhoneSignupClaim(
+                phone_e164=OTHER_PHONE, claim_type="signup_grant", user_id=user_id, grant_ref="old-gift"
+            )
+        )
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    result = (
+        service.continue_login(
+            challenge_id=challenge_id,
+            code=code,
+            flow_id=FLOW,
+            public_username="old-canonical-owner",
+            current_password=PASSWORD,
+        )
+        if continuation
+        else submit(binding, challenge_id, code)
+    )
+    assert result["signup_grant_credits"] == 0
+    with sessions() as db:
+        assert db.get(models_db.User, user_id).credits == 123456
         assert db.query(models_db.CreditTransaction).count() == 0
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+def test_fresh_binding_with_historical_zero_claim_keeps_attribution_and_grants_once(binding, continuation):
+    service, _, sessions, user_id, _ = binding
+    with sessions() as db, db.begin():
+        claim = models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type="bound_existing", user_id=999)
+        db.add(claim)
+        db.flush()
+        created_at = claim.created_at
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    result = (
+        service.continue_login(
+            challenge_id=challenge_id,
+            code=code,
+            flow_id=FLOW,
+            public_username="old-canonical-owner",
+            current_password=PASSWORD,
+        )
+        if continuation
+        else submit(binding, challenge_id, code)
+    )
+    assert result["signup_grant_credits"] == 5000
+    with sessions() as db:
+        claim = db.get(models_db.PhoneSignupClaim, PHONE)
+        ledger = db.query(models_db.CreditTransaction).one()
+        assert (claim.claim_type, claim.user_id, claim.created_at) == ("bound_existing", 999, created_at)
+        assert claim.grant_ref == ledger.ref_id and ledger.user_id == user_id
+        # Simulate deletion of the recipient; the phone receipt must survive.
+        db.delete(db.query(models_db.PhoneIdentity).one())
+        db.delete(ledger)
+        db.delete(db.get(models_db.User, user_id))
+        db.get(models_db.SmsPhoneState, PHONE).last_send_at -= timedelta(seconds=61)
+        db.commit()
+    challenge = issue(service)
+    result = service.continue_login(
+        challenge_id=challenge["challenge_id"], code=binding[1].calls[-1][1], flow_id=FLOW, public_username="新的账号"
+    )
+    assert result["signup_grant_credits"] == 0
+    with sessions() as db:
+        assert db.get(models_db.PhoneSignupClaim, PHONE).user_id == 999
+
+
+def test_already_bound_user_cannot_request_gift_challenge_or_retroactively_grant(binding):
+    _, _, sessions, user_id, _ = binding
+    challenge_id, code = bind_challenge(binding)
+    with sessions() as db, db.begin():
+        db.add(models_db.PhoneIdentity(phone_e164=PHONE, user_id=user_id))
+        db.add(models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type="bound_existing", user_id=user_id))
+    with pytest.raises(phone_otp.PhoneOtpError) as caught:
+        bind_challenge(binding, phone=OTHER_PHONE)
+    assert caught.value.code == "phone_in_use"
+    assert submit(binding, challenge_id, code)["signup_grant_credits"] == 0
+    with sessions() as db:
+        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.get(models_db.User, user_id).credits == 123456
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+def test_binding_ledger_failure_rolls_back_identity_claim_and_gift(binding, monkeypatch, continuation):
+    service, _, sessions, user_id, _ = binding
+    if continuation:
+        with sessions() as db, db.begin():
+            db.add(models_db.PhoneSignupClaim(phone_e164=PHONE, claim_type="bound_existing", user_id=999))
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    apply = billing.apply_adjustment
+
+    def fail(*args, **kwargs):
+        apply(*args, **kwargs)
+        raise RuntimeError("injected gift failure")
+
+    monkeypatch.setattr(billing, "apply_adjustment", fail)
+    with pytest.raises(RuntimeError, match="injected gift failure"):
+        if continuation:
+            service.continue_login(
+                challenge_id=challenge_id,
+                code=code,
+                flow_id=FLOW,
+                public_username="old-canonical-owner",
+                current_password=PASSWORD,
+            )
+        else:
+            submit(binding, challenge_id, code)
+    with sessions() as db:
+        assert db.query(models_db.PhoneIdentity).count() == 0
+        assert db.query(models_db.PhoneSignupClaim).count() == int(continuation)
+        if continuation:
+            claim = db.get(models_db.PhoneSignupClaim, PHONE)
+            assert claim.grant_ref is None and claim.user_id == 999
+        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.get(models_db.User, user_id).credits == 123456
+        assert db.get(models_db.SmsChallenge, challenge_id).state == "sent"
+
+
+@pytest.mark.parametrize("continuation", [False, True])
+def test_binding_rechecks_expiry_after_account_lock_wait(binding, monkeypatch, continuation):
+    service, _, sessions, user_id, _ = binding
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(phone_otp, "_now", lambda: now)
+    challenge_id, code = bind_challenge(binding, purpose="login" if continuation else "bind")
+    waiting = Event()
+    engine = sessions.kw["bind"]
+    gift_calls = []
+    apply = billing.apply_adjustment
+
+    def observe_gift(*args, **kwargs):
+        gift_calls.append(True)
+        return apply(*args, **kwargs)
+
+    monkeypatch.setattr(billing, "apply_adjustment", observe_gift)
+
+    def account_lock(connection, cursor, statement, parameters, context, executemany):
+        if "FROM users" in statement and "FOR UPDATE" in statement:
+            waiting.set()
+
+    event.listen(engine, "before_cursor_execute", account_lock)
+
+    def attempt():
+        try:
+            if continuation:
+                return service.continue_login(
+                    challenge_id=challenge_id,
+                    code=code,
+                    flow_id=FLOW,
+                    public_username="old-canonical-owner",
+                    current_password=PASSWORD,
+                )
+            return submit(binding, challenge_id, code)
+        except phone_otp.PhoneOtpError as error:
+            return error.code
+
+    try:
+        with sessions() as locked, ThreadPoolExecutor(max_workers=1) as workers:
+            locked.execute(select(models_db.User).where(models_db.User.id == user_id).with_for_update()).scalar_one()
+            waiting.clear()
+            future = workers.submit(attempt)
+            try:
+                assert waiting.wait(10), "binding did not reach account lock"
+                now += timedelta(seconds=301)
+            finally:
+                locked.rollback()
+            assert future.result(timeout=10) == "challenge_expired"
+            assert gift_calls == []
+    finally:
+        event.remove(engine, "before_cursor_execute", account_lock)
+    with sessions() as db:
+        assert db.query(models_db.PhoneIdentity).count() == db.query(models_db.PhoneSignupClaim).count() == 0
+        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.get(models_db.User, user_id).credits == 123456
+        assert db.get(models_db.SmsChallenge, challenge_id).state == "sent"
+
+
+def test_expiry_after_gift_write_rolls_back_everything(binding, monkeypatch):
+    _, _, sessions, user_id, _ = binding
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(phone_otp, "_now", lambda: now)
+    challenge_id, code = bind_challenge(binding)
+    apply = billing.apply_adjustment
+
+    def expire_after_write(*args, **kwargs):
+        nonlocal now
+        result = apply(*args, **kwargs)
+        now += timedelta(seconds=301)
+        return result
+
+    monkeypatch.setattr(billing, "apply_adjustment", expire_after_write)
+    with pytest.raises(phone_otp.PhoneOtpError) as caught:
+        submit(binding, challenge_id, code)
+    assert caught.value.code == "challenge_expired"
+    with sessions() as db:
+        assert db.query(models_db.PhoneIdentity).count() == db.query(models_db.PhoneSignupClaim).count() == 0
+        assert db.query(models_db.CreditTransaction).count() == 0
+        assert db.get(models_db.User, user_id).credits == 123456
+        assert db.get(models_db.SmsChallenge, challenge_id).state == "sent"

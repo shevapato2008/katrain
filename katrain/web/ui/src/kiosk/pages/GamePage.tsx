@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../features/auth/accountDisplay';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Snackbar } from '@mui/material';
 // TipsAndUpdates is intentionally NOT imported: the standalone header hint button is gone
@@ -666,7 +667,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     const previous = readActiveSession('game');
     writeActiveSession({
       kind: 'game',
-      label: `${gs.players_info.B.name} vs ${gs.players_info.W.name}`,
+      label: `${displayPlayerName(gs.players_info.B, t('auth:account_label', '账号'))} vs ${displayPlayerName(gs.players_info.W, t('auth:account_label', '账号'))}`,
       route,
       ts: Date.now(),
       ...(previous?.route === route && typeof previous.onBoard === 'boolean' ? { onBoard: previous.onBoard } : {}),

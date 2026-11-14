@@ -13478,7 +13478,7 @@ msgid "auth:bind_password"
 msgstr "目前帳號密碼"
 
 msgid "auth:bind_policy"
-msgstr "綁定後可用簡訊驗證碼登入，原有餘額和會員保留；綁定不重複贈送積分。"
+msgstr "綁定後可用簡訊驗證碼登入，原有餘額和會員保留。"
 
 msgid "auth:bind_submit"
 msgstr "確認綁定"
@@ -13725,3 +13725,9 @@ msgstr "部分頁面載入失敗"
 
 msgid "startup:reload"
 msgstr "重新載入"
+
+msgid "auth:bind_gift_hint"
+msgstr "首次驗證手機號碼送50積分，已領取不再贈送。"
+
+msgid "auth:bind_success_gift"
+msgstr "手機號碼綁定成功，已贈送50積分"

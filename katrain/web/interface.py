@@ -204,6 +204,9 @@ class WebKaTrain(KaTrainBase):
         self.enable_engine = enable_engine
         self.user_id = user_id
         self.account_user_id = None
+        self.account_public_profiles = {}
+        self.native_account_player_ids = {}
+        self._account_name_game_eligible = False
         self._rank_owner_session_eligible = False
         self._rank_owner_game_eligible = False
         self.ai_lock = threading.Lock()
@@ -566,6 +569,28 @@ class WebKaTrain(KaTrainBase):
             return {"user_id": account_id, "color": humans[0]}
         return None
 
+    def _account_player_display(self):
+        """Presentation metadata follows native seat IDs, never an SGF/platform nickname."""
+        if (
+            not self._account_name_game_eligible
+            or self.game_type not in ("free", "ranked", "rated", "ai_ladder_ranked", "pvp_lobby")
+            or any(
+                getattr(self, marker, None) is not None
+                for marker in ("platform_engine_color", "platform_my_color", "platform_phase")
+            )
+            or self.platform_player_ranks
+        ):
+            return {}
+        seats = dict(self.native_account_player_ids)
+        owner = self._rank_owner()
+        if owner:
+            seats[owner["color"]] = owner["user_id"]
+        return {
+            color: {"user_id": user_id, "public_username": self.account_public_profiles.get(user_id)}
+            for color, user_id in seats.items()
+            if type(user_id) is int and user_id > 0
+        }
+
     def get_state(self):
         """Returns a JSON-serializable representation of the current game state.
 
@@ -733,6 +758,7 @@ class WebKaTrain(KaTrainBase):
                     "player_type": p.player_type,
                     "player_subtype": p.player_subtype,
                     "name": p.name,
+                    **self._account_player_display().get(bw, {}),
                     "calculated_rank": p.calculated_rank,
                     "rank_display": self._ladder_rank_display(p),
                     "periods_used": p.periods_used,
@@ -866,6 +892,7 @@ class WebKaTrain(KaTrainBase):
             # a casual game against a hand-picked weak AI would be stored as a rated one
             # and settled into the promotion ledger.
             self.game_type = game_type if game_type is not None else "free"
+            self._account_name_game_eligible = move_tree is None and not sgf_filename
             self._rank_owner_game_eligible = (
                 self._rank_owner_session_eligible and move_tree is None and not sgf_filename
             )

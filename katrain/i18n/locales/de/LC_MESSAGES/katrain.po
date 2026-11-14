@@ -8727,9 +8727,7 @@ msgid "auth:bind_password"
 msgstr "Aktuelles Kontopasswort"
 
 msgid "auth:bind_policy"
-msgstr ""
-"Nach der Verknüpfung kannst du dich per SMS-Code anmelden. Guthaben und "
-"Mitgliedschaft bleiben erhalten; es gibt keine erneute Punktegutschrift."
+msgstr "Nach der Verknüpfung kannst du dich per SMS-Code anmelden. Guthaben und Mitgliedschaft bleiben erhalten."
 
 msgid "auth:bind_submit"
 msgstr "Verknüpfung bestätigen"
@@ -8985,3 +8983,9 @@ msgstr "Einige Seiten konnten nicht geladen werden"
 
 msgid "startup:reload"
 msgstr "Neu laden"
+
+msgid "auth:bind_gift_hint"
+msgstr "Für die erste Telefonnummernbestätigung gibt es 50 Punkte. Kein erneutes Geschenk."
+
+msgid "auth:bind_success_gift"
+msgstr "Telefonnummer verknüpft. 50 Punkte gutgeschrieben."

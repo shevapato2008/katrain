@@ -8652,9 +8652,7 @@ msgid "auth:bind_password"
 msgstr "Geçerli hesap parolası"
 
 msgid "auth:bind_policy"
-msgstr ""
-"Bağladıktan sonra SMS koduyla giriş yapabilirsiniz. Bakiyeniz ve üyeliğiniz "
-"korunur; bağlama işlemi tekrar puan kazandırmaz."
+msgstr "Bağladıktan sonra SMS koduyla giriş yapabilirsiniz. Bakiyeniz ve üyeliğiniz korunur."
 
 msgid "auth:bind_submit"
 msgstr "Bağlamayı onayla"
@@ -8905,3 +8903,9 @@ msgstr "Bazı sayfalar yüklenemedi"
 
 msgid "startup:reload"
 msgstr "Yeniden yükle"
+
+msgid "auth:bind_gift_hint"
+msgstr "Telefon numaranızı ilk kez doğruladığınızda 50 puan kazanın. Hediye tekrar verilmez."
+
+msgid "auth:bind_success_gift"
+msgstr "Telefon bağlandı. 50 puan eklendi."

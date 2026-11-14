@@ -14,6 +14,10 @@ export interface UserGameSummary {
   title: string | null;
   player_black: string | null;
   player_white: string | null;
+  /** Read-only account projections; source player names stay canonical. */
+  display_player_black?: string | null;
+  display_player_white?: string | null;
+  user_color?: 'B' | 'W' | null;
   black_rank: string | null;
   white_rank: string | null;
   result: string | null;

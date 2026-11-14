@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
 import { ConsumptionQuoteDialog } from '../../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -351,7 +352,7 @@ export default function ReportsPage() {
      才敢写标题，否则每选一局副标题都会先塌成「选择一局棋谱」再撑回去。 */
   const plateGame = selectedGame ?? selectedSummary;
   const plateSubtitle = plateGame
-    ? `${plateGame.player_black || t('report:black', 'Black')} vs ${plateGame.player_white || t('report:white', 'White')}`
+    ? `${displayGamePlayerName(plateGame, 'B', t('report:black', 'Black'))} vs ${displayGamePlayerName(plateGame, 'W', t('report:white', 'White'))}`
       + ` · ${plateGame.move_count} ${movesUnit}`
     : t('report:select_game', 'Select a game');
 

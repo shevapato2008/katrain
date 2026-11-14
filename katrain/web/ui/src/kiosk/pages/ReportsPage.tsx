@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../features/auth/accountDisplay';
 import { uiMessage, renderUiMessage, type UiMessage } from '../utils/uiMessage';
 import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -656,8 +657,8 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
           <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
         </span>
         <RecordMatchLine variant="history"
-          black={{ name: game.player_black || t('game:black_side', '黑方'), rank: getListRank(null, game.black_rank, t, lang) }}
-          white={{ name: game.player_white || t('game:white_side', '白方'), rank: getListRank(null, game.white_rank, t, lang) }}
+          black={{ name: displayGamePlayerName(game, 'B', t('game:black_side', '黑方')), rank: getListRank(null, game.black_rank, t, lang) }}
+          white={{ name: displayGamePlayerName(game, 'W', t('game:white_side', '白方')), rank: getListRank(null, game.white_rank, t, lang) }}
           result={result} />
       </button>
       <ReportProgressColumn state={reportState} moveCount={game.move_count} surface="kiosk" t={t} />

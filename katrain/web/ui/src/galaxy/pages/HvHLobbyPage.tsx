@@ -1,3 +1,5 @@
+import { displayAccountName } from '../../features/auth/accountDisplay';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -6,8 +8,8 @@ import { websocketUrl } from '../../utils/websocketUrl';
 import PlayPageLayout from '../components/layout/PlayPageLayout';
 import './HvHLobbyPage.css';
 
-type OnlineUser = { id: number; username: string; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
-type ActiveGame = { session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number };
+type OnlineUser = { id: number; username: string; public_username?: string | null; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
+type ActiveGame = { player_b_public_username?: string | null; player_w_public_username?: string | null; session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number };
 type Dialog = 'placement' | 'matching' | null;
 const isUser = (value: unknown): value is OnlineUser => {
   if (!value || typeof value !== 'object') return false;
@@ -22,6 +24,8 @@ const isGame = (value: unknown): value is ActiveGame => {
 
 export default function HvHLobbyPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const accountName = (username: string, public_username?: string | null) => displayAccountName({ username, public_username }, t('auth:account_label', '账号'));
   const { user, token } = useAuth();
   const [users, setUsers] = useState<OnlineUser[]>([]);
   const [games, setGames] = useState<ActiveGame[]>([]);
@@ -144,20 +148,22 @@ export default function HvHLobbyPage() {
           {!loaded && <p>正在读取对局…</p>}
           {loaded && !error && !games.length && <p>当前没有进行中的对局。</p>}
           {games.map((g) => {
+            const black = accountName(g.player_b, g.player_b_public_username);
+            const white = accountName(g.player_w, g.player_w_public_username);
             const mine = g.player_b_id === user?.id || g.player_w_id === user?.id;
             return <button
               type="button"
               className="pvp-galaxy__game"
               data-testid="lobby-game"
-              aria-label={`${mine ? '返回棋盘' : '观战'} ${g.player_b} 对 ${g.player_w}`}
+              aria-label={`${mine ? '返回棋盘' : '观战'} ${black} 对 ${white}`}
               key={g.session_id}
               onClick={() => navigate(`/play/human/room/${g.session_id}`)}
             >
               <span className="meta"><span>{g.session_id.slice(0, 4)} 房</span><span>分先 · 19 路</span><span>第 {g.move_count} 手</span></span>
               <span className="pair">
-                <span className="side"><span className="portrait">{g.player_b.slice(0, 1)}</span><span className="name"><b>{g.player_b}</b><small>执黑{g.player_b_rank_label ? ` · ${g.player_b_rank_label}` : ''}</small></span></span>
+                <span className="side"><span className="portrait">{black.slice(0, 1)}</span><span className="name"><b>{black}</b><small>执黑{g.player_b_rank_label ? ` · ${g.player_b_rank_label}` : ''}</small></span></span>
                 <span className="versus">对</span>
-                <span className="side white"><span className="name"><b>{g.player_w}</b><small>{g.player_w_rank_label ? `${g.player_w_rank_label} · ` : ''}执白</small></span><span className="portrait">{g.player_w.slice(0, 1)}</span></span>
+                <span className="side white"><span className="name"><b>{white}</b><small>{g.player_w_rank_label ? `${g.player_w_rank_label} · ` : ''}执白</small></span><span className="portrait">{white.slice(0, 1)}</span></span>
               </span>
               <span className="watch">{mine ? '返回棋盘 →' : '观战 →'}</span>
             </button>;
@@ -176,11 +182,12 @@ export default function HvHLobbyPage() {
           {!loaded && <p>正在读取棋友…</p>}
           {loaded && !error && !ordered.length && <p>当前筛选下没有在线棋友。</p>}
           {ordered.map((u) => {
+            const name = accountName(u.username, u.public_username);
             const me = u.id === user?.id;
             const busy = u.presence === 'playing';
             return <div className={`peer ${me ? 'self' : ''}`} data-testid={`lobby-player-${u.id}`} key={u.id}>
-              <span className="portrait">{u.username.slice(0, 1)}</span>
-              <span className="name"><b>{u.username}</b><small>{u.rank_label || '尚未定级'}</small></span>
+              <span className="portrait">{name.slice(0, 1)}</span>
+              <span className="name"><b>{name}</b><small>{u.rank_label || '尚未定级'}</small></span>
               <span className={`state ${busy ? 'busy' : ''}`}>{busy ? '对局中' : '空闲'}</span>
               {me ? <span className="self-tag">这是你</span> : <button type="button" disabled={busy || connection !== 'connected'} onClick={() => send({ type: 'invite', target_id: u.id })}>邀请</button>}
             </div>;
@@ -190,6 +197,6 @@ export default function HvHLobbyPage() {
       </section>
     </div>
     {dialog && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{dialog === 'placement' ? '完成定级后再来匹配' : '正在寻找同段位对手'}</h2><p>{dialog === 'placement' ? '大厅按「升降级对弈」的段位寻找同水平对手。请先完成 5 局定级赛，再回到这里匹配。' : '先寻找同段位真人，稍后由同段位棋手接局；成功后直接开局。'}</p><div className="detail"><span>{dialog === 'placement' ? '当前段位' : `${rank?.label} · 不计升降段位`}</span><b>{dialog === 'placement' ? '尚未定级' : `已等 ${elapsed} 秒`}</b></div>{dialog === 'matching' && <div className="progress" />}<div className="actions">{dialog === 'placement' ? <><button onClick={() => setDialog(null)}>返回大厅</button><button className="main" onClick={() => navigate('/play/ai?mode=rated')}>去升降级对弈</button></> : <button onClick={stop}>取消匹配</button>}</div></section></div>}
-    {invitation && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{invitation.from_name} 邀你下一局</h2><p>接受后直接开局；这局不计升降段位。</p><div className="actions"><button onClick={() => setInvitation(null)}>返回大厅</button><button className="main" onClick={() => { send({ type: 'accept_invite', target_id: invitation.from_id }); setInvitation(null); }}>接受邀请</button></div></section></div>}
+    {invitation && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{accountName(invitation.from_name, users.find((person) => person.id === invitation.from_id)?.public_username)} 邀你下一局</h2><p>接受后直接开局；这局不计升降段位。</p><div className="actions"><button onClick={() => setInvitation(null)}>返回大厅</button><button className="main" onClick={() => { send({ type: 'accept_invite', target_id: invitation.from_id }); setInvitation(null); }}>接受邀请</button></div></section></div>}
   </div></PlayPageLayout>;
 }

@@ -88,7 +88,7 @@ async def test_http_existing_name_conflicts_are_private_and_proof_is_reusable(ph
         wrong = await client.post("/api/v1/auth/phone/continue", json={**body, "current_password": "private-wrong"})
         assert wrong.status_code == 401 and wrong.json() == {"detail": {"code": "bind_reauth_failed"}}
         result = await client.post("/api/v1/auth/phone/continue", json={**body, "current_password": PASSWORD})
-        assert result.status_code == 200 and result.json()["signup_grant_credits"] == 0
+        assert result.status_code == 200 and result.json()["signup_grant_credits"] == 5000
         assert all(response.headers["cache-control"] == "no-store" for response in (required, wrong, result))
         assert PHONE not in str(required.json()) and "mask" not in str(required.json())
     assert PASSWORD not in caplog.text and "private-wrong" not in caplog.text and values["code"] not in caplog.text

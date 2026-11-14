@@ -123,6 +123,11 @@ class PhoneStatusResponse(BaseModel):
     masked_phone: str | None = None
 
 
+class PhoneBindResponse(PhoneStatusResponse):
+    # Older cloud versions do not report this additive outcome.
+    signup_grant_credits: Literal[0, 5000] = 0
+
+
 def get_phone_otp_service(request: Request):
     from katrain.web.core.phone_otp import PhoneOtpService
 
@@ -355,7 +360,7 @@ async def phone_password(request: Request, body: PhonePasswordRequest, user: Use
     return Response(status_code=204)
 
 
-@router.post("/bind", response_model=PhoneStatusResponse, response_model_exclude_none=True)
+@router.post("/bind", response_model=PhoneBindResponse, response_model_exclude_none=True)
 async def phone_bind(request: Request, body: PhoneBindRequest, user: User = Depends(_phone_user)):
     from katrain.web.core.phone_otp import PhoneOtpError
 

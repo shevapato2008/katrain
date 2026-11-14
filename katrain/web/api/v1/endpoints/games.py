@@ -46,8 +46,10 @@ async def list_active_multiplayer_games(
 
     all_users = user_repo.list_users()
     users_by_id = {u["id"]: u["username"] for u in all_users}
-    ids = {user_id for s in sessions for user_id in (s.player_b_id, s.player_w_id)
-           if user_id is not None and user_id > 0}
+    public_names_by_id = {u["id"]: u.get("public_username") for u in all_users}
+    ids = {
+        user_id for s in sessions for user_id in (s.player_b_id, s.player_w_id) if user_id is not None and user_id > 0
+    }
     ranks = human_ladder_rungs(request.app.state.session_factory, ids)
     labels = {level.rung: level.rank_label for level in playable_rungs()}
     runtime = getattr(request.app.state, "pvp_lobby_bots", None)
@@ -67,6 +69,8 @@ async def list_active_multiplayer_games(
                 "session_id": s.session_id,
                 "player_b": users_by_id.get(s.player_b_id, black_bot.get("username", "Unknown")),
                 "player_w": users_by_id.get(s.player_w_id, white_bot.get("username", "Unknown")),
+                "player_b_public_username": public_names_by_id.get(s.player_b_id),
+                "player_w_public_username": public_names_by_id.get(s.player_w_id),
                 "player_b_id": s.player_b_id,
                 "player_w_id": s.player_w_id,
                 "player_b_rung": black_rung,

@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../features/auth/accountDisplay';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Chip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
@@ -574,7 +575,7 @@ const GamePage = () => {
                         title={isRated ? t('rated_play', '升降级对弈') : t('play:vs_ai_free', '自由对弈')}
                         /* 副标题和状态徽章按冻结稿补上 —— 对局室有、这一页没有的话，
                            同一个模块牌在两页上长得不一样。 */
-                        subtitle={`${gameState.players_info.B.name} vs ${gameState.players_info.W.name} · ${gameState.history.length} ${t('live:moves', '手')}`}
+                        subtitle={`${displayPlayerName(gameState.players_info.B, t('auth:account_label', '账号'))} vs ${displayPlayerName(gameState.players_info.W, t('auth:account_label', '账号'))} · ${gameState.history.length} ${t('live:moves', '手')}`}
                         status={gameState.end_result
                             ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
                             : <Chip size="small" color="primary" label={t('game:in_play', '对局中')} />}

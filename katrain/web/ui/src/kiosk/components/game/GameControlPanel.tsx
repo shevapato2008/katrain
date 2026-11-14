@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../../features/auth/accountDisplay';
 import { interpolate } from '../../utils/interpolate';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../../kiosk-shell/engine-game-redesign.css';
@@ -221,7 +222,7 @@ function PlayerRow({ color, info, displayName, captures, turn, state, clock, ran
   // ⇒ 铸 `game:black_side` / `game:white_side`,和屏 04 用同一个词。
   // (2026-08-26 一度把 fallback 改成「黑棋」去迁就 PO —— 那是把这处不一致钉死了:
   //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
-  const name = displayName || info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
+  const name = displayName || displayPlayerName(info, typeof info.user_id === 'number' ? t('auth:account_label', '账号') : color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
   if (paired) {
     return (
       <div className={`pcard ai-player-card kiosk-player-card${turn ? ' turn' : ''}`} data-testid={`player-card-${color}`} data-clock={clock?.phase}>

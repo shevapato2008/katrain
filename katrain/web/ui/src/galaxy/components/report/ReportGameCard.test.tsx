@@ -54,3 +54,9 @@ describe('Galaxy compact report card', () => {
     expect(screen.queryByText(/retry|continue/i)).toBeNull();
   });
 });
+
+it('shows server-resolved historical public names without rendering internal handles', () => {
+  render(<ReportGameCard game={{ ...game, platform: null, player_black: 'u_0123456789abcdefabcd', display_player_black: '公开棋手' } as UserGameSummary} reportState={{}} onSelect={vi.fn()} />);
+  expect(screen.getByText('公开棋手')).toBeInTheDocument();
+  expect(document.body).not.toHaveTextContent('u_0123456789abcdefabcd');
+});

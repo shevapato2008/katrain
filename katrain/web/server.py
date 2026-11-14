@@ -1405,6 +1405,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         enable_engine=enable_engine,
     )
     manager.membership_guard_active = app.state.membership_guard_active
+    manager.public_account_resolver = lambda user_id: app.state.user_repo.get_user_by_id(user_id)
     app.state.session_manager = manager
 
     @app.get("/api/pvp/identity")

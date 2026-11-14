@@ -8536,9 +8536,7 @@ msgid "auth:bind_password"
 msgstr "Contraseña actual de la cuenta"
 
 msgid "auth:bind_policy"
-msgstr ""
-"Tras vincularlo, podrás acceder con un código SMS. Se conservan tu saldo y "
-"membresía; vincular no concede puntos repetidos."
+msgstr "Tras vincularlo puedes iniciar sesión con un código SMS. Conservas tu saldo y membresía."
 
 msgid "auth:bind_submit"
 msgstr "Confirmar vínculo"
@@ -8791,3 +8789,9 @@ msgstr "No se pudieron cargar algunas páginas"
 
 msgid "startup:reload"
 msgstr "Volver a cargar"
+
+msgid "auth:bind_gift_hint"
+msgstr "Recibe 50 puntos al verificar tu teléfono por primera vez. El regalo no se repite."
+
+msgid "auth:bind_success_gift"
+msgstr "Teléfono vinculado. Se han añadido 50 puntos."

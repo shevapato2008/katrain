@@ -13514,7 +13514,7 @@ msgid "auth:bind_password"
 msgstr "現在のアカウントのパスワード"
 
 msgid "auth:bind_policy"
-msgstr "連携後はSMSコードでログインできます。既存の残高と会員資格は維持され、連携によるポイントの再付与はありません。"
+msgstr "連携後はSMS認証コードでログインできます。残高と会員情報は引き継がれます。"
 
 msgid "auth:bind_submit"
 msgstr "連携を確認"
@@ -13761,3 +13761,9 @@ msgstr "一部のページを読み込めませんでした"
 
 msgid "startup:reload"
 msgstr "再読み込み"
+
+msgid "auth:bind_gift_hint"
+msgstr "電話番号の初回認証で50ポイント。受取済みの場合は再付与されません。"
+
+msgid "auth:bind_success_gift"
+msgstr "電話番号を連携し、50ポイントを付与しました。"

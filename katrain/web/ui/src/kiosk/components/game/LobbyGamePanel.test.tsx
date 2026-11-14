@@ -63,3 +63,12 @@ describe('lobby game panel', () => {
     expect(screen.getByText('仅供参考，正式胜负以数子为准')).toBeInTheDocument();
   });
 });
+
+it('uses trusted account names for lobby player card text, titles and accessible labels', () => {
+  const gs = { ...state, players_info: { ...state.players_info, B: { ...state.players_info.B,
+    name: 'u_0123456789abcdefabcd', user_id: 7, public_username: '公开棋手' } } };
+  render(<LobbyGamePanel {...props()} gameState={gs} />);
+  expect(screen.getByTitle('公开棋手')).toHaveTextContent('公开棋手');
+  expect(screen.getByTitle('公开棋手')).toHaveAttribute('aria-label', '公开棋手（你）');
+  expect(document.body).not.toHaveTextContent('u_0123456789abcdefabcd');
+});

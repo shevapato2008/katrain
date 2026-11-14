@@ -26,3 +26,19 @@ def validate_signup_password(password: str) -> None:
         valid = False
     if not valid:
         raise ValueError("password_invalid")
+
+
+def display_account_name(username, public_username=None):
+    """Read-only public label; opaque handles and full phones never become fallbacks."""
+    for value in (public_username, username):
+        if not isinstance(value, str):
+            continue
+        name = value.strip()
+        if (
+            name
+            and not re.fullmatch(r"u_[0-9a-f]{20}", name, re.I)
+            and not re.fullmatch(r"[0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", name, re.I)
+            and not re.fullmatch(r"(?:\+?86)?1[3-9]\d{9}", name)
+        ):
+            return name
+    return None

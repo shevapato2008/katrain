@@ -24,6 +24,17 @@ const getCode = async () => {
 };
 
 describe('PhoneBindDialog', () => {
+  it('briefly explains the first verified phone gift before binding', async () => {
+    render(<PhoneBindDialog open onClose={() => {}} />); await ready();
+    expect(screen.getByText('首次验证手机号送50积分，已领取不再赠送。')).toBeInTheDocument();
+  });
+  it.each([5000, 0, undefined, '5000'])('reports a gift only for the actual numeric grant: %s', async grant => {
+    vi.mocked(API.phoneBind).mockResolvedValue({ bound: true, masked_phone: '138****8000', signup_grant_credits: grant } as Awaited<ReturnType<typeof API.phoneBind>>);
+    render(<PhoneBindDialog open onClose={() => {}} />); await getCode();
+    fireEvent.click(screen.getByRole('button', { name: '确认绑定' }));
+    expect(await screen.findByText(grant === 5000 ? '手机号绑定成功，已赠送50积分' : '手机号绑定成功')).toBeInTheDocument();
+    if (grant !== 5000) expect(screen.queryByText(/50/)).not.toBeInTheDocument();
+  });
   it('binds the verified phone to the captured account, clears secrets and displays only the server mask', async () => {
     const onBound = vi.fn(); render(<PhoneBindDialog open onClose={() => {}} onBound={onBound} />);
     await getCode();
@@ -45,6 +56,7 @@ describe('PhoneBindDialog', () => {
     expect(await screen.findByText('139****9000')).toBeInTheDocument();
     expect(screen.queryByLabelText('手机号（中国大陆 +86）')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '确认绑定' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/50/)).not.toBeInTheDocument();
   });
   it.each(['phone_in_use', 'bind_reauth_failed', 'bind_reauth_locked'])('keeps errors honest and permits only eligible retry: %s', async code => {
     vi.mocked(API.phoneBind).mockRejectedValue(new ApiError(code === 'phone_in_use' ? 409 : 429, 'safe', { code, retry_after: code === 'bind_reauth_locked' ? 900 : undefined }));
@@ -64,12 +76,24 @@ describe('PhoneBindDialog', () => {
     auth.token = 'token-b';
     view.rerender(<PhoneBindDialog open onClose={() => {}} onBound={onBound} />);
     expect(vi.mocked(API.phoneBind).mock.calls[0][2]?.aborted).toBe(true);
-    await act(async () => finish({ bound: true, masked_phone: '138****8000' }));
+    await act(async () => finish({ bound: true, masked_phone: '138****8000', signup_grant_credits: 5000 } as Parameters<typeof finish>[0]));
     await ready();
     expect(screen.getByLabelText('当前账号密码')).toHaveValue('');
     expect(screen.getByLabelText('手机号（中国大陆 +86）')).toHaveValue('');
     expect(onBound).not.toHaveBeenCalled();
     expect(screen.queryByText('138****8000')).not.toBeInTheDocument();
+    expect(screen.queryByText('手机号绑定成功，已赠送50积分')).not.toBeInTheDocument();
+  });
+  it('retires the expired proof without binding or showing a gift', async () => {
+    vi.mocked(API.createPhoneBindChallenge).mockResolvedValue({ ...challenge, expires_in: 0 });
+    render(<PhoneBindDialog open onClose={() => {}} />); await ready();
+    fireEvent.change(screen.getByLabelText('手机号（中国大陆 +86）'), { target: { value: '13800138000' } });
+    fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
+    await screen.findByText('验证码已过期，请重新获取');
+    expect(screen.getByRole('button', { name: '确认绑定' })).toBeDisabled();
+    expect(screen.getByText('验证码已过期，请重新获取')).toBeInTheDocument();
+    expect(API.phoneBind).not.toHaveBeenCalled();
+    expect(screen.queryByText('手机号绑定成功，已赠送50积分')).not.toBeInTheDocument();
   });
   it('keeps unknown delivery verifiable and discards a submission after close', async () => {
     vi.mocked(API.createPhoneBindChallenge).mockResolvedValue({ ...challenge, delivery: 'unknown' });

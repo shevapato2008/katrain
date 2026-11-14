@@ -13371,7 +13371,7 @@ msgid "auth:bind_password"
 msgstr "当前账号密码"
 
 msgid "auth:bind_policy"
-msgstr "绑定后可用短信验证码登录，原有余额和会员保留；绑定不重复赠送积分。"
+msgstr "绑定后可用短信验证码登录，原有余额和会员保留。"
 
 msgid "auth:bind_submit"
 msgstr "确认绑定"
@@ -13618,3 +13618,9 @@ msgstr "部分页面加载失败"
 
 msgid "startup:reload"
 msgstr "重新加载"
+
+msgid "auth:bind_gift_hint"
+msgstr "首次验证手机号送50积分，已领取不再赠送。"
+
+msgid "auth:bind_success_gift"
+msgstr "手机号绑定成功，已赠送50积分"

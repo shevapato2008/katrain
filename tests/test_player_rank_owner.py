@@ -100,3 +100,42 @@ def test_owner_requires_private_ai_game_type_and_one_human(manager, game_type, e
     assert (kt.get_state()["rank_owner"] is not None) is expected
     kt.update_player("W", player_type=PLAYER_HUMAN)
     assert kt.get_state()["rank_owner"] is None
+
+
+def test_account_player_display_metadata_uses_ids_without_rewriting_names(manager):
+    internal = "u_0123456789abcdefabcd"
+    calls = []
+
+    def resolve(user_id):
+        # Presentation lookup happens before the manager creates/locks its runtime.
+        assert not manager._lock.locked()
+        calls.append(user_id)
+        return {"id": user_id, "public_username": "公开棋手"}
+
+    manager.public_account_resolver = resolve
+    session = manager.create_session(user_id=7)
+    session.katrain("update_player", bw="B", player_type=PLAYER_HUMAN, name=internal)
+    before = session.katrain.get_state()["players_info"]["B"]
+    assert before["name"] == internal
+    assert before["user_id"] == 7
+    assert before["public_username"] == "公开棋手"
+    assert calls == [7]
+    # Loading an unrelated SGF clears the mapping even when PB equals the account name.
+    session.katrain("load_sgf", f"(;SZ[19]PB[{internal}];B[pd])", skip_initial_analysis=True)
+    external = session.katrain.get_state()["players_info"]["B"]
+    assert external["name"] == internal
+    assert "user_id" not in external and "public_username" not in external
+
+
+def test_multiplayer_account_seats_are_resolved_by_id_and_platform_seats_stay_external(manager):
+    manager.public_account_resolver = lambda user_id: {"id": user_id, "public_username": f"公开{user_id}"}
+    session = manager.create_multiplayer_session(7, 8, b_name="u_0123456789abcdefabcd", w_name="old-player")
+    players = session.katrain.get_state()["players_info"]
+    assert (players["B"]["user_id"], players["B"]["public_username"]) == (7, "公开7")
+    assert (players["W"]["user_id"], players["W"]["public_username"]) == (8, "公开8")
+    assert players["W"]["name"] == "old-player"
+    platform = manager.create_multiplayer_session(
+        7, -1, b_name="外部名字", w_name="平台对手", initial_game_type="pvp_online"
+    )
+    for player in platform.katrain.get_state()["players_info"].values():
+        assert "user_id" not in player and "public_username" not in player

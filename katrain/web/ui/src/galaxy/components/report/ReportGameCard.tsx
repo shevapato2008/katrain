@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
 import { Box, Card, Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
@@ -66,7 +67,7 @@ export default function ReportGameCard({ game, selected = false, reportState, on
         <Box sx={{ display: 'grid', gridTemplateRows: '22px 22px', minWidth: 0 }}>
           {(['black', 'white'] as const).map(color => {
             const rank = color === 'black' ? game.black_rank : game.white_rank;
-            const name = color === 'black' ? game.player_black : game.player_white;
+            const name = displayGamePlayerName(game, color === 'black' ? 'B' : 'W', t('auth:account_label', '账号'));
             return <Box key={color} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
                 bgcolor: color === 'black' ? '#1a1a1a' : '#e8e4df', border: '1px solid rgba(255,255,255,0.18)' }} />

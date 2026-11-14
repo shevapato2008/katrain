@@ -8971,3 +8971,26 @@ msgstr "Certaines pages n’ont pas pu être chargées"
 
 msgid "startup:reload"
 msgstr "Recharger"
+
+msgid "membership:report_insufficient_title"
+msgstr "Quota de rapports insuffisant"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"Le quota disponible ne suffit pas pour lancer ce rapport. Vous pouvez "
+"consulter les avantages de l’abonnement ou recharger des points."
+
+msgid "membership:report_verification_title"
+msgstr "Rapport gratuit indisponible"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"L’éligibilité aux rapports gratuits est indisponible. Ce rapport n’a donc "
+"pas encore été lancé. Vous pouvez consulter l’état de votre abonnement et de"
+" vos points sur la page de votre compte."
+
+msgid "membership:report_view_membership"
+msgstr "Abonnement et recharge"
+
+msgid "membership:report_view_account"
+msgstr "Voir le compte et le quota"

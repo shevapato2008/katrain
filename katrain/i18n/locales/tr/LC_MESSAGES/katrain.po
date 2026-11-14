@@ -8905,3 +8905,26 @@ msgstr "Bazı sayfalar yüklenemedi"
 
 msgid "startup:reload"
 msgstr "Yeniden yükle"
+
+msgid "membership:report_insufficient_title"
+msgstr "Rapor kotası yetersiz"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"Bu raporu başlatmak için kullanılabilir kota yeterli değil. Üyelik "
+"avantajlarını inceleyebilir veya puan yükleyebilirsiniz."
+
+msgid "membership:report_verification_title"
+msgstr "Ücretsiz rapor kullanılamıyor"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"Ücretsiz rapor hakkı şu anda kullanılamadığı için bu rapor henüz "
+"başlatılmadı. Hesap sayfanızdan üyelik ve puan durumunu kontrol "
+"edebilirsiniz."
+
+msgid "membership:report_view_membership"
+msgstr "Üyelik ve yükleme"
+
+msgid "membership:report_view_account"
+msgstr "Hesabı ve kotayı görüntüle"

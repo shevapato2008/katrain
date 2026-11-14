@@ -14436,3 +14436,25 @@ msgstr "Some pages could not be loaded"
 
 msgid "startup:reload"
 msgstr "Reload"
+
+msgid "membership:report_insufficient_title"
+msgstr "Report allowance insufficient"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"There is not enough available allowance to start this report. You can review"
+" membership benefits or top up points."
+
+msgid "membership:report_verification_title"
+msgstr "Free report unavailable"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"Free report eligibility is unavailable, so this report has not started. You "
+"can check membership and points on your account page."
+
+msgid "membership:report_view_membership"
+msgstr "Membership and top-up"
+
+msgid "membership:report_view_account"
+msgstr "View account and allowance"

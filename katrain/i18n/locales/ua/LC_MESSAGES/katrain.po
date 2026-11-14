@@ -8886,3 +8886,25 @@ msgstr "Не вдалося завантажити деякі сторінки"
 
 msgid "startup:reload"
 msgstr "Перезавантажити"
+
+msgid "membership:report_insufficient_title"
+msgstr "Недостатньо ліміту для звіту"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"Доступного ліміту недостатньо для запуску цього звіту. Ви можете переглянути"
+" переваги підписки або поповнити бали."
+
+msgid "membership:report_verification_title"
+msgstr "Безкоштовний звіт недоступний"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"Право на безкоштовний звіт наразі недоступне, тому цей звіт ще не запущено. "
+"Стан підписки та балів можна перевірити на сторінці облікового запису."
+
+msgid "membership:report_view_membership"
+msgstr "Підписка й поповнення"
+
+msgid "membership:report_view_account"
+msgstr "Переглянути обліковий запис і ліміт"

@@ -13759,3 +13759,23 @@ msgstr "일부 페이지를 불러오지 못했습니다"
 
 msgid "startup:reload"
 msgstr "다시 불러오기"
+
+msgid "membership:report_insufficient_title"
+msgstr "보고서 이용 한도가 부족합니다"
+
+msgid "membership:report_insufficient_body"
+msgstr "이용 가능한 한도가 부족하여 보고서가 아직 시작되지 않았습니다. 멤버십 혜택을 확인하거나 포인트를 충전할 수 있습니다."
+
+msgid "membership:report_verification_title"
+msgstr "무료 보고서를 이용할 수 없습니다"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"현재 무료 보고서 이용 자격을 사용할 수 없어 보고서가 아직 시작되지 않았습니다. 계정 페이지에서 멤버십과 포인트 상태를 확인할 수 "
+"있습니다."
+
+msgid "membership:report_view_membership"
+msgstr "멤버십 및 충전"
+
+msgid "membership:report_view_account"
+msgstr "계정 및 이용 한도 확인"

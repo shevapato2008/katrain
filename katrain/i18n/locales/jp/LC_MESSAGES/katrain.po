@@ -13761,3 +13761,21 @@ msgstr "一部のページを読み込めませんでした"
 
 msgid "startup:reload"
 msgstr "再読み込み"
+
+msgid "membership:report_insufficient_title"
+msgstr "レポートの利用枠が不足しています"
+
+msgid "membership:report_insufficient_body"
+msgstr "利用可能な枠が不足しているため、レポートはまだ開始されていません。会員特典の確認やポイントのチャージができます。"
+
+msgid "membership:report_verification_title"
+msgstr "無料レポートは現在利用できません"
+
+msgid "membership:report_verification_body"
+msgstr "無料レポートの利用資格が現在利用できないため、レポートはまだ開始されていません。アカウントページで会員情報とポイントの状況を確認できます。"
+
+msgid "membership:report_view_membership"
+msgstr "会員情報とチャージ"
+
+msgid "membership:report_view_account"
+msgstr "アカウントと利用枠を確認"

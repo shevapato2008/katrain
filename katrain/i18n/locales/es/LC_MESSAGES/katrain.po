@@ -8791,3 +8791,26 @@ msgstr "No se pudieron cargar algunas páginas"
 
 msgid "startup:reload"
 msgstr "Volver a cargar"
+
+msgid "membership:report_insufficient_title"
+msgstr "Cupo de informes insuficiente"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"El cupo disponible no es suficiente para iniciar este informe. Puedes "
+"consultar las ventajas de la membresía o recargar puntos."
+
+msgid "membership:report_verification_title"
+msgstr "Informe gratuito no disponible"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"La elegibilidad para informes gratuitos no está disponible, por lo que este "
+"informe aún no se ha iniciado. Puedes consultar el estado de tu membresía y "
+"tus puntos en la página de tu cuenta."
+
+msgid "membership:report_view_membership"
+msgstr "Membresía y recarga"
+
+msgid "membership:report_view_account"
+msgstr "Ver cuenta y cupo"

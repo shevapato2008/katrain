@@ -13725,3 +13725,21 @@ msgstr "部分頁面載入失敗"
 
 msgid "startup:reload"
 msgstr "重新載入"
+
+msgid "membership:report_insufficient_title"
+msgstr "報告額度不足"
+
+msgid "membership:report_insufficient_body"
+msgstr "目前可用額度不足，報告尚未開始。你可以查看會員權益或儲值點數。"
+
+msgid "membership:report_verification_title"
+msgstr "免費報告暫不可用"
+
+msgid "membership:report_verification_body"
+msgstr "免費報告資格暫不可用，報告尚未開始。你可以在帳戶頁查看會員和點數狀態。"
+
+msgid "membership:report_view_membership"
+msgstr "會員與儲值"
+
+msgid "membership:report_view_account"
+msgstr "查看帳戶與額度"

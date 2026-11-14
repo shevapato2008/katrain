@@ -13618,3 +13618,21 @@ msgstr "部分页面加载失败"
 
 msgid "startup:reload"
 msgstr "重新加载"
+
+msgid "membership:report_insufficient_title"
+msgstr "报告额度不足"
+
+msgid "membership:report_insufficient_body"
+msgstr "当前可用额度不足，报告尚未开始。你可以查看会员权益或充值积分。"
+
+msgid "membership:report_verification_title"
+msgstr "免费报告暂不可用"
+
+msgid "membership:report_verification_body"
+msgstr "免费报告资格暂不可用，报告尚未开始。你可以在账户页查看会员和积分状态。"
+
+msgid "membership:report_view_membership"
+msgstr "会员与充值"
+
+msgid "membership:report_view_account"
+msgstr "查看账户与额度"

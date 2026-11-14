@@ -8803,3 +8803,25 @@ msgstr "Не удалось загрузить некоторые страниц
 
 msgid "startup:reload"
 msgstr "Перезагрузить"
+
+msgid "membership:report_insufficient_title"
+msgstr "Недостаточно лимита для отчёта"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"Доступного лимита недостаточно для запуска этого отчёта. Вы можете "
+"посмотреть преимущества подписки или пополнить баллы."
+
+msgid "membership:report_verification_title"
+msgstr "Бесплатный отчёт недоступен"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"Право на бесплатный отчёт сейчас недоступно, поэтому этот отчёт ещё не "
+"запущен. Статус подписки и баллов можно проверить на странице аккаунта."
+
+msgid "membership:report_view_membership"
+msgstr "Подписка и пополнение"
+
+msgid "membership:report_view_account"
+msgstr "Посмотреть аккаунт и лимит"

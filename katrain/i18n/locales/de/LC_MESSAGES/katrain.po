@@ -8985,3 +8985,26 @@ msgstr "Einige Seiten konnten nicht geladen werden"
 
 msgid "startup:reload"
 msgstr "Neu laden"
+
+msgid "membership:report_insufficient_title"
+msgstr "Berichtskontingent reicht nicht aus"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"Das verfügbare Kontingent reicht nicht aus, um diesen Bericht zu starten. "
+"Sie können die Mitgliedschaftsvorteile ansehen oder Punkte aufladen."
+
+msgid "membership:report_verification_title"
+msgstr "Kostenloser Bericht nicht verfügbar"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"Die Berechtigung für kostenlose Berichte ist derzeit nicht verfügbar. Daher "
+"wurde dieser Bericht noch nicht gestartet. Auf Ihrer Kontoseite können Sie "
+"Ihren Mitgliedschafts- und Punktestatus prüfen."
+
+msgid "membership:report_view_membership"
+msgstr "Mitgliedschaft und Aufladen"
+
+msgid "membership:report_view_account"
+msgstr "Konto und Kontingent ansehen"

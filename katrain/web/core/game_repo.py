@@ -47,11 +47,15 @@ class GameRepository:
 
             sgf_hash = hashlib.sha256(sgf_content.encode()).hexdigest() if sgf_content else None
             source = "play_human"
+            black_user_id = black_id if type(black_id) is int and black_id > 0 else None
+            white_user_id = white_id if type(white_id) is int and white_id > 0 else None
 
             def _make_game(user_id, user_color):
                 game = models_db.UserGame(
                     user_id=user_id,
                     user_color=user_color,
+                    player_black_user_id=black_user_id if game_type != "pvp_online" else None,
+                    player_white_user_id=white_user_id if game_type != "pvp_online" else None,
                     sgf_content=sgf_content,
                     source=source,
                     sgf_hash=sgf_hash,
@@ -65,8 +69,8 @@ class GameRepository:
                 return game
 
             # Only real users get a UserGame row; skip synthetic opponents (id <= 0).
-            black_game = _make_game(black_id, "B") if black_id > 0 else None
-            white_game = _make_game(white_id, "W") if white_id > 0 else None
+            black_game = _make_game(black_user_id, "B") if black_user_id is not None else None
+            white_game = _make_game(white_user_id, "W") if white_user_id is not None else None
             canonical = black_game or white_game
             session.flush()
 

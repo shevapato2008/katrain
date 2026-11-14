@@ -442,25 +442,76 @@ def test_historical_display_uses_owner_and_saved_seat_without_changing_stored_na
         assert external.get("display_player_black", external["player_black"]) == internal
 
 
-def test_new_native_multiplayer_records_keep_the_authoritative_owner_seat(db_session):
+def test_new_native_multiplayer_records_keep_both_authoritative_seats(db_session):
     from katrain.web.core.game_repo import GameRepository
 
     factory, black_id = db_session
+    black_handle = "u_0123456789abcdefabcd"
+    white_handle = "u_aaaaaaaaaaaaaaaaaaaa"
     with factory() as db:
-        white = models_db.User(username="u_aaaaaaaaaaaaaaaaaaaa", public_username="白棋手", hashed_password="unused")
+        black = db.get(models_db.User, black_id)
+        black.username = black_handle
+        black.public_username = "BlackPublic"
+        white = models_db.User(username=white_handle, public_username="WhitePublic", hashed_password="unused")
         db.add(white)
         db.commit()
         white_id = white.id
+    sgf = f"(;SZ[19]PB[{black_handle}]PW[{white_handle}]RE[B+R])"
     GameRepository(factory).record_multiplayer_game(
-        "(;SZ[19]RE[B+R])",
+        sgf,
         "B+R",
         "free",
         black_id,
         white_id,
-        black_name="testuser",
-        white_name="u_aaaaaaaaaaaaaaaaaaaa",
+        black_name=black_handle,
+        white_name=white_handle,
     )
     rows = UserGameRepository(factory)
-    assert rows.list(black_id)["items"][0]["user_color"] == "B"
-    assert rows.list(white_id)["items"][0]["user_color"] == "W"
-    assert rows.list(white_id)["items"][0]["display_player_white"] == "白棋手"
+    for owner_id, owner_color in ((black_id, "B"), (white_id, "W")):
+        listed = rows.list(owner_id)["items"][0]
+        detail = rows.get(listed["id"], owner_id)
+        for row in (listed, detail):
+            assert row["user_color"] == owner_color
+            assert row["display_player_black"] == "BlackPublic"
+            assert row["display_player_white"] == "WhitePublic"
+            assert row["player_black"] == black_handle
+            assert row["player_white"] == white_handle
+        assert detail["sgf_content"] == sgf
+
+
+@pytest.mark.parametrize("invalid_id", [True, "1", 0, -1])
+def test_native_player_metadata_requires_strict_positive_integer_ids(db_session, invalid_id):
+    from katrain.web.core.game_repo import GameRepository
+
+    factory, user_id = db_session
+    GameRepository(factory).record_multiplayer_game(
+        "(;SZ[19]RE[B+R])",
+        "B+R",
+        "free",
+        invalid_id,
+        user_id,
+        black_name="Synthetic",
+        white_name="testuser",
+    )
+    with factory() as db:
+        records = db.query(models_db.UserGame).all()
+        assert len(records) == 1
+        assert records[0].player_black_user_id is None
+        assert records[0].player_white_user_id == user_id
+
+
+def test_generic_game_inputs_cannot_write_trusted_player_account_ids(db_session):
+    from katrain.web.api.v1.endpoints.user_games import UserGameUpdate
+
+    factory, user_id = db_session
+    forged = {"player_black_user_id": user_id, "player_white_user_id": user_id}
+    create = UserGameCreate(sgf_content="(;SZ[19])", source="play_human", **forged)
+    update = UserGameUpdate(title="Rename", **forged)
+    assert not (forged.keys() & create.model_dump().keys())
+    assert not (forged.keys() & update.model_dump().keys())
+    repo = UserGameRepository(factory)
+    saved = repo.create(user_id, "(;SZ[19])", "play_human", **forged)
+    with factory() as db:
+        row = db.get(models_db.UserGame, saved["id"])
+        assert row.player_black_user_id is None
+        assert row.player_white_user_id is None

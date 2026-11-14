@@ -9,7 +9,9 @@ it('prefers public name, falls back to legacy names, and hides internal handles'
 });
 
 it('never uses UUIDs or full phone numbers as account labels', () => {
-  for (const username of ['cce0f02b-36f3-4ae5-813e-101c73fe7830', '+8613800138000', '13800138000']) {
+  expect(displayAccountName({ username: '2024' }, '账号')).toBe('2024');
+  expect(displayAccountName({ username: 'player-138' }, '账号')).toBe('player-138');
+  for (const username of ['cce0f02b-36f3-4ae5-813e-101c73fe7830', '+8613800138000', '13800138000', '008613800138000', '138-0013-8000', '+86 (138) 0013 8000']) {
     expect(displayAccountName({ username }, '账号')).toBe('账号');
   }
 });

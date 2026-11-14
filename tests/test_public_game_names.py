@@ -31,5 +31,12 @@ def test_account_labels_keep_legacy_human_names_and_reject_private_fallbacks():
     assert display_account_name("old-player") == "old-player"
     assert display_account_name("2024") == "2024"
     assert display_account_name("u_0123456789abcdefabcd", "公开棋手") == "公开棋手"
-    for name in ("u_0123456789abcdefabcd", "cce0f02b-36f3-4ae5-813e-101c73fe7830", "+8613800138000"):
+    for name in (
+        "u_0123456789abcdefabcd",
+        "cce0f02b-36f3-4ae5-813e-101c73fe7830",
+        "+8613800138000",
+        "008613800138000",
+        "138-0013-8000",
+        "+86 (138) 0013 8000",
+    ):
         assert display_account_name(name) is None

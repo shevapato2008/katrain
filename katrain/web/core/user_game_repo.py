@@ -531,7 +531,19 @@ class UserGameRepository:
                 color = ledger.user_color if ledger is not None else None
             for side in ("black", "white"):
                 d[f"display_player_{side}"] = display_account_name(d[f"player_{side}"]) or ""
-            if color in ("B", "W") and game.user is not None:
+            resolved_sides = set()
+            db = object_session(game)
+            for side in ("black", "white"):
+                account_id = getattr(game, f"player_{side}_user_id")
+                if db is not None and type(account_id) is int and account_id > 0:
+                    account = db.get(models_db.User, account_id)
+                    if account is not None:
+                        d[f"display_player_{side}"] = (
+                            display_account_name(account.username, account.public_username) or ""
+                        )
+                        resolved_sides.add(side)
+            owner_side = "black" if color == "B" else "white" if color == "W" else None
+            if owner_side and owner_side not in resolved_sides and game.user is not None:
                 owner = game.user
                 side = "black" if color == "B" else "white"
                 d[f"display_player_{side}"] = display_account_name(owner.username, owner.public_username) or ""

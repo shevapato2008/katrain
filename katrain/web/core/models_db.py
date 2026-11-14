@@ -1491,6 +1491,10 @@ class UserGame(Base):
     # 当时没记下来);唯一的例外是升降级局 —— 账本 `ai_ladder_game_ledger.user_color`
     # 早就记着,`UserGameRepository.decided_since` 查询时读它,不改写这一列。
     user_color = Column(String(1), nullable=True)
+    # Server-owned native seat associations. Generic uploads cannot set these;
+    # legacy rows stay NULL, and original SGF/player names remain unchanged.
+    player_black_user_id = Column(Integer, nullable=True)
+    player_white_user_id = Column(Integer, nullable=True)
     origin_device_id = Column(String(64), nullable=True)
     sgf_hash = Column(String(64), nullable=True, index=True)
     event = Column(String(255), nullable=True)

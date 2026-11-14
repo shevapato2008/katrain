@@ -1,13 +1,13 @@
 interface AccountName { username?: string | null; public_username?: string | null; }
 const internalHandle = /^u_[0-9a-f]{20}$/i;
 const uuid = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-const fullPhone = /^(?:\+?86)?1[3-9]\d{9}$/;
+const fullPhone = /^(?:(?:\+|00)?86)?1[3-9]\d{9}$/;
 
 // Presentation only. Authorization, API parameters and storage keep canonical identity.
 export function displayAccountName(user: AccountName | null | undefined, fallback: string): string {
   for (const value of [user?.public_username, user?.username]) {
     const name = value?.trim();
-    if (name && !internalHandle.test(name) && !uuid.test(name) && !fullPhone.test(name)) return name;
+    if (name && !internalHandle.test(name) && !uuid.test(name) && !fullPhone.test(name.replace(/[\s()-]/g, ''))) return name;
   }
   return fallback;
 }

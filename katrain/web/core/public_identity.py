@@ -38,7 +38,7 @@ def display_account_name(username, public_username=None):
             name
             and not re.fullmatch(r"u_[0-9a-f]{20}", name, re.I)
             and not re.fullmatch(r"[0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", name, re.I)
-            and not re.fullmatch(r"(?:\+?86)?1[3-9]\d{9}", name)
+            and not re.fullmatch(r"(?:(?:\+|00)?86)?1[3-9]\d{9}", re.sub(r"[\s()-]", "", name))
         ):
             return name
     return None

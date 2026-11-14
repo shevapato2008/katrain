@@ -464,11 +464,11 @@ describe('ReportsPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('progressbar', { name: 'Advanced report · Queued' })).toBeInTheDocument();
+      expect(screen.getByText('Advanced report Queued')).toBeInTheDocument();
     });
 
     expect(screen.queryByText('Deep Generating')).not.toBeInTheDocument();
-    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
   it('deletes a game after confirmation and refreshes the list', async () => {
@@ -592,7 +592,7 @@ describe('ReportsPage', () => {
     expect(screen.getByRole('progressbar', { name: 'Normal report · Generating' })).toHaveAttribute('aria-valuetext', 'Generating · 5/10');
 
     // Game 2: pending
-    expect(screen.getByRole('progressbar', { name: 'Advanced report · Queued' })).toBeInTheDocument();
+    expect(screen.getByText('Advanced report Queued')).toBeInTheDocument();
 
     // Game 3: failed normal + completed deep
     const thirdCard = screen.getAllByTestId('report-game-card')[2];
@@ -672,7 +672,8 @@ describe('ReportsPage', () => {
       total_moves: 2, analyzed_moves: 0, requested_visits: 500,
     }]);
     rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
-    expect(document.querySelector('[data-tier=normal]')).toHaveAttribute('data-status', 'pending');
+    expect(screen.getByText('Normal report Queued')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).toBeNull();
 
     setReportTasks([{
       id: 41, user_game_id: 'game-1', status: 'running', report_type: 'normal',

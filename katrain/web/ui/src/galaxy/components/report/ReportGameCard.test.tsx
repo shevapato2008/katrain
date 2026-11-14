@@ -19,11 +19,12 @@ describe('Galaxy compact report card', () => {
     expect(screen.getByText('Cross-platform · Golaxy')).toBeInTheDocument();
     expect(screen.getByText('Evening game')).toBeInTheDocument();
     const card = screen.getByTestId('report-game-card');
+    expect(screen.getByTestId('report-game-row')).toHaveAttribute('data-has-running-report', 'true');
     expect(card.querySelector('button')).toBeNull();
     expect(within(card).queryByRole('progressbar')).toBeNull();
     expect(within(card).getByText('Advanced report 53/120')).toBeVisible();
     expect(within(card).queryByText(/Generating/)).toBeNull();
-    expect(screen.getAllByRole('progressbar').map(bar => bar.getAttribute('aria-valuenow'))).toEqual(['100', '44']);
+    expect(screen.getAllByRole('progressbar').map(bar => bar.getAttribute('aria-valuenow'))).toEqual(['44']);
     fireEvent.click(within(card).getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
   });
@@ -45,6 +46,44 @@ describe('Galaxy compact report card', () => {
     expect(screen.getByTestId('report-game-card').querySelector('button')).toBeNull();
     expect(document.querySelector('[data-tier="normal"]')).toHaveAttribute('data-status', 'running');
     expect(document.querySelector('[data-tier="normal"]')).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('places players on either side of the result and moves, preserving full names and keyboard selection', () => {
+    const black = 'A very long black player name';
+    const white = 'A very long white player name';
+    const onSelect = vi.fn();
+    render(<ReportGameCard game={{ ...game, player_black: black, player_white: white, result: 'B+R',
+      black_rank: '1d', white_rank: '2d', game_date: '2026-11-14' }} selected reportState={{}} onSelect={onSelect} />);
+    const blackName = screen.getByTitle(black);
+    const whiteName = screen.getByTitle(white);
+    const match = blackName.parentElement!.parentElement!;
+    expect(match.children).toHaveLength(3);
+    expect(match.children[0]).toContainElement(blackName);
+    expect(match.children[1]).toHaveTextContent('120 moves');
+    expect(match.children[1]).toHaveTextContent('B+R');
+    expect(match.children[2]).toContainElement(whiteName);
+    expect(screen.getByText('2026-11-14')).toBeVisible();
+    const select = screen.getByRole('button');
+    expect(select).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.keyDown(select, { key: 'Enter' });
+    fireEvent.keyDown(select, { key: ' ' });
+    expect(onSelect).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    {},
+    { completedNormal: task() },
+    { failedNormal: task({ status: 'failed' }) },
+    { activeNormal: task({ status: 'pending', analyzed_moves: 0 }) },
+  ])('uses a full-width card without running reports: %j', reportState => {
+    render(<ReportGameCard game={game} reportState={reportState} onSelect={vi.fn()} />);
+    expect(screen.getByTestId('report-game-row')).toHaveAttribute('data-has-running-report', 'false');
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
+  it('keeps pending reports visibly queued in the card', () => {
+    render(<ReportGameCard game={game} reportState={{ activeNormal: task({ status: 'pending', analyzed_moves: 0 }) }} onSelect={vi.fn()} />);
+    expect(within(screen.getByTestId('report-game-card')).getByText('Normal report Queued')).toBeVisible();
   });
 
   it('keeps failed semantics without embedding retry or continuation controls', () => {

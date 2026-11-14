@@ -97,7 +97,7 @@ describe('屏 19 接真的报告任务钩子', () => {
     await waitFor(() => expect(screen.getByTestId('review-row')).toHaveAttribute('data-selected', 'true'));
     if (screen.getByRole('button', { name: '分析报告' }).getAttribute('aria-expanded') !== 'true') fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
     fireEvent.click(screen.getByRole('button', { name: /普通报告/ }));
-    expect(await screen.findByText('正在分析 0/3')).toBeInTheDocument();
+    expect(await screen.findByText('排队中')).toBeInTheDocument();
     expect(mocks.reportCreate).toHaveBeenCalledWith('token', { user_game_id: 'game-1', report_type: 'normal' });
 
     await act(async () => resolveCreate(task('running', 1, 41)));
@@ -111,7 +111,7 @@ describe('屏 19 接真的报告任务钩子', () => {
       .mockResolvedValue([{ ...completed }, { ...deep, analyzed_moves: 2 }]);
     const first = renderPage();
     await waitFor(() => expect(document.querySelector('[data-tier="deep"]')).toHaveAttribute('aria-valuenow', '33'));
-    expect(document.querySelector('[data-tier="normal"]')).toHaveAttribute('aria-valuenow', '100');
+    expect(document.querySelector('[data-tier="normal"]')).toBeNull();
     first.unmount();
     renderPage();
     await waitFor(() => expect(document.querySelector('[data-tier="deep"]')).toHaveAttribute('aria-valuenow', '67'));
@@ -133,7 +133,7 @@ describe('屏 19 接真的报告任务钩子', () => {
     renderPage();
 
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-    expect(screen.getByText('正在分析 0/3')).toBeInTheDocument();
+    expect(screen.getByText('排队中')).toBeInTheDocument();
     expect(mocks.reportList).toHaveBeenCalledTimes(1);
 
     await act(async () => { await vi.advanceTimersByTimeAsync(1999); });

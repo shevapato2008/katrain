@@ -17,11 +17,13 @@ import { presentReportTier, toLibraryUserGameParams, type ReportGameStatus } fro
 import { ReportProgressColumn } from '../../features/report/ReportProgressColumn';
 import { summarizeReportMoves } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
+import { reportAccessIssueFor, type ReportAccessIssue } from '../../features/report/reportAccessIssue';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
 import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import ReportImportMenu from '../components/report/ReportImportMenu';
+import { ReportAccessDialog } from '../components/report/ReportAccessDialog';
 import RecordMatchLine from '../components/records/RecordMatchLine';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -125,6 +127,9 @@ export default function ReportsPage() {
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
   const [libraryImportError, setLibraryImportError] = useState<(UiMessage & { kind?: RequestFailureKind }) | null>(null);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const [reportAccessIssue, setReportAccessIssue] = useState<ReportAccessIssue | null>(null);
+  const reportAuthRef = useRef({ identityKey, status, isAuthenticated });
+  reportAuthRef.current = { identityKey, status, isAuthenticated };
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -133,6 +138,20 @@ export default function ReportsPage() {
     refresh: refreshTasks, createReport, retryReport,
     pendingQuote, quoteBusy, confirmQuote, cancelQuote,
   } = useReportTasks(token, isAuthenticated, identityKey, status);
+
+  useEffect(() => { setReportAccessIssue(null); }, [identityKey, status, isAuthenticated]);
+
+  const handleReportRequest = (request: Promise<unknown>) => {
+    const auth = reportAuthRef.current;
+    void request.catch(error => {
+      const current = reportAuthRef.current;
+      if (!current.isAuthenticated || auth.identityKey !== current.identityKey || auth.status !== current.status) return;
+      const issue = reportAccessIssueFor(error);
+      if (!issue) return;
+      clearTasksError();
+      setReportAccessIssue(issue);
+    });
+  };
 
   // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
   useEffect(() => {
@@ -439,8 +458,8 @@ export default function ReportsPage() {
                 onClick={() => {
                   if (active) return;
                   if (value.viewable) navigate(`/kiosk/report/${value.task!.id}`);
-                  else if (value.status === 'failed') void retryReport(value.task!.id).catch(() => undefined);
-                  else if (selectedSummary) void createForGame(selectedSummary, tier).catch(() => undefined);
+                  else if (value.status === 'failed') handleReportRequest(retryReport(value.task!.id));
+                  else if (selectedSummary) handleReportRequest(createForGame(selectedSummary, tier));
                   setReportMenuOpen(false);
                 }}><strong>{active ? t('review:tier_working', '分析中') : value.viewable ? t('review:tier_view', '查看') : value.status === 'failed' ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>{t("每手", "每手")} {tier === 'normal' ? 500 : 2000} {t("次", "次")}</span></button>;
             })}
@@ -574,6 +593,8 @@ export default function ReportsPage() {
 
       <ConsumptionQuoteDialog kiosk quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={tasksBillingError ? tasksError : null} onCancel={cancelQuote}
         onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
+      <ReportAccessDialog issue={reportAccessIssue} onClose={() => setReportAccessIssue(null)}
+        onAccount={() => { setReportAccessIssue(null); navigate('/kiosk/membership'); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}
@@ -630,6 +651,9 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
   reportState: ReportGameStatus;
 }) {
   const mine = yourColor(game, username);
+  const tiers = (['deep', 'normal'] as const).map(tier => presentReportTier(reportState, tier, game.move_count));
+  const running = tiers.find(tier => tier.status === 'running');
+  const queued = tiers.some(tier => tier.status === 'pending');
   const ts = savedAt(game);
   const rawResult = game.result?.trim();
   const result = (lang !== 'cn' && lang !== 'tw') || !rawResult || /^void$/i.test(rawResult)
@@ -644,22 +668,23 @@ function ReviewRow({ game, state, reportState, selected, username, t, lang, onSe
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="personal-game-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind}>
+    <div className="personal-game-row" data-testid="review-row" data-selected={selected ? 'true' : 'false'} data-state={state.kind} data-has-running-report={running ? 'true' : 'false'}>
       <button type="button" className="kiosk-row rvpick personal-game-card" onClick={onSelect} aria-pressed={selected} aria-label={rowTitle(game, mine, t)} title={sub}>
         <span className="personal-game-description">{sub}</span>
         <span className="personal-game-head">
-          <Icon name="books" /><b>{historyCardTitle(game, mine, t)}</b>
+          <Icon name="books" /><b title={historyCardTitle(game, mine, t)}>{historyCardTitle(game, mine, t)}</b>
           <span className="personal-game-state">{state.kind === 'analyzed' ? t('review:tag_analyzed', '已分析')
-            : state.kind === 'running' ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: state.analyzed, b: state.total })
+            : running ? interpolate(t('review:tag_running', '正在分析 {a}/{b}'), { a: running.analyzed, b: running.total })
+            : queued ? t('report:queuing', '排队中')
             : state.kind === 'partial' ? interpolate(t('review:tag_partial', '只算到 {a}/{b}'), { a: state.analyzed, b: state.total })
             : state.kind === 'failed' ? t('review:tag_failed', '分析失败')
-            : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}</span>
-          <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))} · {game.move_count} {t('report:moves_unit', '手')}</small>
+            : state.kind === 'unfinished' ? t('review:tag_unfinished', '未终局') : t('review:tag_unanalyzed', '未分析')}{running && queued && <> · {t('report:queuing', '排队中')}</>}</span>
+          <small>{game.game_date || (ts == null ? '—' : whenLabel(ts, t))}</small>
         </span>
         <RecordMatchLine variant="history"
           black={{ name: displayGamePlayerName(game, 'B', t('game:black_side', '黑方')), rank: getListRank(null, game.black_rank, t, lang) }}
           white={{ name: displayGamePlayerName(game, 'W', t('game:white_side', '白方')), rank: getListRank(null, game.white_rank, t, lang) }}
-          result={result} />
+          result={result} detail={`${game.move_count} ${t('report:moves_unit', '手')}`} />
       </button>
       <ReportProgressColumn state={reportState} moveCount={game.move_count} surface="kiosk" t={t} />
     </div>

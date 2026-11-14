@@ -47,7 +47,7 @@ export function reportAccessIssueFor(error: unknown): ReportAccessIssue | null;
 冻结props：`issue: ReportAccessIssue | null`、`onClose: () => void`、`onAccount: () => void`。使用useMembershipI18n和上述键，英文fallback；issue为null不渲染。
 
 - [ ] 先写红测：真实页面生成普通/深度和失败任务重试收到这两种错误后弹窗可见；取消不创建/重试/下单；主按钮只导航现有会员页。
-- [ ] 为用户主动报告菜单的create/retry Promise添加一个局部失败处理，使用Task A分类；普通后台列表刷新不弹窗。保留原useReportTasks错误状态和正常报价/创建逻辑，不改共享hook或Galaxy页面。
+- [ ] 为用户主动报告菜单的create/retry Promise添加一个局部失败处理，使用Task A分类；普通后台列表刷新不弹窗。有效身份下由弹窗接管这两类错误时，先clearTasksError()再打开弹窗，取消后不留下误导登录提示；其它错误仍保留原错误状态。保留正常报价/创建逻辑，不改共享hook或Galaxy页面。
 - [ ] 请求开始记录当前identityKey/auth status，失败回调仅在仍同身份时打开弹窗；身份变化清理弹窗。复用现有ref/effect写法，不新增请求生命周期框架。
 - [ ] 用同样式cdlg实现弹窗，给标题/正文正确aria关联；不增加自定义CSS。覆盖401/503不误弹、正常报价仍可确认、账号切换晚到失败不弹。
 - [ ] 显式只提交本人文件，报告聚焦测试。Task A独占helper/locale，Task B独占Dialog/Page，禁止共享文件并行改动。

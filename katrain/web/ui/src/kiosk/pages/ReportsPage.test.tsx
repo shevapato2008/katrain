@@ -7,7 +7,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReportTaskMove, ReportTaskSummary } from '../../api/reportApi';
 import type { UserGameDetail, UserGameSummary } from '../../api/userGamesApi';
 import { LedAPI } from '../../api/ledApi';
-import { API } from '../../api';
+import { API, ApiError } from '../../api';
+import type { AuthStatus } from '../../context/AuthContext';
+import type { BillingQuote } from '../../features/membership/types';
 import { kioskTheme } from '../theme';
 import ReportsPage from './ReportsPage';
 
@@ -41,7 +43,9 @@ const mocks = vi.hoisted(() => ({
   language: 'cn',
   translations: {} as Record<string, string>,
   hookResult: {} as Record<string, unknown>,
-  auth: { token: 'token' as string | null, isAuthenticated: true, user: { username: '阿福' } },
+  auth: { token: 'token', isAuthenticated: true, identityKey: 'user:a', status: 'authenticated', user: { username: '阿福' } } as {
+    token: string | null; isAuthenticated: boolean; identityKey?: string; status?: AuthStatus; user: { username: string };
+  },
 }));
 
 // 可以逐条改:严格盒端 SSO 里 token 恒为 null 而人是登录的 —— 这两个量在盒上本来就不同步,
@@ -132,15 +136,17 @@ function LocationProbe() {
 }
 
 function renderPage(route = '/kiosk/report') {
-  return render(
+  const element = () => (
     <ThemeProvider theme={kioskTheme}>
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route path="/kiosk/report" element={<><ReportsPage /><LocationProbe /></>} />
         </Routes>
       </MemoryRouter>
-    </ThemeProvider>,
+    </ThemeProvider>
   );
+  const view = render(element());
+  return { ...view, refresh: () => view.rerender(element()) };
 }
 
 /**
@@ -175,7 +181,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.language = 'cn';
   mocks.translations = { 'result:black_win': '黑胜', 'result:white_win': '白胜' };
-  mocks.auth = { token: 'token', isAuthenticated: true, user: { username: '阿福' } };
+  mocks.auth = { token: 'token', isAuthenticated: true, identityKey: 'user:a', status: 'authenticated', user: { username: '阿福' } };
   mocks.list.mockResolvedValue(response([game('a'), game('b', { player_white: '柯洁', white_rank: '九段' })]));
   mocks.get.mockImplementation(async (_token: string, id: string) => detail(game(id)));
   mocks.create.mockResolvedValue(detail(game('new')));
@@ -894,5 +900,114 @@ describe('屏 19 · 不碰实体盘', () => {
     expect(ledPoint).not.toHaveBeenCalled();
     expect(ledPoints).not.toHaveBeenCalled();
     expect(ledClear).not.toHaveBeenCalled();
+  });
+});
+
+describe('屏 19 · 用户主动生成的额度引导', () => {
+  const copy = {
+    'membership:report_insufficient_title': '报告额度不足',
+    'membership:report_insufficient_body': '当前可用额度不足，报告尚未开始。你可以查看会员权益或充值积分。',
+    'membership:report_verification_title': '免费报告暂不可用',
+    'membership:report_verification_body': '免费报告资格暂不可用，报告尚未开始。你可以在账户页查看会员和积分状态。',
+    'membership:report_view_membership': '会员与充值',
+    'membership:report_view_account': '查看账户与额度',
+  };
+  beforeEach(() => {
+    Object.assign(mocks.translations, copy);
+    mocks.clearError.mockReset();
+  });
+
+  async function selectReport(label = /生成普通报告/) {
+    await waitFor(() => expect(screen.getByRole('button', { name: '分析报告' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: '分析报告' }));
+    fireEvent.click(screen.getByRole('button', { name: label }));
+  }
+
+  it.each([
+    ['normal', 402, 'insufficient_credits', '报告额度不足'],
+    ['deep', 403, 'verification_required', '免费报告暂不可用'],
+  ] as const)('%s 报告拒收后取消只关引导、清旧错误且不重复请求', async (tier, status, code, title) => {
+    const request = deferred<never>();
+    mocks.createReport.mockReturnValueOnce(request.promise);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const view = renderPage();
+    await selectReport(tier === 'normal' ? /生成普通报告/ : /生成深度报告/);
+    mocks.hookResult = { ...mocks.hookResult, error: '请先完成登录验证后重试', billingError: true };
+    mocks.clearError.mockImplementation(() => {
+      mocks.hookResult = { ...mocks.hookResult, error: null, billingError: false };
+    });
+    await act(async () => { request.reject(new ApiError(status, code, { code })); });
+    expect(await screen.findByRole('dialog', { name: title })).toBeInTheDocument();
+    expect(mocks.clearError).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    view.refresh();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText('请先完成登录验证后重试')).toBeNull();
+    expect(mocks.createReport).toHaveBeenCalledTimes(1);
+    expect(mocks.retryReport).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it('失败报告重试遇到资格拒收，主按钮只导航到账户', async () => {
+    mocks.hookResult.reportStatesByGame = { a: { failedNormal: task({ status: 'failed' }) } };
+    mocks.retryReport.mockRejectedValueOnce(new ApiError(403, 'verification_required', { code: 'verification_required' }));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    renderPage();
+    await selectReport(/重试普通报告/);
+    const dialog = await screen.findByRole('dialog', { name: '免费报告暂不可用' });
+    expect(dialog).toHaveTextContent(copy['membership:report_verification_body']);
+    expect(dialog).not.toHaveTextContent('充值');
+    fireEvent.click(within(dialog).getByRole('button', { name: '查看账户与额度' }));
+    expect(mocks.navigate).toHaveBeenCalledExactlyOnceWith('/kiosk/membership');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mocks.retryReport).toHaveBeenCalledExactlyOnceWith(41);
+    expect(mocks.createReport).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it.each([401, 503])('%s 保留原有错误，不打开账户引导', async status => {
+    mocks.createReport.mockRejectedValueOnce(new ApiError(status, 'unavailable'));
+    renderPage();
+    await selectReport();
+    await act(async () => {});
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mocks.clearError).not.toHaveBeenCalled();
+  });
+
+  it('正常报价仍由用户确认', async () => {
+    const confirmQuote = vi.fn().mockResolvedValue(undefined);
+    mocks.hookResult = { ...mocks.hookResult, pendingQuote: { quote: {
+      kind: 'report', source: 'membership', wallet_max_display_points: '0.50',
+    } as BillingQuote }, confirmQuote };
+    renderPage();
+    expect(screen.getByTestId('consumption-quote')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '报告额度不足' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '确认并开始' }));
+    expect(confirmQuote).toHaveBeenCalledOnce();
+  });
+
+  it.each(['identity', 'status'] as const)('%s 切换后旧请求的迟到失败不弹给当前用户', async change => {
+    const request = deferred<never>();
+    mocks.createReport.mockReturnValueOnce(request.promise);
+    const view = renderPage();
+    await selectReport();
+    mocks.auth = { ...mocks.auth, ...(change === 'identity' ? { identityKey: 'user:b' } : { status: 'guest' as const, isAuthenticated: false }) };
+    view.refresh();
+    await act(async () => { request.reject(new ApiError(402, 'insufficient_credits')); });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mocks.clearError).not.toHaveBeenCalled();
+  });
+
+  it('身份切换关闭已打开的引导', async () => {
+    mocks.createReport.mockRejectedValueOnce(new ApiError(402, 'insufficient_credits'));
+    const view = renderPage();
+    await selectReport();
+    expect(await screen.findByRole('dialog', { name: '报告额度不足' })).toBeInTheDocument();
+    mocks.auth = { ...mocks.auth, identityKey: 'user:b' };
+    view.refresh();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

@@ -16,11 +16,13 @@ import { presentReportTier, toLibraryUserGameParams, type ReportGameStatus } fro
 import { ReportProgressColumn } from '../../features/report/ReportProgressColumn';
 import { summarizeReportMoves } from '../../features/report/reportStats';
 import { useReportTasks } from '../../features/report/useReportTasks';
+import { reportAccessIssueFor, type ReportAccessIssue } from '../../features/report/reportAccessIssue';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
 import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import ReportImportMenu from '../components/report/ReportImportMenu';
+import { ReportAccessDialog } from '../components/report/ReportAccessDialog';
 import RecordMatchLine from '../components/records/RecordMatchLine';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -124,6 +126,9 @@ export default function ReportsPage() {
   const [libraryImporting, setLibraryImporting] = useState<ImportAction>(null);
   const [libraryImportError, setLibraryImportError] = useState<(UiMessage & { kind?: RequestFailureKind }) | null>(null);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const [reportAccessIssue, setReportAccessIssue] = useState<ReportAccessIssue | null>(null);
+  const reportAuthRef = useRef({ identityKey, status, isAuthenticated });
+  reportAuthRef.current = { identityKey, status, isAuthenticated };
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -132,6 +137,20 @@ export default function ReportsPage() {
     refresh: refreshTasks, createReport, retryReport,
     pendingQuote, quoteBusy, confirmQuote, cancelQuote,
   } = useReportTasks(token, isAuthenticated, identityKey, status);
+
+  useEffect(() => { setReportAccessIssue(null); }, [identityKey, status, isAuthenticated]);
+
+  const handleReportRequest = (request: Promise<unknown>) => {
+    const auth = reportAuthRef.current;
+    void request.catch(error => {
+      const current = reportAuthRef.current;
+      if (!current.isAuthenticated || auth.identityKey !== current.identityKey || auth.status !== current.status) return;
+      const issue = reportAccessIssueFor(error);
+      if (!issue) return;
+      clearTasksError();
+      setReportAccessIssue(issue);
+    });
+  };
 
   // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
   useEffect(() => {
@@ -438,8 +457,8 @@ export default function ReportsPage() {
                 onClick={() => {
                   if (active) return;
                   if (value.viewable) navigate(`/kiosk/report/${value.task!.id}`);
-                  else if (value.status === 'failed') void retryReport(value.task!.id).catch(() => undefined);
-                  else if (selectedSummary) void createForGame(selectedSummary, tier).catch(() => undefined);
+                  else if (value.status === 'failed') handleReportRequest(retryReport(value.task!.id));
+                  else if (selectedSummary) handleReportRequest(createForGame(selectedSummary, tier));
                   setReportMenuOpen(false);
                 }}><strong>{active ? t('review:tier_working', '分析中') : value.viewable ? t('review:tier_view', '查看') : value.status === 'failed' ? t('kifu:retry', '重试') : t('review:tier_generate', '生成')}{tier === 'normal' ? t('report:normal', '普通报告') : t('report:deep', '深度报告')}</strong><span>{t("每手", "每手")} {tier === 'normal' ? 500 : 2000} {t("次", "次")}</span></button>;
             })}
@@ -573,6 +592,8 @@ export default function ReportsPage() {
 
       <ConsumptionQuoteDialog kiosk quote={pendingQuote?.quote ?? null} busy={quoteBusy} error={tasksBillingError ? tasksError : null} onCancel={cancelQuote}
         onConfirm={() => { void confirmQuote().catch(() => undefined); }} />
+      <ReportAccessDialog issue={reportAccessIssue} onClose={() => setReportAccessIssue(null)}
+        onAccount={() => { setReportAccessIssue(null); navigate('/kiosk/membership'); }} />
       <ReportLibraryImportDialog
         open={libraryImportOpen}
         loading={libraryImporting !== null}

@@ -261,4 +261,18 @@ describe('GameLibraryModal', () => {
     expect(UserGamesAPI.list).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { source: 'play_ai', display: '公开棋手', expected: '公开棋手' },
+    { source: 'import', display: undefined, expected: 'u_0123456789abcdefabcd' },
+  ])('uses trusted display names for $source library titles and preserves external names', async ({ source, display, expected }) => {
+    const internal = 'u_0123456789abcdefabcd';
+    (UserGamesAPI.list as Mock).mockResolvedValueOnce({ items: [{
+      id: 'account-game', source, title: null, player_black: internal, player_white: '外部白方',
+      display_player_black: display, move_count: 1,
+    }], total: 1 });
+    render(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    expect(await screen.findByText(`${expected} vs 外部白方`)).toBeInTheDocument();
+    if (display) expect(document.body).not.toHaveTextContent(internal);
+  });
+
 });

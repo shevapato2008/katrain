@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
 /**
  * GameLibraryModal: A modal dialog for browsing and loading games from:
  * - Personal game library (user_games API, requires auth)
@@ -104,9 +105,9 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
         });
         commit(resp.items.map((item: UserGameSummary) => ({
           id: item.id,
-          title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
-          playerBlack: item.player_black || '',
-          playerWhite: item.player_white || '',
+          title: item.title || `${displayGamePlayerName(item, 'B', t('auth:account_label', '账号'))} vs ${displayGamePlayerName(item, 'W', t('auth:account_label', '账号'))}`,
+          playerBlack: displayGamePlayerName(item, 'B', t('auth:account_label', '账号')),
+          playerWhite: displayGamePlayerName(item, 'W', t('auth:account_label', '账号')),
           result: item.result || '',
           moveCount: item.move_count,
           date: item.game_date || item.created_at || '',

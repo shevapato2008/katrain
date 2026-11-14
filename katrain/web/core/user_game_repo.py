@@ -426,6 +426,8 @@ class UserGameRepository:
                 raise ValueError("Conflict: game has been modified since last read")
 
             for key, value in kwargs.items():
+                if key in {"player_black_user_id", "player_white_user_id"}:
+                    continue  # Only the trusted native recorder owns seat associations.
                 if hasattr(game, key) and value is not None:
                     setattr(game, key, value)
 

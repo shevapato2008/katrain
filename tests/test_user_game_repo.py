@@ -515,3 +515,15 @@ def test_generic_game_inputs_cannot_write_trusted_player_account_ids(db_session)
         row = db.get(models_db.UserGame, saved["id"])
         assert row.player_black_user_id is None
         assert row.player_white_user_id is None
+
+
+def test_generic_update_cannot_write_trusted_player_account_ids(db_session):
+    factory, user_id = db_session
+    repo = UserGameRepository(factory)
+    saved = repo.create(user_id, "(;SZ[19])", "play_human")
+    repo.update(saved["id"], user_id, title="Allowed title", player_black_user_id=user_id, player_white_user_id=user_id)
+    with factory() as db:
+        row = db.get(models_db.UserGame, saved["id"])
+        assert row.title == "Allowed title"
+        assert row.player_black_user_id is None
+        assert row.player_white_user_id is None

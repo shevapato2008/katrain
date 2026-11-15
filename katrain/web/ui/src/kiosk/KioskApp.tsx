@@ -87,6 +87,7 @@ const TutorialSectionPage = lazy(() => import('./pages/TutorialSectionPage'));
 const OgsCourseHomePage = lazy(() => import('./pages/OgsCourseHomePage'));
 const OgsCourseChapterPage = lazy(() => import('./pages/OgsCourseChapterPage'));
 const OgsCourseExercisePage = lazy(() => import('./pages/OgsCourseExercisePage'));
+const OgsCourseVideoPage = lazy(() => import('./pages/OgsCourseVideoPage'));
 
 const LegacyPlatformLobbyRedirect = () => {
   const { search } = useLocation();
@@ -204,6 +205,7 @@ export const KioskRoutes = () => {
           <Route path="tutorial" element={<OgsCourseHomePage />} />
           <Route path="tutorial/chapter/:chapterId" element={<OgsCourseChapterPage />} />
           <Route path="tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} />
+          <Route path="tutorial/lesson/:lessonId/videos" element={<OgsCourseVideoPage />} />
           <Route path="tutorial/library" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />

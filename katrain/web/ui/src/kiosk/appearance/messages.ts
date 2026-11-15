@@ -1,5 +1,121 @@
 /** Explicit presentation messages for the global appearance and OGS journey. */
 export const kioskMessages = {
+  "videoExitFullscreen": {
+    "cn": "退出全屏", "tw": "退出全螢幕", "en": "Exit fullscreen",
+    "jp": "全画面を終了", "ko": "전체 화면 종료"
+  },
+  "videoLesson": {
+    "cn": "视频讲解",
+    "tw": "影片講解",
+    "en": "Video lesson",
+    "jp": "動画解説",
+    "ko": "동영상 해설"
+  },
+  "videoCount": {
+    "cn": "视频讲解 · {count}段",
+    "tw": "影片講解 · {count}段",
+    "en": "Video lesson · {count} clips",
+    "jp": "動画解説 · {count}本",
+    "ko": "동영상 해설 · {count}개"
+  },
+  "videoLoading": {
+    "cn": "正在读取视频目录…",
+    "tw": "正在讀取影片目錄…",
+    "en": "Loading lesson videos…",
+    "jp": "動画一覧を読み込み中…",
+    "ko": "동영상 목록 불러오는 중…"
+  },
+  "videoCatalogError": {
+    "cn": "视频目录暂不可用，仍可进入练习",
+    "tw": "影片目錄暫不可用，仍可進入練習",
+    "en": "Video list unavailable. Practice is still available.",
+    "jp": "動画一覧を読み込めません。練習は利用できます。",
+    "ko": "동영상 목록을 불러올 수 없습니다. 문제는 풀 수 있습니다."
+  },
+  "videoCatalogRetry": {
+    "cn": "重试视频目录",
+    "tw": "重試影片目錄",
+    "en": "Retry video list",
+    "jp": "動画一覧を再試行",
+    "ko": "동영상 목록 재시도"
+  },
+  "videoMissing": {
+    "cn": "本课尚未配置视频，可以直接进入练习",
+    "tw": "本課尚未配置影片，可以直接進入練習",
+    "en": "No video yet. You can start the exercises.",
+    "jp": "この課の動画は準備中です。練習に進めます。",
+    "ko": "아직 동영상이 없습니다. 문제를 풀 수 있습니다."
+  },
+  "videoPractice": {
+    "cn": "进入练习",
+    "tw": "進入練習",
+    "en": "Practice",
+    "jp": "練習へ",
+    "ko": "문제 풀기"
+  },
+  "videoBack": {
+    "cn": "课程目录",
+    "tw": "課程目錄",
+    "en": "Lessons",
+    "jp": "課の一覧",
+    "ko": "강좌 목록"
+  },
+  "videoSelect": {
+    "cn": "讲解片段",
+    "tw": "講解片段",
+    "en": "Lesson clip",
+    "jp": "解説動画",
+    "ko": "해설 영상"
+  },
+  "videoNext": {
+    "cn": "下一段",
+    "tw": "下一段",
+    "en": "Next clip",
+    "jp": "次の動画",
+    "ko": "다음 영상"
+  },
+  "videoPrevious": {
+    "cn": "上一段",
+    "tw": "上一段",
+    "en": "Previous clip",
+    "jp": "前の動画",
+    "ko": "이전 영상"
+  },
+  "videoFullscreen": {
+    "cn": "全屏播放",
+    "tw": "全螢幕播放",
+    "en": "Fullscreen",
+    "jp": "全画面",
+    "ko": "전체 화면"
+  },
+  "videoPlaybackError": {
+    "cn": "视频暂时无法播放，请重试或先做练习",
+    "tw": "影片暫時無法播放，請重試或先做練習",
+    "en": "Video unavailable. Retry or continue to practice.",
+    "jp": "動画を再生できません。再試行するか練習に進んでください。",
+    "ko": "동영상을 재생할 수 없습니다. 다시 시도하거나 문제를 풀어 보세요."
+  },
+  "videoPlaybackRetry": {
+    "cn": "重试播放",
+    "tw": "重試播放",
+    "en": "Retry playback",
+    "jp": "再生を再試行",
+    "ko": "재생 재시도"
+  },
+  "videoFinished": {
+    "cn": "讲解已播放完，可以开始练习",
+    "tw": "講解已播放完，可以開始練習",
+    "en": "Lesson finished. Ready to practice.",
+    "jp": "解説が終わりました。練習に進めます。",
+    "ko": "해설이 끝났습니다. 문제를 풀어 보세요."
+  },
+  "videoMandarin": {
+    "cn": "普通话讲解",
+    "tw": "普通話講解",
+    "en": "Mandarin audio",
+    "jp": "中国語音声",
+    "ko": "중국어 음성"
+  },
   "retry": {
     "cn": "重试",
     "tw": "重試",

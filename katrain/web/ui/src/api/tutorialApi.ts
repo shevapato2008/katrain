@@ -8,6 +8,7 @@ import type {
   BoardPayload,
 } from '../types/tutorial';
 import type { OgsCourseIndex, OgsStep } from '../types/ogsCourse';
+import { OGS_VIDEO_MANIFEST_URL, parseOgsVideoManifest } from '../types/ogsVideo';
 
 // kiosk/board builds talk to the board-mode read-only proxy (/board/tutorials/*,
 // which forwards to the remote catalog + 302s assets to the public media gateway);
@@ -96,6 +97,11 @@ export const TutorialAPI = {
 // generateFigureAudio / verifyFigure), which remain galaxy-admin only.
 // Enforced by src/api/__tests__/tutorialReadonly.guard.test.ts.
 export const TutorialReadAPI = {
+  getOgsVideoManifest: async (signal?: AbortSignal) => {
+    const response = await fetch(OGS_VIDEO_MANIFEST_URL, { signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+    if (!response.ok) throw new Error(`OGS video manifest ${response.status}`);
+    return parseOgsVideoManifest(await response.json());
+  },
   getOgsCourse: TutorialAPI.getOgsCourse,
   getOgsStep: (page: number, lang = 'zh-cn', boardVariant?: 'kiosk19'): Promise<OgsStep> =>
     apiGet(`/ogs-course/steps/${page}?lang=${encodeURIComponent(lang)}${boardVariant ? `&board_variant=${boardVariant}` : ''}`),

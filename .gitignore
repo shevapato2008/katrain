@@ -53,6 +53,7 @@ katrain/models/*.bin.gz
 katrain/web/static/assets/
 katrain/web/static/index.html
 # public/ files copied into static/ root by vite at build time (source lives in katrain/web/ui/public/)
+katrain/web/static/favicon-badge.png
 katrain/web/static/pinyin-ime.js
 katrain/web/static/rime-client.js
 katrain/web/static/smartkeyboard.js

@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--publish", action="store_true", help="without this flag only validate the release")
     parser.add_argument("--workers", type=int, choices=(6, 12, 24), default=6)
+    parser.add_argument("--source-root", type=Path, help="optional verified source cache, keyed by release object path")
     args = parser.parse_args()
     index = json.loads((args.bundle / "release-index.json").read_text())
     manifest_bytes = (args.bundle / "manifest.json").read_bytes()
@@ -127,6 +128,11 @@ def main():
         if stored_matches(obj):
             return {"path": obj["path"], "state": "already-identical", "sha256_verified": True}
         data = manifest_bytes if obj["path"] == "manifest.json" else None
+        if data is None and args.source_root:
+            data = (args.source_root / obj["path"]).read_bytes()
+            assert (
+                len(data) == obj["bytes"] and hashlib.sha256(data).hexdigest() == obj["sha256"]
+            ), "Cached TEST source fingerprint differs"
         if data is None:
             for attempt in range(2):
                 try:

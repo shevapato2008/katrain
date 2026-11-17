@@ -45,7 +45,11 @@ describe('kiosk tutorial is read-only', () => {
   });
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  vi.resetModules();
+});
 
 it('uses the public OGS course URLs on the current surface', async () => {
   const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}')));
@@ -73,4 +77,25 @@ it('opts only the Kiosk read into 19-line steps while ordinary and source URLs s
     `${base}/ogs-course/steps/73?lang=zh-cn`,
   ]);
   expect(TutorialReadAPI.assetUrl('book/source.sgf')).toBe(`${base}/assets/book/source.sgf`);
+});
+
+it('uses the configured direct TEST read API while writes keep their original surface', async () => {
+  vi.stubEnv('VITE_OGS_TEST_MANIFEST_URL', '/arrangement/test-manifest.json');
+  vi.stubEnv('VITE_OGS_TEST_MEDIA_PREFIX', 'https://go.sailorvoyage.top/media/tutorial_assets/');
+  vi.stubEnv('VITE_OGS_TEST_API_BASE', 'https://go.sailorvoyage.top/api/v1/tutorials');
+  vi.resetModules();
+  const { TutorialReadAPI: testReadApi, TutorialAPI: originalApi } = await import('../tutorialApi');
+  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}')));
+  vi.stubGlobal('fetch', fetchMock);
+  await testReadApi.getOgsCourse('zh-cn');
+  await testReadApi.getOgsStep(73, 'en', 'kiosk19');
+  await originalApi.saveNarration(4278, '讲稿');
+  const base = __KIOSK_2D_ONLY__ ? '/api/v1/board/tutorials' : '/api/v1/tutorials';
+  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+    'https://go.sailorvoyage.top/api/v1/tutorials/ogs-course?lang=zh-cn',
+    'https://go.sailorvoyage.top/api/v1/tutorials/ogs-course/steps/73?lang=en&board_variant=kiosk19',
+    `${base}/figures/4278/narration`,
+  ]);
+  expect(fetchMock.mock.calls[0][1]).toEqual({ credentials: 'omit', referrerPolicy: 'no-referrer' });
+  expect(testReadApi.assetUrl('book/source.sgf')).toBe('https://go.sailorvoyage.top/api/v1/tutorials/assets/book/source.sgf');
 });

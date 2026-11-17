@@ -9,7 +9,7 @@ import hashlib
 import json
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import urlopen
@@ -25,6 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle", type=Path, required=True)
     parser.add_argument("--publish", action="store_true", help="without this flag only validate the release")
+    parser.add_argument("--workers", type=int, choices=(6, 12, 24), default=6)
     args = parser.parse_args()
     index = json.loads((args.bundle / "release-index.json").read_text())
     manifest_bytes = (args.bundle / "manifest.json").read_bytes()
@@ -108,7 +109,15 @@ def main():
 
     # Full index validation is done before the first remote write.
     print(
-        json.dumps({"validated": True, "publish": args.publish, "objects": len(objects), "identity": identity}),
+        json.dumps(
+            {
+                "validated": True,
+                "publish": args.publish,
+                "workers": args.workers,
+                "objects": len(objects),
+                "identity": identity,
+            }
+        ),
         flush=True,
     )
     if not args.publish:
@@ -150,11 +159,19 @@ def main():
         return {"path": obj["path"], "state": state, "sha256_verified": True}
 
     receipt = {"release_id": index["release_id"], "identity": identity, "objects": []}
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        for number, result in enumerate(pool.map(publish, objects[:-1]), 1):
+    pool = ThreadPoolExecutor(max_workers=args.workers)
+    try:
+        futures = [pool.submit(publish, obj) for obj in objects[:-1]]
+        for number, future in enumerate(as_completed(futures), 1):
+            result = future.result()
             receipt["objects"].append(result)
             if number % 40 == 0 or number == 632:
                 print(json.dumps({"verified_media": number, "total_media": 632}), flush=True)
+    except BaseException:
+        pool.shutdown(wait=True, cancel_futures=True)
+        raise
+    else:
+        pool.shutdown(wait=True)
     receipt["objects"].append(publish(objects[-1]))
     receipt.update(
         published_at=datetime.now(timezone.utc).isoformat(),

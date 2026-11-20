@@ -1,0 +1,1087 @@
+{
+  "prototype_only": false,
+  "video_origin": "PROD / ucloud-v100",
+  "exercise_origin": "https://modelstella.com/api/v1/tutorials/ogs-course",
+  "screen": {
+    "width": 1024,
+    "height": 600,
+    "inches": 7
+  },
+  "clips": [
+    {
+      "id": 4275,
+      "title": "认识棋盘的九个区域",
+      "page": 10,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "空白棋盘，用于标注棋盘各部分名称（中腹、左边、右边、上边、下边、左上角、右上角、左下角、右下角）。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4275/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4275/galaxy-4k-v1.mp4",
+          "bytes": 6578957,
+          "sha256": "80560efdc24e620e35cbeafd9af59cebc26649dde2132b6db3bd389c575b76d7",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/2627d247fdf44b63a6d424502a51aa49/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4275/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4275/kiosk-7-v1.mp4",
+          "bytes": 1709627,
+          "sha256": "740a6758ac5b145a76fa586d4929fe8bfe2c15145c6d4beb8c375d3f7d0d16b7",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/a1453466de714a91abbc78b0be7e3b55/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 62.766667,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4275.jpg"
+    },
+    {
+      "id": 4276,
+      "title": "一路线到四路线",
+      "page": 11,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "标注了路线名称的19路棋盘。上方和左侧标注一路线、二路线、三路线、四路线，右侧标注一路线、二路线、三路线、四路线，下方标注四路线、三路线、二路线、一路线。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4276/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4276/galaxy-4k-v1.mp4",
+          "bytes": 8659687,
+          "sha256": "0d6ee3b1afd8c990f0c4ff7128c7d171de206e627fc667beaaf27de212f3689b",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/a0edbeaa49ff4703b0b1d8c4b11b3a70/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4276/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4276/kiosk-7-v1.mp4",
+          "bytes": 2648216,
+          "sha256": "54faa6a5f92e4e56b673e4d45436d55ec2a70978a3735bacd9a92ee752e49a70",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/51af835107314e249ee78df50f97122f/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 110.64,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4276.jpg"
+    },
+    {
+      "id": 4278,
+      "title": "一颗棋子的四口气",
+      "page": 13,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "根据图中的箭头表示，黑△子有四口气，因此不存在被白棋吃住的危险。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4278/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4278/galaxy-4k-v1.mp4",
+          "bytes": 3854504,
+          "sha256": "a298fa409f3f870b78ca91e14bc3ebfd5da52def0bf9ed7493b16c65a0fce06b",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/3d65c7ee44254be3a9fa9edede660118/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4278/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4278/kiosk-7-v1.mp4",
+          "bytes": 846027,
+          "sha256": "5ab7bf4320c4ba313d10a098ddf5f67074c2ad03b78ac3d736fc205351778782",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/b0148e55478746b3886eddb2d950b6d2/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 35.376,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4278.jpg"
+    },
+    {
+      "id": 4289,
+      "title": "连接成块后，一起数气",
+      "page": 19,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4289/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4289/galaxy-4k-v1.mp4",
+          "bytes": 4060876,
+          "sha256": "11846f12ffdfab9b905f69f67a7ec5a34ca01df0685b767160bbd831cab2f3c2",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/36c5eba8130343a8af566149d1b203c7/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4289/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4289/kiosk-7-v1.mp4",
+          "bytes": 962468,
+          "sha256": "a5f3c32e2450342c6564e22665f4ef97be894dd20f0f87c2ed8c4282028360e9",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/17a52eb62af94907b9d6952a6b50aa8a/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 38.88,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4289.jpg"
+    },
+    {
+      "id": 4310,
+      "title": "只剩一口气，就是打吃",
+      "page": 31,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "图中的白△子三条活路都已被黑棋堵住，惟一的活路只有箭头所示的出路，黑棋如能堵住白棋剩下的出路，将可以提去白子。这种仅剩最后一口气的棋形称为“打吃”。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4310/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4310/galaxy-4k-v1.mp4",
+          "bytes": 2403722,
+          "sha256": "1d26345b7bc191d3261bc69f94f8f9e618aca455a2111165886e5fac4db28dde",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/aee8371599704d61a9a7045bbe6179cd/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4310/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4310/kiosk-7-v1.mp4",
+          "bytes": 562222,
+          "sha256": "24d70a813275f7256523a2b61d4449c083fe2ac9ed620e082bff3bea76d70c93",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/bbdfeb97443a4f1a889e09181380cd0c/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 24.048,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4310.jpg"
+    },
+    {
+      "id": 4341,
+      "title": "堵住最后一口气，再提子",
+      "page": 48,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "黑1堵住白棋的最后出路，白△一子应从棋盘上取走。黑1这种下法叫做“提子”，简称“提”。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4341/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4341/galaxy-4k-v1.mp4",
+          "bytes": 3194465,
+          "sha256": "b34aa16c16bd3947f401e0788d45760e374f7882dfbcc924db0a103a2fa8966c",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/958fa07ad7214291acdb568127f205cc/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4341/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4341/kiosk-7-v1.mp4",
+          "bytes": 729088,
+          "sha256": "f96104046a711369479f7e852381827b57cdaa046a44739f2e7501e035a10ebd",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/29dbfb483260435983799efeb93ec2b7/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 29.366667,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4341.jpg"
+    },
+    {
+      "id": 4372,
+      "title": "被打吃后，怎样逃出",
+      "page": 65,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "黑1救活黑△子是当然的。黑1之后，黑棋如箭头所示，有三条出路，因而不仅不必担心被吃，反而可以攻击白棋。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4372/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4372/galaxy-4k-v1.mp4",
+          "bytes": 5672072,
+          "sha256": "4b448224f1fb487863f50cc66fe9ea0d60bc041835e2c9bbabdbe4b5cb883fe1",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/1df1ddedd8484a56b3622ad88f0d2d8e/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4372/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4372/kiosk-7-v1.mp4",
+          "bytes": 1339841,
+          "sha256": "0d61e77d9bfe04dfce71c5529f18db8025dffa70025d3365801f1a4da2426e39",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/db830dc951df49d3afe4ae13aa858fa1/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 53.866667,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4372.jpg"
+    },
+    {
+      "id": 4401,
+      "title": "找出被打吃的棋子",
+      "page": 80,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "打吃是指只剩下一口气的棋形，这一点我们在前面已学过了。大家是否记住了?下面图中的哪一个白子处于被打吃的状态?请用“○”表示出来。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4401/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4401/galaxy-4k-v1.mp4",
+          "bytes": 5643124,
+          "sha256": "08016508b953a42fd66f08a1c8a20aa7b5f17d8a39acbbc82bad392a90f1f370",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/e7052fce9e09470d83b1888ceba40286/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4401/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4401/kiosk-7-v1.mp4",
+          "bytes": 1317576,
+          "sha256": "c1033ed90edcdcaea36bced0deef49e36449e18225a312db3be9194ba9124f8c",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/da9befedcca146ed9a10a5c23a5f418e/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 52.872,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4401.jpg"
+    },
+    {
+      "id": 4440,
+      "title": "寻找解救棋块的出路",
+      "page": 101,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "黑△子处于被攻击的状态，现在黑△子有A、B两条路，那么请问应选择哪一条路?",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4440/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4440/galaxy-4k-v1.mp4",
+          "bytes": 5297734,
+          "sha256": "2814c6bce3ef69a6d08abbf56474dc370397f0b983b91c2c8ea6d921f3b48440",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/cc19ea4aec7643869ea6091109424f0a/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4440/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4440/kiosk-7-v1.mp4",
+          "bytes": 1281882,
+          "sha256": "3aaa8e20c0e6b921b2424f0d695521834c68aab210b0db044fee600cd1d30c59",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/a4b05111bbb445b7af786ec8a6fe4572/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 50.066667,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4440.jpg"
+    },
+    {
+      "id": 4441,
+      "title": "先看一条走不通的路",
+      "page": 102,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "我们现在先分析一下B的出路，黑1逃路，白2打吃后，黑棋将全部被吃住。因此，B位不是黑△子的出路。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4441/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4441/galaxy-4k-v1.mp4",
+          "bytes": 5613522,
+          "sha256": "c74d114c57d00787248d49886b548028979bde21224a4f4994b537d65d2e8c95",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/df7d462774ae49fba63befd429deb1bd/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4441/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4441/kiosk-7-v1.mp4",
+          "bytes": 1280831,
+          "sha256": "2ee79c759ff367b3cb37be536c101487a3631b930a759d27847713c8bfd154b2",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/63612c06086a43e3a59e410d9adba1ec/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 51.266667,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4441.jpg"
+    },
+    {
+      "id": 4442,
+      "title": "选择能够解救棋块的出路",
+      "page": 103,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "黑棋应从A位逃跑。白2继续攻击，以下进行至黑5，黑棋成功逃出。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4442/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4442/galaxy-4k-v1.mp4",
+          "bytes": 5813032,
+          "sha256": "cf0b8f33864d52c36d04b50231983cde2a46ada13b953bb009c81a38f478d04a",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/0bf99f0efd764e44826d25e167785934/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4442/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4442/kiosk-7-v1.mp4",
+          "bytes": 1396994,
+          "sha256": "a27b8da86fc7dbe1bc1da27f3e3af953b0592a3296ee87fb7b9d5aa1bf7478fa",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/1aca372807e44b93b9b28d31182efd33/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 56.904,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4442.jpg"
+    },
+    {
+      "id": 4453,
+      "title": "打吃，要从哪个方向",
+      "page": 109,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "白1将黑△二子断开，黑棋要想吃住白1这个子，应从什么方向打吃?请在A和B中选择。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4453/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4453/galaxy-4k-v1.mp4",
+          "bytes": 5276078,
+          "sha256": "0fd4c2ecce36a78721b5284ad450de124a1ba8312e574a8904d15a5870846643",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/e3e7a1d1ac544ea6906f8edad9106cbe/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4453/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4453/kiosk-7-v1.mp4",
+          "bytes": 1235985,
+          "sha256": "d63d472b60a2036c010d684b4e94afca2996fba0c36edd3f9ed4e991f76316f6",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/10980ea182b0494cad9d6aad91e478a2/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 50.2,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4453.jpg"
+    },
+    {
+      "id": 4454,
+      "title": "方向不对，会发生什么",
+      "page": 110,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "我们先从B位打吃看起。黑1打吃，白2逃跑后。白棋成不易被攻击的棋形，相反黑△子很危险，结果黑棋大损。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4454/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4454/galaxy-4k-v1.mp4",
+          "bytes": 5623600,
+          "sha256": "16aad034ad17ca85bc5d88ab4abd627b7d26da447d78cf984d338bdc3f2b476f",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/4320fd33db0c4b77942bad57a9f9a978/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4454/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4454/kiosk-7-v1.mp4",
+          "bytes": 1289022,
+          "sha256": "3565895b228e9a8b6ae5faa19b5e109226896788f6bf7296a11da7aa8992105c",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/1b2ed051737f41c1afb230b1833ef999/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 51.504,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4454.jpg"
+    },
+    {
+      "id": 4455,
+      "title": "再比较另一侧的打吃",
+      "page": 111,
+      "catalog_id": "intro-up",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·上卷》",
+      "source_text": "黑棋从A位打吃才是正确的方向。白2逃跑，黑3可以继续打吃，结果白二子主部被吃。由此可见打吃的方向如何重要。",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4455/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4455/galaxy-4k-v1.mp4",
+          "bytes": 5662696,
+          "sha256": "27d0fc8943fc3f65223a68ee3e6865b5836b7f163d61d6cb77ecc593e2ea9efe",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/e246036bffc54e6690d0daeaf8c3e26e/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4455/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4455/kiosk-7-v1.mp4",
+          "bytes": 1317422,
+          "sha256": "0b02f01cef61155503204d885523d322474c5175e515f9108a855c35383c2607",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-up/media/2d0a607ef0bd4f28b747f4540f6383ee/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 53.5,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4455.jpg"
+    },
+    {
+      "id": 4863,
+      "title": "认识征子的连续追赶",
+      "page": 30,
+      "catalog_id": "intro-down",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·下卷》",
+      "source_text": "",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4863/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4863/galaxy-4k-v1.mp4",
+          "bytes": 3048490,
+          "sha256": "3de0391c7fd9033e69a7324018e71ffa7e2dd46e8206e79b8a85d371b637f0ea",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-down/media/2d56ab8597884363b79edf13cacbb3e8/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4863/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4863/kiosk-7-v1.mp4",
+          "bytes": 645864,
+          "sha256": "d8b86aab8c603c93d6ea7a85779e79ef49ff192cb3137b02a0250c9d509d7a51",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-down/media/09228d372545447989b42926fbf2ec78/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 26.136,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4863.jpg"
+    },
+    {
+      "id": 4864,
+      "title": "顺着征子读下去",
+      "page": 31,
+      "catalog_id": "intro-down",
+      "book": "《曹薰铉和李昌镐围棋教室：入门篇·下卷》",
+      "source_text": "",
+      "profiles": {
+        "galaxy-4k-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4864/galaxy-4k-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4864/galaxy-4k-v1.mp4",
+          "bytes": 4906957,
+          "sha256": "867d264ace9d4e229721ea25cf7e8bcf560e5c4346854b36cb02dd97542fa9c0",
+          "width": 3840,
+          "height": 2160,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-down/media/d7fa0746cf114204b675b080a2d0b410/video-2d-galaxy-4k-v1.mp4"
+        },
+        "kiosk-7-v1": {
+          "url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/4864/kiosk-7-v1.mp4",
+          "asset": "tutorial_demos/ogs-intro-20261115/clips/4864/kiosk-7-v1.mp4",
+          "bytes": 1144045,
+          "sha256": "9c8ba3892c9a294e2a7b4f5f474eaae6ba495af5c1af208073882f327e37013d",
+          "width": 1024,
+          "height": 600,
+          "video_codec": "h264",
+          "audio_codec": "aac",
+          "source_url": "https://go.sailorvoyage.top/media/tutorial_assets/intro-down/media/3284c4dddc324fd9a9c431cad957a7a9/video-2d-kiosk-7-v1.mp4"
+        }
+      },
+      "duration": 47.066667,
+      "poster_url": "https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/4864.jpg"
+    }
+  ],
+  "playlists": {
+    "rules-intro": [
+      4275,
+      4278,
+      4341
+    ],
+    "the-board": [
+      4275,
+      4276
+    ],
+    "count-liberties": [
+      4278,
+      4289
+    ],
+    "count_chains": [
+      4289
+    ],
+    "in_atari": [
+      4310
+    ],
+    "count-atari": [
+      4401
+    ],
+    "capture_stone": [
+      4341
+    ],
+    "capture_chain": [
+      4341
+    ],
+    "escape": [
+      4372
+    ],
+    "find_escape": [
+      4440,
+      4441,
+      4442
+    ],
+    "create_opening": [
+      4440,
+      4441,
+      4442
+    ],
+    "atari-to-side": [
+      4453,
+      4454,
+      4455
+    ],
+    "atari-to-stones": [
+      4453,
+      4454,
+      4455
+    ],
+    "ladder": [
+      4863,
+      4864
+    ]
+  },
+  "kiosk_bytes": 19707110,
+  "galaxy_bytes": 81309516,
+  "schema_version": 1,
+  "release_id": "ogs-intro-20261115",
+  "course_slug": "ogs-learn-to-play-go",
+  "published_at": "2026-11-14T23:12:22.940538+00:00",
+  "language": "zh-cn",
+  "chapters": [
+    {
+      "id": "ogs-learning:Fundamentals",
+      "number": 1,
+      "title": "入门知识",
+      "lesson_count": 7,
+      "step_count": 36
+    },
+    {
+      "id": "ogs-learning:BasicPrinciples",
+      "number": 2,
+      "title": "基本规则",
+      "lesson_count": 18,
+      "step_count": 154
+    },
+    {
+      "id": "ogs-learning:BasicSkills",
+      "number": 3,
+      "title": "基础技巧",
+      "lesson_count": 29,
+      "step_count": 431
+    }
+  ],
+  "lessons": [
+    {
+      "id": "rules-intro",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 1,
+      "course_code": "1.1",
+      "title": "围棋",
+      "step_count": 6
+    },
+    {
+      "id": "self-capture",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 2,
+      "course_code": "1.2",
+      "title": "自填（以提吃自己）",
+      "step_count": 3
+    },
+    {
+      "id": "eyes",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 3,
+      "course_code": "1.3",
+      "title": "各种眼",
+      "step_count": 4
+    },
+    {
+      "id": "ko",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 4,
+      "course_code": "1.4",
+      "title": "劫",
+      "step_count": 5
+    },
+    {
+      "id": "territory",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 5,
+      "course_code": "1.5",
+      "title": "空",
+      "step_count": 12
+    },
+    {
+      "id": "ending-the-game",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 6,
+      "course_code": "1.6",
+      "title": "终局",
+      "step_count": 3
+    },
+    {
+      "id": "the-board",
+      "chapter_id": "ogs-learning:Fundamentals",
+      "order": 7,
+      "course_code": "1.7",
+      "title": "棋盘",
+      "step_count": 3
+    },
+    {
+      "id": "count-liberties",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 1,
+      "course_code": "2.1",
+      "title": "气",
+      "step_count": 12
+    },
+    {
+      "id": "count_chains",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 2,
+      "course_code": "2.2",
+      "title": "棋块",
+      "step_count": 6
+    },
+    {
+      "id": "in_atari",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 3,
+      "course_code": "2.3",
+      "title": "打吃",
+      "step_count": 6
+    },
+    {
+      "id": "count-atari",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 4,
+      "course_code": "2.4",
+      "title": "数打吃数",
+      "step_count": 12
+    },
+    {
+      "id": "capture_stone",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 5,
+      "course_code": "2.5",
+      "title": "提子",
+      "step_count": 6
+    },
+    {
+      "id": "capture_chain",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 6,
+      "course_code": "2.6",
+      "title": "提掉一块",
+      "step_count": 16
+    },
+    {
+      "id": "both_atari",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 7,
+      "course_code": "2.7",
+      "title": "双方都被打吃",
+      "step_count": 12
+    },
+    {
+      "id": "escape",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 8,
+      "course_code": "2.8",
+      "title": "求活",
+      "step_count": 6
+    },
+    {
+      "id": "find_escape",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 9,
+      "course_code": "2.9",
+      "title": "寻找解救方法",
+      "step_count": 12
+    },
+    {
+      "id": "create_opening",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 10,
+      "course_code": "2.10",
+      "title": "打开缺口",
+      "step_count": 12
+    },
+    {
+      "id": "connect",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 11,
+      "course_code": "2.11",
+      "title": "连接",
+      "step_count": 6
+    },
+    {
+      "id": "cut",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 12,
+      "course_code": "2.12",
+      "title": "切断",
+      "step_count": 6
+    },
+    {
+      "id": "bp-self-capture",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 13,
+      "course_code": "2.13",
+      "title": "自填",
+      "step_count": 12
+    },
+    {
+      "id": "real-false-eye",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 14,
+      "course_code": "2.14",
+      "title": "眼",
+      "step_count": 6
+    },
+    {
+      "id": "bp-ko",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 15,
+      "course_code": "2.15",
+      "title": "劫",
+      "step_count": 6
+    },
+    {
+      "id": "group-alive",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 16,
+      "course_code": "2.16",
+      "title": "活棋",
+      "step_count": 6
+    },
+    {
+      "id": "make-alive",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 17,
+      "course_code": "2.17",
+      "title": "两眼",
+      "step_count": 6
+    },
+    {
+      "id": "capture-group",
+      "chapter_id": "ogs-learning:BasicPrinciples",
+      "order": 18,
+      "course_code": "2.18",
+      "title": "吃掉棋块",
+      "step_count": 6
+    },
+    {
+      "id": "atari-to-side",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 1,
+      "course_code": "3.1",
+      "title": "边上的打吃",
+      "step_count": 18
+    },
+    {
+      "id": "atari-to-stones",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 2,
+      "course_code": "3.2",
+      "title": "打吃的方向",
+      "step_count": 6
+    },
+    {
+      "id": "atari-with-cut",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 3,
+      "course_code": "3.3",
+      "title": "断吃",
+      "step_count": 18
+    },
+    {
+      "id": "atari-correct-side",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 4,
+      "course_code": "3.4",
+      "title": "合适的打吃方向",
+      "step_count": 6
+    },
+    {
+      "id": "escape-possible",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 5,
+      "course_code": "3.5",
+      "title": "跑得掉吗",
+      "step_count": 18
+    },
+    {
+      "id": "make-ko",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 6,
+      "course_code": "3.6",
+      "title": "造劫",
+      "step_count": 12
+    },
+    {
+      "id": "play_double_atari",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 7,
+      "course_code": "3.7",
+      "title": "双打吃",
+      "step_count": 18
+    },
+    {
+      "id": "prevent_double_atari",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 8,
+      "course_code": "3.8",
+      "title": "避免双打吃",
+      "step_count": 9
+    },
+    {
+      "id": "connected-shape",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 9,
+      "course_code": "3.9",
+      "title": "连接棋形",
+      "step_count": 15
+    },
+    {
+      "id": "basic-skills-cut",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 10,
+      "course_code": "3.10",
+      "title": "切断",
+      "step_count": 6
+    },
+    {
+      "id": "connect_with_hanging_connection",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 11,
+      "course_code": "3.11",
+      "title": "虎",
+      "step_count": 6
+    },
+    {
+      "id": "ladder",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 12,
+      "course_code": "3.12",
+      "title": "征子",
+      "step_count": 24
+    },
+    {
+      "id": "shortage-liberties",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 13,
+      "course_code": "3.13",
+      "title": "接不归",
+      "step_count": 12
+    },
+    {
+      "id": "false-eye",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 14,
+      "course_code": "3.14",
+      "title": "假眼",
+      "step_count": 18
+    },
+    {
+      "id": "large-eye",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 15,
+      "course_code": "3.15",
+      "title": "大眼",
+      "step_count": 29
+    },
+    {
+      "id": "bs-group-alive",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 16,
+      "course_code": "3.16",
+      "title": "活棋",
+      "step_count": 12
+    },
+    {
+      "id": "snapback",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 17,
+      "course_code": "3.17",
+      "title": "倒扑",
+      "step_count": 25
+    },
+    {
+      "id": "net",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 18,
+      "course_code": "3.18",
+      "title": "枷",
+      "step_count": 13
+    },
+    {
+      "id": "count-territory",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 19,
+      "course_code": "3.19",
+      "title": "空",
+      "step_count": 12
+    },
+    {
+      "id": "determine-winner",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 20,
+      "course_code": "3.20",
+      "title": "胜负",
+      "step_count": 12
+    },
+    {
+      "id": "close_territory",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 21,
+      "course_code": "3.21",
+      "title": "围空",
+      "step_count": 12
+    },
+    {
+      "id": "compare-liberties",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 22,
+      "course_code": "3.22",
+      "title": "比气",
+      "step_count": 12
+    },
+    {
+      "id": "capturing_race",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 23,
+      "course_code": "3.23",
+      "title": "对杀",
+      "step_count": 18
+    },
+    {
+      "id": "correct-side",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 24,
+      "course_code": "3.24",
+      "title": "合适的方向",
+      "step_count": 24
+    },
+    {
+      "id": "capture",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 25,
+      "course_code": "3.25",
+      "title": "吃子练习",
+      "step_count": 21
+    },
+    {
+      "id": "bs-escape",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 26,
+      "course_code": "3.26",
+      "title": "求活",
+      "step_count": 12
+    },
+    {
+      "id": "bs-liberties",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 27,
+      "course_code": "3.27",
+      "title": "气",
+      "step_count": 22
+    },
+    {
+      "id": "enclose",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 28,
+      "course_code": "3.28",
+      "title": "包围",
+      "step_count": 9
+    },
+    {
+      "id": "first-line",
+      "chapter_id": "ogs-learning:BasicSkills",
+      "order": 29,
+      "course_code": "3.29",
+      "title": "一线",
+      "step_count": 12
+    }
+  ],
+  "lesson_video_count": 14,
+  "clip_count": 16,
+  "note": "选编演示版：前3章54小节中14小节已配置视频；其余小节保留OGS练习。按稳定lesson_id关联，数字clip id不是生产数据库外键。",
+  "exercise_source": {
+    "repository": "https://github.com/online-go/online-go.com",
+    "commit": "1c1c2b82d027f7c307ab25886112cf0a6baf680a",
+    "locale_version": "5304fd731af8856a16d198d506111d61",
+    "license": "AGPL-3.0-or-later"
+  },
+  "exercise_license_notice": "Copyright OGS / Online-Go.com contributors. Course material is licensed under AGPL-3.0-or-later. Adapted for StellaBox on 2026-10-24: normalized duplicate setup stones, mapped course identities, and converted exercises into independent SGF and structured JSON. Source revisions and all translations are preserved in the downloadable source archive."
+}

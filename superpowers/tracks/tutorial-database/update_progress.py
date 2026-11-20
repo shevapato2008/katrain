@@ -56,6 +56,20 @@ def refresh(data, output):
 
 def media_stages(book, data):
     """Display the latest media snapshot without losing the original campaign record."""
+    batch = data.get('ogs_source_media_task') or {}
+    record = next((b for b in batch.get('books', []) if b['catalog_id'] == book['catalog_id']), None)
+    if record:
+        return (f"OGS取材页段：当前有效音频{record['audio_figures']}/{record['figures']}图（含复用）",
+                f"Galaxy 4K {record['galaxy_figures']}/{record['figures']}图；"
+                f"7英寸 {record['kiosk_figures']}/{record['figures']}图；"
+                f"双档齐备{record['completed_pages']}/{record['diagram_pages']}含图页；"
+                f"待静态人工确认{record['missing_static_approval']}图；成片待人工检查")
+    current = data.get('current_media_task') or {}
+    if book['catalog_id'] == current.get('catalog_id'):
+        return (f'本轮新音频{current["new_audio_figures"]}图；完整成品中的复用音频{current["reused_audio_figures"]}图',
+                f'{current["status_label"]}；Galaxy 4K {current["galaxy_figures"]}/{current["figures"]}图；'
+                f'7英寸 {current["kiosk_figures"]}/{current["figures"]}图；'
+                f'双档齐备{current["completed_pages"]}/{current["diagram_pages"]}含图页；待用户人工检查')
     regeneration = data.get('media_regeneration') or {}
     record = next((b for b in regeneration.get('books', []) if b['catalog_id'] == book['catalog_id']), None)
     if not record:
@@ -93,6 +107,28 @@ def table(data):
                      f'旧静态版{regeneration["old_static_approved_pages_not_current_acceptance"]}页已被新标准替代，不计当前验收。'
                      '历史记录不证明后来修改的棋图版本仍有有效媒体。旧控制器不恢复；生成与审核分离，'
                      '现阶段先由用户人工检查，机器审核／抽检仅在单独明确派发后启用。')
+    current = data.get('current_media_task')
+    if current:
+        target = f'当前新任务：入门篇·上卷PDF1–50页，{current["diagram_pages"]}个含图页、{current["figures"]}图；{current["status_label"]}。'
+        execution = ('5个独立代理按页分工，直接参考原PDF与相邻页整理完整讲解，先音频后Galaxy 4K／kiosk 7英寸两版视频，关联测试Admin教程管理。'
+                     '旧六本书批次保持取消。生成与审核分离，本轮不启动Astra审核或代填视频人工审核。'
+                     f'进度更新：{escape(current["updated_at"])}。')
+    batch = data.get('ogs_source_media_task')
+    if batch:
+        target = (f"当前任务：OGS提纲涉及12本核心教材、{batch['selected_pdf_pages']}个PDF页、"
+                  f"{batch['figures']}图；先生成音频，再生成Galaxy 4K与kiosk 7英寸视频。")
+        execution = (f"5个独立书籍代理并行；复用有效成品，按原PDF补齐讲解和同步教学动画。"
+                     f"当前双档齐备{batch['completed_figures']}图、{batch['completed_pages']}含图页；"
+                     f"{batch['missing_static_approval']}图待静态人工确认，不计完成。"
+                     "每书累计完成10页及整书完成时在session汇报；不自动派Astra审核，不代填视频审核。"
+                     f"更新：{escape(batch['updated_at'])}。"
+                     '<a href="ogs-video-outline-2026-11-12.html">OGS选材提纲</a> · ')
+        if batch.get('status') == 'paused':
+            target = '已暂停：按用户要求，完成当时已开工的当前图后停止批量制作。'
+            execution = (f"当前音频、Galaxy 4K及kiosk双档齐备{batch['completed_figures']}图；在途任务0。"
+                         '不自动续图、补洞、扩容或恢复旧控制器；其余素材保留当前进度。'
+                         f"最终更新：{escape(batch['updated_at'])}。"
+                         '<a href="ogs-video-outline-2026-11-12.html">OGS选材提纲</a> · ')
     headers = ['顺序','教材与模块角色','棋图识别','机器验证 / TEST入库','人工校准审核','语音生成','2D视频（Galaxy 4K / kiosk 7英寸）','最近更新']
     return ('<section class="section" id="progress"><div class="section-heading"><div><div class="section-title">'
         '<span class="section-kicker">PRODUCTION PROGRESS</span><h2>教程制作进度</h2></div>'
@@ -107,6 +143,52 @@ def table(data):
 
 
 def render_plan(data):
+    batch = data.get('ogs_source_media_task')
+    if batch:
+        status_note = ('**状态：已暂停。当前已开工图均已收口，在途0；不自动续图、补洞或恢复旧控制器。**'
+                       if batch.get('status') == 'paused' else '')
+        rows = '\n'.join(f"| {b['title']} | {b['selected_pages']} / {b['figures']} | {b['audio_figures']} | "
+                         f"{b['galaxy_figures']} / {b['kiosk_figures']} | {b['completed_pages']} / {b['diagram_pages']} | "
+                         f"{b['missing_static_approval']} |" for b in batch['books'])
+        return f'''# OGS补充视频：12本教材取材页段
+
+更新：{batch['updated_at']}
+
+{status_note}
+
+按[OGS全小节选材提纲](ogs-video-outline-2026-11-12.html)制作，5个子代理按书并行；共{batch['selected_pdf_pages']}个PDF物理页、{batch['figures']}幅已入库棋图。
+先结合原PDF及相邻页准备讲稿和教学动作，再生成真实音频及同次WordBoundary，最后生成Galaxy原生4K和kiosk七英寸双档。复用身份仍匹配的已有音视频。
+
+静态图未获有效人工确认、识别疑点、缺少来源或实际动作时分别登记，不猜补，不登记为成品。当前{batch['missing_static_approval']}图待静态确认。
+生成不等于审核通过；本批不自动派Astra、不代填视频人审。旧取消批次保持取消。每书累计完成10页及整书范围完成时在主session汇报。
+
+| 教材 | 选材页 / 图 | 有效音频 | 4K / kiosk图 | 双档齐备页 / 含图页 | 待静态确认图 |
+| --- | --- | --- | --- | --- | --- |
+{rows}
+
+数值以当前源版本、讲稿/音频身份及真实成功任务与关联资源为准，含有效复用，不将queued算成功。各书断点、任务ID、SHA、跳过项和成片链接在本机`data/tutorial_media_batches/{batch['batch_id']}/books/`。
+第一本此前PDF1–50的71图为已生成历史成果；本轮对其当前有效性重新核对，不冒充新生成或整本完成。
+'''
+    current = data.get('current_media_task')
+    if current:
+        book = next(b for b in data['books'] if b['catalog_id'] == current['catalog_id'])
+        voice, video = media_stages(book, data)
+        return f'''# 教程数据库：当前单书音视频制作
+
+更新：{current['updated_at']}
+
+- **{book['title']}**，PDF第1–50页；{current['diagram_pages']}个含图页、{current['figures']}图，另9页无教程棋图。
+- 状态：{current['status_label']}。5个独立代理分工1–18、19–26、27–34、35–42、43–50页；各代理直接查看原PDF和相邻页，补齐漏解析内容及课程衔接。
+- 测试Admin教程管理内保存讲稿，先真实音频与同次WordBoundary，再同音频生成Galaxy3840×2160/30fps及RK3562七英寸1024×600/30fps（左棋盘、右字幕）。
+- 可靠编号随真实语音按序显示；同色题目候选数字按教学标签处理；符号、字母、箭头在明确提及后显现。数气等能由核对棋图确定的答案给出推导，来源不明不猜补。
+- 本轮仅生成、交付用户人工检查，不自动派Astra，不代填视频人审。旧20261021六书批次保持取消，不恢复旧控制器。
+- 语音：{voice}。
+- 视频：{video}。
+
+完整书目及逐书进度见[课程地图](go-curriculum.html#progress)。本轮来源、讲稿、版本化API回执及成品记录在本机`data/tutorial_media_batches/{current['batch_id']}/`。
+
+此前23本书识别交付见[识别汇总](reports/core23-test-delivery.md)；已取消媒体批次的历史成果见[历史报告](reports/core23-media-first50-20261021.md)，不当作本轮交付。
+'''
     if data.get('media_campaign'):
         campaign = data['media_campaign']
         regeneration = data.get('media_regeneration') or {}

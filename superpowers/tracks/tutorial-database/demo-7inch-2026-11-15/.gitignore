@@ -1,0 +1,7 @@
+media-cache/
+steps/
+assets/fonts
+assets/stones
+posters/
+server.log
+__pycache__/

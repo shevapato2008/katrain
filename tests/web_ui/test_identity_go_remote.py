@@ -67,3 +67,18 @@ async def test_identity_phone_reauth_refusal_does_not_replay_or_logout(monkeypat
     assert len(seen) == 1
     assert client.cloud_session_is(1)
     await client.close()
+
+
+def test_fixed_go_contract_accepts_current_frozen_ladder_recipes():
+    from katrain.core import ladder
+    from katrain.web.core.identity_go_contract import describe
+    for level in ladder.LADDER_LEVELS:
+        if level.recipe is None:
+            continue
+        body = {'game_id': 'a' * 32, 'user_color': 'B', 'result': 'inconclusive', 'game_type': 'ai_ladder_ranked',
+                'opponent': {'rung': level.rung, 'rank_name': level.rank_name,
+                             'config_snapshot': {'config_digest': 'a' * 64, 'config_version': ladder.LADDER_VERSION,
+                                                 'recipe_identity': 'a' * 64, 'recipe': level.recipe.to_dict()},
+                             'certification_status': level.certification_status, 'availability': level.availability,
+                             'route': level.route}}
+        assert describe('settle_ai_ladder_ranked', {}, body)[2] == body

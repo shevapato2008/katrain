@@ -76,12 +76,12 @@ _KEY_FIELDS = {"reservation_key": _TOKEN}
 _LADDER_RECIPE = _object({
     "rung": _integer(1, 41),
     **{key: _nullable(_TEXT) for key in ("golaxy_level_name", "human_sl_profile")},
-    "golaxy_api_level": _nullable(_integer()), "display_elo": _nullable(_integer()),
+    "golaxy_api_level": _nullable(_integer(-1000000)), "display_elo": _nullable(_integer(-1000000)),
     **{key: _TEXT for key in ("ref_rank", "rank_name", "net", "mechanism", "backend_hint")},
     "max_visits": _integer(0, 100000000), "root_policy_temperature": _NUMBER,
     "human_policy_temperature": _nullable(_NUMBER), "selection": _nullable(_TEXT),
     "human_sl_params": _object({
-        **{key: _NUMBER for key in (
+        **{key: ("number", -1000000000, 1000000000) for key in (
             "humanSLChosenMoveProp", "humanSLChosenMovePiklLambda", "humanSLRootExploreProbWeightless",
             "humanSLCpuctPermanent", "subtreeValueBiasFactor",
         )},

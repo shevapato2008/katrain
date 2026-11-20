@@ -3,6 +3,7 @@
 See design.md Section 4.7 for the full API surface.
 """
 
+import asyncio
 import logging
 import time
 from typing import Any, Dict, List, NamedTuple, Optional
@@ -79,6 +80,8 @@ class RemoteAPIClient:
         from katrain.web.core.box_sso import strict_box_sso_enabled
         self._identity_socket = settings.KATRAIN_IDENTITY_GO_SOCKET if strict_box_sso_enabled() else ""
         self._box_generation = None
+        self._broker_slots = asyncio.Semaphore(2)
+        self._broker_pending = 0
         self.base_url = base_url.rstrip("/")
         self.device_id = device_id
         # Health probes get their own (shorter) timeout. Defaults to 10s — long
@@ -220,11 +223,24 @@ class RemoteAPIClient:
         snapshot = (self._bound_user_id, self._identity_generation, self._box_generation)
         if operation not in PUBLIC_OPERATIONS and not self.is_authenticated:
             raise CloudIdentityChangedError()
+        if self._broker_pending >= 16:
+            raise httpx.ConnectError("Go cloud queue is full")
+        self._broker_pending += 1
         try:
-            result = await cloud_request(self._identity_socket, self._box_generation or 0, operation,
-                                         arguments, json, params)
-        except IdentityGoUnavailable:
+            await asyncio.wait_for(self._broker_slots.acquire(), 15.0)
+            try:
+                # Re-check after queueing: the request must still own this user.
+                if (snapshot != (self._bound_user_id, self._identity_generation, self._box_generation)
+                        or operation not in PUBLIC_OPERATIONS and not self.is_authenticated):
+                    raise CloudIdentityChangedError()
+                result = await cloud_request(self._identity_socket, self._box_generation or 0, operation,
+                                             arguments, json, params)
+            finally:
+                self._broker_slots.release()
+        except (IdentityGoUnavailable, TimeoutError):
             raise httpx.ConnectError("Go identity unavailable") from None
+        finally:
+            self._broker_pending -= 1
         if snapshot != (self._bound_user_id, self._identity_generation, self._box_generation):
             raise CloudIdentityChangedError()
         if result['status'] == 401 and operation not in PUBLIC_OPERATIONS:

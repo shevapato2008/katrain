@@ -82,3 +82,79 @@ def test_fixed_go_contract_accepts_current_frozen_ladder_recipes():
                              'certification_status': level.certification_status, 'availability': level.availability,
                              'route': level.route}}
         assert describe('settle_ai_ladder_ranked', {}, body)[2] == body
+
+
+@pytest.mark.asyncio
+async def test_normal_five_category_burst_queues_with_two_cloud_slots(monkeypatch):
+    import asyncio
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock')
+    monkeypatch.setattr(settings, 'KATRAIN_MODE', 'board')
+    monkeypatch.setattr(settings, 'KATRAIN_BOX_SSO', True)
+    client = RemoteAPIClient('https://fixed.invalid', 'device')
+    active = peak = 0
+    async def cloud(*args):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return {'status': 200, 'body': []}
+    monkeypatch.setattr(identity_go_client, 'cloud_request', cloud)
+    try:
+        assert await asyncio.gather(*(client.get_problems('15k', str(category)) for category in range(5))) == [[]] * 5
+        assert peak == 2
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('status,required', [(401, True), (503, False)])
+async def test_identity_auth_refusal_pauses_cloud_but_outage_stays_retryable(monkeypatch, status, required):
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock')
+    monkeypatch.setattr(settings, 'KATRAIN_MODE', 'board')
+    monkeypatch.setattr(settings, 'KATRAIN_BOX_SSO', True)
+    client = RemoteAPIClient('https://fixed.invalid', 'device')
+    async def cloud(*args):
+        return {'status': status, 'body': {'detail': {'code': 'authentication_required' if status == 401 else 'unavailable'}}}
+    monkeypatch.setattr(identity_go_client, 'cloud_request', cloud)
+    client.bind_identity(70, user_id=1)
+    try:
+        with pytest.raises(httpx.HTTPStatusError):
+            await client.billing_catalog(expected_user_id=1)
+        assert client.auth_required is required
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_queued_go_request_cannot_change_to_next_identity(monkeypatch):
+    import asyncio
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock')
+    monkeypatch.setattr(settings, 'KATRAIN_MODE', 'board')
+    monkeypatch.setattr(settings, 'KATRAIN_BOX_SSO', True)
+    client = RemoteAPIClient('https://fixed.invalid', 'device')
+    started, finish = asyncio.Event(), asyncio.Event()
+    calls = []
+    async def cloud(*args):
+        calls.append(args)
+        if len(calls) == 2:
+            started.set()
+        await finish.wait()
+        return {'status': 200, 'body': {}}
+    monkeypatch.setattr(identity_go_client, 'cloud_request', cloud)
+    client.bind_identity(70, user_id=1)
+    tasks = [asyncio.create_task(client.billing_catalog(expected_user_id=1)) for _ in range(3)]
+    try:
+        await started.wait()
+        client.bind_identity(71, user_id=2)
+        finish.set()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        assert all(isinstance(result, CloudIdentityChangedError) for result in results)
+        assert len(calls) == 2
+    finally:
+        finish.set()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await client.close()

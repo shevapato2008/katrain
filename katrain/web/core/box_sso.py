@@ -42,6 +42,8 @@ class BoxSSOState:
         self.on_revoke_generation = None
 
     def authorize_bridge(self, client_host: str | None, presented_key: str | None) -> bool:
+        if settings.KATRAIN_IDENTITY_GO_SOCKET:
+            return False  # S4 never reads or accepts the shared static key.
         if client_host not in LOOPBACK_HOSTS or not presented_key:
             return False
         try:

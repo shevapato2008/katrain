@@ -84,6 +84,7 @@ class Settings(BaseModel):
     REMOTE_API_URL: str = ""  # Remote server URL for board mode, e.g. "https://katrain.example.com"
     DEVICE_ID: str = ""  # Unique device identifier, auto-generated if empty
     KATRAIN_BOX_SSO: bool = False
+    KATRAIN_IDENTITY_GO_SOCKET: str = ""
     KATRAIN_BOX_SSO_BRIDGE_KEY_PATH: str = "/etc/smartbox/box-sso-bridge.key"
 
     KATRAIN_ENVIRONMENT: Literal["production", "development", "test"] = "production"
@@ -255,6 +256,7 @@ class Settings(BaseModel):
             "KATRAIN_BOX_SSO",
             os.getenv("KATRAIN_BOX_SSO", "0").lower() in ("1", "true", "yes"),
         )
+        data.setdefault("KATRAIN_IDENTITY_GO_SOCKET", os.getenv("KATRAIN_IDENTITY_GO_SOCKET", ""))
         data.setdefault(
             "KATRAIN_BOX_SSO_BRIDGE_KEY_PATH",
             os.getenv(

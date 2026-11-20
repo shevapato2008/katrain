@@ -75,6 +75,10 @@ class RemoteAPIClient:
         timeout: float = 30.0,
         health_timeout: float = 10.0,
     ):
+        from katrain.web.core.config import settings
+        from katrain.web.core.box_sso import strict_box_sso_enabled
+        self._identity_socket = settings.KATRAIN_IDENTITY_GO_SOCKET if strict_box_sso_enabled() else ""
+        self._box_generation = None
         self.base_url = base_url.rstrip("/")
         self.device_id = device_id
         # Health probes get their own (shorter) timeout. Defaults to 10s — long
@@ -99,6 +103,8 @@ class RemoteAPIClient:
     # ── Token Management ──
 
     def set_tokens(self, access_token: str, refresh_token: Optional[str] = None, user_id=None):
+        if self._identity_socket:
+            raise ValueError("cloud tokens belong to identity")
         self._identity_generation += 1
         self._access_token = access_token
         self._refresh_token = refresh_token
@@ -108,10 +114,22 @@ class RemoteAPIClient:
         self._bound_user_id = None if user_id is None else str(user_id)
 
     def set_refresh_token(self, refresh_token: str):
+        if self._identity_socket:
+            raise ValueError("cloud tokens belong to identity")
         self._identity_generation += 1
         self._bound_user_id = None
         self._access_token = None
         self._refresh_token = refresh_token
+        self._auth_required = False
+
+    def bind_identity(self, generation: int, *, user_id) -> None:
+        """Bind local shadow state to an identity-approved public generation."""
+        if not self._identity_socket or type(generation) is not int or generation <= 0 or user_id is None:
+            raise ValueError("identity bridge unavailable")
+        self._identity_generation += 1
+        self._box_generation = generation
+        self._bound_user_id = str(user_id)
+        self._access_token = self._refresh_token = None
         self._auth_required = False
 
     def bind_user(self, user_id) -> None:
@@ -129,6 +147,7 @@ class RemoteAPIClient:
         self._access_token = None
         self._refresh_token = None
         self._auth_required = True
+        self._box_generation = None
         # Drop the binding too: a restored refresh token proves a session exists, not
         # whose it is, and a stale binding is exactly how one player's game would be
         # credited to the next player who walks up to the board.
@@ -136,7 +155,7 @@ class RemoteAPIClient:
 
     @property
     def is_authenticated(self) -> bool:
-        return self._access_token is not None and not self._auth_required
+        return (self._access_token is not None or (bool(self._identity_socket) and self._box_generation is not None)) and not self._auth_required
 
     @property
     def auth_required(self) -> bool:
@@ -194,6 +213,27 @@ class RemoteAPIClient:
             logger.warning(f"Token refresh failed: {e}")
             return False
 
+    async def _broker_request(self, method, path, *, json=None, params=None):
+        from katrain.web.core.identity_go_contract import classify, PUBLIC_OPERATIONS
+        from katrain.web.core.identity_go_client import cloud_request, IdentityGoUnavailable
+        operation, arguments = classify(method, path, json, params)
+        snapshot = (self._bound_user_id, self._identity_generation, self._box_generation)
+        if operation not in PUBLIC_OPERATIONS and not self.is_authenticated:
+            raise CloudIdentityChangedError()
+        try:
+            result = await cloud_request(self._identity_socket, self._box_generation or 0, operation,
+                                         arguments, json, params)
+        except IdentityGoUnavailable:
+            raise httpx.ConnectError("Go identity unavailable") from None
+        if snapshot != (self._bound_user_id, self._identity_generation, self._box_generation):
+            raise CloudIdentityChangedError()
+        if result['status'] == 401 and operation not in PUBLIC_OPERATIONS:
+            detail = result['body'].get('detail') if isinstance(result['body'], dict) else None
+            code = detail.get('code') if isinstance(detail, dict) else None
+            if code != 'bind_reauth_failed':
+                self._auth_required = True
+        return httpx.Response(result['status'], json=result['body'], request=httpx.Request(method, 'http://identity.invalid' + path))
+
     async def _request(
         self,
         method: str,
@@ -208,6 +248,11 @@ class RemoteAPIClient:
         """Make an HTTP request with automatic token refresh on 401."""
         if history_owner is not None:
             self._check_history_owner(history_owner, history_generation)
+        if self._identity_socket and auth:
+            response = await self._broker_request(method, path, json=json, params=params)
+            if history_owner is not None:
+                self._check_history_owner(history_owner, history_generation)
+            return response
         session = (self._refresh_token, self._bound_user_id, self._identity_generation)
         headers = self._auth_headers() if auth else {}
         resp = await self._client.request(method, path, json=json, params=params, headers=headers)
@@ -282,6 +327,10 @@ class RemoteAPIClient:
     async def _identity_bound_request(self, method: str, path: str, *, expected_user_id, json=None) -> Any:
         if not self.is_authenticated or self._bound_user_id is None or self._bound_user_id != str(expected_user_id):
             raise CloudIdentityChangedError()
+        if self._identity_socket:
+            response = await self._broker_request(method, path, json=json)
+            response.raise_for_status()
+            return None if response.status_code == 204 else response.json()
         identity = _CloudIdentity(
             self._bound_user_id, self._identity_generation, self._access_token, self._refresh_token
         )
@@ -390,6 +439,8 @@ class RemoteAPIClient:
         self.set_tokens(candidate.tokens["access_token"], candidate.tokens.get("refresh_token"), user_id=user_id)
 
     async def _login_candidate(self, path: str, data: Dict[str, Any]) -> RemoteLoginCandidate:
+        if self._identity_socket:
+            raise ValueError("account authentication belongs to identity")
         generation = self.begin_login_attempt()
         response = await self._client.post(path, json=data, headers={"X-StellaBox-Device-ID": self.device_id})
         self._assert_login_generation(generation)

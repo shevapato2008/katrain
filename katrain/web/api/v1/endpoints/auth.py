@@ -94,15 +94,17 @@ class RefreshRequest(BaseModel):
 
 
 class BoxBootstrapRequest(BaseModel):
-    username: str
+    username: Optional[str] = None
     public_username: Optional[str] = None
     generation: int
-    remote_access_token: str
-    remote_refresh_token: str
+    remote_access_token: Optional[str] = None
+    remote_refresh_token: Optional[str] = None
+    operation_id: Optional[str] = None
 
 
 class BoxClearRequest(BaseModel):
     generation: int
+    operation_id: Optional[str] = None
 
 
 class GuestBootstrapRequest(BaseModel):
@@ -112,6 +114,7 @@ class GuestBootstrapRequest(BaseModel):
     # keeping the raw value untouched here, `_validate_guest_bootstrap_generation`
     # can reject bool (and any other non-int) with a real 400, not a coerced pass-through.
     generation: Any
+    operation_id: Optional[str] = None
 
 
 async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> User:
@@ -321,14 +324,27 @@ async def _activate_and_release_previous_user(request: Request, state: Any, gene
             await platform_manager.release_user(prior_user_id)
 
 
-def _require_bridge(request: Request) -> Any:
+async def _require_bridge(request: Request, body, operation: str) -> tuple[Any, dict | None]:
     if not strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     state = request.app.state.box_sso
     client_host = request.client.host if request.client else None
+    if settings.KATRAIN_IDENTITY_GO_SOCKET:
+        from katrain.web.core.identity_go_client import verify_go_operation, IdentityGoUnavailable
+        payload = await request.json()
+        if (client_host not in {"127.0.0.1", "::1"} or request.headers.get(BRIDGE_KEY_HEADER)
+                or set(payload) != {"generation", "operation_id"} or type(payload.get("generation")) is not int
+                or type(payload.get("operation_id")) is not str):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        try:
+            approved = await verify_go_operation(settings.KATRAIN_IDENTITY_GO_SOCKET, body.operation_id,
+                                                 operation, body.generation)
+        except IdentityGoUnavailable:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden") from None
+        return state, approved
     if not state.authorize_bridge(client_host, request.headers.get(BRIDGE_KEY_HEADER)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    return state
+    return state, None
 
 
 def _reject_generation_regress(state, generation: int) -> None:
@@ -346,10 +362,13 @@ def _reject_generation_regress(state, generation: int) -> None:
 
 @router.post("/box-sso/bootstrap")
 async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
-    state = _require_bridge(request)
+    state, approved = await _require_bridge(request, body, "bootstrap")
     if isinstance(body.generation, bool) or body.generation <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
-    if not body.username.strip() or not body.remote_access_token or not body.remote_refresh_token:
+    if approved is not None:
+        body.username = approved["username"]
+        body.public_username = approved.get("public_username")
+    if not body.username or not body.username.strip() or (approved is None and (not body.remote_access_token or not body.remote_refresh_token)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bootstrap payload")
     _reject_generation_regress(state, body.generation)
     remote_client = getattr(request.app.state, "remote_client", None)
@@ -358,11 +377,15 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # A cloud account literally named "guest" must not collapse into the box's
     # reserved zero-persistence guest identity (see guest-mode spec CRO-1).
     _reject_reserved_username(body.username)
-    remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
+    if approved is None:
+        remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
     shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username, body.public_username)
     # Tie the cloud session to this local user so per-user queued work (rank events)
     # can tell whose session is currently up on a shared board.
-    remote_client.bind_user(shadow_user["id"])
+    if approved is None:
+        remote_client.bind_user(shadow_user["id"])
+    else:
+        remote_client.bind_identity(body.generation, user_id=shadow_user["id"])
     await _activate_and_release_previous_user(request, state, body.generation, shadow_user["id"])
     local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
     return {"access_token": local_access, "token_type": "bearer"}
@@ -370,7 +393,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
 
 @router.post("/box-sso/clear")
 async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
-    state = _require_bridge(request)
+    state, _approved = await _require_bridge(request, body, "clear")
     # Capture BEFORE clear() wipes it -- clear() resets active_user_id to None
     # as part of tearing the generation down.
     released_user_id = state.active_user_id
@@ -394,7 +417,9 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     tokens). Guarded by a pristine-row check so a legacy real `guest` shadow row
     with accumulated data is never adopted (409). See guest-mode spec R1-F6/R2-F7.
     """
-    state = _require_bridge(request)
+    state, approved = await _require_bridge(request, body, "guest-bootstrap")
+    if approved is not None and approved.get("username") != GUEST_USERNAME:
+        raise HTTPException(status_code=403, detail="Forbidden")
     generation = _validate_guest_bootstrap_generation(body.generation)
     _reject_generation_regress(state, generation)
     repo = request.app.state.user_repo

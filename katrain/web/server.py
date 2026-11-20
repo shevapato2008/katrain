@@ -712,8 +712,8 @@ async def _initialize_board(app: FastAPI, log):
     )
     app.state.remote_client = remote_client
 
-    # Strict Box SSO receives remote tokens only through the authenticated
-    # loopback bridge; it must never restore the retired device-wide credential.
+    # Strict SSO uses its explicit bridge (S4 keeps cloud tokens at identity);
+    # it must never restore a retired device-wide cloud credential.
     from katrain.web.core.box_sso import strict_box_sso_enabled
 
     if not strict_box_sso_enabled():

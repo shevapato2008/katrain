@@ -744,3 +744,86 @@ def test_existing_guest_with_baipu_history_is_not_pristine(strict_app):
     assert not _guest_row_has_data(repo, guest['id'])
     BaipuHistoryRepository(repo.session_factory).open(guest['id'], {'sgf_content': '(;SZ[19];B[aa])'})
     assert _guest_row_has_data(repo, guest['id'])
+
+
+def test_identity_bridge_rejects_static_key_without_reading_key(strict_app, monkeypatch):
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/not-a-real-socket', raising=False)
+    state = strict_app.state.box_sso
+    monkeypatch.setattr(type(state.bridge_key_path), 'read_text', lambda *_a, **_k: pytest.fail('read legacy bridge key'))
+    assert not state.authorize_bridge('127.0.0.1', 'bridge-test-secret')
+
+
+@pytest.mark.asyncio
+async def test_identity_bootstrap_uses_one_shot_public_facts_and_no_remote_tokens(strict_app, monkeypatch):
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock', raising=False)
+    seen = []
+    async def verify(path, operation_id, operation, generation):
+        seen.append((path, operation_id, operation, generation))
+        return {'operation': operation, 'generation': generation, 'username': 'alice', 'public_username': 'Alice'}
+    monkeypatch.setattr(identity_go_client, 'verify_go_operation', verify)
+    async with AsyncClient(transport=ASGITransport(app=strict_app, client=('127.0.0.1', 12)), base_url='http://test') as client:
+        response = await client.post('/api/v1/auth/box-sso/bootstrap', json={'generation': 50, 'operation_id': 'a' * 64})
+    assert response.status_code == 200, response.text
+    assert response.json()['access_token']
+    strict_app.state.remote_client.set_tokens.assert_not_called()
+    strict_app.state.remote_client.bind_identity.assert_called_once_with(50, user_id=1)
+    assert seen == [('/test/go.sock', 'a' * 64, 'bootstrap', 50)]
+
+
+@pytest.mark.asyncio
+async def test_identity_bridge_cannot_accept_caller_credentials_or_legacy_key(strict_app, monkeypatch):
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock', raising=False)
+    async def forbidden(*args):
+        pytest.fail('untrusted payload reached identity')
+    monkeypatch.setattr(identity_go_client, 'verify_go_operation', forbidden)
+    async with AsyncClient(transport=ASGITransport(app=strict_app, client=('127.0.0.1', 12)), base_url='http://test') as client:
+        response = await client.post('/api/v1/auth/box-sso/bootstrap', headers=BRIDGE_HEADER, json={
+            'generation': 50, 'operation_id': 'a' * 64, 'username': 'mallory',
+            'remote_access_token': 'secret', 'remote_refresh_token': 'secret',
+        })
+    assert response.status_code == 403
+    strict_app.state.remote_client.set_tokens.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('payload', [
+    {'generation': True, 'operation_id': 'a' * 64},
+    {'generation': '50', 'operation_id': 'a' * 64},
+    {'generation': 50, 'operation_id': 'a' * 64, 'url': 'https://evil.invalid'},
+])
+async def test_identity_bridge_rejects_coerced_or_extra_request_fields(strict_app, monkeypatch, payload):
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock')
+    async def forbidden(*args):
+        pytest.fail('invalid payload reached identity')
+    monkeypatch.setattr(identity_go_client, 'verify_go_operation', forbidden)
+    async with AsyncClient(transport=ASGITransport(app=strict_app, client=('127.0.0.1', 12)), base_url='http://test') as client:
+        response = await client.post('/api/v1/auth/box-sso/bootstrap', json=payload)
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_identity_guest_and_clear_keep_local_guest_and_revocation(strict_app, monkeypatch):
+    from katrain.web.core import identity_go_client
+    monkeypatch.setattr(settings, 'KATRAIN_IDENTITY_GO_SOCKET', '/test/go.sock')
+    seen = []
+    async def verify(path, operation_id, operation, generation):
+        seen.append(operation)
+        result = {'operation': operation, 'generation': generation}
+        if operation != 'clear':
+            result['username'] = GUEST_USERNAME
+        return result
+    monkeypatch.setattr(identity_go_client, 'verify_go_operation', verify)
+    async with AsyncClient(transport=ASGITransport(app=strict_app, client=('127.0.0.1', 12)), base_url='http://test') as client:
+        response = await client.post('/api/v1/auth/box-sso/guest-bootstrap', json={'generation': 51, 'operation_id': 'a' * 64})
+        assert response.status_code == 200, response.text
+        assert strict_app.state.box_sso.active_generation == 51
+        claims = jwt.decode(response.json()['access_token'], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        assert claims['sub'] == GUEST_USERNAME
+        cleared = await client.post('/api/v1/auth/box-sso/clear', json={'generation': 51, 'operation_id': 'b' * 64})
+        assert cleared.status_code == 200, cleared.text
+        assert strict_app.state.box_sso.active_generation is None
+        strict_app.state.remote_client.set_tokens.assert_not_called()
+        assert seen == ['guest-bootstrap', 'clear']

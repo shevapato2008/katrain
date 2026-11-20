@@ -6,11 +6,18 @@ export interface PresentationCallout {
   id: string; anchor: Point; side: 'top' | 'right' | 'board'; text: string;
   source_pointer: string; image_sha256: string;
 }
+export interface TeachingAid {
+  id: string; kind: 'liberties' | 'line' | 'group' | 'arrow'; points: Point[];
+  label: string; channel: string; tone: 'focus' | 'positive' | 'warning'; purpose: string;
+  source_pointer: string; image_sha256: string;
+}
 export interface RecorderPayload extends SGFPayload {
+  teaching_annotations?: { region_dividers?: { columns: number[]; rows: number[] } };
   unknown_stones?: { point: Point; color: null; evidence?: string }[];
   source_region?: (Region & { confirmed: boolean }) | null;
   presentation_arrows?: { id: string; from: Point; to: Point; source_pointer: string; image_sha256: string }[];
   presentation_callouts?: PresentationCallout[];
+  presentation_teaching_aids?: TeachingAid[];
   replay?: { initial?: { known_region?: Region | null } | null } | null;
 }
 export interface ReplayFrame {
@@ -37,8 +44,8 @@ export interface StepCues {
   replay_sha256?: string;
   mode: 'presentation' | 'replay' | 'source_replay' | 'forbidden_ko' | 'static';
   frames: ReplayFrame[];
-  objects: { id: string; kind: 'labels' | 'letters' | 'shapes' | 'arrow' | 'callout' | 'replay'; point: Point | null;
-    stone_color: 'B' | 'W' | null; value?: string | null; number?: number | null; callout?: PresentationCallout; replay_step?: number; role?: string }[];
+  objects: { id: string; kind: 'labels' | 'letters' | 'shapes' | 'arrow' | 'callout' | 'replay' | 'teaching_aid'; point: Point | null;
+    stone_color: 'B' | 'W' | null; value?: string | null; number?: number | null; callout?: PresentationCallout; aid?: TeachingAid; replay_step?: number; role?: string }[];
   events: { step: number; at_ms: number; object_ids: string[]; span: [number, number]; kind?: 'initial_reveal' | 'forbidden_ko_capture' }[];
   presentation_plan?: { callouts?: PresentationCallout[]; source_replay?: { initial: { known_region?: Region | null } } | null } | null;
   status: 'complete' | 'pending';

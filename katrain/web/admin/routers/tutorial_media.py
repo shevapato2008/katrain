@@ -48,6 +48,40 @@ class MediaTaskWrite(VersionedWrite):
         return self
 
 
+class GenerationAuthorizationWrite(VersionedWrite):
+    cohort_id: Literal["ogs-book-sources-20261113-user-generation-20261114"]
+
+
+@router.put("/figures/{figure_id}/authorize-generation", response_model=TutorialFigureOut)
+def authorize_generation(
+    figure_id: int,
+    body: GenerationAuthorizationWrite,
+    request: Request,
+    db: Session = Depends(get_admin_db),
+    admin: dict = Depends(get_current_admin),
+):
+    import copy
+    from katrain.web.tutorials import generation_authorization as authorization
+
+    authorization.require_service(request)
+    if request.app.state.admin_config.env != "test" or not authorization.is_test_database(db):
+        raise HTTPException(
+            status_code=403, detail="This generation consent is restricted to the selected TEST database"
+        )
+    figure = _load(db, figure_id)
+    _version_filter(db, figure, body.expected_updated_at)
+    try:
+        record = authorization.make_authorization(figure, db, admin)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    debug = copy.deepcopy(figure.recognition_debug or {})
+    debug[authorization.RECORD_KEY] = record
+    figure = _cas_update(db, figure, body.expected_updated_at, {"recognition_debug": debug})
+    _audit(db, admin, "tutorial.authorize_generation", figure_id)
+    _commit(db)
+    return _output(figure)
+
+
 @router.post("/figures/{figure_id}/media-tasks", status_code=202)
 def create_media_task(
     figure_id: int,

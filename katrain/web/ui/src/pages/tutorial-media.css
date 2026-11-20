@@ -25,3 +25,9 @@ body { background: #0f0f0f; color: #f4f1e9; font-family: 'Noto Sans SC', sans-se
 .tm-recorder[data-output-profile="kiosk-7-v1"] .tm-board-square { width: 576px; height: 576px; }
 .tm-recorder[data-output-profile="kiosk-7-v1"] .tm-caption { width: 400px; height: 600px; flex: 0 0 400px; padding: 24px 32px 24px 0; justify-content: flex-start; text-align: left; font-size: 28px; line-height: 42px; background: #000; }
 .tm-recorder[data-output-profile="kiosk-7-v1"] .tm-caption span { max-width: 100%; }
+
+.tm-caption-with-teaching { flex-direction: column; gap: .18em; }
+.tm-teaching-labels { display: flex; flex-wrap: wrap; justify-content: center; gap: .3em .65em; width: 100%; font-size: .54em; line-height: 1.25; color: #bde6ce; }
+.tm-teaching-labels span { border-left: .12em solid; padding-left: .35em; }
+.tm-recorder[data-output-profile="kiosk-7-v1"] .tm-caption-with-teaching { align-items: flex-start; justify-content: center; }
+.tm-recorder[data-output-profile="kiosk-7-v1"] .tm-teaching-labels { justify-content: flex-start; font-size: .75em; }

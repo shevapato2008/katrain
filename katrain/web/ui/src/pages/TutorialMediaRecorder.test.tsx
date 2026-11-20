@@ -7,6 +7,7 @@ import { loadRecordingStoneSprites } from '../components/Board3D/tutorialStoneTe
 import { gridToSurface } from '../components/Board3D/constants';
 import TutorialMediaRecorder from './TutorialMediaRecorder';
 import type { RecordingData, ReplayFrame } from './tutorialMediaTimeline';
+import type { TeachingAid } from './tutorialMediaTimeline';
 
 // WebGL is exercised by test_tutorial_media_render.py; jsdom checks the recorder boundary.
 vi.mock('../components/Board3D', () => ({ default: vi.fn(() => null) }));
@@ -56,6 +57,43 @@ function attachCanvas(width = 800, camera?: OrthographicCamera) {
   return { camera: actualCamera, render };
 }
 
+it.each(['galaxy-4k-v1', 'kiosk-7-v1'] as const)('shows speech-bound liberty groups and a full route without creating stones in %s', async outputProfile => {
+  const data = recordingData({ output_profile: outputProfile });
+  const base = { size: 19, stones: { B: [[3,14],[3,15],[3,16]] as [number,number][], W: [] } };
+  const aid = (id: string, kind: TeachingAid['kind'], points: TeachingAid['points'], label = ''): TeachingAid =>
+    ({ id,kind,points,label,channel:kind,purpose:label || '讲解位置',tone:'positive',source_pointer:'/source/0',image_sha256:'a'.repeat(64) });
+  const target = aid('aid:target','group',base.stones.B);
+  const route = aid('aid:route','line',[[0,0],[0,18]],'一路线');
+  const left = aid('aid:left','liberties',[[2,14],[2,15],[2,16]],'左侧3口气');
+  const all = aid('aid:all','liberties',[[2,14],[2,15],[2,16],[4,14],[4,15],[4,16],[3,13],[3,17]],'共8口气');
+  const frames: ReplayFrame[] = [[],[target,route],[target,left],[target,all]].map((aids,step) =>
+    ({ step,payload:{...base,presentation_teaching_aids:aids},last:null,appeared_stones:[] }));
+  frames.push({ step:4,payload:{...base,stones:{B:[[2,14]],W:[]},presentation_teaching_aids:[target,all]},last:null,appeared_stones:[] });
+  window.__TUTORIAL_MEDIA_DATA = {...data,frames,board_payload:base,step_cues:{...data.step_cues,mode:'presentation',frames,
+    cues:frames.map(frame => ({step:frame.step,at_ms:frame.step*500,source:frame.step?'speech_end':'initial'}))}};
+  render(<TutorialMediaRecorder />);attachCanvas();
+  await act(async () => resolveSprites(sprites));
+  expect(document.querySelector('[data-teaching-aid]')).toBeNull();
+  await act(async () => { await window.__tutorialSetFrame!(500); });
+  expect(document.querySelectorAll('[data-teaching-group]')).toHaveLength(3);
+  expect(document.querySelector('[data-teaching-aid="aid:route"] path')).toBeInTheDocument();
+  expect(screen.getByText('一路线')).toBeInTheDocument();
+  await act(async () => { await window.__tutorialSetFrame!(1000); });
+  expect(document.querySelectorAll('[data-teaching-liberty]')).toHaveLength(3);
+  expect(screen.getByText('左侧3口气')).toBeInTheDocument();
+  expect(screen.queryByText('一路线')).not.toBeInTheDocument();
+  await act(async () => { await window.__tutorialSetFrame!(1500); });
+  expect(document.querySelectorAll('[data-teaching-liberty]')).toHaveLength(8);
+  expect(screen.getByText('共8口气')).toBeInTheDocument();
+  expect(vi.mocked(Board3D).mock.calls.at(-1)![0].gameState.stones).toHaveLength(3);
+  expect(vi.mocked(Board3D).mock.calls.at(-1)![0].recordingPlacement).toEqual([]);
+  await act(async () => { await window.__tutorialSetFrame!(2000); });
+  expect(document.querySelectorAll('[data-teaching-group]')).toHaveLength(0);
+  expect(document.querySelectorAll('[data-teaching-liberty]')).toHaveLength(7);
+  await act(async () => { await window.__tutorialSetFrame!(1000); });
+  expect(document.querySelectorAll('[data-teaching-liberty]')).toHaveLength(3);
+});
+
 it.each([undefined, 'galaxy-4k-v1', 'kiosk-7-v1'] as const)('waits for approved textures and preserves the static complete profile %s', async outputProfile => {
   window.__TUTORIAL_MEDIA_DATA = recordingData({ output_profile: outputProfile });
   render(<TutorialMediaRecorder />);
@@ -87,6 +125,26 @@ it('blocks pending recordings before rendering the fully annotated source board'
   expect(() => render(<TutorialMediaRecorder />)).toThrow(/pending.*Missing spoken A/i);
   expect(vi.mocked(Board3D)).not.toHaveBeenCalled();
   expect(window.__TUTORIAL_MEDIA_READY).not.toBe(true);
+});
+
+it.each(['galaxy-4k-v1', 'kiosk-7-v1'] as const)('retains source nine-region board guides in the %s recording', async outputProfile => {
+  const data = recordingData({ output_profile: outputProfile });
+  data.frames[0].payload.teaching_annotations = { region_dividers: { columns: [5.5, 12.5], rows: [5.5, 12.5] } };
+  window.__TUTORIAL_MEDIA_DATA = data;
+  render(<TutorialMediaRecorder />);
+  attachCanvas(outputProfile === 'galaxy-4k-v1' ? 2160 : 600);
+  await act(async () => resolveSprites(sprites));
+  const bands = [...document.querySelectorAll('[data-region-divider]')];
+  expect(bands.map(band => band.getAttribute('data-region-divider'))).toEqual(['columns:5.5', 'columns:12.5', 'rows:5.5', 'rows:12.5']);
+  for (const band of bands) {
+    const points = band.getAttribute('points')!.split(' ').map(point => point.split(',').map(Number));
+    expect(points).toHaveLength(4);
+    expect(points.flat().every(Number.isFinite)).toBe(true);
+    expect(Math.abs(points[1][0] - points[0][0]) + Math.abs(points[1][1] - points[0][1])).toBeGreaterThan(0);
+  }
+  await act(async () => { await window.__tutorialSetFrame?.(2500); });
+  expect(document.querySelectorAll('[data-region-divider]')).toHaveLength(4);
+  expect(data.board_payload.stones).toEqual(data.frames[0].payload.stones);
 });
 
 it('reveals grouped stones, independent co-located marks and source arrows at their actual cues, including on rewind', async () => {

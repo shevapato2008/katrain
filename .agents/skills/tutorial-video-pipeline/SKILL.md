@@ -1,6 +1,6 @@
 ---
 name: tutorial-video-pipeline
-description: Use when generating Go tutorial lecture videos, synchronizing numbered stones with narration, producing Galaxy 4K and kiosk 7-inch versions, or troubleshooting generation failures. 适用于教程视频生成、按编号落子和音画同步；不包含独立质量审核。
+description: Use when generating Go tutorial videos, animating liberties and routes, synchronizing teaching visuals with narration, producing Galaxy 4K and kiosk 7-inch versions, or troubleshooting generation failures. 适用于教学动画、按编号落子和音画同步；不包含独立质量审核。
 ---
 
 # 教程视频：先音频，再按讲解顺序落子
@@ -10,6 +10,19 @@ description: Use when generating Go tutorial lecture videos, synchronizing numbe
 **职责仅为生成。** 不内置质量校验、抽帧审核、抽样计划或 Astra 调用，不把独立审核设为生成下一页的条件。生成完成后交给用户人工检查；只有用户另行要求审核时，才单独派发审核任务（见 tutorial-media-review），不得自动启动。本流程仍处理 API／渲染器自身的输入错误和任务失败，不能绕过现有鉴权、版本及来源约束。
 
 **核心要求：原图已有可靠落子编号时，应随音频依次显示对应棋子。不需要知道整盘棋从第一手如何下到这里；`replay` 待校准不等于不能按编号演示。不能把有编号的视频静态降级后算作完成。**
+
+## 教学动画：把讲解中的关系画出来
+
+适用于每一页。原书棋图是棋局事实的依据，文字及上下文是教学内容的依据；视频应把两者组织成直观讲解。直接查看原PDF及必要相邻页，补齐文字解析遗漏，保持术语、前提与课程衔接。
+
+正式成片面向智星盒用户，口播与字幕沿用语音skill的独立教学稿：不出现“原书说／本书／书中”、纸书页码题号或“填入空白处／在方框画答案”等纸面要求；来源仍保留后台元数据。合成前区分地域的空kòng与空点的空kōng、数目动作shǔ mù与数量名词shù mù。此类改稿或纠音必须先重新合成真实音频，再用新WordBoundary重建教学cue并生成Galaxy 4K、Kiosk 7英寸两档；只改字幕、静音原音轨或复用旧时间线均不算修复。
+
+- 每段讲解先明确“让用户看哪里、看到什么变化、由此理解什么”，再设计对应画面。可以依据原文含义和可验证的围棋规则增加气点圈、目标棋块轮廓、路线高亮、指向箭头、计数及前后对比，即使印刷图未画这些辅助标记。
+- 例：讲棋盘的一至四路线时，在盘边显示名称与指向，并同步强调所指的整条横线／竖线；讲三颗竖排棋子的八口气时，按讲解依次标出左3、右3、上1、下1的真实空点，最后汇总8口气。例中的形状和气数须以当前实际棋图核对，不能套到另一幅图。
+- 教学辅助层与原书棋子、印刷标注、真实落子分别建模。圈出一口气不会新增棋子或落子声；辅助计数不冒充手顺编号；高亮与说明不改写保存棋图、原书内容或真实`replay`。
+- 为辅助动作绑定明确的讲稿片段和真实语音时间戳，按讲解分步显现、切换或汇总；可保留必要参照，及时淡化过期强调，避免所有提示开场堆满或全程只靠字幕指代。符号／字母与原书编号的显现仍遵守下节规则。
+- 空棋盘、无编号图、练习设问同样需要按教学内容设计画面。可以由已核对棋局确定性计算气数、是否打吃及最后一口气，并呈现推导；条件不足的结论明确保留，不猜补未记录的变化或提子过程。
+- 音频已准确讲出所需位置／分组且时间锚点可绑定时优先复用，只重生成受影响的视频；缺少必要解说时先最小改稿并重新合成音频。录制器缺少所需辅助层时先补齐实际能力，不能用一张空盘配口述代替已要求的视觉解释。
 
 ## 1. 开场局面与语音触发规则
 
@@ -30,7 +43,7 @@ description: Use when generating Go tutorial lecture videos, synchronizing numbe
 | 来源确认的初始局面及真实有序落子 | 按真实手顺播放，依据规则处理有证据的提子、停着和同点再落 | 不补造缺失手顺；也不要求整盘历史 |
 | 仅保存的静态图，但印刷编号对应的棋子可靠且顺序明确 | 保留无编号且无教学标注的背景子；编号子按1→2→3→4→5推进，其他标注按语音触发 | 不伪造未记录的提子，不把编号演示写成真实 `replay.status=complete` |
 | 无落子顺序，但有符号／字母等教学对象 | 背景局面开场显示，带标注棋子及独立标注在语音提及后出现 | 标注不自动成为真实落子，不要求黑白交替 |
-| 既无有序步骤，也无待触发的教学标注 | 可以用静态棋图讲解数气、棋形等概念 | 不把“无编号”与“编号不清／时间线没生成”混同 |
+| 既无有序步骤，也无原书教学标注 | 保留静态棋局，按讲解叠加气点、目标、路线、计数等教学辅助动画 | 不把“无编号”当成只需静态图配口述；不虚构实际落子 |
 
 编号演示前核对：编号唯一、正整数、连续（可从任意编号开始）、颜色与坐标准确、黑白交替（可白先）。问题序号、选点标签或同色备选点不能自动当成落子顺序；原书明确的特殊记法另据来源解释。缺号、重号、颜色／点位不确定或提子注记影响演示时，定位并报告，进入校准；不能在无编号背景子上猜补缺失编号。
 
@@ -39,8 +52,8 @@ description: Use when generating Go tutorial lecture videos, synchronizing numbe
 ## 3. 固定生产顺序
 
 1. 核对目标环境、当前保存的棋图及人工确认版本；按任务范围跳过识别疑点。机器审核不能代替人工确认，用户已授权代登记时保留原授权来源。
-2. 按 tutorial-voice-pipeline 准备准确讲稿，保存最终文字。
-3. **先完成真实音频生成**，保存同一次 TTS 返回的 WordBoundary、时长、音频 SHA 和讲稿 SHA。音频任务失败、缺少音频或时间戳时不能进入视频。
+2. 按 tutorial-voice-pipeline 结合原PDF准备准确讲稿及逐段视觉动作计划，保存最终文字；区分原书对象与新增教学辅助层。
+3. **先完成真实音频生成**，保存同一次 TTS 返回的 WordBoundary、时长、音频 SHA、讲稿 SHA，以及命中纠音规则时的`pronunciation_sha256`。按语音skill读取共享术语读音表；“黑一／白一”（含黑1／白1）的“一”是编号标识，固定第一声yī，由合成层精确纠音，字幕与棋子锚点保留原文。纠音规则变更后，用`pronunciation_is_current`识别受影响旧音频，须先纠音再按新时间戳重生成双档视频；未命中新规则且当前身份仍一致的音频可复用。音频任务失败、缺少音频或时间戳时不能进入视频。
 4. 从该音频及最终讲稿建立落子与标注显现时间线，以“对象类型＋颜色／标识＋坐标”绑定每个对象。编号按原书顺序推进；符号／字母等按明确语音引用触发，均遵守第1节的开场与提及后显现规则。真实手顺模式仍从来源初始规则局面执行实际落子／提子，不能因显示层暂时隐藏标注对象而改变规则计算。
 5. 用同一份音频与落子／标注时间线渲染两个输出档位；落子轻柔、不弹跳，落子声轻于讲解。字幕、棋子编号与自然贝壳纹理在实际输出尺寸下清楚。正式视频不带调试／待校准徽标、原书范围框或灰色遮挡。
 6. 两档任务均为 `succeeded` 后保存成片地址、依赖及任务回执，标记“已生成，待人工检查”。不调用审核模型、不建立逐页审核门禁。
@@ -60,6 +73,8 @@ description: Use when generating Go tutorial lecture videos, synchronizing numbe
 **先检查实际实现是否支持选定演示方式。** 若 `build_step_cues` 在 `validate_replay != complete` 时直接返回 pending，或渲染器只会显示最终静态图，说明编号及标注语音触发能力尚未接通。应报告并先修复该缺口，不能修改验收标准、伪造 replay 完整状态，或继续铺量静态视频。
 
 新版 `presentation_plan` 为录制输入：`schema_version: 1`，`bindings` 把最终讲稿字符区间 `[start,end)` 绑定到保存棋图的对象 ID（`labels:x,y`、`letters:x,y`、`shapes:x,y`）；`arrows` 须有当前服务端来源指针及图片 SHA。缺省仅自动匹配可靠的唯一引用；多对象同标记须明确绑定。中文“黑十一”和阿拉伯数字“黑11”均可使用真实语音锚点，不为数字写法重复合成合格音频。
+
+新增教学辅助使用 `presentation_plan.teaching_aids`，不塞入权威棋图的`labels`／`stones`：每项含`id: "aid:..."`、`kind: liberties|line|group|arrow`、全盘0基`points`、可选短`label`、`channel`、`purpose`、当前来源`source_pointer/image_sha256`及`tone: focus|positive|warning`。`line/arrow`为两个不同端点；`group`圈当前真实棋子，`liberties`圈实际空点。通过现有`bindings`把语音跨度绑定到aid ID，帧输出在`presentation_teaching_aids`。同一事件、同一channel的多个aid整组显示；后续事件替换该channel旧组，其他channel可保留。用目标组、当前气点与最终汇总等少数channel组织讲解，避免叠满提示。
 
 印刷图保留被提的历史编号子，或有同点再落、粘劫注记时，使用来源绑定的 `source_replay` 录制局部手顺：声明初始局面、已知范围、每步动作及来源；未直接印在棋子上的额外动作须附明确 `source_note`。服务端验证规则、提子和来源，原始保存棋图及其 `replay` 不变。不得仅凭缺号补棋；有证据的真实末局面可以不同于保留历史编号的纸书图。初始标记必须在其棋子被提之前讲到，不能将旧标记转移给后来同点重落的棋子。
 
@@ -85,6 +100,8 @@ description: Use when generating Go tutorial lecture videos, synchronizing numbe
 - 避免启动持续轮询的模型智能体。任务状态可用普通脚本等待／记录；任务失败或确有生成问题时再处理。历史批次若把 `independent_review` 硬接在生成循环内，不能直接作为纯生成入口；已取消的旧批次保持取消，不为适配新 skill 而自动续跑。
 
 ## 当前代码入口
+
+编写带自定义命令行参数的独立无界面批处理脚本时，在导入 KaTrain 规则库前为该脚本进程设置 `KIVY_NO_ARGS=1`。规则回放的延迟导入可能加载 Kivy 并误解析 `--config`、`--root-go-received`，导致已成功生成音频后本地退出；只修该入口并复用已接受任务，不修改桌面启动行为或重复提交。
 
 - 后台鉴权／版本化任务：`katrain/web/admin/routers/tutorial_media.py`、`tutorials.py`
 - 语音、队列、媒体落库：`katrain/web/tutorials/media_tasks.py`

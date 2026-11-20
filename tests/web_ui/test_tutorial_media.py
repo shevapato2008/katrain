@@ -280,6 +280,47 @@ def test_generation_stale_content_or_upload_failure_never_binds(media, monkeypat
         assert db.get(models_db.TutorialFigure, 1).audio_asset is None
 
 
+def test_pronunciation_recipe_blocks_old_audio_until_audio_and_video_are_regenerated(media):
+    from katrain.web.tutorials.media_pronunciation import prepare_speech
+    from katrain.web.tutorials.media_timing import VOICE
+    from katrain.web.tutorials.manual_review import video_problem
+
+    client, factory, worker, storage, app = media
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        figure.narration = "黑41提子，白42，再看黑43。"
+        db.commit()
+
+    def submit(kind):
+        version = client.get("/api/admin/tutorials/figures/1").json()["updated_at"]
+        response = enqueue(client, kind=kind, version=version)
+        assert response.status_code == 202, response.text
+        worker.run_next()
+        return client.get(f"/api/admin/tutorials/media-tasks/{response.json()['task']['id']}").json()["task"]
+
+    first = submit("audio")
+    assert first["status"] == "succeeded", first
+    recipe = prepare_speech("黑41提子，白42，再看黑43。", VOICE)[1]
+    assert first["result"]["audio"]["pronunciation_sha256"] == recipe
+    assert first["result"]["speech_timing"]["pronunciation_sha256"] == recipe
+    with factory() as db:
+        figure = db.get(models_db.TutorialFigure, 1)
+        debug = copy.deepcopy(figure.recognition_debug)
+        for name in ("audio", "speech_timing"):
+            debug["workbench_media"][name].pop("pronunciation_sha256")
+        figure.recognition_debug = debug
+        db.commit()
+    rejected = submit("video")
+    assert rejected["status"] == "failed"
+    assert "pronunciation" in rejected["error"]
+    assert submit("audio")["status"] == "succeeded"
+    video = submit("video")
+    assert video["status"] == "succeeded", video
+    assert video["result"]["generated_audio"] is False
+    with factory() as db:
+        assert video_problem(db.get(models_db.TutorialFigure, 1), "2d", "galaxy-4k-v1") is None
+
+
 def test_media_invalidation_preserves_speech_on_board_change(media):
     client, factory, worker, storage, app = media
     enqueue(client)
@@ -648,9 +689,7 @@ def test_parent_render_deadline_matches_profile_budget_plus_twenty(tmp_path, mon
     from types import SimpleNamespace
     from katrain.web.tutorials import media_tasks
 
-    worker = object.__new__(media_tasks.MediaWorker)
-    worker.render_lock = threading.Lock()
-    worker.active_render = None
+    worker = media_tasks.MediaWorker(None, storage=object())
     waits, terminated = [], []
     worker.stop_event = SimpleNamespace(wait=lambda seconds: waits.append(seconds) or False)
     process = SimpleNamespace(poll=lambda: None)
@@ -663,7 +702,7 @@ def test_parent_render_deadline_matches_profile_budget_plus_twenty(tmp_path, mon
         worker._render_video(output_path=tmp_path / "video.mp4", output_profile=profile)
     assert len(waits) == (2 if budget == 1800 else 1)
     assert terminated == [process]
-    assert worker.active_render is None
+    assert worker.activities == {}
 
 
 GALAXY = "galaxy-4k-v1"

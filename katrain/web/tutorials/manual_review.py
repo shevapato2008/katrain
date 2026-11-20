@@ -95,7 +95,7 @@ def video_artifact(figure, mode, output_profile=None):
     return profile_entry(container, output_profile)
 
 
-def presentation_source_identity(figure, plan, *, db=None):
+def presentation_source_identity(figure, plan, *, db=None, for_generation=False):
     """Read current server provenance at both generation and manual approval boundaries."""
     if not plan or not (
         plan.get("arrows")
@@ -103,6 +103,7 @@ def presentation_source_identity(figure, plan, *, db=None):
         or plan.get("source_replay")
         or plan.get("callouts")
         or plan.get("forbidden_ko")
+        or plan.get("teaching_aids")
     ):
         return None
     db = db if db is not None else object_session(figure)
@@ -119,7 +120,13 @@ def presentation_source_identity(figure, plan, *, db=None):
         reference_source, reference_book_id = _registered_source_identity(reference, db)
         if reference_book_id != book_id:
             raise ValueError("Forbidden ko referenced figure must belong to the same book")
-        approval = board_approval(reference)
+        if for_generation:
+            from katrain.web.tutorials.generation_authorization import generation_eligibility
+
+            eligibility = generation_eligibility(reference, db=db)
+            approval = {"approved": eligibility["authorized"], "reason": eligibility["reason"]}
+        else:
+            approval = board_approval(reference)
         if not approval["approved"]:
             raise ValueError("Referenced initial diagram: " + approval["reason"])
         if ko.get("initial_board_sha256") != digest(reference.board_payload) or ko.get(
@@ -138,6 +145,11 @@ def presentation_source_identity(figure, plan, *, db=None):
                 "bbox": copy.deepcopy(reference.bbox),
                 "board_payload": copy.deepcopy(reference.board_payload),
                 "board_review_sha256": digest(reference.board_review),
+                **(
+                    {"generation_authorization_sha256": digest(eligibility["record"])}
+                    if for_generation and eligibility["record"] is not None
+                    else {}
+                ),
             },
         )
     return identity
@@ -209,6 +221,12 @@ def video_problem(figure, mode, output_profile=None, *, db=None):
     if not isinstance(video, dict) or not video.get("asset") or not video.get("sha256"):
         return "Generate a current immutable video with a file digest before manual approval"
     dependencies = media_dependencies(figure)
+    from katrain.web.tutorials.media_pronunciation import pronunciation_is_current
+
+    if not pronunciation_is_current(
+        figure.narration or "", dependencies["voice"], dependencies.get("audio"), dependencies.get("speech_timing")
+    ):
+        return "Pronunciation rules changed; regenerate audio and both video profiles before manual approval"
     if video.get("presentation_sha256"):
         from katrain.web.tutorials.media_timing import build_step_cues
 

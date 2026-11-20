@@ -21,6 +21,7 @@ declare global {
 const PLAYER: PlayerInfo = { player_type: 'human', player_subtype: '', name: '', calculated_rank: null, periods_used: 0, main_time_used: 0 };
 const noop = () => {};
 const TOGGLES = { coords: false, numbers: false, stoneDropEffect: false };
+const TEACHING_COLORS = { focus: '#1b62a4', positive: '#12895f', warning: '#b45309' };
 
 /** The sole top-left → game/3D coordinate conversion. Never derives move history. */
 function asGameState(frame: ReplayFrame): GameState {
@@ -71,6 +72,46 @@ function ProjectionOverlay({ frame, state, surfaceMarkers = false, spriteStones 
   const crowdedLast = lastKey && ((labels[lastKey] && letters[lastKey]) || (shapes[lastKey] && (labels[lastKey] || letters[lastKey])));
   const markerColor = (key: string) => black.has(key) ? '#fff' : '#171717';
   return <svg className="tm-overlay" viewBox={`0 0 ${width} ${height}`} aria-label="棋图标记">
+    {(['columns', 'rows'] as const).flatMap(axis =>
+      (frame.payload.teaching_annotations?.region_dividers?.[axis] ?? []).map(value => {
+        // These source-bound bands divide the board itself, not stone intersections.
+        // Project all corners so the original fractional positions work in either view.
+        const corners: Point[] = axis === 'columns'
+          ? [[value - .11, 0], [value + .11, 0], [value + .11, size - 1], [value - .11, size - 1]]
+          : [[0, value - .11], [size - 1, value - .11], [size - 1, value + .11], [0, value + .11]];
+        return <polygon key={`${axis}-${value}`} data-region-divider={`${axis}:${value}`}
+          points={corners.map(point => { const projected = project(...point); return `${projected.x},${projected.y}`; }).join(' ')}
+          fill="#f4f1e9" />;
+      }))}
+    {(frame.payload.presentation_teaching_aids ?? []).map(aid => {
+      const color = TEACHING_COLORS[aid.tone];
+      const unit = Math.hypot(project(1, 0).x - project(0, 0).x, project(1, 0).y - project(0, 0).y);
+      const dashed = aid.tone === 'warning' ? `${unit * .17} ${unit * .1}` : undefined;
+      return <g key={aid.id} data-teaching-aid={aid.id} data-aid-kind={aid.kind} data-tone={aid.tone}>
+        {(aid.kind === 'group' || aid.kind === 'liberties') && aid.points.filter(point =>
+          aid.kind === 'group' ? occupied.has(point.join(',')) : !occupied.has(point.join(',')) && !unknown.has(point.join(','))
+        ).map(([col, row]) => {
+          const onStone = aid.kind === 'group';
+          const { x, y, transform } = marker(col, row, onStone);
+          const r = unit * (onStone ? .53 : .2);
+          return <g key={`${col},${row}`} transform={transform} data-teaching-group={onStone ? `${col},${row}` : undefined}
+            data-teaching-liberty={onStone ? undefined : `${col},${row}`} fill="none">
+            <circle cx={x} cy={y} r={r} stroke="#fff9" strokeWidth={unit * .15} />
+            <circle cx={x} cy={y} r={r} stroke={color} strokeWidth={unit * .075} strokeDasharray={dashed} />
+          </g>;
+        })}
+        {(aid.kind === 'line' || aid.kind === 'arrow') && aid.points.length === 2 && (() => {
+          const from = project(...aid.points[0]); const to = project(...aid.points[1]);
+          const markerId = `tm-${aid.id.replace(':','-')}`;
+          return <>
+            {aid.kind === 'arrow' && <defs><marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0L6,3L0,6Z" fill={color} /></marker></defs>}
+            <path d={`M${from.x} ${from.y}L${to.x} ${to.y}`} stroke="#fff8" strokeWidth={unit * .18} fill="none" />
+            <path d={`M${from.x} ${from.y}L${to.x} ${to.y}`} stroke={color} strokeWidth={unit * .085} strokeDasharray={dashed}
+              strokeLinecap="round" fill="none" markerEnd={aid.kind === 'arrow' ? `url(#${markerId})` : undefined} />
+          </>;
+        })()}
+      </g>;
+    })}
     {presentation_arrows.length > 0 && <defs><marker id="tm-presentation-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
       <path d="M0,0L6,3L0,6Z" fill="#9a3127" />
     </marker></defs>}
@@ -201,6 +242,8 @@ export default function TutorialMediaRecorder() {
   const hasMarginCallouts = data.step_cues.presentation_plan?.callouts?.some(callout => callout.side !== 'board');
   const orthographicSpan = frame.payload.size + (hasMarginCallouts ? 9 : overhead ? .6 : 2.6);
   const gameState = asGameState(frame);
+  const teachingLabels = [...new Map((frame.payload.presentation_teaching_aids ?? [])
+    .filter(aid => aid.label).map(aid => [aid.label, aid])).values()];
   gameState.last_move = null; // The SVG ring stays clear of material highlights.
   return <main className="tm-recorder" data-output-profile={outputProfile} data-step={frame.step} data-render-mode={data.render_mode} data-board-appearance={solidWood ? 'solid-wood' : 'overhead'}>
     <div className="tm-board-area"><div className="tm-board-square">
@@ -212,6 +255,10 @@ export default function TutorialMediaRecorder() {
         frameloop="demand" onCanvasReady={onCanvasReady} />
       {canvasState && <ProjectionOverlay frame={frame} state={canvasState} surfaceMarkers={solidWood} spriteStones={overhead} placements={placements} />}
     </div></div>
-    <div className="tm-caption"><span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span></div>
+    <div className={`tm-caption${teachingLabels.length ? ' tm-caption-with-teaching' : ''}`}>
+      {teachingLabels.length > 0 && <div className="tm-teaching-labels">{teachingLabels.map(aid =>
+        <span key={aid.label} data-teaching-label={aid.id} style={{ borderColor: TEACHING_COLORS[aid.tone] }}>{aid.label}</span>)}</div>}
+      <span>{subtitleAtTime(data.narration, data.speech_timing, timeMs)}</span>
+    </div>
   </main>;
 }

@@ -51,6 +51,21 @@ class PresentationCallout(BaseModel):
     image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
+class TeachingAid(BaseModel):
+    """Recording-only explanation geometry; never saved stones or rule evidence."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    id: str = Field(pattern=r"^aid:[A-Za-z0-9_-]+$", max_length=100)
+    kind: Literal["liberties", "line", "group", "arrow"]
+    points: list[list[int]] = Field(min_length=1, max_length=625)
+    label: str = Field(default="", max_length=32)
+    channel: str = Field(default="focus", pattern=r"^[A-Za-z0-9_-]+$", max_length=64)
+    tone: Literal["focus", "positive", "warning"] = "focus"
+    purpose: str = Field(min_length=1, max_length=1000)
+    source_pointer: str = Field(min_length=1, max_length=2048)
+    image_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class ForbiddenKo(BaseModel):
     """One source-backed forbidden recapture illustration, never a legal replay."""
 
@@ -77,6 +92,7 @@ class PresentationPlan(BaseModel):
     source_replay: SourceReplay | None = None
     callouts: list[PresentationCallout] = Field(default_factory=list, max_length=16)
     forbidden_ko: ForbiddenKo | None = None
+    teaching_aids: list[TeachingAid] = Field(default_factory=list, max_length=512)
 
     @model_serializer(mode="wrap")
     def serialize_plan(self, handler):
@@ -85,6 +101,8 @@ class PresentationPlan(BaseModel):
             value.pop("callouts", None)  # Preserve every existing plan/task/profile proof byte-for-byte.
         if self.forbidden_ko is None:
             value.pop("forbidden_ko", None)
+        if not self.teaching_aids:
+            value.pop("teaching_aids", None)
         return value
 
 
@@ -105,8 +123,17 @@ def _point(key, size):
     return point
 
 
+def _validate_teaching_aid_occupancy(aid, payload):
+    occupied = {tuple(point) for color in ("B", "W") for point in payload["stones"].get(color, [])}
+    points = {tuple(point) for point in aid["points"]}
+    if aid["kind"] == "liberties" and points.intersection(occupied):
+        raise ValueError("Teaching liberty points must be empty at their narrated rule position")
+    if aid["kind"] == "group" and not points <= occupied:
+        raise ValueError("Teaching group points must contain stones at their narrated rule position")
+
+
 def discover_objects(payload, presentation_plan=None, source_identity=None):
-    """Stable marker IDs derive only from the saved board; arrows require server provenance."""
+    """Saved marker IDs stay authoritative; recording additions require server provenance."""
     plan = PresentationPlan.model_validate(presentation_plan).model_dump(by_alias=True) if presentation_plan else None
     size = payload.get("size")
     if type(size) is not int or not 2 <= size <= 25:
@@ -231,6 +258,25 @@ def discover_objects(payload, presentation_plan=None, source_identity=None):
                 "callout": callout,
             }
         )
+    aids = (plan or {}).get("teaching_aids", [])
+    dynamic_position = bool(aids and (source_replay or validate_replay(payload)["status"] == "complete"))
+    for aid in aids:
+        if not source_identity or any(
+            aid[key] != source_identity.get(key) for key in ("source_pointer", "image_sha256")
+        ):
+            raise ValueError("Teaching aid does not match the server-owned figure source identity")
+        if any(
+            len(point) != 2 or any(type(value) is not int or not 0 <= value < size for value in point)
+            for point in aid["points"]
+        ):
+            raise ValueError("Teaching aid coordinates must be integer points inside the saved board")
+        if aid["kind"] in ("line", "arrow") and (len(aid["points"]) != 2 or aid["points"][0] == aid["points"][1]):
+            raise ValueError("Teaching lines and arrows require exactly two different endpoints")
+        if not aid["purpose"].strip():
+            raise ValueError("Teaching aid requires a nonempty explanation purpose")
+        if not dynamic_position:
+            _validate_teaching_aid_occupancy(aid, payload)
+        objects.append({"id": aid["id"], "kind": "teaching_aid", "point": None, "stone_color": None, "aid": aid})
     if source_replay and (
         not source_identity
         or any(source_replay[k] != source_identity.get(k) for k in ("source_pointer", "image_sha256"))
@@ -499,8 +545,8 @@ def _matches(obj, text):
             if match.group("declaration") is None
             or re.split(r"[。.!！?？;；\n]", text[: match.start()])[-1].strip() in ("", "请看左下角，")
         ]
-    if obj["kind"] == "replay":
-        return []  # Unnumbered moves/passes need an explicit human binding.
+    if obj["kind"] in ("replay", "teaching_aid"):
+        return []  # Recording aids and unnumbered moves/passes need an explicit binding.
     words = SHAPE_WORDS.get(obj.get("value"), [obj.get("value")]) if obj["kind"] == "shapes" else [obj.get("value")]
     if obj["kind"] == "arrow":
         words = ["箭头", "arrow"]
@@ -627,6 +673,8 @@ def _frames(payload, objects, events, real_frames):
         if obj["point"] is not None and obj.get("stone_color") and not (real_frames and obj.get("replay_step"))
     }
     current_rule_step = 0
+    teaching_aids = {}
+    has_teaching_aids = any(obj["kind"] == "teaching_aid" for obj in objects)
     frames = []
     for step, event in enumerate([None, *events]):
         prior = frames[-1]["payload"]["stones"] if frames else {"B": [], "W": []}
@@ -637,7 +685,20 @@ def _frames(payload, objects, events, real_frames):
                 if len(moves) != 1 or moves[0] != current_rule_step + 1:
                     raise ValueError("Real replay must advance exactly one evidenced step per cue")
                 current_rule_step = moves[0]
+            event_aids = {}
+            for object_id in event["object_ids"]:
+                obj = by_id[object_id]
+                if obj["kind"] == "teaching_aid":
+                    aid = obj["aid"]
+                    rule_payload = real_frames[current_rule_step]["payload"] if real_frames else payload
+                    _validate_teaching_aid_occupancy(aid, rule_payload)
+                    event_aids.setdefault(aid["channel"], []).append(aid)
+            teaching_aids.update(event_aids)
         base = copy.deepcopy(real_frames[current_rule_step]["payload"] if real_frames else payload)
+        if has_teaching_aids:
+            base["presentation_teaching_aids"] = copy.deepcopy(
+                [aid for channel_aids in teaching_aids.values() for aid in channel_aids]
+            )
         revealed = {
             (by_id[key]["stone_color"], tuple(by_id[key]["point"]))
             for key in visible

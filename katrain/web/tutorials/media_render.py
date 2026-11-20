@@ -328,6 +328,7 @@ def render_video(
     render_mode: str,
     visual_seed: str = "tutorial",
     output_profile: OutputProfile | None = None,
+    encoder_threads: int = 4,
 ) -> None:
     """Render snapshots at saved audio cues and atomically write a checked MP4.
 
@@ -335,6 +336,8 @@ def render_video(
     Failures propagate to the job runner with their stage.
     """
     profile = render_profile(output_profile)
+    if type(encoder_threads) is not int or not 1 <= encoder_threads <= 32:
+        raise ValueError("encoder_threads must be an integer between 1 and 32")
     if output_profile is not None and render_mode != "2d":
         raise ValueError("output_profile is supported only for 2D videos")
     audio_path, output_path = Path(audio_path), Path(output_path)
@@ -392,7 +395,7 @@ def render_video(
                 "-crf",
                 str(profile.crf),
                 "-threads",
-                "4",
+                str(encoder_threads),
                 "-pix_fmt",
                 "yuv420p",
                 "-r",

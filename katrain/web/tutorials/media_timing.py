@@ -22,10 +22,12 @@ def narration_hash(text: str) -> str:
 
 async def synthesize_audio(text: str, voice: str, path: Path) -> list[dict]:
     import edge_tts
+    from katrain.web.tutorials.media_pronunciation import prepare_speech, restore_boundary_text
 
+    spoken_text, pronunciation = prepare_speech(text, voice)
     boundaries = []
     with path.open("wb") as output:
-        async for chunk in edge_tts.Communicate(text, voice, boundary="WordBoundary").stream():
+        async for chunk in edge_tts.Communicate(spoken_text, voice, boundary="WordBoundary").stream():
             if chunk["type"] == "audio":
                 output.write(chunk["data"])
             elif chunk["type"] == "WordBoundary":
@@ -38,6 +40,8 @@ async def synthesize_audio(text: str, voice: str, path: Path) -> list[dict]:
                 )
     if not path.stat().st_size or not boundaries:
         raise RuntimeError("TTS returned no audio or word boundaries")
+    if pronunciation:
+        boundaries = restore_boundary_text(text, spoken_text, boundaries)
     return boundaries
 
 

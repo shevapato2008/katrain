@@ -669,7 +669,9 @@
       var height = root.offsetHeight + "px";
       document.body.style.paddingBottom = height;
       document.body.style.setProperty("--skbd-height", height);
-      try { target.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+      if (target && target.scrollIntoView && !(target.classList && target.classList.contains("xterm-helper-textarea"))) {
+        try { target.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+      }
     });
   }
 

@@ -44,15 +44,11 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  *   · 七组全摆、空的挂琥珀「未接后端」—— **是用错标**:那五组大部分不是「后端没有」,
  *     而是「这个设置项还没做」。两回事,两种颜色。
  *   · 七组全摆、空的做成真功能 —— 那是五个新 feature,远超一条表现层赛道。
- * ⇒ **导航项数 = 分组数,且词一一对应**。导航里写「实体棋盘」,右边那组的标题就是「实体棋盘」——
- * 两套词等于两套心智模型。差异图上因此少两组,这是**裁定不是遗漏**。
+ * 每个分组有一个同名锚点。导航里的「实体棋盘」对应右栏的「实体棋盘」。
  *
- * ## 导航只跳不换页,高亮跟着真正在看的那一组走
+ * ## 会员入口打开独立页面，分组高亮跟随滚动
  *
- * 点导航是**滚过去**,不是把右边整块换掉 —— 换页式在这块屏上更差:
- * 用户看不到自己一共有多少可调的。
- * 而高亮**写死在某一项上、右边却滚到了别处,是在谎报你在哪儿** ——
- * 所以它跟着滚动位置算,不跟着最后点过哪一项。
+ * 「会员与用量」打开会员页。点击分组锚点会滚动右栏，高亮跟随实际滚动位置。
  *
  * ## 账号那两行也是 `.kiosk-row`
  *
@@ -234,6 +230,14 @@ const SettingsPage = () => {
           <b>{t('Settings', '设置')}</b><em>Settings</em>
         </div>
         <nav className="kiosk-navlist" data-testid="settings-nav" aria-label={t('Settings', '设置')}>
+          <button
+            type="button"
+            className="kiosk-navitem"
+            style={{ lineHeight: 1.05 }}
+            onClick={() => navigate('/kiosk/membership')}
+          >
+            <Icon name="user-circle" />{t('membership:auth_label', '会员与用量')}
+          </button>
           {groups.map((g) => (
             <button
               key={g.key}

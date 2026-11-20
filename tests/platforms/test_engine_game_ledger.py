@@ -1,6 +1,7 @@
 """星阵人机局终局端点契约测试。"""
 
 import threading
+import pytest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -20,6 +21,7 @@ def _engine_session(end_result=None, human_color="B", engine=True):
     """构造星阵人机会话；engine=False 时构造同座位形状的 OGS 真人局。"""
     katrain = MagicMock()
     katrain.game_type = "free"
+    katrain.local_confirmation_in_progress = False
     katrain.analysis_allowed = True
     katrain.get_state.return_value = {"end_result": end_result, "player_to_move": human_color, "history": []}
     katrain.game.end_result = end_result
@@ -207,6 +209,7 @@ class TestRecordPlatformEngineGame:
         assert record.await_args.args == (session, app, HUMAN, "W+R")
         assert record.await_args.kwargs["data_overrides"] == {
             "source": "play_ai",
+            "platform": None,
             "player_black": "小明",
             "player_white": "[golaxy] 星铠虾",
             # 两个座位都不标 human,执色只有这里知道(`_user_seat` 在这种局里是 None)。
@@ -222,6 +225,23 @@ class TestRecordPlatformEngineGame:
         overrides = record.await_args.kwargs["data_overrides"]
         assert (overrides["player_black"], overrides["player_white"]) == ("[golaxy] 星铠虾", "小明")
         assert overrides["user_color"] == "W"
+
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    async def test_origin_survives_missing_terminal_context(self, monkeypatch, human_color):
+        from katrain.core.game import KaTrainSGF
+
+        record = AsyncMock()
+        monkeypatch.setattr(server, "_RECORD_FN", record, raising=False)
+        session = self._session("B+R", human_color=human_color)
+        session.katrain.game.root = KaTrainSGF.parse_sgf("(;FF[4]KTP[golaxy])")
+        app = SimpleNamespace(state=SimpleNamespace(platform_manager=None))
+
+        await server._record_platform_engine_game(session, app, HUMAN)
+
+        overrides = record.await_args.kwargs["data_overrides"]
+        assert overrides["platform"] == "golaxy"
+        assert overrides["source"] == "play_ai"
+        assert overrides["user_color"] == human_color
 
     async def test_nothing_is_written_without_a_result_or_a_user(self, monkeypatch):
         record = AsyncMock()

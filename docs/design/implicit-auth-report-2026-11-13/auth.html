@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'none'; form-action 'none'">
+  <title>智星盒 · 统一手机号入口 v2 设计预览</title>
+  <style>
+    @font-face{font-family:WenKai;src:url('../phone-named-signup-2026-11-13/assets/wenkai.woff2') format('woff2');font-display:swap}
+    @font-face{font-family:BrandZh;src:url('../phone-named-signup-2026-11-13/assets/brand-zh.woff2') format('woff2');font-display:swap}
+    @font-face{font-family:BrandEn;src:url('../phone-named-signup-2026-11-13/assets/brand-en.woff2') format('woff2');font-display:swap}
+    :root{--bg:#101b16;--panel:#1a2a21;--key:#253b2d;--text:#eef4ed;--sub:#b7cabb;--accent:#66c48a;--border:#49634e;--input:#0d1912;--error:#f2a399;--size:22px}
+    *{box-sizing:border-box} [hidden]{display:none!important}
+    body{margin:0;color:var(--text);background:var(--bg);font:var(--size)/1.35 WenKai,'Kaiti SC',serif;font-synthesis:none}
+    button,input{font:inherit} button,a{touch-action:manipulation} button{cursor:pointer}
+    button{color:var(--text);border:1px solid var(--border);border-radius:12px;min-height:48px;background:linear-gradient(#344a3b,var(--key));box-shadow:inset 0 1px 1px #ffffff20,inset 0 -3px 0 #0004,0 2px 3px #0005;transition:background-color 150ms,border-color 150ms}
+    button:hover{border-color:var(--accent)} button:active{box-shadow:inset 0 2px 5px #0005}
+    button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .stage{display:grid;grid-template-columns:41% minmax(0,1fr);min-height:100svh}
+    .brand{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-right:1px solid var(--border)}
+    .mark{position:relative;width:128px;height:144px}.mark:before{position:absolute;content:'';inset:-28px -46px;background:radial-gradient(ellipse,#58b57a24,transparent 68%)}
+    .mark img{position:relative;width:100%;height:100%;object-fit:contain}
+    .brand-name{display:flex;align-items:center;gap:16px;white-space:nowrap}.brand-zh{font:36px/1.35 BrandZh,serif}.brand-en{font:28px/1.35 BrandEn,serif;color:var(--sub)}
+    .form-wrap{display:flex;align-items:safe center;justify-content:center;min-width:0;padding:26px 38px;overflow-y:auto}
+    .card{width:100%;max-width:528px;margin:auto 0;background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:20px}
+    .heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px}h1{font-size:28px;font-weight:400;margin:0;line-height:1.35}
+    .close{display:none;width:44px;height:44px;min-height:44px;border:0;background:none;box-shadow:none;padding:10px;color:var(--sub)}
+    svg{width:24px;height:24px;vertical-align:middle;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#0b1710;border:1px solid var(--border);border-radius:14px}
+    .tabs button{min-height:44px;border:1px solid transparent;box-shadow:none;background:none;font-size:20px;border-radius:10px;color:var(--sub)}
+    .tabs button[aria-selected=true]{color:var(--text);background:linear-gradient(#34513e,#2a4534);border-color:var(--accent);box-shadow:inset 0 1px 1px #ffffff20,0 2px 3px #0004}
+    form{display:flex;flex-direction:column;gap:16px;min-width:0;margin:0}.fields{display:flex;flex-direction:column;gap:14px}
+    .field{display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:10px}.field label{font-size:18px;color:var(--sub);white-space:nowrap}
+    .control{display:flex;min-width:0;position:relative;gap:8px}.input-shell{position:relative;min-width:0;flex:1}
+    input{display:block;min-width:0;width:100%;height:50px;color:var(--text);background:var(--input);border:1px solid var(--border);border-radius:12px;padding:0 14px;outline:none}
+    input::placeholder{color:var(--sub);opacity:.7;font-size:18px}input:focus{border-color:var(--accent)}
+    .with-eye input{padding-right:48px}.eye{position:absolute;right:3px;top:3px;width:44px;height:44px;min-height:44px;padding:10px;background:none;box-shadow:none;border:0;color:var(--sub)}
+    .send{flex:none;min-width:126px;padding:0 10px;font-size:18px;min-height:50px}
+    .error{grid-column:2;font-size:18px;color:var(--error);margin:-3px 0 0}.invalid input{border-color:var(--error)}
+    .primary{height:50px;width:100%;background:linear-gradient(#79cf99,#59ad79);border-color:#83d49f;color:#101b16;box-shadow:inset 0 1px 1px #ffffff45,inset 0 -3px 0 #255f3c50,0 2px 4px #0004}
+    .footer{display:flex;justify-content:center;align-items:center;gap:14px;min-height:44px}
+    .text-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;padding:0 8px;border:0;box-shadow:none;background:none;color:var(--sub);font-size:20px;white-space:nowrap}.text-button:hover{background:#ffffff07;color:var(--text)}
+    .footer .divider{width:1px;height:18px;background:var(--border)}
+    .context{margin:0;color:var(--sub);font-size:18px;display:flex;align-items:center;gap:8px}.context svg{width:20px;height:20px;color:var(--accent)}
+    .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);box-shadow:0 8px 30px #0005;border-radius:12px;padding:14px 22px;max-width:calc(100vw - 32px);font-size:20px;z-index:3;white-space:nowrap}
+    .preview-badge{position:fixed;left:16px;bottom:12px;font-size:13px;color:var(--sub);opacity:.6;pointer-events:none}
+    body[data-surface=galaxy]{--bg:#0f0f0f;--panel:#252525;--key:#333c36;--text:#f5f3f0;--sub:#b8b5b0;--accent:#86ad97;--border:#5d7065;--input:#202020;--size:20px}
+    .galaxy-shell{display:none}
+    body[data-surface=galaxy] .galaxy-shell{position:fixed;inset:0;display:grid;grid-template-rows:52px minmax(0,1fr) 29px;background:#0f0f0f;font-size:18px}
+    .galaxy-topbar{display:flex;align-items:center;gap:8px;padding:0 20px;background:#252525;border-bottom:1px solid #ffffff0d}
+    .galaxy-topbar img{width:32px;height:32px;object-fit:contain}.galaxy-topbar .brand-zh{font-size:22px}.galaxy-topbar .brand-en{font-size:16px;color:var(--text)}
+    .galaxy-body{display:grid;grid-template-columns:216px minmax(0,1fr);min-height:0}.galaxy-sidebar{background:#252525;display:flex;flex-direction:column;border-right:1px solid #ffffff0d}
+    .galaxy-navigation{padding:16px 8px;display:grid;gap:4px}.galaxy-nav-item{height:48px;display:flex;align-items:center;gap:16px;padding:0 16px;border-radius:16px;color:#b8b5b0}
+    .galaxy-nav-item.active{background:#2f4539;color:#f5f3f0}.galaxy-nav-item svg{width:24px;height:24px;stroke:none;fill:currentColor}
+    .galaxy-account{margin-top:auto;border-top:1px solid #ffffff0d;padding:16px}.galaxy-account .galaxy-nav-item{padding:0 16px}
+    .galaxy-signin{margin-top:8px;height:44px;border:1px solid #5d8270;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:10px;color:#b8b5b0}
+    .galaxy-dashboard{padding:48px;overflow:hidden}.galaxy-dashboard h2{margin:0;font-size:28px;font-weight:400}.galaxy-tagline{margin:8px 0 48px;color:#b8b5b0}
+    .galaxy-modules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px}.galaxy-module{min-height:242px;padding:24px;border-radius:8px;background:#252525;box-shadow:0 2px 4px #0003}
+    .galaxy-module-icon{width:64px;height:64px;border-radius:8px;background:#2f4539;display:flex;align-items:center;justify-content:center;margin-bottom:16px}.galaxy-module-icon svg{width:36px;height:36px;stroke:none;fill:#fff}
+    .galaxy-module h3{font-size:24px;font-weight:700;margin:0 0 8px}.galaxy-module p{margin:0;font-size:16px;color:#b8b5b0;line-height:1.6}
+    .galaxy-shell-footer{display:flex;align-items:center;justify-content:center;border-top:1px solid #ffffff0d;color:#b8b5b0;font-size:13px;background:#151515}
+    body[data-surface=galaxy] .stage{position:relative;z-index:1;grid-template-columns:1fr;background:#0008}
+    body[data-surface=galaxy] .brand{display:none}body[data-surface=galaxy] .form-wrap{padding:36px}
+    body[data-surface=galaxy] .card{max-width:480px;padding:28px;gap:22px;border:1px solid #ffffff15;border-radius:16px;box-shadow:0 22px 80px #0008}
+    body[data-surface=galaxy] h1{font-size:26px}body[data-surface=galaxy] .close{display:block}
+    body[data-surface=galaxy] .primary{background:#5d8270;color:#fff;border-color:#789986;box-shadow:none}
+    body[data-surface=galaxy] button{border-radius:8px}body[data-surface=galaxy] .tabs{border:0;border-bottom:1px solid #ffffff12;border-radius:0;background:none;padding:0;gap:0}
+    body[data-surface=galaxy] .tabs button[aria-selected=true]{border:0;border-radius:0;background:none;box-shadow:inset 0 -2px var(--accent)}
+    body[data-surface=galaxy] .field{grid-template-columns:1fr;gap:8px}body[data-surface=galaxy] .error{grid-column:1}
+    body[data-surface=galaxy] input{border-radius:8px;height:52px}body[data-surface=galaxy] .text-button{font-size:18px}
+    @media(max-width:700px){.stage{grid-template-columns:1fr}.brand{display:none}.form-wrap{padding:20px}.card{max-width:528px}.field{grid-template-columns:1fr;gap:6px}.error{grid-column:1}.send{min-width:116px}.footer{gap:8px}.text-button{font-size:18px}.preview-badge{display:none}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <!-- Design-only copy of the current anonymous Galaxy shell: top bar 52px,
+       desktop sidebar 216px, Dashboard module cards. No account or game data. -->
+  <div class="galaxy-shell" aria-hidden="true" inert>
+    <header class="galaxy-topbar"><img src="../phone-named-signup-2026-11-13/assets/logo-white.png" alt=""><span class="brand-zh">智星盒</span><span class="brand-en">StellaBox</span></header>
+    <div class="galaxy-body">
+      <aside class="galaxy-sidebar"><div class="galaxy-navigation" id="galaxy-navigation"></div><div class="galaxy-account"><div class="galaxy-nav-item"><svg viewBox="0 0 24 24"><path d="m19.43 12.98.04-.98-.04-.98 2.11-1.65-2-3.46-2.49 1a7.45 7.45 0 0 0-1.7-.99L15 3h-4l-.35 2.92c-.61.25-1.18.59-1.7.99l-2.49-1-2 3.46 2.11 1.65-.04.98.04.98-2.11 1.65 2 3.46 2.49-1c.52.4 1.09.74 1.7.99L11 21h4l.35-2.92c.61-.25 1.18-.59 1.7-.99l2.49 1 2-3.46-2.11-1.65ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>设置</div><div class="galaxy-signin"><svg viewBox="0 0 24 24"><path d="M14 4h6v16h-6M3 12h12m-4-4 4 4-4 4"/></svg>登录</div></div></aside>
+      <section class="galaxy-dashboard"><h2>欢迎使用智星盒</h2><p class="galaxy-tagline">棋道导航者</p><div class="galaxy-modules" id="galaxy-modules"></div></section>
+    </div>
+    <div class="galaxy-shell-footer"></div>
+  </div>
+  <main class="stage">
+    <aside class="brand" aria-label="智星盒 StellaBox"><div class="mark"><img src="../phone-named-signup-2026-11-13/assets/logo-white.png" alt=""></div><div class="brand-name"><span class="brand-zh">智星盒</span><span class="brand-en">StellaBox</span></div></aside>
+    <section class="form-wrap"><div class="card" id="card" aria-labelledby="title"></div></section>
+  </main>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <aside class="preview-badge" style="opacity:1;pointer-events:auto;z-index:5;display:flex;align-items:center;gap:12px;font:14px system-ui"><a href="index.html" style="color:inherit;display:inline-flex;align-items:center;min-height:44px">← 复盘设计</a><span>设计预览 · 仅本地示例</span><button id="demo-open" class="text-button" style="font:14px system-ui;border:1px solid var(--border);min-height:44px">预览情景</button></aside><div id="demo-panel" hidden style="position:fixed;bottom:68px;left:16px;z-index:9;padding:16px;width:340px;background:var(--panel);border:1px solid var(--border);border-radius:12px;font:16px system-ui;box-shadow:0 10px 30px #0008"><strong>统一手机号入口 · v2</strong><p style="color:var(--sub);line-height:1.5">验证码示例 123456；全程不发送短信、不写账号。</p><div id="scenario-buttons" style="display:grid;gap:8px"></div><p><a id="switch-surface" style="color:var(--accent)"></a></p></div>
+  <script src="auth.js"></script>
+</body></html>

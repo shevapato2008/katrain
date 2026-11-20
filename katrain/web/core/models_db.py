@@ -75,6 +75,9 @@ class User(Base):
         String, unique=True, index=True, default=lambda: uuid_module.uuid4().hex
     )  # Unique UUID assigned at registration
     username = Column(String, unique=True, index=True, nullable=False)
+    # Server uniqueness is owned by a role-aware migration. Board shadows keep
+    # a nonunique trusted display cache on this same declarative model.
+    public_username = Column(String, nullable=True)
     hashed_password = Column(String, nullable=False)
     rank = Column(String, default="20k")
     net_wins = Column(Integer, default=0)
@@ -97,6 +100,81 @@ class User(Base):
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
     ai_ladder_profile = relationship("AiLadderProfile", back_populates="user", uselist=False)
+
+
+class PhoneIdentity(Base):
+    """Private verified phone ownership; never projected into public user DTOs."""
+
+    __tablename__ = "phone_identities"
+    id = Column(Integer, primary_key=True)
+    phone_e164 = Column(String(16), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    verified_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    __table_args__ = (
+        UniqueConstraint("phone_e164", name="uq_phone_identity_phone"),
+        UniqueConstraint("user_id", name="uq_phone_identity_user"),
+    )
+
+
+class PhoneSignupClaim(Base):
+    """Permanent claim, including zero-grant bindings and deleted-account history."""
+
+    __tablename__ = "phone_signup_claims"
+    phone_e164 = Column(String(16), primary_key=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    claim_type = Column(String(24), nullable=False)
+    # Audit only. No FK: account deletion must neither block nor delete this claim.
+    user_id = Column(Integer, nullable=True)
+    grant_ref = Column(String(96), nullable=True)
+    __table_args__ = (
+        UniqueConstraint("grant_ref", name="uq_phone_signup_claim_grant"),
+        CheckConstraint("claim_type IN ('signup_grant', 'bound_existing')", name="ck_phone_signup_claim_type"),
+    )
+
+
+class SmsPhoneState(Base):
+    __tablename__ = "sms_phone_state"
+    phone_e164 = Column(String(16), primary_key=True)
+    last_send_at = Column(DateTime(timezone=True), nullable=True)
+    active_challenge_id = Column(String(64), nullable=True)
+    error_count = Column(Integer, nullable=False, default=0, server_default="0")
+    blocked_until = Column(DateTime(timezone=True), nullable=True)
+    __table_args__ = (CheckConstraint("error_count >= 0", name="ck_sms_phone_error_count"),)
+
+
+class SmsChallenge(Base):
+    __tablename__ = "sms_challenges"
+    id = Column(String(64), primary_key=True)
+    phone_e164 = Column(String(16), nullable=False)
+    purpose = Column(String(16), nullable=False)
+    flow_digest = Column(String(64), nullable=False)
+    bind_user_id = Column(Integer, nullable=True)
+    code_digest = Column(String(64), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    state = Column(String(16), nullable=False)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    __table_args__ = (
+        Index("ix_sms_challenge_phone", "phone_e164"),
+        CheckConstraint("purpose IN ('login', 'bind')", name="ck_sms_challenge_purpose"),
+        CheckConstraint(
+            "state IN ('pending', 'sent', 'unknown', 'rejected', 'superseded', 'consumed')",
+            name="ck_sms_challenge_state",
+        ),
+        CheckConstraint(
+            "(purpose = 'login' AND bind_user_id IS NULL) OR " "(purpose = 'bind' AND bind_user_id IS NOT NULL)",
+            name="ck_sms_challenge_actor",
+        ),
+    )
+
+
+class SmsSendBucket(Base):
+    __tablename__ = "sms_send_buckets"
+    kind = Column(String(24), primary_key=True)
+    key = Column(String(128), primary_key=True)
+    window_start = Column(DateTime(timezone=True), primary_key=True)
+    count = Column(Integer, nullable=False, default=0, server_default="0")
+    __table_args__ = (CheckConstraint("count >= 0", name="ck_sms_send_bucket_count"),)
 
 
 def _hex64_check(column):
@@ -1404,6 +1482,8 @@ class UserGame(Base):
     source = Column(String(50), nullable=False)  # play_ai / play_human / import / research
     category = Column(String(50), default="game")  # game / position
     game_type = Column(String(50), nullable=True)  # free / rated / null
+    # Display provenance only; legacy rows stay unknown and imports remain imports.
+    platform = Column(String(32), nullable=True)  # golaxy / ogs / fox
     # 这个用户坐哪一方('B' / 'W')。**算不出来就是 NULL,不猜** —— 面对面(两边都是人)、
     # 导入的谱、研究局都没有「你」这一方;拿玩家名去比就是在编(重名、没填名字)。
     # **必须可空**:非空列会让 `migrations.add_missing_columns` 补一个 `''` 默认值,
@@ -1411,6 +1491,10 @@ class UserGame(Base):
     # 当时没记下来);唯一的例外是升降级局 —— 账本 `ai_ladder_game_ledger.user_color`
     # 早就记着,`UserGameRepository.decided_since` 查询时读它,不改写这一列。
     user_color = Column(String(1), nullable=True)
+    # Server-owned native seat associations. Generic uploads cannot set these;
+    # legacy rows stay NULL, and original SGF/player names remain unchanged.
+    player_black_user_id = Column(Integer, nullable=True)
+    player_white_user_id = Column(Integer, nullable=True)
     origin_device_id = Column(String(64), nullable=True)
     sgf_hash = Column(String(64), nullable=True, index=True)
     event = Column(String(255), nullable=True)

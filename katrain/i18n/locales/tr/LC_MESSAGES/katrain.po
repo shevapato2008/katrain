@@ -8556,3 +8556,379 @@ msgstr "QR kodunun kalan süresi {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "WeChat Pay onayı bekleniyor"
+
+msgid "membership:error_position_changed"
+msgstr "Konum değişti. Analize yeniden tıklayın ve yeni fiyatı onaylayın."
+
+msgid "auth:otp_method"
+msgstr "Giriş yöntemi"
+
+msgid "auth:otp_tab"
+msgstr "SMS kodu"
+
+msgid "auth:password_tab"
+msgstr "Hesap parolası"
+
+msgid "auth:otp_phone"
+msgstr "Telefon (Çin anakarası +86)"
+
+msgid "auth:otp_code"
+msgstr "SMS doğrulama kodu"
+
+msgid "auth:otp_send"
+msgstr "Kod al"
+
+msgid "auth:otp_sending"
+msgstr "Gönderiliyor…"
+
+msgid "auth:otp_retry"
+msgstr "{seconds}sn sonra yeniden gönder"
+
+msgid "auth:otp_submit"
+msgstr "Doğrula ve giriş yap"
+
+msgid "auth:otp_verifying"
+msgstr "Doğrulanıyor…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"Kayıtsız bir telefonun ilk doğrulaması hesap oluşturur. Yeni bir numaranın "
+"ilk kaydına 50 puan verilir; daha önce puan alan veya bağlanan numaraya "
+"tekrar verilmez."
+
+msgid "auth:otp_existing_account"
+msgstr ""
+"Hesabınız var mı? Hesap parolanızla giriş yapıp telefonunuzu bağlayın."
+
+msgid "auth:otp_requested"
+msgstr "Kod istendi. 5 dakika geçerlidir; mesajlarınızı kontrol edin."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"Gönderim durumu doğrulanamadı. Kod gelirse yine de doğrulayabilirsiniz. "
+"Yeniden göndermeye karar vermeden önce bekleme süresini tamamlayın."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Çin anakarasına ait 11 haneli telefon numarası girin."
+
+msgid "auth:otp_invalid_code"
+msgstr "Doğru 6 haneli sayısal kodu girin."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "Kod geçersiz. Yeni kod isteyin."
+
+msgid "auth:otp_challenge_expired"
+msgstr "Kodun süresi doldu. Yeni kod isteyin."
+
+msgid "auth:otp_challenge_used"
+msgstr "Kod zaten kullanıldı. Yeni kod isteyin."
+
+msgid "auth:otp_sms_limited"
+msgstr "Çok fazla SMS isteği. Daha sonra deneyin."
+
+msgid "auth:otp_locked"
+msgstr "Çok fazla hatalı kod. Daha sonra deneyin."
+
+msgid "auth:otp_unavailable"
+msgstr ""
+"SMS hizmeti kullanılamıyor. Daha sonra deneyin veya hesap parolanızla giriş "
+"yapın."
+
+msgid "auth:otp_rejected"
+msgstr ""
+"SMS isteği reddedildi. Daha sonra deneyin veya hesap parolanızla giriş "
+"yapın."
+
+msgid "auth:otp_identity_changed"
+msgstr "Giriş kimliği değişti. Yeniden başlayın."
+
+msgid "auth:otp_verification_required"
+msgstr "SMS doğrulama koduyla kaydolun."
+
+msgid "auth:bind_title"
+msgstr "Telefon bağla"
+
+msgid "auth:bind_password"
+msgstr "Geçerli hesap parolası"
+
+msgid "auth:bind_policy"
+msgstr "Bağladıktan sonra SMS koduyla giriş yapabilirsiniz. Bakiyeniz ve üyeliğiniz korunur."
+
+msgid "auth:bind_submit"
+msgstr "Bağlamayı onayla"
+
+msgid "auth:bind_submitting"
+msgstr "Bağlanıyor…"
+
+msgid "auth:bind_success"
+msgstr "Telefon başarıyla bağlandı"
+
+msgid "auth:bind_bound_label"
+msgstr "Bağlı telefon"
+
+msgid "auth:bind_load_error"
+msgstr "Telefon bağlama durumu yüklenemedi."
+
+msgid "auth:bind_loading"
+msgstr "Bağlama kontrol ediliyor…"
+
+msgid "auth:bind_retry"
+msgstr "Yeniden dene"
+
+msgid "auth:bind_not_allowed"
+msgstr "Bu hesaba telefon bağlanamaz."
+
+msgid "auth:bind_auth_required"
+msgstr "Telefon bağlamadan önce yeniden giriş yapın."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Bu numara başka bir hesaba bağlı. Başka bir numara kullanın."
+
+msgid "auth:bind_reauth_failed"
+msgstr "Geçerli hesap parolası yanlış. Yeniden girin."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Çok fazla parola denemesi. {seconds}sn sonra yeniden deneyin."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "SMS hizmeti kullanılamıyor. Daha sonra deneyin."
+
+msgid "auth:bind_sms_rejected"
+msgstr "SMS isteği reddedildi. Daha sonra deneyin."
+
+msgid "auth:bind_failed"
+msgstr "Bağlama tamamlanamadı. Daha sonra deneyin."
+
+msgid "auth:bind_done"
+msgstr "Tamam"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Ana sayfada telefonu yönet"
+
+msgid "auth:invalid_public_username"
+msgstr "2–24 harf, rakam, alt çizgi veya kısa çizgi kullanın"
+
+msgid "auth:reserved_public_username"
+msgstr "Başka bir kullanıcı adı seçin"
+
+msgid "auth:public_username_taken"
+msgstr "Bu kullanıcı adı zaten kullanılıyor"
+
+msgid "auth:signup_grant_success"
+msgstr "Kayıt tamamlandı. 50 puan eklendi"
+
+msgid "auth:profile_success"
+msgstr "Kurulum tamamlandı"
+
+msgid "auth:signup_success"
+msgstr "Kayıt tamamlandı"
+
+msgid "auth:verified_phone"
+msgstr "Doğrulanmış telefon {phone}"
+
+msgid "auth:phone_label"
+msgstr "Telefon numarası"
+
+msgid "auth:public_username"
+msgstr "Kullanıcı adı (takma ad)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Herkese açık bir kullanıcı adı seçin"
+
+msgid "auth:new_password_placeholder"
+msgstr "Giriş parolası belirleyin"
+
+msgid "auth:phone_placeholder"
+msgstr "Çin anakarası +86"
+
+msgid "auth:code_label"
+msgstr "Doğrulama kodu"
+
+msgid "auth:code_placeholder"
+msgstr "6 haneli kod"
+
+msgid "auth:complete_submit"
+msgstr "Kaydet ve giriş yap"
+
+msgid "auth:register_submit"
+msgstr "Kaydol ve giriş yap"
+
+msgid "auth:existing_login"
+msgstr "Zaten hesabınız var mı? Giriş yapın"
+
+msgid "auth:hide_password"
+msgstr "Parolayı gizle"
+
+msgid "auth:show_password"
+msgstr "Parolayı göster"
+
+msgid "auth:named_register_title"
+msgstr "Kaydol"
+
+msgid "auth:complete_title"
+msgstr "Kaydı tamamla"
+
+msgid "auth:close"
+msgstr "Kapat"
+
+msgid "auth:register_entry"
+msgstr "Hesap oluştur"
+
+msgid "auth:guest_entry"
+msgstr "Misafir olarak giriş yap"
+
+msgid "auth:login_entry"
+msgstr "Girişe dön"
+
+msgid "auth:account_label"
+msgstr "Hesap"
+
+msgid "auth:new_password_invalid"
+msgstr "Parola en az 15 karakter olmalıdır"
+
+msgid "auth:password_too_long"
+msgstr "Parola çok uzun. Kısaltın"
+
+msgid "auth:continue_submit"
+msgstr "Devam et"
+
+msgid "auth:continue_name_title"
+msgstr "Herkese açık kullanıcı adı belirle"
+
+msgid "auth:continue_legacy_title"
+msgstr "Kullanıcı adı belirle"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Benzersiz kullanıcı adınız herkese açık olacaktır."
+
+msgid "auth:continue_password_required"
+msgstr "Bu kullanıcı adı mevcut. Asıl hesabın parolasını doğrulayın."
+
+msgid "auth:continue_original_password"
+msgstr "Asıl parola"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Asıl hesabın parolasını girin"
+
+msgid "auth:continue_change_phone"
+msgstr "Telefon numarasını değiştir"
+
+msgid "auth:continue_original_login"
+msgstr "Asıl hesaba giriş yap"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Bu hesap başka bir telefona bağlı. Numarayı yönetmek için asıl hesaba giriş "
+"yapın."
+
+msgid "auth:continue_password_incorrect"
+msgstr "Asıl hesabın parolası yanlış. Tekrar deneyin."
+
+msgid "auth:continue_password_locked"
+msgstr "Çok fazla parola denemesi. {seconds} saniye sonra tekrar deneyin."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Benzersiz ve herkese açık bir kullanıcı adı seçin"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Doğrulandı"
+
+msgid "auth:password_settings_title"
+msgstr "Parola belirle veya sıfırla"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Mevcut telefonunuza gönderilen yeni SMS koduyla parola belirleyin. SMS ile "
+"giriş kullanıma açık kalır."
+
+msgid "auth:password_new"
+msgstr "Yeni parola"
+
+msgid "auth:password_submit"
+msgstr "Parolayı kaydet"
+
+msgid "auth:password_submitting"
+msgstr "Kaydediliyor…"
+
+msgid "auth:password_success"
+msgstr "Parola kaydedildi"
+
+msgid "auth:password_phone_required"
+msgstr "Parola belirlemeden önce bir telefon bağlayın."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Bu hesaba şu anda bağlı olan telefonu kullanın."
+
+msgid "auth:password_auth_required"
+msgstr "Parola belirlemeden önce yeniden giriş yapın."
+
+msgid "auth:password_not_allowed"
+msgstr "Bu hesap burada parola belirleyemez."
+
+msgid "auth:password_failed"
+msgstr "Parola kaydedilemedi. Tekrar deneyin."
+
+msgid "report:tier_normal"
+msgstr "Normal rapor"
+
+msgid "report:tier_deep"
+msgstr "Gelişmiş rapor"
+
+msgid "report:cross_platform"
+msgstr "Platformlar arası · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "İnceleme arşivi"
+
+msgid "report:tier_menu"
+msgstr "Rapor düzeyi"
+
+msgid "startup:loading"
+msgstr "Yükleniyor…"
+
+msgid "startup:render_error"
+msgstr "Bu sayfa şu anda görüntülenemiyor"
+
+msgid "startup:preload_error"
+msgstr "Bazı sayfalar yüklenemedi"
+
+msgid "startup:reload"
+msgstr "Yeniden yükle"
+
+msgid "membership:report_insufficient_title"
+msgstr "Rapor kotası yetersiz"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"Bu raporu başlatmak için kullanılabilir kota yeterli değil. Üyelik "
+"avantajlarını inceleyebilir veya puan yükleyebilirsiniz."
+
+msgid "membership:report_verification_title"
+msgstr "Ücretsiz rapor kullanılamıyor"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"Ücretsiz rapor hakkı şu anda kullanılamadığı için bu rapor henüz "
+"başlatılmadı. Hesap sayfanızdan üyelik ve puan durumunu kontrol "
+"edebilirsiniz."
+
+msgid "membership:report_view_membership"
+msgstr "Üyelik ve yükleme"
+
+msgid "membership:report_view_account"
+msgstr "Hesabı ve kotayı görüntüle"
+
+msgid "auth:bind_success_gift"
+msgstr "Telefon bağlandı. 50 puan eklendi."
+
+msgid "auth:bind_gift_hint"
+msgstr "Telefon numaranızı ilk kez doğruladığınızda 50 puan kazanın. Hediye tekrar verilmez."

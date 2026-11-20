@@ -2,6 +2,7 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Box, IconButton, FormControlLabel, Checkbox, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useTranslation } from '../hooks/useTranslation';
+import { displayAccountName } from '../features/auth/accountDisplay';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -188,7 +189,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {user ? (
               <>
                 <Typography variant="body2" sx={{ alignSelf: 'center', color: '#f5f3f0', fontWeight: 600 }}>
-                  {user.username}
+                  {displayAccountName(user, t('auth:account_label', '账号'))}
                 </Typography>
                 <Button size="small" variant="outlined" color="inherit" onClick={onLogoutClick} sx={{ color: '#b8b5b0', borderColor: 'rgba(255,255,255,0.2)' }}>
                   {t("Logout")}

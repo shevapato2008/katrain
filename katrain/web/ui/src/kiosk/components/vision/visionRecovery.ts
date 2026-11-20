@@ -82,7 +82,11 @@ export function reduceRecoveryState(state: RecoveryState, action: RecoveryAction
     };
   }
 
-  if (event.type === 'synced') return initialRecoveryState;
+  if (event.type === 'synced') {
+    // A placement-only sync is a verification trigger, never proof that the
+    // active mismatch and the client's recorded game are both current.
+    return state.blocking?.kind === 'mismatch' ? { ...state, pending: null } : initialRecoveryState;
+  }
 
   if (event.type === 'board_lost') {
     return state.pending === null ? state : { ...state, pending: null };
@@ -169,6 +173,8 @@ export function reduceRecoveryState(state: RecoveryState, action: RecoveryAction
       };
     }
 
+    if (state.blocking?.kind === 'mismatch'
+      && JSON.stringify([state.blocking.positions, state.blocking.missing]) === JSON.stringify([positions, missing])) return state;
     return { ...state, blocking: { kind: 'mismatch', positions, missing } };
   }
 

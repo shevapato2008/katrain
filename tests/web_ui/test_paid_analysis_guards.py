@@ -20,6 +20,169 @@ def real_runtime(monkeypatch):
     return module
 
 
+def test_state_position_key_uses_current_full_path_in_board_snapshot(monkeypatch, real_runtime):
+    from katrain.core.game_node import GameNode
+    from katrain.core.sgf_parser import Move
+    from katrain.web.core.billing_input import canonical_analysis_input
+    from katrain.web.core.paid_analysis import session_position_sgf
+    from katrain.web.session import SessionManager
+
+    runtime_session = SessionManager(enable_engine=False).create_session(user_id=10, skip_initial_analysis=True)
+    runtime = runtime_session.katrain
+    root = runtime.game.root
+    root.set_property("AB", ["aa", "ba"])
+    root.set_property("AW", ["bb"])
+    root.set_property("PL", "W")
+    cursor = GameNode(parent=root, move=Move.from_gtp("D4", player="W"))
+    GameNode(parent=cursor, move=Move.from_gtp("Q16", player="B"))
+    runtime.game.set_current_node(cursor)
+    original_update_timer = runtime.update_timer
+
+    def update_timer_inside_snapshot():
+        assert runtime.ai_ladder_commit_lock._is_owned(), "state must hold the real AI commit lock"
+        original_update_timer()
+
+    monkeypatch.setattr(runtime, "update_timer", update_timer_inside_snapshot)
+    state = runtime.get_state()
+    sgf = session_position_sgf(runtime_session, SimpleNamespace(id=10))
+    assert state["expected_position_key"] == canonical_analysis_input(sgf, "position", "normal")["fingerprint"]
+    assert state["current_node_id"] == id(cursor) and state["current_node_index"] == 1
+    assert canonical_analysis_input(sgf, "position", "normal")["moves"] == [["W", "D4"]]
+
+
+@pytest.mark.parametrize("unsupported", ["midgame_setup", "overlong"])
+def test_unsupported_position_keeps_state_with_no_position_key(real_runtime, unsupported):
+    from katrain.core.game_node import GameNode
+    from katrain.core.sgf_parser import Move
+    from katrain.web.session import SessionManager
+
+    runtime = SessionManager(enable_engine=False).create_session(user_id=10, skip_initial_analysis=True).katrain
+    cursor = runtime.game.play(Move.from_gtp("D4", player="B"), analyze=False)
+    if unsupported == "midgame_setup":
+        cursor.set_property("AB", "aa")
+    else:
+        for index in range(500):
+            cursor = GameNode(parent=cursor, move=Move(None, "W" if index % 2 == 0 else "B"))
+        runtime.game.set_current_node(cursor)
+    state = runtime.get_state()
+    assert state["current_node_id"] == id(cursor)
+    assert state["expected_position_key"] is None
+
+
+@pytest.fixture
+def paid_play_api(monkeypatch, real_runtime):
+    from fastapi import FastAPI
+    from katrain.web.api.v1.endpoints import billing, paid_analysis
+    from katrain.web.api.v1.endpoints.auth import require_writable_user
+    from katrain.web.core.db import get_db
+    from katrain.web.session import SessionManager
+
+    monkeypatch.setattr(settings, "MEMBERSHIP_MODE", "enabled")
+    monkeypatch.setattr(settings, "KATRAIN_MODE", "server")
+    app = FastAPI()
+    app.include_router(billing.router, prefix="/api/v1/billing")
+    app.include_router(paid_analysis.router, prefix="/api/v1/analysis")
+    app.state.session_manager = SessionManager(enable_engine=False)
+    owner = SimpleNamespace(id=10, username="owner")
+    session = app.state.session_manager.create_session(user_id=10, skip_initial_analysis=True)
+    app.dependency_overrides[require_writable_user] = lambda: owner
+
+    class NoDatabaseWork:
+        def __getattr__(self, name):
+            pytest.fail("Rejected play request reached database: " + name)
+
+    app.dependency_overrides[get_db] = lambda: NoDatabaseWork()
+    calls = []
+
+    def no_billing(*args, **kwargs):
+        calls.append("billing")
+        pytest.fail("Rejected play request reached billing")
+
+    async def no_engine(**kwargs):
+        calls.append("engine")
+        pytest.fail("Rejected play request reached engine")
+
+    monkeypatch.setattr(billing.operations, "quote_operation", no_billing)
+    monkeypatch.setattr(paid_analysis.ops, "reserve_operation_in_transaction", no_billing)
+    app.state.paid_analysis_client = SimpleNamespace(analyze=no_engine)
+    return app, session, owner, calls
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("route", ["quote", "execute"])
+@pytest.mark.parametrize("failure", ["advanced", "missing_key", "stale_key", "unsupported_position"])
+async def test_play_quote_and_execute_reject_before_billing(paid_play_api, route, failure):
+    from katrain.core.sgf_parser import Move
+
+    app, session, _, calls = paid_play_api
+    key = session.katrain.get_state().get("expected_position_key", "old-contract")
+    body = {"session_id": session.session_id, "profile": "normal", "expected_position_key": key}
+    if failure == "advanced":
+        body["profile"] = "advanced"
+    elif failure == "missing_key":
+        body.pop("expected_position_key")
+    else:
+        # Browser still shows the last WS frame after the server has committed a move.
+        session.katrain.game.play(Move.from_gtp("D4", player="B"), analyze=False)
+        if failure == "unsupported_position":
+            session.katrain.game.current_node.set_property("AB", "aa")
+    if route == "quote":
+        body["kind"] = "position"
+        path = "/api/v1/billing/quotes"
+    else:
+        body.update(quote_token="not-used", idempotency_key="not-reserved")
+        path = "/api/v1/analysis/positions"
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(path, json=body)
+    assert response.status_code == (403 if failure == "advanced" else 409), response.text
+    assert response.json()["detail"]["code"] == (
+        "position_profile_unavailable" if failure == "advanced" else "position_changed"
+    )
+    assert calls == []
+
+
+def test_play_capture_and_research_advanced_preserve_session_guards(paid_play_api, monkeypatch):
+    from fastapi import HTTPException
+    from katrain.web.api.v1.endpoints.billing import BillingQuoteRequest
+    from katrain.web.api.v1.endpoints.paid_analysis import _position_input
+    from katrain.web.core.billing_input import canonical_analysis_input
+    from katrain.web.core import paid_analysis
+
+    app, session, owner, _ = paid_play_api
+    request = SimpleNamespace(app=app)
+    key = session.katrain.get_state().get("expected_position_key", "old-contract")
+    body = BillingQuoteRequest(kind="position", profile="normal", session_id=session.session_id)
+    body = body.model_copy(update={"expected_position_key": key})
+    serialize = paid_analysis.current_position_sgf
+
+    def serialize_inside_snapshot(runtime):
+        assert session.lock.locked() and runtime.ai_ladder_commit_lock._is_owned()
+        return serialize(runtime)
+
+    monkeypatch.setattr(paid_analysis, "current_position_sgf", serialize_inside_snapshot)
+    capture = _position_input(request, body, owner)
+    assert capture.session_id is None
+    assert canonical_analysis_input(capture.sgf, "position", "normal")["fingerprint"] == key
+    session.mode = "research"
+    research = _position_input(
+        request, body.model_copy(update={"profile": "advanced", "expected_position_key": None}), owner
+    )
+    assert research.profile == "advanced" and research.sgf == capture.sgf
+    for attr, value in [("bot_game", True), ("user_id", 99)]:
+        setattr(session, attr, value)
+        with pytest.raises(HTTPException) as blocked:
+            _position_input(request, body, owner)
+        assert blocked.value.status_code == 403
+        setattr(session, attr, False if attr == "bot_game" else 10)
+    for attr, value in [("game_type", "ranked"), ("pvp_bot_session", True)]:
+        previous = getattr(session.katrain, attr, None)
+        setattr(session.katrain, attr, value)
+        with pytest.raises(HTTPException) as blocked:
+            _position_input(request, body, owner)
+        assert blocked.value.status_code == 403
+        setattr(session.katrain, attr, previous)
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["enabled", "paused"])
 async def test_real_mounted_legacy_apis_cannot_trigger_engine(monkeypatch, mode, real_runtime):

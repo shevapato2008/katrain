@@ -187,6 +187,7 @@ class BillingQuoteRequest(BaseModel):
     sgf: str | None = Field(default=None, max_length=262144)
     game_id: str | None = Field(default=None, max_length=64)
     session_id: str | None = Field(default=None, max_length=128)
+    expected_position_key: str | None = Field(default=None, max_length=64)
 
 
 class BillingOrderRequest(BaseModel):

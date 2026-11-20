@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../features/auth/accountDisplay';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Chip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
@@ -19,6 +20,8 @@ import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import AiLadderSettlementPanel from '../components/aiLadder/AiLadderSettlementPanel';
 import { readAudioPref, readStoneSoundPref, resolveStoneSoundUrl } from '../../utils/audioPrefs';
+import { usePaidPlayPosition } from '../../features/analysis/usePaidPlayPosition';
+import { ConsumptionQuoteDialog } from '../../features/membership/ConsumptionQuoteDialog';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -30,7 +33,7 @@ const GamePage = () => {
     const navigate = useNavigate();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
-    const { token, user } = useAuth();
+    const { token, user, identityKey, status, isGuest } = useAuth();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const routeIsRated = mode === 'rated';
@@ -51,13 +54,15 @@ const GamePage = () => {
     const {
         sessionId: currentSessionId,
         setSessionId,
-        gameState,
+        gameState: rawGameState,
         setGameState,
         error,
         onMove,
         onNavigate,
         handleAction
     } = useGameSession({ token: token || undefined });
+    const paid = usePaidPlayPosition({ gameState: rawGameState, sessionId, identityKey, status, token, isGuest });
+    const gameState = paid.gameState;
     const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
     const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, identity);
 
@@ -148,6 +153,9 @@ const GamePage = () => {
         view3d: false,
         stoneDropEffect: false,
     }));
+    const displayAnalysisToggles = paid.active ? { ...analysisToggles,
+        hints: paid.showHints, ownership: paid.showOwnership, score: paid.showScore, policy: false,
+    } : analysisToggles;
 
     // Load Board3D dynamically when first requested
     useEffect(() => {
@@ -261,6 +269,10 @@ const GamePage = () => {
     }, [gameState?.end_result, remoteLifecycle, registerActiveGame, unregisterActiveGame, handleAction]);
 
     const handleToggleChange = (setting: string) => {
+        if (paid.active && (setting === 'hints' || setting === 'ownership' || setting === 'score')) {
+            if (paid.eligible) void paid.toggle(setting);
+            return;
+        }
         if (setting === 'view3d') {
             setAnalysisToggles(prev => {
                 const next = { ...prev, view3d: !prev.view3d };
@@ -402,7 +414,7 @@ const GamePage = () => {
             numbers: analysisToggles.numbers,
             stoneDropEffect: analysisToggles.stoneDropEffect,
         }
-        : analysisToggles;
+        : displayAnalysisToggles;
 
     const board = (
         <Box
@@ -437,18 +449,16 @@ const GamePage = () => {
     const controlsPanel = (embedded = false) => (
         <RightSidebarPanel
             gameState={gameState}
-            analysisToggles={analysisToggles}
+            analysisToggles={displayAnalysisToggles}
             onToggleChange={handleToggleChange}
             onNavigate={onNavigate}
             onAction={handleActionWrapper}
             isRated={isRated}
-            /* 判据取**服务端说的那一句**（`get_state` 的 `analysis_delivered`），不是本地的
-               `isAuthenticated`：决定交不交付的是「这个会话有没有主人」，而一个登录用户
-               照样可能打开一个无主会话（拿到了游客的链接）。客户端自己推，两边就会不一致。 */
-            analysisRequiresLogin={gameState.analysis_delivered === false}
+            analysisRequiresLogin={paid.requiresLogin}
+            analysisUnavailable={paid.unavailable}
             onTimeout={handleTimeout}
             onPlaySound={handlePlaySound}
-            isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
+            isAnalysisPending={paid.active ? paid.busy : analysisToggles.hints && !gameState.analysis?.moves?.length}
             /* 「离开对局」只在统一版式的右栏里出现 —— 旧版式那条顶栏本来就有一个退出键，
                再加一个是重复。这一页在此之前**根本没有键能打开那个确认框**：
                handleLeaveRequest 只挂在非升降级的顶栏上，升降级模式下弹窗接好了却没有入口。 */
@@ -469,7 +479,9 @@ const GamePage = () => {
 
     return (
         <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+            <ConsumptionQuoteDialog quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onConfirm={() => void paid.confirm()} onCancel={paid.cancel} />
             <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
+                {paid.error && !paid.pendingQuote && <Alert severity="error">{paid.error}</Alert>}
                 {/* The ladder AI refused to move (the engine cannot serve the seated rung at
                     its calibrated strength). No move is coming and the clock keeps running,
                     so say so — an empty board with a ticking opponent clock reads as
@@ -563,7 +575,7 @@ const GamePage = () => {
                         title={isRated ? t('rated_play', '升降级对弈') : t('play:vs_ai_free', '自由对弈')}
                         /* 副标题和状态徽章按冻结稿补上 —— 对局室有、这一页没有的话，
                            同一个模块牌在两页上长得不一样。 */
-                        subtitle={`${gameState.players_info.B.name} vs ${gameState.players_info.W.name} · ${gameState.history.length} ${t('live:moves', '手')}`}
+                        subtitle={`${displayPlayerName(gameState.players_info.B, t('auth:account_label', '账号'))} vs ${displayPlayerName(gameState.players_info.W, t('auth:account_label', '账号'))} · ${gameState.history.length} ${t('live:moves', '手')}`}
                         status={gameState.end_result
                             ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
                             : <Chip size="small" color="primary" label={t('game:in_play', '对局中')} />}

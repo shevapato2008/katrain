@@ -209,3 +209,94 @@ describe('verified spectator membership metadata', () => {
     expect(hook.result.current.gameState?.spectator_count).toBeUndefined();
   });
 });
+
+describe('verified recovery state refresh', () => {
+  const identity = { ok: true as const, recovery_id: 'r1', session_id: 'session-1', game_id: 'g1', current_node_id: 16 };
+  const stateAt = (node: number, game = 'g1') => ({ game_id: game, current_node_id: node }) as GameState;
+  const deferred = <T,>() => {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>(done => { resolve = done; });
+    return { promise, resolve };
+  };
+  beforeEach(() => {
+    vi.clearAllMocks(); sockets.length = 0;
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: stateAt(15) });
+    vi.stubGlobal('WebSocket', MockWebSocket);
+  });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+  const start = async () => {
+    const hook = renderHook(() => useGameSession({ token: 'recovery-token' }));
+    act(() => hook.result.current.setSessionId('session-1'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+    return hook;
+  };
+  it('applies only the verified identity with session credentials', async () => {
+    const hook = await start();
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: stateAt(16) });
+    let status: unknown;
+    await act(async () => { status = await hook.result.current.refreshStateForRecovery(identity); });
+    expect(status).toBe('applied');
+    expect(hook.result.current.gameState?.current_node_id).toBe(16);
+    expect(API.getState).toHaveBeenLastCalledWith('session-1', 'recovery-token');
+  });
+  it.each([{ verified: 16, next: 17 }, { verified: 17, next: 16 }])('protects a move or undo accepted before stale GET resolves: $next', async ({ verified, next }) => {
+    const hook = await start();
+    const get = deferred<{ session_id: string; state: GameState }>();
+    vi.mocked(API.getState).mockReturnValue(get.promise);
+    const request = hook.result.current.refreshStateForRecovery({ ...identity, current_node_id: verified });
+    act(() => {
+      sockets[0].onmessage?.(update(stateAt(next)));
+      get.resolve({ session_id: 'session-1', state: stateAt(verified) });
+    });
+    let status: unknown;
+    await act(async () => { status = await request; });
+    expect(status).toBe('superseded');
+    expect(hook.result.current.gameState?.current_node_id).toBe(next);
+  });
+  it('recognizes already-current only for the exact verified identity', async () => {
+    const hook = await start();
+    const get = deferred<{ session_id: string; state: GameState }>();
+    vi.mocked(API.getState).mockReturnValue(get.promise);
+    const request = hook.result.current.refreshStateForRecovery(identity);
+    act(() => {
+      hook.result.current.setGameState(stateAt(16));
+      get.resolve({ session_id: 'session-1', state: stateAt(15) });
+    });
+    await expect(request).resolves.toBe('already-current');
+    expect(hook.result.current.gameState?.current_node_id).toBe(16);
+  });
+  it.each([stateAt(17), stateAt(16, 'other-game')])('rejects an unverified GET position', async state => {
+    const hook = await start();
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state });
+    await expect(hook.result.current.refreshStateForRecovery(identity)).resolves.toBe('superseded');
+    expect(hook.result.current.gameState?.current_node_id).toBe(15);
+  });
+  it.each(['session', 'game'])('invalidates recovery after %s changes', async kind => {
+    const hook = await start();
+    const get = deferred<{ session_id: string; state: GameState }>();
+    vi.mocked(API.getState).mockReturnValue(get.promise);
+    const request = hook.result.current.refreshStateForRecovery(identity);
+    act(() => {
+      if (kind === 'session') {
+        vi.mocked(API.getState).mockImplementation(() => new Promise(() => {}));
+        hook.result.current.setSessionId('session-2');
+      }
+      else hook.result.current.setGameState(stateAt(1, 'g2'));
+      get.resolve({ session_id: 'session-1', state: stateAt(16) });
+    });
+    await act(async () => { expect(await request).toBe('superseded'); });
+    expect(hook.result.current.gameState?.current_node_id).not.toBe(16);
+  });
+  it('bounds the GET lifetime and ignores its late response', async () => {
+    const hook = await start();
+    vi.useFakeTimers();
+    const get = deferred<{ session_id: string; state: GameState }>();
+    vi.mocked(API.getState).mockReturnValue(get.promise);
+    const request = hook.result.current.refreshStateForRecovery(identity);
+    const failure = expect(request).rejects.toThrow(/超时/);
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
+    await failure;
+    await act(async () => { get.resolve({ session_id: 'session-1', state: stateAt(16) }); });
+    expect(hook.result.current.gameState?.current_node_id).toBe(15);
+  });
+});

@@ -1,0 +1,9 @@
+html, body, #root { margin: 0; width: 100%; height: 100%; background: #0b1413; }
+.ogs-preview-topbar {
+  height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; border-bottom: 1px solid #304b3b;
+  color: #a9c1af; font: 16px var(--font-sans);
+}
+.ogs-preview-topbar a { color: #eaf2e8; text-decoration: none; font-size: 22px; }
+.ogs-preview-library { color: #eaf2e8; font: 22px var(--font-sans); padding: 24px; }
+.ogs-preview-library a { color: #91e2ad; }

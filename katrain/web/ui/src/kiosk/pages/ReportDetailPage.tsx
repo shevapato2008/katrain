@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../features/auth/accountDisplay';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -409,7 +410,7 @@ export default function ReportDetailPage() {
       <ReportAnalysisRail
         key={reportIdentity}
         testId="report-detail"
-        players={[game.player_black || t('review:black', '黑'), game.player_white || t('review:white', '白')]}
+        players={[displayGamePlayerName(game, 'B', t('review:black', '黑')), displayGamePlayerName(game, 'W', t('review:white', '白'))]}
         pagebar={(<KioskPagebar
           testId="report-detail-pagebar"
           backLabel={t('review:back_review_full', '返回复盘')}
@@ -435,8 +436,8 @@ export default function ReportDetailPage() {
           <span>{kifuRulesLabel(game.rules, t)}</span><span>{t('report:komi_label', '贴目')} {game.komi ?? '—'}</span>
         </div>)}
         details={[
-          [t('review:black', '黑'), [game.player_black, game.black_rank].filter(Boolean).join(' · ')],
-          [t('review:white', '白'), [game.player_white, game.white_rank].filter(Boolean).join(' · ')],
+          [t('review:black', '黑'), [displayGamePlayerName(game, 'B', t('auth:account_label', '账号')), game.black_rank].filter(Boolean).join(' · ')],
+          [t('review:white', '白'), [displayGamePlayerName(game, 'W', t('auth:account_label', '账号')), game.white_rank].filter(Boolean).join(' · ')],
           [t('report:event', '赛事'), [game.event, game.round_name].filter(Boolean).join(' · ')],
           [t('report:date', '日期'), game.game_date || game.created_at],
           [t('report:result', '结果'), outcomeLine(game, null, t)],

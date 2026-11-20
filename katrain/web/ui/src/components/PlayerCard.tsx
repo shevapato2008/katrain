@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../features/auth/accountDisplay';
 import React, { useRef, useEffect } from 'react';
 import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -102,7 +103,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   // numeric calculated_rank rendered by localizedRank.
   const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
   const displayRank = rawRank === "No Rank" ? t("No Rank", "No Rank") : rawRank;
-  const displayName = info.name || (isBlack ? t('Black') : t('White'));
+  const displayName = displayPlayerName(info, typeof info.user_id === 'number' ? t('auth:account_label', '账号') : isBlack ? t('Black') : t('White'));
 
   // Timer Breakdown —— 算法在 utils/gameClock.ts；kiosk 本地对局的钟用的是同一份，别在这里再写一遍。
   const clock = computeClock({

@@ -961,31 +961,6 @@ async def _initialize_board(app: FastAPI, log):
         # independent of CaptureService: vision-only deployments need the warp too.
         app.state.geometry = hardware_vision_state.geometry
 
-    # Vision service (optional — enabled when --vision-model is provided)
-    if vision_config and vision_config.enabled and camera_hub is not None:
-        from katrain.vision.service import VisionService
-        from katrain.vision.parallax_store import attach_parallax
-
-        vision_config, parallax_level, parallax_message = attach_parallax(
-            vision_config,
-            hardware_vision_dir,
-            hardware_vision_state.generation if hardware_vision_state is not None else None,
-        )
-        log.log(parallax_level, parallax_message)
-
-        vision = VisionService(vision_config, frame_source=camera_hub,
-            recovery_gate=app.state.hardware_recovery_gate)
-        app.state.vision = vision
-        vision.start()
-        app.state.vision = vision
-        app.state.vision_ws_clients = {}
-        app.state.vision_move_queue = asyncio.Queue()
-        app.state.vision_pump_task = asyncio.create_task(_vision_event_pump(app))
-        app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
-        log.info("Vision service started (backend=%s)", vision_config.backend)
-    else:
-        app.state.vision = None
-
     # LED service (optional — enabled when --led-serial-port is provided)
     led_config = getattr(settings, "_led_config", None)
     if led_config and led_config.enabled:
@@ -1008,6 +983,36 @@ async def _initialize_board(app: FastAPI, log):
             log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
+
+    # Vision service (optional — enabled when --vision-model is provided)
+    if vision_config and vision_config.enabled and camera_hub is not None:
+        from katrain.vision.service import VisionService
+        from katrain.vision.parallax_store import attach_parallax
+
+        vision_config, parallax_level, parallax_message = attach_parallax(
+            vision_config,
+            hardware_vision_dir,
+            hardware_vision_state.generation if hardware_vision_state is not None else None,
+        )
+        log.log(parallax_level, parallax_message)
+
+        vision = VisionService(
+            vision_config,
+            frame_source=camera_hub,
+            recovery_gate=app.state.hardware_recovery_gate,
+            lighting_owner=app.state.led,
+            lighting_disabled=not led_config or not led_config.enabled,
+        )
+        app.state.vision = vision
+        vision.start()
+        app.state.vision = vision
+        app.state.vision_ws_clients = {}
+        app.state.vision_move_queue = asyncio.Queue()
+        app.state.vision_pump_task = asyncio.create_task(_vision_event_pump(app))
+        app.state.vision_poller_task = asyncio.create_task(_vision_move_poller(app))
+        log.info("Vision service started (backend=%s)", vision_config.backend)
+    else:
+        app.state.vision = None
 
     # Physical-play orchestrator: drives game LEDs from authoritative state
     # (track kiosk-physical-play; requires vision, LED optional/degraded-tolerant)
@@ -1353,22 +1358,19 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         guard_session_reader(session, current_user, action)
 
     def session_state_for_read(session):
-        # A cached move snapshot does not include thinking time since that move.
-        # Refresh / reconnect must read the same current server clock as the players.
-        if getattr(session, "game_type", None) == "pvp_local" or (
-            getattr(session, "game_type", None) in ("free", "pvp_lobby")
-            and type(getattr(session, "player_b_id", None)) is int
-            and type(getattr(session, "player_w_id", None)) is int
-        ):
+        from copy import deepcopy
+
+        # Central rooms use their authoritative mirror. Local reads take a fresh
+        # cursor/clock snapshot; response projection never replaces publication.
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            state = deepcopy(session.last_state or {})
+        else:
             with session.lock:
-                if not session.game_ended:
-                    session.last_state = session.katrain.get_state()
-        state = session.last_state or session.katrain.get_state()
+                state = session.katrain.get_state()
         from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
 
         if not legacy_analysis_allowed(runtime=session.katrain, app=app):
             state = strip_private_analysis(state)
-            session.last_state = state
         state["sockets_count"] = len(session.sockets)
         if not strict_box_sso_enabled():
             state["spectator_count"] = session.spectator_presence.count(
@@ -1403,6 +1405,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         enable_engine=enable_engine,
     )
     manager.membership_guard_active = app.state.membership_guard_active
+    manager.public_account_resolver = lambda user_id: app.state.user_repo.get_user_by_id(user_id)
     app.state.session_manager = manager
 
     @app.get("/api/pvp/identity")
@@ -5433,6 +5436,9 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
     names = {"B": players["B"].name or "", "W": players["W"].name or ""}
     human_color = "W" if session.katrain.platform_engine_color == "B" else "B"
     names[human_color] = user.username
+    # Only this trusted platform-engine path reads KTP; imported SGFs never
+    # acquire played-game classification or authority from their metadata.
+    platform = session.katrain.game.root.get_property("KTP")
     await record(
         session,
         app,
@@ -5440,6 +5446,7 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
         result,
         data_overrides={
             "source": "play_ai",
+            "platform": platform if platform in ("golaxy", "ogs", "fox") else None,
             "player_black": names["B"],
             "player_white": names["W"],
             # 人坐的是引擎的另一边。两个座位都不标 human,这里是唯一知道这件事的地方。
@@ -5478,6 +5485,7 @@ async def _record_ogs_online_game(session, ctx, result: str, app: FastAPI) -> bo
         data_overrides={
             "id": local_game_id,
             "source": "play_human",
+            "platform": ctx.platform,
             "player_black": names["B"],
             "player_white": names["W"],
             "user_color": ctx.my_color,
@@ -5729,8 +5737,18 @@ async def _submit_confirmed_move(
             _rearm_detection()
         return 0.0
 
-    # R1.3: only the side to move may inject (color check).
+    # Local authority can be ahead of its last broadcast (e.g. W16 committed
+    # while last_state still shows B15). Read its turn at the commit boundary;
+    # central mirrors and platform gateways retain their existing prechecks.
     expected_player = (session.last_state or {}).get("player_to_move")
+    gateway = getattr(app.state, "platform_gateway", None)
+    if getattr(session, "game_type", None) != "pvp_lobby" and not (
+        gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session))
+    ):
+        with session.katrain.ai_ladder_commit_lock:
+            if not current():
+                return 0.0
+            expected_player = session.katrain.next_player_to_move()
     move_player = "B" if move_data.color == 1 else "W"
     if expected_player and move_player != expected_player:
         log.info("Vision move %s out of turn (expects %s) — ignored", move_player, expected_player)
@@ -5869,14 +5887,43 @@ async def _submit_confirmed_move(
             if tracker is not None:
                 tracker.on_success()
     else:
-        # r1(S7):上面按 `last_state` 做的轮次检查读的是可能过期的广播帧;真正的判别在对局提交锁里
+        # 上面的本地预检查读取实时轮次;这里仍在对局提交锁内把最终判别与落子原子完成
         # (已终局 / 轮到 AI / 不是这颗子的颜色)。被拒时照「不轮到」那一支重新布防、节流 0.5 秒。
         # 与跨平台 N13 在同一函数相邻改动,合并时逐段对。
         try:
             with session.lock:
                 if not current():
                     return 0.0
-                session.katrain("play", move.coords, guard=True, expected_player=move_player)
+                from katrain.vision.service import VisionService
+                from katrain.web.api.v1.endpoints.vision import reference_candidate_enabled_for_session
+
+                collector = None
+                if (
+                    isinstance(vision, VisionService)
+                    and source is not None
+                    and reference_candidate_enabled_for_session(app, session_id, session)
+                ):
+                    with session.katrain.ai_ladder_commit_lock:
+                        if not current():
+                            return 0.0
+                        baseline = vision.capture_reference_baseline(source, move_data)
+
+                    def collector(game, parent, node, accepted_board):
+                        # _do_play owns the real game commit lock here. Never read a
+                        # later `current_node` to claim this camera candidate.
+                        if (
+                            baseline is not None
+                            and current()
+                            and session.katrain.game is game
+                            and source.game_identity == ("local", game)
+                            and baseline.expected_node_id == id(parent)
+                        ):
+                            vision.publish_accepted_reference(
+                                source, move_data, baseline, id(node), id(parent), accepted_board
+                            )
+
+                kwargs = {"_reference_committed": collector} if collector is not None else {}
+                session.katrain("play", move.coords, guard=True, expected_player=move_player, **kwargs)
         except EndgameConflict as exc:
             log.info("Vision move %s refused for session %s: %s", move_player, session_id, exc.reason)
             _rearm_unless_terminal(exc)

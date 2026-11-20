@@ -98,6 +98,8 @@ class SyncStateMachine:
         self._prev_expected_board: np.ndarray | None = None
         self._expected_node_id: int | None = None
         self._pending_expected_node_id: int | None = None
+        self._expected_recovery_id: str | None = None
+        self._pending_recovery_id: str | None = None
         self._target_board: np.ndarray | None = None
 
         # One automatic submission may temporarily own one extra, never digital authority.
@@ -160,7 +162,9 @@ class SyncStateMachine:
         self._confirmed_move = None
         return True
 
-    def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
+    def set_expected_board(
+        self, board: np.ndarray, *, expected_node_id: int | None = None, recovery_id: str | None = None
+    ) -> None:
         """Set the expected board (from game engine).
 
         Keeps the previous distinct expected board so ``_compare_boards`` can tell
@@ -169,10 +173,11 @@ class SyncStateMachine:
         revision is tracked independently and acknowledged once vision observes an
         exact physical match.
         """
-        if not np.array_equal(board, self._expected_board) or expected_node_id != self._expected_node_id:
+        board_changed = not np.array_equal(board, self._expected_board)
+        if board_changed or expected_node_id != self._expected_node_id:
             self.invalidate_confirmed_move()
             self._claimed_points.clear()
-        if not np.array_equal(board, self._expected_board):
+        if board_changed:
             self._prev_expected_board = self._expected_board.copy()
             self._expected_board = board.copy()
             if self._state == SyncState.CAPTURE_PENDING:
@@ -185,6 +190,15 @@ class SyncStateMachine:
         if expected_node_id != self._expected_node_id:
             self._expected_node_id = expected_node_id
             self._pending_expected_node_id = expected_node_id
+            self._pending_recovery_id = recovery_id
+        if recovery_id != self._expected_recovery_id:
+            self._expected_recovery_id = recovery_id
+            self._pending_recovery_id = recovery_id
+            if recovery_id is not None:
+                self._pending_expected_node_id = expected_node_id
+        if board_changed and recovery_id is not None:
+            self._pending_expected_node_id = expected_node_id
+            self._pending_recovery_id = recovery_id
 
     def enter_setup_mode(self, target_board: np.ndarray, setup_id: str | None = None) -> None:
         """Enter tsumego setup mode with a target position."""
@@ -271,6 +285,8 @@ class SyncStateMachine:
         self._prev_expected_board = None
         self._expected_node_id = None
         self._pending_expected_node_id = None
+        self._expected_recovery_id = None
+        self._pending_recovery_id = None
         self._target_board = None
         self._mismatch_board = None
         self._mismatch_count = 0
@@ -367,6 +383,8 @@ class SyncStateMachine:
             self._prev_expected_board = None
             self._expected_node_id = None
             self._pending_expected_node_id = None
+            self._expected_recovery_id = None
+            self._pending_recovery_id = None
             self._state = SyncState.SYNCED
 
         return events
@@ -587,9 +605,13 @@ class SyncStateMachine:
             if self._pending_expected_node_id is not None:
                 synced_event = SyncEvent(
                     SyncEventType.SYNCED,
-                    data={"expected_node_id": self._pending_expected_node_id},
+                    data={
+                        "expected_node_id": self._pending_expected_node_id,
+                        **({"recovery_id": self._pending_recovery_id} if self._pending_recovery_id is not None else {}),
+                    },
                 )
                 self._pending_expected_node_id = None
+                self._pending_recovery_id = None
 
         if synced_event is None and not was_synced:
             synced_event = SyncEvent(SyncEventType.SYNCED)

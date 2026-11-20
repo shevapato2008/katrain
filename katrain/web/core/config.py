@@ -94,6 +94,14 @@ class Settings(BaseModel):
     MEMBERSHIP_POSITION_LEASE_SECONDS: int = 90
     MEMBERSHIP_MAX_SALE_ENABLED: bool = True
     PAYMENT_MOCK_EVENT_SECRET: str = ""
+    # OTP remains unavailable until the runtime sender can load its read-only
+    # credential file. These fields contain configuration, never AK/SK values.
+    KATRAIN_SMS_ENABLED: bool = False
+    KATRAIN_SMS_CREDENTIALS_FILE: str = Field(default="", repr=False)
+    KATRAIN_SMS_SIGN_NAME: str = ""
+    KATRAIN_SMS_TEMPLATE_CODE: str = ""
+    KATRAIN_SMS_DAILY_LIMIT: int = 10
+    KATRAIN_SMS_TRUSTED_PROXY_IPS: str = ""
     # Values are identifiers/paths only. Secrets are loaded from read-only files;
     # public-key callback migration must be completed before live activation.
     WECHAT_PAY_APP_ID: str = Field(default="", repr=False)
@@ -166,6 +174,25 @@ class Settings(BaseModel):
             os.getenv("MEMBERSHIP_MAX_SALE_ENABLED", "true").lower() in ("1", "true", "yes"),
         )
         data.setdefault("PAYMENT_MOCK_EVENT_SECRET", os.getenv("PAYMENT_MOCK_EVENT_SECRET", ""))
+        sms_enabled = data.get("KATRAIN_SMS_ENABLED", os.getenv("KATRAIN_SMS_ENABLED", "false"))
+        data["KATRAIN_SMS_ENABLED"] = sms_enabled is True or (
+            isinstance(sms_enabled, str) and sms_enabled.lower() in {"1", "true", "yes"}
+        )
+        for name in (
+            "KATRAIN_SMS_CREDENTIALS_FILE",
+            "KATRAIN_SMS_SIGN_NAME",
+            "KATRAIN_SMS_TEMPLATE_CODE",
+            "KATRAIN_SMS_TRUSTED_PROXY_IPS",
+        ):
+            value = data.get(name, os.getenv(name, ""))
+            data[name] = value if isinstance(value, str) else ""
+        sms_limit = data.get("KATRAIN_SMS_DAILY_LIMIT", os.getenv("KATRAIN_SMS_DAILY_LIMIT", "10"))
+        try:
+            data["KATRAIN_SMS_DAILY_LIMIT"] = int(sms_limit) if not isinstance(sms_limit, bool) else 0
+        except (ValueError, TypeError, OverflowError):
+            # Bad OTP configuration must not prevent existing password/payment
+            # services from starting. The OTP service rejects this sentinel.
+            data["KATRAIN_SMS_DAILY_LIMIT"] = 0
         if data["PAYMENTS_MODE"] == "mock":
             if data["KATRAIN_ENVIRONMENT"] == "production":
                 raise ValueError("Mock payments are forbidden in production")

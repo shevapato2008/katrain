@@ -284,6 +284,7 @@ async def test_ogs_result_records_one_owned_human_game(app):
     assert rows["total"] == 1
     row = rows["items"][0]
     assert row["source"] == "play_human"
+    assert row["platform"] == "ogs"
     assert row["game_type"] == "pvp_online"
     assert row["user_color"] == "W"
     assert row["player_black"] == "opponent"

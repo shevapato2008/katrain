@@ -27,6 +27,12 @@ def test_status_reports_disabled_when_vision_service_is_not_configured():
         "model_ready": False,
         "recognition_ready": False,
         "led_connected": None,
+        "reference_status": "unavailable",
+        "reference_reason": None,
+        "reference_target_node_id": None,
+        "reference_target_revision": None,
+        "reference_source_node_id": None,
+        "reference_source_revision": None,
     }
 
 
@@ -173,3 +179,70 @@ def test_setup_mode_forwards_optional_identity(setup_id):
     args, kwargs = app.state.vision.enter_setup_mode.call_args
     assert args[0].tolist() == [[0]]
     assert kwargs == ({"setup_id": setup_id} if setup_id is not None else {})
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"session_id": "s"},
+        {"game_id": "g"},
+        {"session_id": None, "game_id": "g"},
+        {"session_id": "s", "game_id": "g", "adopt": "physical"},
+    ],
+)
+def test_scoped_sync_reset_partial_identity_never_falls_back(body):
+    app = _reset_app(with_orch=True)
+    response = TestClient(app).post("/vision/sync/reset", json=body)
+    assert response.status_code in (400, 422)
+    assert app.state.physical_play.resynced == app.state.vision.reset_calls == 0
+
+
+def test_scoped_sync_reset_routes_identity_and_returns_only_recovery_identity():
+    from unittest.mock import AsyncMock
+
+    app = _reset_app(with_orch=True)
+    result = {"ok": True, "recovery_id": "r", "session_id": "s", "game_id": "g", "current_node_id": 16}
+    app.state.physical_play.restore_scoped = AsyncMock(return_value=result)
+    response = TestClient(app).post("/vision/sync/reset", json={"adopt": "digital", "session_id": "s", "game_id": "g"})
+    assert response.status_code == 200 and response.json() == result
+    app.state.physical_play.restore_scoped.assert_awaited_once_with("s", "g")
+    assert app.state.physical_play.resynced == app.state.vision.reset_calls == 0
+
+
+def test_scoped_sync_reset_without_vision_service_is_unavailable():
+    app = FastAPI()
+    app.include_router(vision.router, prefix="/vision")
+    response = TestClient(app).post("/vision/sync/reset", json={"session_id": "s", "game_id": "g"})
+    assert response.status_code == 503
+
+
+@pytest.mark.parametrize("status", ["current", "pending", "limited", "unavailable"])
+def test_reference_status_fields_are_exposed_without_changing_readiness(status):
+    from types import SimpleNamespace
+    from katrain.vision.ipc import WorkerStatus
+
+    app = FastAPI()
+    app.include_router(vision.router, prefix="/vision")
+    worker_status = WorkerStatus(
+        recognition_ready=True,
+        reference_status=status,
+        reference_reason="test",
+        reference_target_node_id=18,
+        reference_target_revision=3,
+        reference_source_node_id=17,
+        reference_source_revision=2,
+    )
+    app.state.vision = SimpleNamespace(
+        refresh_status=lambda: None,
+        enabled=True,
+        camera_status="connected",
+        pose_lock_status="locked",
+        sync_state="synced",
+        bound_session_id="s",
+        _latest_status=worker_status,
+    )
+    payload = TestClient(app).get("/vision/status").json()
+    assert payload["reference_status"] == status
+    assert payload["reference_target_node_id"] == 18
+    assert payload["reference_source_revision"] == 2
+    assert payload["recognition_ready"] is True

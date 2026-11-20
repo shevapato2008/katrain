@@ -1,12 +1,14 @@
 """Local confirmation uses the production pipeline, with one isolated observation window."""
 
 import time
+from threading import Event
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
+from katrain.vision.camera import FrameMetadata
 from katrain.vision.board_state import BoardStateExtractor
 from katrain.vision.config import BoardConfig, DEFAULT_MARGIN_CELLS
 from katrain.vision.config_service import VisionServiceConfig
@@ -34,6 +36,16 @@ class Camera:
             self.worker._running = False
         return frame, seq, ts
 
+    def is_frame_metadata_current(self, metadata):
+        return self.is_connected and metadata.stream_generation == 1 and self.controls_effective is not None
+
+    controls_effective = True
+
+    def read_frame_with_metadata(self):
+        image, seq, ts = self.read_frame_identified()
+        effective = self.controls_effective
+        return image, FrameMetadata(1, seq, ts, 1, 1 if effective is not None else 0, effective, 0.0, True)
+
     def read_frame(self):
         raise AssertionError("local mode must read the camera identity")
 
@@ -57,12 +69,14 @@ def detection(row=3, col=3, color=1, confidence=0.9):
     )
 
 
-def worker(*, pose_locked=True):
+def worker(*, pose_locked=True, lighting_owner=None):
     camera = Camera()
     with patch("katrain.vision.worker_inprocess.StoneDetector"):
         result = InProcessAdapter(
             {"enhance": "off", "auto_exposure": "off", "reference_check": "on", "capture_fps": 100000},
             camera=camera,
+            lighting_owner=lighting_owner,
+            lighting_disabled=lighting_owner is None,
         )
     camera.worker = result
     result._bound = True
@@ -77,6 +91,19 @@ def worker(*, pose_locked=True):
     result._maybe_send_preview = MagicMock()
     result._active_extractor = lambda: BoardStateExtractor(CONFIG)
     result._detector.detect.return_value = []
+    command(result, "BIND", binding_epoch=1, source_nonce="source", worker_generation="worker")
+    command(
+        result,
+        "SET_EXPECTED_BOARD",
+        board=board().tolist(),
+        binding_epoch=1,
+        expected_revision=1,
+        expected_node_id=12,
+        source_nonce="source",
+        worker_generation="worker",
+    )
+    if pose_locked:
+        result._sync.confirm_pose_lock()
     return result, camera
 
 
@@ -88,14 +115,14 @@ def command(result, name, **data):
 def run(result, camera, *, n=1, image=None, identities=None):
     image = frame() if image is None else image
     now = time.monotonic()
-    camera.script = identities or [(100 + camera.reads + i, now + 0.001 * i, image) for i in range(n)]
+    camera.script = identities or [(99 + camera.reads + i, now + 0.001 * i, image) for i in range(n)]
     result._running = True
     result._loop()
 
 
 def prepare(result, camera):
     command(result, "SET_LOCAL_CONFIRMATION_MODE", enabled=True, session_id="session")
-    run(result, camera)
+    run(result, camera, n=2)
     assert result.get_status().local_confirmation_ready
     result._detector.reset_mock()
 
@@ -125,7 +152,7 @@ def test_bootstrap_stops_inference_when_reference_is_ready_and_emits_no_move_or_
     command(result, "SET_LOCAL_CONFIRMATION_MODE", enabled=True, session_id="session")
     run(result, camera, n=4)
     assert result._reference is not None
-    assert result._detector.detect.call_count == 1
+    assert result._detector.detect.call_count == 3
     assert result.get_status().local_confirmation_ready
     assert events(result) == []
     assert camera.reads == 4
@@ -163,9 +190,11 @@ def test_reference_veto_is_applied_inside_local_window_even_when_free_play_is_pa
     run(result, camera, n=6)
     local = events(result)
     assert len(local) == 6
-    assert all(event.token == "turn" and event.candidate is None for event in local)
-    assert all(event.board == board().tolist() for event in local)
-    assert result._detector.detect.call_count == 6
+    assert all(event.token == "turn" for event in local)
+    assert local[0].board == board().tolist()
+    assert local[-1].candidate is not None  # conflict witness sees the stone: ordinary confirmation resumes
+    assert not result._ref_disputed[3, 3]
+    assert result._detector.detect.call_count == 8  # six ordinary + conflict + candidate
 
 
 def test_window_uses_multiframe_confidence_candidate_and_never_emits_a_normal_confirmed_move():
@@ -181,7 +210,9 @@ def test_window_uses_multiframe_confidence_candidate_and_never_emits_a_normal_co
     assert len(local) == 5
     assert all(not isinstance(event, ConfirmedMove) for event in local)
     assert local[0].candidate is None and local[1].candidate is None
-    assert local[2].candidate == ConfirmedMove(col=3, row=3, color=1, observation_seq=4)
+    assert local[2].candidate == ConfirmedMove(
+        col=3, row=3, color=1, observation_seq=5, binding_epoch=1, expected_revision=1
+    )
     assert local[-1].candidate == local[2].candidate
     assert local[-1].board == board([(3, 3, 1)]).tolist()
     assert local[-1].camera_seq == 105
@@ -219,7 +250,26 @@ def test_complete_refreshes_reference_using_the_last_raw_window_frame_and_no_new
     run(result, camera, n=3, image=changed)
     expected = board([(3, 3, 1)])
     reads, inferences = camera.reads, result._detector.detect.call_count
-    command(result, "COMPLETE_LOCAL_WINDOW", token="turn", accepted_board=expected.tolist(), expected_node_id=13)
+    command(
+        result,
+        "SET_EXPECTED_BOARD",
+        board=expected.tolist(),
+        expected_node_id=13,
+        binding_epoch=1,
+        expected_revision=2,
+        source_nonce="source",
+        worker_generation="worker",
+    )
+    command(
+        result,
+        "COMPLETE_LOCAL_WINDOW",
+        token="turn",
+        accepted_board=expected.tolist(),
+        expected_node_id=13,
+        accepted_target=result._reference_target,
+        source_nonce="source",
+        worker_generation="worker",
+    )
     assert result._local_window is None
     assert np.array_equal(result._expected_np, expected)
     assert np.array_equal(result._reference.board, expected)
@@ -327,8 +377,9 @@ def test_service_routes_only_the_current_local_window_and_rejects_unsupported_wo
     prepare(result, camera)
     service._worker = result
     assert service.set_local_confirmation_mode(True, session_id="s") is True
+    publish_local_target(service)
     result._drain_commands()
-    run(result, camera)
+    run(result, camera, n=2)
     assert service.open_local_window(
         "b", board(), expected_node_id=1, expected_color=1, deadline_monotonic=time.monotonic() + 10
     )
@@ -355,6 +406,8 @@ def test_service_cannot_treat_another_sessions_ready_status_as_its_bootstrap_res
     prepare(result, camera)
     service = VisionService(VisionServiceConfig(enabled=True))
     service._worker = result
+    service._source_nonce = "source"
+    service._worker_generation = "worker"
     service.set_local_confirmation_mode(True, session_id="new-session")
     assert service.local_confirmation_ready is False
 
@@ -394,23 +447,28 @@ def test_same_session_new_game_rebuilds_reference_and_same_game_reconnect_preser
     result, camera = worker()
     service = VisionService(VisionServiceConfig(enabled=True))
     service._worker = result
+    service._source_nonce = "source"
+    service._worker_generation = "worker"
     service.set_local_confirmation_mode(True, session_id="session", game_id="game-one")
+    publish_local_target(service)
     result._drain_commands()
-    run(result, camera)
+    run(result, camera, n=2)
     assert service.local_confirmation_ready
     reference = result._reference
 
     service.set_local_confirmation_mode(True, session_id="session", game_id="game-one")
+    publish_local_target(service)
     result._drain_commands()
     assert result._reference is reference and service.local_confirmation_ready
 
     service.set_local_confirmation_mode(True, session_id="session", game_id="game-two")
     assert not service.local_confirmation_ready
     assert service.local_confirmation_bootstrap_state == "bootstrap"
+    publish_local_target(service)
     result._drain_commands()
     assert result._reference is None
     assert not service.local_confirmation_ready
-    run(result, camera)
+    run(result, camera, n=2)
     assert service.local_confirmation_ready and result._reference is not reference
 
 
@@ -418,7 +476,10 @@ def test_explicit_bootstrap_retry_waits_for_the_new_attempt_instead_of_old_unava
     result, camera = worker()
     service = VisionService(VisionServiceConfig(enabled=True))
     service._worker = result
+    service._source_nonce = "source"
+    service._worker_generation = "worker"
     service.set_local_confirmation_mode(True, session_id="session")
+    publish_local_target(service)
     result._drain_commands()
     result._local_bootstrap_deadline = time.monotonic() - 1
     run(result, camera)
@@ -428,36 +489,99 @@ def test_explicit_bootstrap_retry_waits_for_the_new_attempt_instead_of_old_unava
     service.set_local_confirmation_mode(True, session_id="session")
     assert service.local_confirmation_bootstrap_state == "bootstrap"
     assert not service.local_confirmation_ready
+    publish_local_target(service)
     result._drain_commands()
     assert service.local_confirmation_bootstrap_state == "bootstrap"
-    run(result, camera)
+    run(result, camera, n=2)
     assert service.local_confirmation_ready
 
 
-def bound_local(result, session_id="session", game_id="game"):
-    service = VisionService(VisionServiceConfig(enabled=True))
+def publish_local_target(service, expected_node_id=12):
+    if service._bound_session is None:
+        session = SimpleNamespace(katrain=SimpleNamespace(game=object()))
+        service.bind_session(service._local_confirmation_session_id or "session", session=session)
+    session = service._bound_session
+    service.publish_expected_from_stones(
+        service.capture_binding_source(service.bound_session_id, session), [], expected_node_id=expected_node_id
+    )
+
+
+def bound_local(result, session_id="session", game_id="game", *, lighting_owner=None):
+    service = VisionService(VisionServiceConfig(enabled=True), lighting_owner=lighting_owner)
     service._worker = result
-    service.bind_session(session_id)
-    service.set_expected_from_stones([], expected_node_id=12)
+    session = SimpleNamespace(katrain=SimpleNamespace(game=SimpleNamespace(game_id=game_id), game_type="pvp_local"))
+    service.bind_session(session_id, session=session)
     service.set_local_confirmation_mode(True, session_id=session_id, game_id=game_id)
+    service.publish_expected_from_stones(service.capture_binding_source(session_id, session), [], expected_node_id=12)
+    publish_local_target(service)
     result._drain_commands()
     return service
 
 
-def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_idle_inference():
-    result, camera = worker(pose_locked=False)
-    service = bound_local(result)
+def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_idle_inference(monkeypatch):
+    from tests.test_led_service import BootFakeSerial, LedService, LedServiceConfig
+
+    serial = BootFakeSerial()
+    owner = LedService(LedServiceConfig(enabled=True, serial_port="local-bootstrap"), serial_factory=lambda: serial)
+    allow_queue = Event()
+    real_worker = owner._worker
+
+    def process_queue():
+        allow_queue.wait()
+        real_worker()
+
+    monkeypatch.setattr(owner, "_worker", process_queue)
+    monkeypatch.setattr(owner, "clear", MagicMock(wraps=owner.clear))
+    owner.start()
+    try:
+        _check_real_bind_bootstrap(owner, serial, allow_queue)
+    finally:
+        allow_queue.set()
+        owner.stop()
+
+
+def _check_real_bind_bootstrap(owner, serial, allow_queue):
+    assert serial.written == ["CLEAR", "SHOW", "BRIGHT 255"]
+    assert owner.is_connected() and not owner.reference_lighting_snapshot().all_dark
+    result, camera = worker(pose_locked=False, lighting_owner=owner)
+    service = bound_local(result, lighting_owner=owner)
     assert result._sync.state.value == "calibrating"
-    run(result, camera, n=4)
+    run(result, camera, n=2)
+    assert result._reference is None and not service.local_confirmation_ready
+    assert result._reference_attempt.spent == 0
+    owner.clear.assert_called_once_with(strict=False)
+    assert serial.written == ["CLEAR", "SHOW", "BRIGHT 255"]
+
+    allow_queue.set()
+    deadline = time.monotonic() + 2
+    while not owner.reference_lighting_snapshot().all_dark and time.monotonic() < deadline:
+        time.sleep(0.001)
+    lighting = owner.reference_lighting_snapshot()
+    assert lighting.all_dark and lighting.shown_at is not None
+    run(result, camera, identities=[(101, lighting.shown_at + 0.1, frame())])
+    assert result._reference is None and result._reference_attempt.spent == 0
+    time.sleep(max(0, lighting.shown_at + 0.201 - time.monotonic()))
+    run(result, camera, identities=[(102, time.monotonic(), frame())])
+    assert result._reference is None and result._reference_attempt.spent == 0
+    run(result, camera, identities=[(103, time.monotonic(), frame())])
     assert result._reference is not None and service.local_confirmation_ready
     assert result.get_status().pose_lock_status == "locked"
     assert result.get_status().sync_state == "synced"
-    assert result._detector.detect.call_count == 1 and events(result) == []
+    assert result._reference_attempt.spent == 1 and events(result) == []
+
+    reference = result._reference
+    service.set_local_confirmation_mode(True, session_id="session", game_id="game")
+    service.bind_session("session", session=service._bound_session)
+    publish_local_target(service)
+    result._drain_commands()
+    owner.clear.assert_called_once_with(strict=False)
+    assert result._reference is reference and service.local_confirmation_ready
 
     opened = time.monotonic()
     assert service.open_local_window(
         "first", board(), expected_node_id=12, expected_color=1, deadline_monotonic=opened + 8
     )
+    publish_local_target(service)
     result._drain_commands()
     result._detector.detect.return_value = [detection()]
     changed = frame().copy()
@@ -471,6 +595,12 @@ def test_real_bind_bootstrap_locks_pose_then_first_confirmation_closes_without_i
     inferences = result._detector.detect.call_count
     run(result, camera, n=3, image=changed)
     assert result._detector.detect.call_count == inferences and events(result) == []
+
+    service.set_local_confirmation_mode(False, session_id="session", game_id="game")
+    owner.clear.assert_called_once_with(strict=False)
+    service.set_local_confirmation_mode(True, session_id="session", game_id="game")
+    assert owner.clear.call_count == 2
+    assert owner.clear.call_args.kwargs == {"strict": False}
 
 
 def test_early_first_stone_rejects_reference_then_explicit_retry_prepares_real_empty_reference():
@@ -486,6 +616,7 @@ def test_early_first_stone_rejects_reference_then_explicit_retry_prepares_real_e
     result._detector.detect.return_value = []
     service.set_local_confirmation_mode(False, session_id="session", game_id="game")
     service.set_local_confirmation_mode(True, session_id="session", game_id="game")
+    publish_local_target(service)
     result._drain_commands()
     run(result, camera, n=3)
     assert service.local_confirmation_ready and np.array_equal(result._reference.board, board())
@@ -579,6 +710,7 @@ def test_old_mode_generation_and_geometry_loss_cannot_publish_local_pose_ready()
     run(result, camera)
     generation = result._local_mode_generation
     service.set_local_confirmation_mode(True, session_id="session", game_id="new-game")
+    publish_local_target(service)
     result._drain_commands()
     command(
         result,
@@ -590,7 +722,7 @@ def test_old_mode_generation_and_geometry_loss_cannot_publish_local_pose_ready()
     )
     assert not service.local_confirmation_ready and result._reference is None
     assert result.get_status().pose_lock_status == "unlocked"
-    run(result, camera)
+    run(result, camera, n=2)
     assert service.local_confirmation_ready
     result.set_geometry(None)
     result._publish_status(None)
@@ -606,3 +738,21 @@ def test_lighting_metadata_is_optional_and_survives_ipc_pickle_roundtrip():
     assert observation.exposure is None
     observation.exposure = {"reason": "frame_overexposed", "bad_frames": 3, "span_ms": 1000, "confirmed": True}
     assert pickle.loads(pickle.dumps(observation)).exposure == observation.exposure
+
+
+def test_stale_or_mismatched_completion_cannot_roll_back_the_authoritative_board():
+    result, camera = worker()
+    prepare(result, camera)
+    open_window(result)
+    original = result._expected_np.copy()
+    command(
+        result,
+        "COMPLETE_LOCAL_WINDOW",
+        token="turn",
+        accepted_board=board([(3, 3, 1)]).tolist(),
+        expected_node_id=13,
+        accepted_target=result._reference_target,
+        source_nonce="source",
+        worker_generation="worker",
+    )
+    assert np.array_equal(result._expected_np, original)

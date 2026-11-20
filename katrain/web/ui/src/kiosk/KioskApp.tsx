@@ -42,6 +42,7 @@ import { isStrictBoxKiosk } from './shell/boxUrls';
 import { kioskText } from './appearance/messages';
 import { DEVICE_UI_FONT, useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
+import { displayAccountName } from '../features/auth/accountDisplay';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
@@ -86,6 +87,7 @@ const TutorialSectionPage = lazy(() => import('./pages/TutorialSectionPage'));
 const OgsCourseHomePage = lazy(() => import('./pages/OgsCourseHomePage'));
 const OgsCourseChapterPage = lazy(() => import('./pages/OgsCourseChapterPage'));
 const OgsCourseExercisePage = lazy(() => import('./pages/OgsCourseExercisePage'));
+const OgsCourseVideoPage = lazy(() => import('./pages/OgsCourseVideoPage'));
 
 const LegacyPlatformLobbyRedirect = () => {
   const { search } = useLocation();
@@ -103,7 +105,7 @@ export const KioskRoutes = () => {
   // never surface that raw string in the header — show the localized label.
   const headerUsername = status === 'checking' ? t('auth:checking_identity', '身份确认中')
     : status === 'unavailable' ? t('auth:unavailable_identity', '身份待确认')
-    : user?.username === 'guest' ? t('Guest', '访客') : user?.username;
+    : user?.username === 'guest' ? t('Guest', '访客') : user ? displayAccountName(user, t('auth:account_label', '账号')) : undefined;
 
   return (
     <Suspense fallback={null}><Routes>
@@ -203,6 +205,7 @@ export const KioskRoutes = () => {
           <Route path="tutorial" element={<OgsCourseHomePage />} />
           <Route path="tutorial/chapter/:chapterId" element={<OgsCourseChapterPage />} />
           <Route path="tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} />
+          <Route path="tutorial/lesson/:lessonId/videos" element={<OgsCourseVideoPage />} />
           <Route path="tutorial/library" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />

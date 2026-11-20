@@ -35,6 +35,7 @@ AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
 # `models_db.Base.metadata.sorted_tables`,模型没了就永远进不了 drop 名单,数据不会被动。
 # 额度桶记录已消费的额度；drift 重建它 = 给所有人白重置一次额度。
 QUOTA_TABLES = {"quota_buckets"}
+PHONE_AUTH_TABLES = {"phone_identities", "phone_signup_claims", "sms_phone_state", "sms_challenges", "sms_send_buckets"}
 KIFU_CATALOG_TABLES = {
     "kifu_albums",
     "kifu_players",
@@ -67,10 +68,245 @@ PROTECTED_TABLES = (
     BILLING_TABLES
     | AI_LADDER_TABLES
     | QUOTA_TABLES
+    | PHONE_AUTH_TABLES
     | KIFU_CATALOG_TABLES
     | KIFU_RANK_TABLES
     | {AI_LADDER_LEGACY_TABLE, "tutorial_media_tasks", "tutorial_figures", "users", "report_tasks", "baipu_history"}
 )
+
+def verify_phone_auth_schema(engine):
+    """Refuse partial/incorrect authentication DDL instead of silently repairing it."""
+    inspector = inspect(engine)
+    for name in sorted(PHONE_AUTH_TABLES):
+        expected = models_db.Base.metadata.tables[name]
+        if not inspector.has_table(name):
+            raise RuntimeError("Invalid phone authentication schema: missing table")
+        actual_columns = {column["name"]: column for column in inspector.get_columns(name)}
+        for column in expected.columns:
+            actual = actual_columns.get(column.name)
+            if (
+                actual is None
+                or (not column.nullable and actual["nullable"])
+                or actual["type"]._type_affinity is not column.type._type_affinity
+            ):
+                raise RuntimeError("Invalid phone authentication schema: column drift")
+        expected_pk = tuple(column.name for column in expected.primary_key.columns)
+        if tuple(inspector.get_pk_constraint(name)["constrained_columns"]) != expected_pk:
+            raise RuntimeError("Invalid phone authentication schema: primary key drift")
+        uniques = {tuple(item["column_names"]) for item in inspector.get_unique_constraints(name)}
+        indexes = inspector.get_indexes(name)
+        uniques.update(
+            tuple(item["column_names"])
+            for item in indexes
+            if item["unique"] and not item.get("dialect_options", {}).get("postgresql_where")
+        )
+        for constraint in expected.constraints:
+            if (
+                isinstance(constraint, UniqueConstraint)
+                and tuple(column.name for column in constraint.columns) not in uniques
+            ):
+                raise RuntimeError("Invalid phone authentication schema: unique constraint drift")
+        actual_checks = {item["name"]: item["sqltext"] for item in inspector.get_check_constraints(name)}
+        if any(isinstance(item, CheckConstraint) and item.name not in actual_checks for item in expected.constraints):
+            raise RuntimeError("Invalid phone authentication schema: check constraint drift")
+        for constraint in expected.constraints:
+            if isinstance(constraint, CheckConstraint) and constraint.name in {
+                "ck_sms_phone_error_count", "ck_sms_send_bucket_count"
+            }:
+                # PG wraps simple comparisons in parentheses; SQLite does not.
+                # Compare only these two arithmetic guards against their model
+                # definitions, without interpreting arbitrary CHECK SQL.
+                actual_sql = re.sub(r"[\s()]+", "", actual_checks[constraint.name] or "").lower()
+                expected_sql = re.sub(r"[\s()]+", "", str(constraint.sqltext)).lower()
+                if actual_sql != expected_sql:
+                    raise RuntimeError("Invalid phone authentication schema: check constraint drift")
+        for index in expected.indexes:
+            if not any(
+                item["name"] == index.name and tuple(item["column_names"]) == tuple(c.name for c in index.columns)
+                for item in indexes
+            ):
+                raise RuntimeError("Invalid phone authentication schema: index drift")
+        expected_fks = {
+            (
+                tuple(element.parent.name for element in item.elements),
+                tuple(element.column.table.name for element in item.elements),
+                tuple(element.column.name for element in item.elements),
+                (item.ondelete or "").upper(),
+            )
+            for item in expected.foreign_key_constraints
+        }
+        actual_fks = {
+            (
+                tuple(item["constrained_columns"]),
+                tuple(item["referred_table"] for _ in item["referred_columns"]),
+                tuple(item["referred_columns"]),
+                item.get("options", {}).get("ondelete", "").upper(),
+            )
+            for item in inspector.get_foreign_keys(name)
+        }
+        if actual_fks != expected_fks:
+            raise RuntimeError("Invalid phone authentication schema: foreign key drift")
+    if engine.dialect.name == "postgresql":
+        # Catalog checks also reject invalid/unready/partial uniqueness, which
+        # Inspector's column lists alone cannot establish.
+        with engine.connect() as conn:
+            invalid_index = conn.execute(
+                text(
+                    "SELECT 1 FROM pg_index i JOIN pg_class t ON t.oid=i.indrelid "
+                    "JOIN pg_namespace n ON n.oid=t.relnamespace "
+                    "WHERE n.nspname=current_schema() AND t.relname IN :names "
+                    "AND (NOT i.indisvalid OR NOT i.indisready OR i.indpred IS NOT NULL OR i.indexprs IS NOT NULL) LIMIT 1"
+                ).bindparams(bindparam("names", expanding=True)),
+                {"names": tuple(PHONE_AUTH_TABLES)},
+            ).first()
+            invalid_check = conn.execute(
+                text(
+                    "SELECT 1 FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid "
+                    "JOIN pg_namespace n ON n.oid=t.relnamespace "
+                    "WHERE n.nspname=current_schema() AND t.relname IN :names AND NOT c.convalidated LIMIT 1"
+                ).bindparams(bindparam("names", expanding=True)),
+                {"names": tuple(PHONE_AUTH_TABLES)},
+            ).first()
+            if invalid_index or invalid_check:
+                raise RuntimeError("Invalid phone authentication schema: unvalidated constraint/index")
+
+
+def migrate_phone_auth_schema(engine):
+    """Only create the five owned tables; existing malformed tables fail closed."""
+    models_db.Base.metadata.create_all(
+        bind=engine, tables=[models_db.Base.metadata.tables[name] for name in sorted(PHONE_AUTH_TABLES)]
+    )
+    verify_phone_auth_schema(engine)
+
+
+PUBLIC_USERNAME_INDEX = "uq_user_public_username"
+
+
+def _verify_postgres_public_username_index(conn):
+    index = (
+        conn.execute(
+            text(
+                "SELECT tbl.relname AS table_name, i.indisunique, i.indisvalid, i.indisready, "
+                "i.indisexclusion, i.indnkeyatts, i.indnatts, "
+                "i.indpred IS NULL AS full_index, i.indexprs IS NULL AS plain_columns, am.amname, "
+                "ARRAY(SELECT pg_get_indexdef(i.indexrelid, key, true) "
+                "      FROM generate_series(1, i.indnkeyatts) AS key ORDER BY key) AS keys "
+                "FROM pg_class idx JOIN pg_namespace n ON n.oid=idx.relnamespace "
+                "JOIN pg_index i ON i.indexrelid=idx.oid JOIN pg_class tbl ON tbl.oid=i.indrelid "
+                "JOIN pg_am am ON am.oid=idx.relam "
+                "WHERE n.nspname=current_schema() AND idx.relname=:name"
+            ),
+            {"name": PUBLIC_USERNAME_INDEX},
+        )
+        .mappings()
+        .first()
+    )
+    if index is None:
+        return False
+    if (
+        index["table_name"] != "users"
+        or not index["indisunique"]
+        or not index["indisvalid"]
+        or not index["indisready"]
+        or index["indisexclusion"]
+        or index["indnkeyatts"] != 1
+        or index["indnatts"] != 1
+        or not index["full_index"]
+        or not index["plain_columns"]
+        or index["amname"] != "btree"
+        or index["keys"] != ["public_username"]
+    ):
+        raise RuntimeError("Invalid public username unique index; inspect and repair it explicitly")
+    return True
+
+
+def _verify_sqlite_public_username_index(conn):
+    definition = conn.execute(
+        text("SELECT tbl_name FROM sqlite_master WHERE type='index' AND name=:name"),
+        {"name": PUBLIC_USERNAME_INDEX},
+    ).first()
+    if definition is None:
+        return False
+    indexes = conn.exec_driver_sql('PRAGMA index_list("users")').mappings().all()
+    index = next((item for item in indexes if item["name"] == PUBLIC_USERNAME_INDEX), None)
+    keys = [
+        item
+        for item in conn.exec_driver_sql(f'PRAGMA index_xinfo("{PUBLIC_USERNAME_INDEX}")').mappings()
+        if item["key"]
+    ]
+    if (
+        definition[0] != "users"
+        or index is None
+        or not index["unique"]
+        or index["partial"]
+        or len(keys) != 1
+        or keys[0]["name"] != "public_username"
+        or keys[0]["cid"] < 0
+        or keys[0]["coll"] != "BINARY"
+    ):
+        raise RuntimeError("Invalid public username unique index; inspect and repair it explicitly")
+    return True
+
+
+def _backfill_public_usernames(conn):
+    from katrain.web.core.public_identity import is_generated_phone_username
+
+    tables = set(inspect(conn).get_table_names())
+    columns = {column["name"] for column in inspect(conn).get_columns("users")}
+    is_admin = "u.is_admin" if "is_admin" in columns else "FALSE"
+    identities = (
+        "EXISTS (SELECT 1 FROM phone_identities p WHERE p.user_id=u.id)" if "phone_identities" in tables else "FALSE"
+    )
+    bound_claim = (
+        "EXISTS (SELECT 1 FROM phone_signup_claims c WHERE c.user_id=u.id AND c.claim_type='bound_existing')"
+        if "phone_signup_claims" in tables
+        else "FALSE"
+    )
+    rows = conn.execute(
+        text(
+            f"SELECT u.id,u.username,{is_admin} AS is_admin,{identities} AS has_phone,{bound_claim} AS bound_existing "
+            "FROM users u WHERE u.public_username IS NULL"
+        )
+    ).mappings()
+    for user in rows:
+        generated = (
+            is_generated_phone_username(user["username"])
+            and user["has_phone"]
+            and not user["is_admin"]
+            and not user["bound_existing"]
+        )
+        if not generated:
+            conn.execute(
+                text("UPDATE users SET public_username=:name WHERE id=:id AND public_username IS NULL"),
+                {"name": user["username"], "id": user["id"]},
+            )
+
+
+def migrate_public_username_schema(engine, *, mode: str) -> None:
+    """Add display storage without attaching server uniqueness to shared metadata."""
+    if mode not in {"server", "board"}:
+        raise ValueError("Invalid public username database role")
+    if engine.dialect.name not in {"sqlite", "postgresql"}:
+        raise RuntimeError("Public username migration requires PostgreSQL or SQLite")
+    with engine.begin() as conn:
+        if engine.dialect.name == "postgresql":
+            conn.execute(text("SELECT pg_advisory_xact_lock(706364764)"))
+            verify_index = _verify_postgres_public_username_index
+        else:
+            # sqlite3 legacy transaction handling otherwise commits DDL outside
+            # the backfill transaction. Serialize local server startups as well.
+            conn.exec_driver_sql("BEGIN IMMEDIATE")
+            verify_index = _verify_sqlite_public_username_index
+        columns = {column["name"] for column in inspect(conn).get_columns("users")}
+        if "public_username" not in columns:
+            conn.execute(text('ALTER TABLE "users" ADD COLUMN "public_username" VARCHAR'))
+        if mode == "board":
+            return
+        if not verify_index(conn):
+            conn.execute(text(f'CREATE UNIQUE INDEX "{PUBLIC_USERNAME_INDEX}" ON "users" ("public_username")'))
+            verify_index(conn)
+        _backfill_public_usernames(conn)
+
 
 KIFU_ALBUM_FKS = {
     "black_player_id": "kifu_players",

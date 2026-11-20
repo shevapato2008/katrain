@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { API, type VisionStatusResponse } from '../../api';
+import { API, type VisionReferenceStatus, type VisionStatusResponse } from '../../api';
 
 export interface VisionStatus {
   enabled: boolean;
@@ -9,6 +9,12 @@ export interface VisionStatus {
   boundSessionId: string | null;
   recognitionReady: boolean;
   ledConnected: boolean | null;
+  referenceStatus?: VisionReferenceStatus;
+  referenceReason?: string | null;
+  referenceTargetNodeId?: number | null;
+  referenceTargetRevision?: number | null;
+  referenceSourceNodeId?: number | null;
+  referenceSourceRevision?: number | null;
 }
 
 interface VisionContextType {
@@ -26,6 +32,12 @@ const DEFAULT_STATUS: VisionStatus = {
   boundSessionId: null,
   recognitionReady: false,
   ledConnected: null,
+  referenceStatus: 'unavailable',
+  referenceReason: null,
+  referenceTargetNodeId: null,
+  referenceTargetRevision: null,
+  referenceSourceNodeId: null,
+  referenceSourceRevision: null,
 };
 
 const VisionContext = createContext<VisionContextType | undefined>(undefined);
@@ -40,6 +52,12 @@ const mapResponse = (r: VisionStatusResponse): VisionStatus => ({
   boundSessionId: r.bound_session_id,
   recognitionReady: r.recognition_ready ?? false,
   ledConnected: r.led_connected ?? null,
+  referenceStatus: r.reference_status ?? 'unavailable',
+  referenceReason: r.reference_reason ?? null,
+  referenceTargetNodeId: r.reference_target_node_id ?? null,
+  referenceTargetRevision: r.reference_target_revision ?? null,
+  referenceSourceNodeId: r.reference_source_node_id ?? null,
+  referenceSourceRevision: r.reference_source_revision ?? null,
 });
 
 export const VisionProvider = ({ children }: { children: ReactNode }) => {

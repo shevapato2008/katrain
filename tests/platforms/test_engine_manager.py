@@ -21,8 +21,10 @@ from katrain.web.platforms.golaxy.coords import katrain_to_golaxy
 from katrain.web.platforms.golaxy.engine_client import GenmoveResult
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.platforms.models import (
+    GamePhase,
     OnlineUser,
     PlatformGameSession,
+    PlatformGameSnapshot,
     PlatformMove,
     PlatformPass,
     PlatformResign,
@@ -106,6 +108,20 @@ def setup():
 
 
 class TestStartEngineGame:
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    @pytest.mark.asyncio
+    async def test_verified_platform_nickname_is_used_for_human_seat(self, setup, human_color):
+        pm, sm, adapter = setup
+        gs = make_session(human_color)
+        gs.my_username = "星阵昵称"
+        adapter.start_engine_game.return_value = EngineGameStart(session=gs, first_ai_move=None)
+
+        await pm.start_engine_game("golaxy", object(), user_id=7)
+
+        ai_color = "W" if human_color == "B" else "B"
+        assert sm.create_calls[0][f"{human_color.lower()}_name"] == "星阵昵称"
+        assert sm.create_calls[0][f"{ai_color.lower()}_name"] == "[golaxy] 星阵-7"
+
     @pytest.mark.asyncio
     async def test_human_black_start(self, setup):
         pm, sm, adapter = setup
@@ -258,6 +274,71 @@ class TestPlatformEngineColorRealSession:
     stay None for non-engine sessions, survive a later plain edit_game call (M6
     persistence), and never leak into a freshly-created session.
     """
+
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    async def test_origin_is_stamped_before_opening_move_and_new_game_starts_clean(self, human_color, monkeypatch):
+        from katrain.web.interface import WebKaTrain
+
+        original_call = WebKaTrain.__call__
+        opening_origins = []
+
+        def capture_opening(katrain, command, *args, **kwargs):
+            if command == "play":
+                opening_origins.append(katrain.game.root.get_property("KTP"))
+            return original_call(katrain, command, *args, **kwargs)
+
+        monkeypatch.setattr(WebKaTrain, "__call__", capture_opening)
+        sm, pm, adapter = _build_real_stack()
+        session_id = await pm.start_engine_game(
+            "golaxy", EngineGameConfig(level=1100, human_color=human_color), user_id=1
+        )
+        session = sm.get_session(session_id)
+        assert session.katrain.game.root.get_property("KTP") == "golaxy"
+        assert "KTP[golaxy]" in session.katrain.get_sgf()
+        assert opening_origins == (["golaxy"] if human_color == "W" else [])
+
+        await pm.end_platform_game(pm.get_game_context(session_id).remote_game_id, "B+R")
+        assert pm.get_game_context(session_id) is None
+        assert session.katrain.game.root.get_property("KTP") == "golaxy"
+        session.katrain("new_game")
+        assert session.katrain.game.root.get_property("KTP") is None
+        assert "KTP[" not in session.katrain.get_sgf()
+
+        fresh = sm.create_multiplayer_session(player_b_id=3, player_w_id=4, b_name="A", w_name="B")
+        assert fresh.katrain.game.root.get_property("KTP") is None
+
+    def test_ogs_snapshot_refresh_keeps_trusted_origin(self):
+        sm = SessionManager(enable_engine=False)
+        session = sm.create_multiplayer_session(
+            player_b_id=7, player_w_id=-1, b_name="Me", w_name="OGS opponent", initial_game_type="pvp_online"
+        )
+        game = make_session("B", board_size=9)
+        game.platform = "ogs"
+        snapshot = PlatformGameSnapshot("g", 9, (), (), GamePhase.PLAYING)
+
+        PlatformManager._restore_ogs_snapshot(session, snapshot, game)
+        assert session.katrain.game.root.get_property("KTP") == "ogs"
+        assert "KTP[ogs]" in session.katrain.get_sgf()
+        PlatformManager._restore_ogs_snapshot(session, snapshot, game)
+        assert session.katrain.game.root.get_property("KTP") == "ogs"
+
+    @pytest.mark.parametrize("human_color", ["B", "W"])
+    @pytest.mark.asyncio
+    async def test_verified_nickname_reaches_real_game_state(self, human_color):
+        sm, pm, adapter = _build_real_stack()
+        adapter._connected = True
+        adapter._rest._get_user_code = AsyncMock(return_value="self-code")
+        adapter._rest.get_player_profile = AsyncMock(
+            return_value={"userCode": "self-code", "nickname": "星阵昵称", "followAlias": "备注", "level": None}
+        )
+
+        session_id = await pm.start_engine_game(
+            "golaxy", EngineGameConfig(level=1100, human_color=human_color), user_id=1
+        )
+
+        state = sm.get_session(session_id).katrain.get_state()
+        assert state["players_info"][human_color]["name"] == "星阵昵称"
+        assert state["platform_player_ranks"][human_color] is None
 
     @pytest.mark.asyncio
     async def test_human_black_get_state_platform_engine_color_is_white(self):

@@ -8439,3 +8439,382 @@ msgstr "Código QR válido durante {time}"
 
 msgid "membership:wechat_waiting"
 msgstr "Esperando confirmación de WeChat Pay"
+
+msgid "membership:error_position_changed"
+msgstr ""
+"La posición ha cambiado. Vuelve a pulsar análisis y confirma una nueva "
+"cotización."
+
+msgid "auth:otp_method"
+msgstr "Método de acceso"
+
+msgid "auth:otp_tab"
+msgstr "Código SMS"
+
+msgid "auth:password_tab"
+msgstr "Contraseña de cuenta"
+
+msgid "auth:otp_phone"
+msgstr "Teléfono (China continental +86)"
+
+msgid "auth:otp_code"
+msgstr "Código de verificación SMS"
+
+msgid "auth:otp_send"
+msgstr "Obtener código"
+
+msgid "auth:otp_sending"
+msgstr "Enviando…"
+
+msgid "auth:otp_retry"
+msgstr "Reenviar en {seconds}s"
+
+msgid "auth:otp_submit"
+msgstr "Verificar e iniciar sesión"
+
+msgid "auth:otp_verifying"
+msgstr "Verificando…"
+
+msgid "auth:otp_signup_policy"
+msgstr ""
+"La primera verificación de un teléfono no registrado crea una cuenta. El "
+"primer registro de un número nuevo recibe 50 puntos; los números que ya "
+"recibieron puntos o fueron vinculados no reciben otra bonificación."
+
+msgid "auth:otp_existing_account"
+msgstr ""
+"¿Ya tienes cuenta? Accede con tu contraseña y luego vincula el teléfono."
+
+msgid "auth:otp_requested"
+msgstr "Código solicitado. Es válido durante 5 minutos; revisa tus mensajes."
+
+msgid "auth:otp_unknown"
+msgstr ""
+"El estado del envío no está confirmado. Si recibes el código, puedes "
+"verificarlo. Espera a que termine la pausa antes de decidir reenviarlo."
+
+msgid "auth:otp_invalid_phone"
+msgstr "Introduce un teléfono de China continental de 11 dígitos."
+
+msgid "auth:otp_invalid_code"
+msgstr "Introduce el código correcto de 6 dígitos."
+
+msgid "auth:otp_challenge_invalid"
+msgstr "El código ya no es válido. Solicita otro."
+
+msgid "auth:otp_challenge_expired"
+msgstr "El código ha caducado. Solicita otro."
+
+msgid "auth:otp_challenge_used"
+msgstr "El código ya se utilizó. Solicita otro."
+
+msgid "auth:otp_sms_limited"
+msgstr "Demasiadas solicitudes de SMS. Inténtalo más tarde."
+
+msgid "auth:otp_locked"
+msgstr "Demasiados códigos incorrectos. Inténtalo más tarde."
+
+msgid "auth:otp_unavailable"
+msgstr ""
+"Servicio SMS no disponible. Prueba después o accede con tu contraseña."
+
+msgid "auth:otp_rejected"
+msgstr ""
+"La solicitud de SMS fue rechazada. Prueba después o accede con tu "
+"contraseña."
+
+msgid "auth:otp_identity_changed"
+msgstr "La identidad de acceso ha cambiado. Empieza de nuevo."
+
+msgid "auth:otp_verification_required"
+msgstr "Regístrate con un código de verificación SMS."
+
+msgid "auth:bind_title"
+msgstr "Vincular teléfono"
+
+msgid "auth:bind_password"
+msgstr "Contraseña actual de la cuenta"
+
+msgid "auth:bind_policy"
+msgstr "Tras vincularlo puedes iniciar sesión con un código SMS. Conservas tu saldo y membresía."
+
+msgid "auth:bind_submit"
+msgstr "Confirmar vínculo"
+
+msgid "auth:bind_submitting"
+msgstr "Vinculando…"
+
+msgid "auth:bind_success"
+msgstr "Teléfono vinculado correctamente"
+
+msgid "auth:bind_bound_label"
+msgstr "Teléfono vinculado"
+
+msgid "auth:bind_load_error"
+msgstr "No se pudo cargar el estado del vínculo."
+
+msgid "auth:bind_loading"
+msgstr "Comprobando el vínculo…"
+
+msgid "auth:bind_retry"
+msgstr "Reintentar"
+
+msgid "auth:bind_not_allowed"
+msgstr "Esta cuenta no puede vincular un teléfono."
+
+msgid "auth:bind_auth_required"
+msgstr "Vuelve a iniciar sesión antes de vincular el teléfono."
+
+msgid "auth:bind_phone_in_use"
+msgstr "Este teléfono está vinculado a otra cuenta. Usa otro número."
+
+msgid "auth:bind_reauth_failed"
+msgstr "La contraseña actual es incorrecta. Introdúcela de nuevo."
+
+msgid "auth:bind_reauth_locked"
+msgstr "Demasiados intentos de contraseña. Reintenta en {seconds}s."
+
+msgid "auth:bind_sms_unavailable"
+msgstr "Servicio SMS no disponible. Inténtalo más tarde."
+
+msgid "auth:bind_sms_rejected"
+msgstr "La solicitud SMS fue rechazada. Inténtalo más tarde."
+
+msgid "auth:bind_failed"
+msgstr "No se completó el vínculo. Inténtalo más tarde."
+
+msgid "auth:bind_done"
+msgstr "Listo"
+
+msgid "auth:bind_manage_at_home"
+msgstr "Gestionar teléfono en el inicio"
+
+msgid "auth:invalid_public_username"
+msgstr "Usa de 2 a 24 letras, números, guiones bajos o guiones"
+
+msgid "auth:reserved_public_username"
+msgstr "Elige otro nombre de usuario"
+
+msgid "auth:public_username_taken"
+msgstr "Este nombre de usuario ya está en uso"
+
+msgid "auth:signup_grant_success"
+msgstr "Registro completado. Se han añadido 50 puntos"
+
+msgid "auth:profile_success"
+msgstr "Configuración completada"
+
+msgid "auth:signup_success"
+msgstr "Registro completado"
+
+msgid "auth:verified_phone"
+msgstr "Teléfono verificado {phone}"
+
+msgid "auth:phone_label"
+msgstr "Número de teléfono"
+
+msgid "auth:public_username"
+msgstr "Nombre de usuario (apodo)"
+
+msgid "auth:public_username_placeholder"
+msgstr "Elige un nombre de usuario público"
+
+msgid "auth:new_password_placeholder"
+msgstr "Crea una contraseña de acceso"
+
+msgid "auth:phone_placeholder"
+msgstr "China continental +86"
+
+msgid "auth:code_label"
+msgstr "Código de verificación"
+
+msgid "auth:code_placeholder"
+msgstr "Código de 6 dígitos"
+
+msgid "auth:complete_submit"
+msgstr "Guardar e iniciar sesión"
+
+msgid "auth:register_submit"
+msgstr "Registrarse e iniciar sesión"
+
+msgid "auth:existing_login"
+msgstr "¿Ya tienes cuenta? Inicia sesión"
+
+msgid "auth:hide_password"
+msgstr "Ocultar contraseña"
+
+msgid "auth:show_password"
+msgstr "Mostrar contraseña"
+
+msgid "auth:named_register_title"
+msgstr "Registrarse"
+
+msgid "auth:complete_title"
+msgstr "Completar registro"
+
+msgid "auth:close"
+msgstr "Cerrar"
+
+msgid "auth:register_entry"
+msgstr "Crear una cuenta"
+
+msgid "auth:guest_entry"
+msgstr "Entrar como invitado"
+
+msgid "auth:login_entry"
+msgstr "Volver al inicio de sesión"
+
+msgid "auth:account_label"
+msgstr "Cuenta"
+
+msgid "auth:new_password_invalid"
+msgstr "La contraseña debe tener al menos 15 caracteres"
+
+msgid "auth:password_too_long"
+msgstr "La contraseña es demasiado larga. Acórtala"
+
+msgid "auth:continue_submit"
+msgstr "Continuar"
+
+msgid "auth:continue_name_title"
+msgstr "Elegir un nombre de usuario público"
+
+msgid "auth:continue_legacy_title"
+msgstr "Elegir nombre de usuario"
+
+msgid "auth:continue_public_name_hint"
+msgstr "Tu nombre de usuario será único y público."
+
+msgid "auth:continue_password_required"
+msgstr "Este usuario ya existe. Verifica la contraseña de la cuenta original."
+
+msgid "auth:continue_original_password"
+msgstr "Contraseña original"
+
+msgid "auth:continue_password_placeholder"
+msgstr "Introduce la contraseña de la cuenta original"
+
+msgid "auth:continue_change_phone"
+msgstr "Cambiar número de teléfono"
+
+msgid "auth:continue_original_login"
+msgstr "Entrar en la cuenta original"
+
+msgid "auth:continue_phone_in_use"
+msgstr ""
+"Esta cuenta está vinculada a otro teléfono. Inicia sesión en la cuenta "
+"original para gestionarlo."
+
+msgid "auth:continue_password_incorrect"
+msgstr ""
+"La contraseña de la cuenta original es incorrecta. Inténtalo de nuevo."
+
+msgid "auth:continue_password_locked"
+msgstr ""
+"Demasiados intentos de contraseña. Inténtalo de nuevo en {seconds} segundos."
+
+msgid "auth:continue_username_placeholder"
+msgstr "Elige un nombre de usuario público único"
+
+msgid "auth:continue_verified_phone"
+msgstr "{phone} · Verificado"
+
+msgid "auth:password_settings_title"
+msgstr "Crear o restablecer contraseña"
+
+msgid "auth:password_settings_hint"
+msgstr ""
+"Usa un nuevo código SMS enviado a tu teléfono actual para crear una "
+"contraseña. Podrás seguir entrando por SMS."
+
+msgid "auth:password_new"
+msgstr "Nueva contraseña"
+
+msgid "auth:password_submit"
+msgstr "Guardar contraseña"
+
+msgid "auth:password_submitting"
+msgstr "Guardando…"
+
+msgid "auth:password_success"
+msgstr "Contraseña guardada"
+
+msgid "auth:password_phone_required"
+msgstr "Vincula un teléfono antes de crear una contraseña."
+
+msgid "auth:password_phone_mismatch"
+msgstr "Usa el teléfono vinculado actualmente a esta cuenta."
+
+msgid "auth:password_auth_required"
+msgstr "Vuelve a iniciar sesión antes de crear una contraseña."
+
+msgid "auth:password_not_allowed"
+msgstr "Esta cuenta no puede crear una contraseña aquí."
+
+msgid "auth:password_failed"
+msgstr "No se pudo guardar la contraseña. Inténtalo de nuevo."
+
+msgid "report:tier_normal"
+msgstr "Informe normal"
+
+msgid "report:tier_deep"
+msgstr "Informe avanzado"
+
+msgid "report:cross_platform"
+msgstr "Entre plataformas · {platform}"
+
+msgid "report:platform_golaxy"
+msgstr "Golaxy"
+
+msgid "report:platform_ogs"
+msgstr "OGS"
+
+msgid "report:platform_fox"
+msgstr "Fox"
+
+msgid "report:title_research"
+msgstr "Archivo de estudio"
+
+msgid "report:tier_menu"
+msgstr "Nivel de informe"
+
+msgid "startup:loading"
+msgstr "Cargando…"
+
+msgid "startup:render_error"
+msgstr "Esta página no se puede mostrar ahora"
+
+msgid "startup:preload_error"
+msgstr "No se pudieron cargar algunas páginas"
+
+msgid "startup:reload"
+msgstr "Volver a cargar"
+
+msgid "membership:report_insufficient_title"
+msgstr "Cupo de informes insuficiente"
+
+msgid "membership:report_insufficient_body"
+msgstr ""
+"El cupo disponible no es suficiente para iniciar este informe. Puedes "
+"consultar las ventajas de la membresía o recargar puntos."
+
+msgid "membership:report_verification_title"
+msgstr "Informe gratuito no disponible"
+
+msgid "membership:report_verification_body"
+msgstr ""
+"La elegibilidad para informes gratuitos no está disponible, por lo que este "
+"informe aún no se ha iniciado. Puedes consultar el estado de tu membresía y "
+"tus puntos en la página de tu cuenta."
+
+msgid "membership:report_view_membership"
+msgstr "Membresía y recarga"
+
+msgid "membership:report_view_account"
+msgstr "Ver cuenta y cupo"
+
+msgid "auth:bind_success_gift"
+msgstr "Teléfono vinculado. Se han añadido 50 puntos."
+
+msgid "auth:bind_gift_hint"
+msgstr "Recibe 50 puntos al verificar tu teléfono por primera vez. El regalo no se repite."

@@ -67,7 +67,7 @@ export function OgsCourseBoard({ step, state, onPoint, disabled = false, extra =
       {extra.map(([x, y]) => showPoint(x, y) ? <text key={`extra-${key(x, y)}`} x={position(x)} y={position(y) + 20} textAnchor="middle" fontSize="64" fill="#ec635a">×</text> : null)}
       {Object.entries(step.letters).map(([point, label]) => {
         const [x, y] = point.split(',').map(Number);
-        return showPoint(x, y) ? <text key={`l${point}`} x={position(x)} y={position(y) - 31} textAnchor="middle" fontSize={annotationFontSize} fontWeight="bold" fill="#183c28" paintOrder="stroke" stroke="#f3d496" strokeWidth="8">{label}</text> : null;
+        return showPoint(x, y) ? <text key={`l${point}`} x={position(x)} y={position(y)} textAnchor="middle" dominantBaseline="central" fontSize={annotationFontSize} fontWeight="bold" fill="#183c28" paintOrder="stroke" stroke="#f3d496" strokeWidth="8">{label}</text> : null;
       })}
       {Object.entries(step.shapes).map(([point, shape]) => {
         const [x, y] = point.split(',').map(Number);

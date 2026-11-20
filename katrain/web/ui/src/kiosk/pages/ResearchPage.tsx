@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../features/auth/accountDisplay';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -211,7 +212,7 @@ const ResearchPage = () => {
         return;
       }
       const head = () => detail.title
-        || `${detail.player_black ?? t('research:black', '黑方')} vs ${detail.player_white ?? t('research:white', '白方')}`;
+        || `${displayGamePlayerName(detail, 'B', t('research:black', '黑方'))} vs ${displayGamePlayerName(detail, 'W', t('research:white', '白方'))}`;
       const stamp = detail.game_date ?? detail.created_at;
       const when = stamp ? Date.parse(stamp) : NaN;
       setProvenance({

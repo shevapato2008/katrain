@@ -152,13 +152,17 @@ describe('rowState —— 分析到哪一步了', () => {
       .toEqual({ kind: 'analyzed', taskId: 7, taskIds: [{ tier: 'normal', id: 7 }] });
   });
 
+  it('ordinary completed does not hide advanced active progress', () => {
+    expect(rowState(game(), { completedNormal: task(), activeDeep: task({ id: 8, status: 'running', analyzed_moves: 31 }) }))
+      .toMatchObject({ kind: 'running', taskId: 8, analyzed: 31 });
+  });
+
   it('正在跑的带上进度', () => {
     expect(rowState(game(), { activeNormal: task({ status: 'running', analyzed_moves: 31 }) }))
       .toEqual({ kind: 'running', taskId: 7, analyzed: 31, total: 187 });
   });
 
-  // **「算了一半」既不是成功也不是失败。** 后端没有「暂停」这个状态:跑了一半断掉的任务
-  // 落在 failed 上、`analyzed_moves` 还留着,而重试会从断点续算 —— 所以这一档说「继续」。
+  // Failed tasks retain the measured frontier; retry authorization belongs to the billing flow.
   it('跑了一半断掉的自己一档,不和「一手都没算成」混在一起', () => {
     expect(rowState(game(), { failedNormal: task({ status: 'failed', analyzed_moves: 96 }) }))
       .toEqual({ kind: 'partial', taskId: 7, analyzed: 96, total: 187 });

@@ -86,3 +86,13 @@ describe('PlayerCard 的两条 board-rail 容器带', () => {
   });
 });
 
+
+it('uses trusted public player names and refreshes them when the account changes', () => {
+  const info = { ...humanInfo, name: 'u_0123456789abcdefabcd', user_id: 7, public_username: '公开棋手' };
+  const { rerender } = render(<PlayerCard player="B" info={info} captures={0} active={false} />);
+  expect(screen.getByText('公开棋手')).toBeInTheDocument();
+  expect(document.body).not.toHaveTextContent(info.name);
+  rerender(<PlayerCard player="B" info={{ ...info, public_username: '另一棋手' }} captures={0} active={false} />);
+  expect(screen.getByText('另一棋手')).toBeInTheDocument();
+  expect(screen.queryByText('公开棋手')).toBeNull();
+});

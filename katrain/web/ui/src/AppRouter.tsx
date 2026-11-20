@@ -4,6 +4,8 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { zenTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import AuthNotice from './features/auth/AuthNotice';
+import { StartupLoading } from './startup/StartupState';
 
 // Code-split: kiosk and galaxy bundles load independently.
 // Galaxy + VideoRecorder reach three.js (via Board3D / direct import),
@@ -23,10 +25,11 @@ const AppRouter = () => {
   return (
     <ThemeProvider theme={zenTheme}>
       <CssBaseline />
+      <AuthNotice />
       <BrowserRouter>
         <AuthProvider>
           <SettingsProvider>
-            <Suspense fallback={null}>
+            <Suspense fallback={<StartupLoading />}>
               <Routes>
                 <Route path="/kiosk/*" element={<KioskApp />} />
                 {!__KIOSK_2D_ONLY__ && GalaxyApp && (

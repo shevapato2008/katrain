@@ -72,8 +72,8 @@ class PhysicalPlayOrchestrator:
     # board. Measured on RK3562 2026-09-20: a game that ended 15.5 min into the session
     # kept vision bound for another 26 min, producing 732 refused moves and 191 of the
     # session's 244 mismatch dialogs — 78% of the whole storm, at a mean detection
-    # confidence HIGHER than during play. It is a pause, not an unbind, because undo is
-    # still allowed after a result and must bring the physical board back to life.
+    # confidence HIGHER than during play. Suspend the game tick and its frame demand
+    # without unbinding; actually clearing a result can bring the board back to life.
     PAUSE_REASON_GAME_OVER = "game_over"
 
     def __init__(
@@ -100,6 +100,7 @@ class PhysicalPlayOrchestrator:
         self._loop = None
         self._orig_callback = None
         self._latest_state: Optional[Dict] = None
+        self._scoped_restore_state: Optional[Dict] = None
         self._task: Optional[asyncio.Task] = None
         self._last_points: Optional[List[Dict]] = None
         self._caught_up = True
@@ -219,6 +220,11 @@ class PhysicalPlayOrchestrator:
         with lock:
             if not self.source_is_current(source):
                 return
+            if self._scoped_restore_state is not None:
+                # The guarded recovery callback publishes this exact snapshot to the
+                # runtime/UI. It must not dismiss unrelated pause reasons as a side effect.
+                self._latest_state = self._scoped_restore_state
+                return
             if self._session is not None:
                 state = (
                     self._session.last_state
@@ -246,11 +252,16 @@ class PhysicalPlayOrchestrator:
             except Exception as exc:
                 logger.debug("expected-board push failed: %s", exc)
 
+    @staticmethod
+    def _game_is_over(state: Dict) -> bool:
+        return bool(state.get("terminal_result") or state.get("end_result")) and not state.get("awaiting_count")
+
     def _apply_game_state(self, state: Dict) -> None:
         self._latest_state = state
-        local_confirm = (
-            state.get("game_type") == "pvp_local" and not state.get("end_result") and not state.get("awaiting_count")
-        )
+        ended = self._game_is_over(state)
+        local_confirm = state.get("game_type") == "pvp_local" and not ended and not state.get("awaiting_count")
+        if hasattr(self._vision, "set_game_over"):
+            self._vision.set_game_over(ended, source=self._binding_source)
         if hasattr(self._vision, "set_local_confirmation_mode"):
             self._vision.set_local_confirmation_mode(
                 local_confirm, session_id=self._session_id, game_id=state.get("game_id")
@@ -265,8 +276,9 @@ class PhysicalPlayOrchestrator:
         # `end_result` alone is NOT the end: after two passes the result is already
         # written while `awaiting_count` is still true, and the board is still live for
         # counting. Pausing on `end_result` would let one glare phantom kill vision
-        # mid-count. Both halves, and reversible — undo clears it on the next broadcast.
-        if state.get("end_result") and not state.get("awaiting_count"):
+        # mid-count. The game-level terminal_result survives history navigation; only
+        # actually clearing the final result (legacy undo) can reopen processing.
+        if ended:
             self._add_pause_reason(self.PAUSE_REASON_GAME_OVER)
             # 一局已经结束就不再欠任何落子/提子 ⇒ lag 没有意义了。而且清它的是 `_tick_once`,
             # 那一步被 `_suspended`(game_over 就会置真)挡住 ⇒ 不在这里清掉,lag 会永远留着。
@@ -323,6 +335,91 @@ class PhysicalPlayOrchestrator:
         # Force the next tick to re-emit lamps (the dedupe would otherwise suppress the
         # now-changed plan) so a stale blue lamp clears.
         self._last_points = None
+
+    async def restore_scoped(self, session_id: str, game_id: str, *, timeout: float = 8.0) -> Dict:
+        """Republish fresh bound authority and await its exact physical equality.
+
+        Unlike legacy resync this never adopts the observed board or plays a move.
+        No thread lock is held across the worker acknowledgement wait.
+        """
+        from fastapi import HTTPException
+
+        vision, source, session = self._vision, self._binding_source, self._session
+        if not isinstance(vision, VisionService) or vision._worker is None:
+            raise HTTPException(status_code=503, detail="Vision worker is unavailable")
+        if session is None or source is None or session_id != self._session_id:
+            raise HTTPException(status_code=409, detail="Vision binding changed")
+        deadline = asyncio.get_running_loop().time() + timeout
+        recovery = None
+        published = None
+        try:
+            while True:
+                with getattr(session.katrain, "ai_ladder_commit_lock", nullcontext()):
+                    if vision._worker is None:
+                        raise HTTPException(status_code=503, detail="Vision worker is unavailable")
+                    if not self.source_is_current(source) or (recovery is not None and recovery.invalidated):
+                        raise HTTPException(status_code=409, detail="Vision binding or game changed")
+                    state = (
+                        session.last_state
+                        if getattr(session, "game_type", None) == "pvp_lobby"
+                        else session.katrain.get_state()
+                    )
+                    if not state or state.get("game_id") != game_id:
+                        raise HTTPException(status_code=409, detail="Vision game changed")
+                    if recovery is None:
+                        try:
+                            recovery = vision.begin_expected_recovery(source)
+                        except ValueError as exc:
+                            raise HTTPException(status_code=409, detail=str(exc)) from exc
+                    expected = game_state_stones_to_board(state["stones"], state["board_size"][0])
+                    target = (state.get("current_node_id"), expected.shape, expected.tobytes())
+                    if target != published:
+                        # Current runtime callback owns canonical and client publication.
+                        # Its orchestrator wrapper must use this same captured snapshot.
+                        if not self.source_is_current(source):
+                            raise HTTPException(status_code=409, detail="Vision binding or game changed")
+                        self._scoped_restore_state = state
+                        try:
+                            callback = session.katrain.update_state_callback
+                            if callable(callback):
+                                callback(state)
+                        finally:
+                            self._scoped_restore_state = None
+                        if not self.source_is_current(source):
+                            raise HTTPException(status_code=409, detail="Vision binding or game changed")
+                        self._latest_state = state
+                        vision.publish_expected_from_stones(
+                            source,
+                            state["stones"],
+                            state["board_size"][0],
+                            expected_node_id=state.get("current_node_id"),
+                            force_rearm=True,
+                        )
+                        self._planner.reconcile(expected)
+                        self._set_caught_up(True)
+                        self._behind_since = None
+                        self._reminded = self._escalated = False
+                        self._last_points = None
+                        published = target
+                    if vision.recovery_acknowledged(recovery, state.get("current_node_id")):
+                        return {
+                            "ok": True,
+                            "recovery_id": recovery.recovery_id,
+                            "session_id": session_id,
+                            "game_id": game_id,
+                            "current_node_id": state.get("current_node_id"),
+                        }
+                    recovery.wake.clear()
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise HTTPException(status_code=504, detail="Vision recovery timed out")
+                try:
+                    await asyncio.wait_for(recovery.wake.wait(), remaining)
+                except asyncio.TimeoutError as exc:
+                    raise HTTPException(status_code=504, detail="Vision recovery timed out") from exc
+        finally:
+            if recovery is not None:
+                vision.finish_expected_recovery(recovery)
 
     def enter_engine_error(self, coords: Tuple[int, int], recovery_token: str) -> None:
         """Task 7 hand-off: the poller's engine_recovery episode tripped its
@@ -412,8 +509,9 @@ class PhysicalPlayOrchestrator:
               re-evaluates catch-up and clears the lag reason, so stopping it would
               make lag un-recoverable.
           (b) the worker's move-detection pause (Q4 redesign + hint) — paused while
-              ANY reason is active. While paused, the worker produces NO ConfirmedMove
-              — this replaces the unsound 'hold a confirmed move' design (MoveDetector
+              any nonterminal reason is active. Terminal has a binding-only demand gate,
+              so independent monitor/setup consumers can still run. While paused, the
+              worker produces NO ConfirmedMove — this replaces the unsound 'hold a confirmed move' design (MoveDetector
               advances its baseline at confirm time, so held moves could go
               stale/corrupt — review Blocker 1). A premature user stone simply stays
               unconfirmed and is picked up naturally after resume, against the
@@ -422,7 +520,9 @@ class PhysicalPlayOrchestrator:
         (self._paused_sent), so combining/dropping reasons that don't flip the
         aggregate never re-sends a duplicate pause/resume."""
         self._suspended = bool(self._pause_reasons - {self.PAUSE_REASON_LAG})
-        desired = bool(self._pause_reasons)
+        # Terminal processing has its own demand gate. It must not leave an unrelated
+        # monitor/setup paused merely because the finished game remains bound.
+        desired = bool(self._pause_reasons - {self.PAUSE_REASON_GAME_OVER})
         if desired == self._paused_sent:
             return
         self._paused_sent = desired
@@ -575,7 +675,7 @@ class PhysicalPlayOrchestrator:
     def _release_recovery_on_game_end(self) -> bool:
         """Release engine recovery pauses and clear lamps once the game ends."""
         state = self._latest_state
-        if not state or not state.get("end_result"):
+        if not state or not self._game_is_over(state):
             return False
         if (
             self.PAUSE_REASON_ENGINE_ERROR not in self._pause_reasons

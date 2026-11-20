@@ -13,6 +13,7 @@ import { KioskSecLabel } from '../../shell/KioskSecLabel';
 import { Icon } from '../../shell/icons';
 import { useKioskMembershipOrder } from './useKioskMembershipOrder';
 import './membership.css';
+import PhoneBindingEntry from '../../../features/auth/PhoneBindingEntry';
 
 type MembershipTab = 'usage' | 'topup' | 'plans';
 type MembershipInfo = 'quota' | 'pricing';
@@ -156,6 +157,7 @@ export default function MembershipPage() {
     <div className="km-wallet"><span>{t('membership:kiosk_api_balance', 'API余额')}</span><strong>{t('membership:kiosk_points_amount', '{points} 积分', { points: points(wallet?.credits) })}</strong><span>{t('membership:kiosk_member_then_api', '会员优先，API积分接续')}</span></div>
     <div className={`km-sync${usable ? '' : ' is-stale'}`}><span>{usable ? t('membership:kiosk_synced', '已同步') : t('membership:kiosk_quota_not_confirmed', '额度尚未确认')}</span>{usable && usage && <time dateTime={usage.server_now} title={date(usage.server_now)}><Num>{new Intl.DateTimeFormat(locale, { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date(usage.server_now))}</Num></time>}</div>
     {usable && usage?.plan.next ? <p>{t('membership:kiosk_next_plan', '下期 {plan} · {date}生效 · 北京时间', { plan: usage.plan.next.name, date: date(usage.plan.next.starts_at, true) })}</p> : <p>{t('membership:kiosk_confirm_source_quote', '分析前确认来源与报价')}</p>}
+    <PhoneBindingEntry kiosk />
     <KioskActions className="km-account-actions" ariaLabel={t('membership:kiosk_account_actions', '账户操作')} actions={[
       { key: 'topup', icon: 'squares-four', label: t('membership:api_topup', 'API充值'), onClick: () => setTab('topup') },
       { key: 'plans', icon: 'crown-simple', label: t('membership:kiosk_view_plans', '查看会员'), onClick: () => setTab('plans') },

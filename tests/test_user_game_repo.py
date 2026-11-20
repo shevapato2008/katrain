@@ -7,10 +7,11 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from katrain.web.core import models_db
 from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
-from katrain.web.api.v1.endpoints.user_games import UserGameCreate, create_user_game
+from katrain.web.api.v1.endpoints.user_games import UserGameCreate, create_user_game, get_user_game, list_user_games
 
 
 @pytest.fixture
@@ -61,6 +62,45 @@ def add_active_game(factory, user_id: int, game_id: str = "reserved-active"):
 
 
 class TestUserGameRepository:
+    @pytest.mark.parametrize("platform", ["golaxy", "ogs", "fox", None])
+    def test_post_get_and_list_keep_platform_without_changing_game_classification(self, db_session, platform):
+        factory, user_id = db_session
+        request = SimpleNamespace(
+            app=SimpleNamespace(state=SimpleNamespace(user_game_repo=UserGameRepository(factory)))
+        )
+        user = SimpleNamespace(id=user_id)
+        sgf = "(;FF[4]KTP[golaxy];B[aa])"
+        created = asyncio.run(
+            create_user_game(
+                request, UserGameCreate(sgf_content=sgf, source="play_ai", game_type="free", platform=platform), user
+            )
+        )
+        fetched = asyncio.run(get_user_game(request, created["id"], user))
+        listed = asyncio.run(list_user_games(request, current_user=user))["items"][0]
+
+        for game in (created, fetched, listed):
+            assert game["platform"] == platform
+            assert game["source"] == "play_ai"
+            assert game["game_type"] == "free"
+        assert fetched["sgf_content"] == sgf
+
+    def test_post_rejects_unknown_platform(self):
+        with pytest.raises(ValidationError):
+            UserGameCreate(sgf_content="(;FF[4])", source="play_ai", platform="guessed")
+
+    def test_imported_platform_sgf_does_not_claim_played_origin(self, db_session):
+        factory, user_id = db_session
+        repo = UserGameRepository(factory)
+        sgf = "(;FF[4]KTP[golaxy]PB[Me]RE[B+R];B[aa])"
+
+        game = repo.create(user_id=user_id, sgf_content=sgf, source="import")
+
+        assert game["platform"] is None
+        assert game["source"] == "import"
+        assert game["game_type"] is None
+        assert game["user_color"] is None
+        assert game["sgf_content"] == sgf
+
     def test_generic_create_cannot_claim_an_active_ranked_game_id(self, db_session):
         factory, user_id = db_session
         add_active_game(factory, user_id)
@@ -366,3 +406,124 @@ class TestUserGameAnalysisRepository:
         assert result["top_moves"] is not None
         assert result["is_brilliant"] is True
         assert result["is_mistake"] is False
+
+
+def test_historical_display_uses_owner_and_saved_seat_without_changing_stored_names(db_session):
+    factory, user_id = db_session
+    internal = "u_0123456789abcdefabcd"
+    with factory() as db:
+        user = db.get(models_db.User, user_id)
+        user.username = internal
+        user.public_username = "公开棋手"
+        db.commit()
+    repo = UserGameRepository(factory)
+    saved = repo.create(
+        user_id, "(;SZ[19]PB[old];B[aa])", "play_ai", player_black=internal, player_white="KataGo", user_color="B"
+    )
+    for row in (repo.get(saved["id"], user_id), repo.list(user_id)["items"][0]):
+        assert row["display_player_black"] == "公开棋手"
+        assert row["player_black"] == internal
+        assert row["display_player_white"] == "KataGo"
+    with factory() as db:
+        assert db.get(models_db.UserGame, saved["id"]).player_black == internal
+    # No saved seat means no nickname-based account guess.
+    unknown = repo.create(user_id, "(;SZ[19];B[bb])", "play_human", player_black=internal, player_white="公开棋手")
+    assert unknown["display_player_black"] == ""
+    assert unknown["display_player_white"] == "公开棋手"
+    for source, platform in [("import", None), ("research", None), ("play_local", None), ("play_human", "ogs")]:
+        external = repo.create(
+            user_id,
+            f"(;SZ[19]GC[{source}-{platform}];B[cc])",
+            source,
+            player_black=internal,
+            user_color="B",
+            platform=platform,
+        )
+        assert external.get("display_player_black", external["player_black"]) == internal
+
+
+def test_new_native_multiplayer_records_keep_both_authoritative_seats(db_session):
+    from katrain.web.core.game_repo import GameRepository
+
+    factory, black_id = db_session
+    black_handle = "u_0123456789abcdefabcd"
+    white_handle = "u_aaaaaaaaaaaaaaaaaaaa"
+    with factory() as db:
+        black = db.get(models_db.User, black_id)
+        black.username = black_handle
+        black.public_username = "BlackPublic"
+        white = models_db.User(username=white_handle, public_username="WhitePublic", hashed_password="unused")
+        db.add(white)
+        db.commit()
+        white_id = white.id
+    sgf = f"(;SZ[19]PB[{black_handle}]PW[{white_handle}]RE[B+R])"
+    GameRepository(factory).record_multiplayer_game(
+        sgf,
+        "B+R",
+        "free",
+        black_id,
+        white_id,
+        black_name=black_handle,
+        white_name=white_handle,
+    )
+    rows = UserGameRepository(factory)
+    for owner_id, owner_color in ((black_id, "B"), (white_id, "W")):
+        listed = rows.list(owner_id)["items"][0]
+        detail = rows.get(listed["id"], owner_id)
+        for row in (listed, detail):
+            assert row["user_color"] == owner_color
+            assert row["display_player_black"] == "BlackPublic"
+            assert row["display_player_white"] == "WhitePublic"
+            assert row["player_black"] == black_handle
+            assert row["player_white"] == white_handle
+        assert detail["sgf_content"] == sgf
+
+
+@pytest.mark.parametrize("invalid_id", [True, "1", 0, -1])
+def test_native_player_metadata_requires_strict_positive_integer_ids(db_session, invalid_id):
+    from katrain.web.core.game_repo import GameRepository
+
+    factory, user_id = db_session
+    GameRepository(factory).record_multiplayer_game(
+        "(;SZ[19]RE[B+R])",
+        "B+R",
+        "free",
+        invalid_id,
+        user_id,
+        black_name="Synthetic",
+        white_name="testuser",
+    )
+    with factory() as db:
+        records = db.query(models_db.UserGame).all()
+        assert len(records) == 1
+        assert records[0].player_black_user_id is None
+        assert records[0].player_white_user_id == user_id
+
+
+def test_generic_game_inputs_cannot_write_trusted_player_account_ids(db_session):
+    from katrain.web.api.v1.endpoints.user_games import UserGameUpdate
+
+    factory, user_id = db_session
+    forged = {"player_black_user_id": user_id, "player_white_user_id": user_id}
+    create = UserGameCreate(sgf_content="(;SZ[19])", source="play_human", **forged)
+    update = UserGameUpdate(title="Rename", **forged)
+    assert not (forged.keys() & create.model_dump().keys())
+    assert not (forged.keys() & update.model_dump().keys())
+    repo = UserGameRepository(factory)
+    saved = repo.create(user_id, "(;SZ[19])", "play_human", **forged)
+    with factory() as db:
+        row = db.get(models_db.UserGame, saved["id"])
+        assert row.player_black_user_id is None
+        assert row.player_white_user_id is None
+
+
+def test_generic_update_cannot_write_trusted_player_account_ids(db_session):
+    factory, user_id = db_session
+    repo = UserGameRepository(factory)
+    saved = repo.create(user_id, "(;SZ[19])", "play_human")
+    repo.update(saved["id"], user_id, title="Allowed title", player_black_user_id=user_id, player_white_user_id=user_id)
+    with factory() as db:
+        row = db.get(models_db.UserGame, saved["id"])
+        assert row.title == "Allowed title"
+        assert row.player_black_user_id is None
+        assert row.player_white_user_id is None

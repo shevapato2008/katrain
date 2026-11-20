@@ -199,4 +199,17 @@ describe('ResearchPage local-play review entry', () => {
     fireEvent.click(within(bar).getByRole('button', { name: /复盘/ }));
     expect(await screen.findByText('复盘屏')).toBeInTheDocument();
   });
+  it.each([
+    { source: 'play_ai', display: '公开棋手', expected: '公开棋手' },
+    { source: 'import', display: undefined, expected: 'u_0123456789abcdefabcd' },
+  ])('uses trusted display names in $source provenance and preserves external names', async ({ source, display, expected }) => {
+    const internal = 'u_0123456789abcdefabcd';
+    get.mockResolvedValueOnce({ id: 'g1', source, title: null, sgf_content: '(;GM[1]FF[4])',
+      player_black: internal, player_white: '外部白方', display_player_black: display });
+    renderAt('/kiosk/research?user_game_id=g1&from=report');
+    await waitFor(() => expect(screen.getByTestId('research-pagebar')).toHaveTextContent(`${expected} vs 外部白方`));
+    if (display) expect(document.body).not.toHaveTextContent(internal);
+    expect(loadFromSGF).toHaveBeenCalledWith('(;GM[1]FF[4])');
+  });
+
 });

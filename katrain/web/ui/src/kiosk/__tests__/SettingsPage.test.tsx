@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -118,17 +118,33 @@ describe('屏 27 设置 · 分组与导航', () => {
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
-  // **导航项数 = 分组数,且词一一对应** —— 两套词等于两套心智模型。
-  it('导航六项,和右边六组的标题一个字不差', () => {
+  afterEach(() => {
+    strictBox.enabled = false;
+  });
+
+  it('六个分组锚点与右栏对应标题一致', () => {
     renderPage();
     const nav = screen.getByTestId('settings-nav');
-    const labels = [...nav.querySelectorAll('button')].map((b) => b.textContent);
+    const labels = [...nav.querySelectorAll('button[aria-current]')].map((b) => b.textContent);
     expect(labels).toEqual(['实体棋盘', '落子与提示', '声音', '语言', '字体与字号', '关于']);
 
     const groups = [...document.querySelectorAll('[data-group]')].map(
       (g) => g.querySelector('.kiosk-seclabel h2')?.textContent,
     );
     expect(groups).toEqual(labels);
+  });
+
+  it.each([
+    { mode: '普通 kiosk', strict: false },
+    { mode: 'strict Box', strict: true },
+  ])('$mode 的设置侧栏可打开会员与用量', ({ strict }) => {
+    strictBox.enabled = strict;
+    renderPage();
+    const nav = within(screen.getByTestId('settings-nav'));
+    const membership = nav.getByRole('button', { name: '会员与用量' });
+    expect(membership).toBeVisible();
+    fireEvent.click(membership);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/membership');
   });
 
   // 稿子摆了七组,这台盒子上五组没有内容。**只做有内容的**(计划 D10 方案 a):
@@ -148,10 +164,10 @@ describe('屏 27 设置 · 分组与导航', () => {
     expect(screen.queryByText(/即将上线/)).toBeNull();
   });
 
-  it('一开始高亮在第一项', () => {
+  it('一开始高亮第一个分组锚点', () => {
     renderPage();
     const nav = screen.getByTestId('settings-nav');
-    const current = [...nav.querySelectorAll('button')].filter((b) => b.getAttribute('aria-current') === 'true');
+    const current = nav.querySelectorAll('button[aria-current="true"]');
     expect(current).toHaveLength(1);
     expect(current[0].textContent).toBe('实体棋盘');
   });

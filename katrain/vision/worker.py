@@ -104,6 +104,7 @@ class _VisionWorkerLoop:
 
         self._running = False
         self._viewer_active = False
+        self._game_over = False
         self._bound = False
         self._monitor = False
         self._paused = False
@@ -275,6 +276,10 @@ class _VisionWorkerLoop:
         Results written to shared overlay state for preview thread to consume."""
         while self._running:
             self._process_commands()
+            if not self.needs_frames():
+                self._maybe_publish_status()
+                time.sleep(0.25)
+                continue
 
             frame = self._camera.read_frame()
             board_detected = False
@@ -386,7 +391,7 @@ class _VisionWorkerLoop:
                     # our move_event dict, no ambiguous dialog (the tsumego frontend consumes move_confirmed).
                     if (
                         should_detect_moves(
-                            self._bound, self._monitor, self._paused, self._move_armed, self._sync.state.value
+                            self._game_active, self._monitor, self._paused, self._move_armed, self._sync.state.value
                         )
                         and self._sync.has_confirmed_move is not True
                     ):
@@ -426,12 +431,12 @@ class _VisionWorkerLoop:
                         )
                         if move_result is not None:
                             row, col, color = move_result
-                            if not self._bound:
+                            if not self._game_active:
                                 # Monitor (physical tsumego): emit the confirmed move as a dict for
                                 # /ws/vision and advance the baseline (develop's MoveDetector no longer
                                 # self-advances) so the placed stone isn't re-detected every frame.
                                 logger.info("monitor move confirmed: (%d,%d) color=%d", row, col, color)
-                                self._event_queue.put(move_event(self._bound, row, col, color))
+                                self._emit_event(move_event(self._game_active, row, col, color))
                                 self._move_detector.force_sync(self._last_stable_board)
                             else:
                                 # A real stone that survived voting was detected in this frame or
@@ -476,7 +481,7 @@ class _VisionWorkerLoop:
                                             candidate_sightings + 1,
                                             self._move_detector.suspicion_of(row, col),
                                         )
-                                        self._event_queue.put(
+                                        self._emit_event(
                                             {
                                                 "type": "ambiguous_stone",
                                                 "data": {
@@ -520,7 +525,7 @@ class _VisionWorkerLoop:
                                     )
                                     if not self._monitor:
                                         self._sync.claim_confirmed_move(confirmed, self._last_stable_board)
-                                    self._event_queue.put(confirmed)
+                                    self._emit_event(confirmed)
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
@@ -533,7 +538,7 @@ class _VisionWorkerLoop:
                             if pending_after is not None and pending_after != pending_before:
                                 r, c, clr = pending_after
                                 # "确认中" chip (PRD §3.2/Q3): first frame of the 3-frame window
-                                self._event_queue.put(
+                                self._emit_event(
                                     {
                                         "type": "move_pending",
                                         "data": {"row": int(r), "col": int(c), "color": int(clr)},
@@ -574,9 +579,9 @@ class _VisionWorkerLoop:
                         }
 
             # Sync state machine update
-            if should_feed_sync(self._bound, self._monitor, self._paused) and should_feed_sync_frame(
-                frame is not None, stable_ok
-            ):
+            if should_feed_sync(
+                self._game_active, self._monitor or self._sync.state == SyncState.SETUP_IN_PROGRESS, self._paused
+            ) and should_feed_sync_frame(frame is not None, stable_ok):
                 events = self._sync.update(
                     observed_board=observed_board,
                     mean_confidence=mean_confidence,
@@ -587,11 +592,12 @@ class _VisionWorkerLoop:
                     # arm doesn't diff against a stale baseline.
                     self._move_detector.force_sync(observed_board)
                 for evt in events:
-                    self._event_queue.put(
+                    self._emit_event(
                         {
                             "type": evt.type.value,
                             "data": evt.data,
                             "binding_epoch": getattr(self, "_binding_epoch", 0),
+                            "expected_revision": getattr(self, "_expected_revision", 0),
                         }
                     )
 
@@ -643,7 +649,7 @@ class _VisionWorkerLoop:
         if hit is None:
             return
         r, c, class_id, conf = hit
-        self._event_queue.put(
+        self._emit_event(
             {
                 "type": "ambiguous_stone",
                 "data": {"row": int(r), "col": int(c), "color": int(class_id) + 1, "confidence": round(float(conf), 3)},
@@ -681,6 +687,17 @@ class _VisionWorkerLoop:
         self._averager.reset()  # the brightness step must not blend into the average
         logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
 
+    @property
+    def _game_active(self) -> bool:
+        return self._bound and not self._game_over
+
+    def _emit_event(self, event) -> None:
+        if isinstance(event, dict):
+            event = {**event, "binding_epoch": self._binding_epoch if self._game_active else 0}
+            if not self._game_active:
+                event["sessionless"] = True
+        self._event_queue.put(event)
+
     def _process_commands(self) -> None:
         """Drain the command queue (non-blocking)."""
         while True:
@@ -697,12 +714,14 @@ class _VisionWorkerLoop:
                 self._binding_epoch = int(cmd.data.get("binding_epoch", 0))
                 self._expected_revision = 0
                 self._sync.invalidate_confirmed_move()
+                self._game_over = False
                 self._bound = True
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
             elif cmd.action == CommandType.UNBIND:
                 self._binding_epoch = 0
                 self._expected_revision = 0
+                self._game_over = False
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
                 self._reset_motion_region()
@@ -738,6 +757,7 @@ class _VisionWorkerLoop:
                 self._sync.set_expected_board(
                     board,
                     expected_node_id=cmd.data.get("expected_node_id"),
+                    **({"recovery_id": cmd.data["recovery_id"]} if "recovery_id" in cmd.data else {}),
                 )
                 if not (unchanged and baseline_ok):
                     self._move_detector.force_sync(board)
@@ -787,13 +807,28 @@ class _VisionWorkerLoop:
                 if active != self._monitor:
                     self._sync.invalidate_confirmed_move()
                 self._monitor = active
-                if not self._monitor and not self._bound:
+                if not self._monitor and not self._game_active:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False
             elif cmd.action == CommandType.SET_PAUSED:
                 self._paused = cmd.data.get("paused", False)
             elif cmd.action == CommandType.SET_MOVE_ARMED:
                 self._move_armed = cmd.data.get("armed", False)
+            elif cmd.action == CommandType.SET_GAME_OVER:
+                if int(cmd.data.get("binding_epoch", 0)) != self._binding_epoch:
+                    continue
+                self._game_over = bool(cmd.data.get("ended", False))
+                if self._game_over:
+                    self._sync.invalidate_confirmed_move()
+                    if self._expected_np is not None:
+                        self._move_detector.force_sync(self._expected_np)
+                    else:
+                        self._move_detector.reset_suspicion()
+                    self._prev_observed_board = None
+                    self._prev_conf_map = {}
+                    self._ambig_last_emit = {}
+                    self._averager.reset()
+                    self._promoter.reset()
             elif cmd.action == CommandType.PAUSE_DETECTION:
                 self._paused = True
             elif cmd.action == CommandType.RESUME_DETECTION:
@@ -898,6 +933,14 @@ class _VisionWorkerLoop:
 
             time.sleep(interval)
 
+    def needs_frames(self) -> bool:
+        return bool(
+            (self._bound and not self._game_over)
+            or self._monitor
+            or self._viewer_active
+            or self._sync.state == SyncState.SETUP_IN_PROGRESS
+        )
+
     def _maybe_publish_status(self) -> None:
         """Publish status to main process every ~1 second."""
         now = time.monotonic()
@@ -917,6 +960,7 @@ class _VisionWorkerLoop:
             model_ready=self._detector is not None,
             recognition_ready=bool(self._camera.is_connected and self._detector is not None),
             observation_seq=self._observation_seq,
+            frame_demand=self.needs_frames(),
         )
 
         # Overwrite: drain old, put new

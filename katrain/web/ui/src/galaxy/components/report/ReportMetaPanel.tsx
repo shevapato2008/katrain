@@ -1,3 +1,4 @@
+import { displayGamePlayerName } from '../../../features/auth/accountDisplay';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -13,7 +14,7 @@ import { kifuDefaultRulesSource, kifuEventRules, kifuRulesLabel } from '../../..
 import type { UserGameDetail } from '../../../api/userGamesApi';
 
 interface Props {
-  game: (Pick<UserGameDetail, 'game_date' | 'source' | 'event' | 'title' | 'round_name' | 'result' | 'player_black' | 'player_white' | 'black_rank' | 'white_rank' > & { rules: string | null; komi: number | null }) | null;
+  game: (Pick<UserGameDetail, 'game_date' | 'source' | 'event' | 'title' | 'round_name' | 'result' | 'player_black' | 'player_white' | 'display_player_black' | 'display_player_white' | 'black_rank' | 'white_rank' > & { rules: string | null; komi: number | null }) | null;
   task: { status: string; report_type: string; requested_visits?: number } | null;
   statusLabel?: string;
   currentMove: number;
@@ -33,8 +34,8 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
   const rules = professional ? kifuRulesLabel(kifuEventRules(analysisParameters, game?.rules), t, analysisParameters) : game?.rules === 'japanese' ? t('report:japanese_rules', '日本规则') : game?.rules === 'korean' ? t('report:korean_rules', '韩国规则') : t('report:chinese_rules', '中国规则');
   const defaultRulesSource = professional ? kifuDefaultRulesSource(analysisParameters, t) : null;
   const event = [game?.event || game?.title || t('report:unnamed_game', '未命名对局'), game?.round_name].filter(Boolean).join(' · ');
-  const black = game?.player_black || t('report:black', '黑');
-  const white = game?.player_white || t('report:white', '白');
+  const black = game ? displayGamePlayerName(game, 'B', t('report:black', '黑')) : t('report:black', '黑');
+  const white = game ? displayGamePlayerName(game, 'W', t('report:white', '白')) : t('report:white', '白');
   const result = game?.result ? translateResult(game.result, t, effectiveRules) : '—';
   const source = professional ? t('kifu:professional_game', '职业棋谱') : game?.source === 'import' ? t('review:row_import', '导入的棋谱') : game?.source === 'play_local' ? t('review:row_local', '本地对局') : game?.source === 'research' ? t('review:row_research', '研究局面') : game?.source || '—';
   const status = statusLabel ?? (task?.status === 'rules_unresolved' ? t('kifu:rules_unresolved', '规则待核验') : task?.status === 'completed' ? t('report:completed', '已完成') : task?.status === 'running' ? t('report:generating', '生成中') : task?.status === 'pending' ? t('report:queuing', '排队中') : task?.status === 'failed' ? t('report:failed', '失败') : t('report:unknown_status', '未知状态'));

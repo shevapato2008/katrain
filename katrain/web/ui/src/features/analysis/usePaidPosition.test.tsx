@@ -17,6 +17,36 @@ beforeEach(() => {
 });
 
 describe('usePaidPosition', () => {
+  it('binds a play quote and execution to the displayed position and shares its score view', async () => {
+    const input = { session_id: 'play-a', expected_position_key: quote.fingerprint };
+    const { result } = renderHook(() => usePaidPosition({ ...options, input }));
+    await act(async () => { await result.current.toggle('score'); });
+    expect(api.createQuote).toHaveBeenCalledWith({ ...input, kind: 'position', profile: 'normal' }, null);
+    await act(async () => { await result.current.confirm(); });
+    expect(result.current.showScore).toBe(true);
+    await act(async () => { await result.current.toggle('hints'); await result.current.toggle('ownership'); });
+    expect(api.createPosition).toHaveBeenCalledWith(expect.objectContaining(input), null);
+    expect(api.createPosition).toHaveBeenCalledTimes(1);
+    expect(api.createQuote).toHaveBeenCalledTimes(1);
+  });
+  it('clears a changed-position confirmation and waits for a new click without requoting', async () => {
+    api.createPosition.mockRejectedValueOnce(Object.assign(new Error('changed'), { status: 409, detail: { code: 'position_changed' } }));
+    const { result } = renderHook(() => usePaidPosition(options));
+    await act(async () => { await result.current.toggle('hints'); await result.current.confirm(); });
+    expect(result.current.pendingQuote).toBeNull();
+    expect(result.current.showHints).toBe(false);
+    expect(api.createQuote).toHaveBeenCalledTimes(1);
+    await act(async () => { await result.current.confirm(); });
+    expect(api.createPosition).toHaveBeenCalledTimes(1);
+  });
+  it('rejects a quote for a different fingerprint before confirming any operation', async () => {
+    const { result } = renderHook(() => usePaidPosition({ ...options, input: { session_id: 'play-a', expected_position_key: 'different' } }));
+    await act(async () => { await result.current.toggle('ownership'); });
+    expect(result.current.pendingQuote).toBeNull();
+    expect(result.current.showOwnership).toBe(false);
+    await act(async () => { await result.current.confirm(); });
+    expect(api.createPosition).not.toHaveBeenCalled();
+  });
   it('updates an existing safe billing error on language change without requesting another quote', async () => {
     vi.spyOn(API, 'getTranslations').mockResolvedValue({ translations: {} });
     vi.spyOn(i18n, 'loadLiveTranslations').mockResolvedValue(undefined);

@@ -48,6 +48,122 @@ const nonStrictIt = isStrictBoxKiosk ? it.skip : it;
 const galaxyIt = isKioskBuild ? it.skip : it;
 
 describe('AuthContext', () => {
+  nonStrictIt('confirms continuation through canonical /me and retains the old UUID and grant', async () => {
+    mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/continue')
+      ? okJson({ access_token: 'continue-token', token_type: 'bearer', signup_grant_credits: 0 })
+      : hasAuthHeader(init) ? okJson({ ...meResponse, public_username: 'public-name' }) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => {
+      await expect(result.current.continuePhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: 'public-name', current_password: 'old secret' })).resolves.toEqual({ signup_grant_credits: 0 });
+    });
+    expect(result.current.identityKey).toBe(meResponse.uuid);
+    expect(result.current.user?.username).toBe(meResponse.username);
+    expect(result.current.user?.public_username).toBe('public-name');
+    expect(localStorage.getItem('token')).toBe('continue-token');
+  });
+  nonStrictIt('never installs a continuation token returned after logout', async () => {
+    let release!: (response: Response) => void;
+    mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/continue')
+      ? new Promise<Response>(resolve => { release = resolve; }) : hasAuthHeader(init) ? okJson(meResponse) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let pending!: Promise<unknown>;
+    act(() => { pending = result.current.continuePhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: 'public-name' }).catch(error => error); });
+    await act(async () => { await result.current.logout(); release(await okJson({ access_token: 'late-token', signup_grant_credits: 5000 })); });
+    expect(await pending).toMatchObject({ detail: { code: 'identity_changed' } });
+    expect(result.current.user).toBeNull(); expect(localStorage.getItem('token')).toBeNull();
+  });
+  nonStrictIt('confirms a registration token through canonical /me and keeps its public name out of identityKey', async () => {
+    mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/register')
+      ? okJson({ access_token: 'register-token', token_type: 'bearer', signup_grant_credits: 5000 })
+      : hasAuthHeader(init) ? okJson({ ...meResponse, username: 'u_0123456789abcdefabcd', public_username: '公开棋手' }) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let grant: unknown;
+    await act(async () => { grant = await result.current.registerPhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: '公开棋手', password: 'fifteen characters' }); });
+    expect(grant).toEqual({ signup_grant_credits: 5000 });
+    expect(result.current.user?.username).toBe('u_0123456789abcdefabcd');
+    expect(result.current.user?.public_username).toBe('公开棋手');
+    expect(result.current.identityKey).toBe(meResponse.uuid);
+    expect(localStorage.getItem('token')).toBe('register-token');
+  });
+  nonStrictIt('never installs a registration candidate that resolves after logout', async () => {
+    let release!: (response: Response) => void;
+    mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/register')
+      ? okJson({ access_token: 'retired-token', token_type: 'bearer', signup_grant_credits: 0 })
+      : hasAuthHeader(init) ? new Promise(resolve => { release = resolve; }) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let pending!: Promise<unknown>;
+    act(() => { pending = result.current.registerPhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: '公开棋手', password: 'fifteen characters' }); });
+    await waitFor(() => expect(release).toBeDefined());
+    await act(async () => result.current.logout());
+    let failure: unknown;
+    await act(async () => { release(await okJson(meResponse)); await pending.catch(error => { failure = error; }); });
+    expect(failure).toMatchObject({ detail: { code: 'identity_changed' } });
+    expect(result.current.user).toBeNull();
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+  nonStrictIt('returns profile_required without refreshing, confirming /me or saving a token', async () => {
+    mockFetch.mockImplementation(input => String(input).endsWith('/phone/login')
+      ? Promise.resolve({ ok: false, status: 409, json: async () => ({ detail: { code: 'profile_required', mode: 'register' } }) } as Response)
+      : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => expect(result.current.loginPhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32) })).rejects.toMatchObject({ status: 409, detail: { code: 'profile_required', mode: 'register' } }));
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+  nonStrictIt('discards a password candidate when the form aborts before canonical confirmation', async () => {
+    let resolveMe!: (response: Response) => void;
+    mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith('/auth/login')) return okJson({ access_token: 'late-password-token' });
+      if (hasAuthHeader(init)) return new Promise(resolve => { resolveMe = resolve; });
+      return notOk();
+    });
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const controller = new AbortController(); let pending!: Promise<void>;
+    act(() => { pending = result.current.login('old-account', 'private-password', controller.signal); });
+    await waitFor(() => expect(resolveMe).toBeDefined());
+    controller.abort();
+    let failure: unknown;
+    await act(async () => { resolveMe(await okJson(meResponse)); await pending.catch(error => { failure = error; }); });
+    expect(failure).toMatchObject({ detail: { code: 'identity_changed' } });
+    expect(result.current.user).toBeNull();
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+  nonStrictIt('installs an OTP candidate only after canonical /me resolves, and discards logout-late candidates', async () => {
+    let resolveMe!: (response: Response) => void;
+    mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith('/phone/login')) return okJson({ access_token: 'otp-token', refresh_token: 'refresh', token_type: 'bearer' });
+      if (hasAuthHeader(init)) return new Promise(resolve => { resolveMe = resolve; });
+      return notOk();
+    });
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    let pending!: Promise<void>;
+    act(() => { pending = result.current.loginPhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32) }); });
+    await waitFor(() => expect(resolveMe).toBeDefined());
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(result.current.user).toBeNull();
+    await act(async () => result.current.logout());
+    await act(async () => { resolveMe(await okJson({ ...meResponse, username: 'u_canonical' })); await pending.catch(() => {}); });
+    expect(result.current.user).toBeNull();
+    expect(localStorage.getItem('token')).toBeNull();
+  });
+
+  nonStrictIt('uses canonical /me identity for OTP login without inferring it from a phone', async () => {
+    mockFetch.mockImplementation((input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).endsWith('/phone/login') ? okJson({ access_token: 'otp-token', token_type: 'bearer' }) :
+        hasAuthHeader(init) ? okJson({ ...meResponse, username: 'u_canonical' }) : notOk());
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => { await result.current.loginPhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32) }); });
+    expect(result.current.user?.username).toBe('u_canonical');
+    expect(localStorage.getItem('token')).toBe('otp-token');
+  });
   afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     vi.restoreAllMocks();

@@ -188,6 +188,125 @@ class TestLocalNonPlatformGame:
         assert sm.sessions["s1"].katrain.plays  # played locally
         assert vision.expected_pushes  # orchestrator absent -> fallback rearm
 
+    def test_stale_cached_white_turn_accepts_live_black_once_with_guard(self):
+        session = FakeSession(player_to_move="W")  # cached node 15
+        session.katrain.live_player_to_move = "B"  # White E18 is already live node 16
+        calls = []
+
+        class GuardedKatrain(FakeKatrain):
+            def next_player_to_move(self):
+                assert self.ai_ladder_commit_lock._is_owned()
+                return super().next_player_to_move()
+
+            def __call__(self, command, coords=None, **kwargs):
+                calls.append((command, coords, kwargs))
+                super().__call__(command, coords, **kwargs)
+
+        session.katrain.__class__ = GuardedKatrain
+        app = _app(FakeSessionManager({"s1": session}))
+
+        delay = asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(col=5, row=1), log))
+
+        assert delay == 0.0
+        assert calls == [("play", (5, 17), {"guard": True, "expected_player": "B"})]
+        assert session.katrain.plays == [(5, 17)]
+
+    def test_live_white_turn_rejects_black_despite_cached_black_turn(self):
+        session = FakeSession(player_to_move="B")
+        session.katrain.live_player_to_move = "W"
+        vision = FakeVision()
+
+        delay = asyncio.run(
+            _handle_confirmed_move(_app(FakeSessionManager({"s1": session})), vision, "s1", _move(), log)
+        )
+
+        assert delay == 0.5
+        assert session.katrain.plays == []
+        assert vision.expected_pushes
+
+    def test_live_black_ai_turn_still_reaches_final_guard_and_rearms(self):
+        from katrain.web.models import EndgameConflict
+
+        session = FakeSession(player_to_move="W")
+        session.katrain.live_player_to_move = "B"
+        calls = []
+
+        class AiTurnKatrain(FakeKatrain):
+            def __call__(self, command, coords=None, **kwargs):
+                calls.append((command, coords, kwargs))
+                raise EndgameConflict("not_your_turn")
+
+        session.katrain.__class__ = AiTurnKatrain
+        vision = FakeVision()
+
+        delay = asyncio.run(
+            _handle_confirmed_move(_app(FakeSessionManager({"s1": session})), vision, "s1", _move(), log)
+        )
+
+        assert delay == 0.5
+        assert calls == [("play", (3, 15), {"guard": True, "expected_player": "B"})]
+        assert session.katrain.plays == []
+        assert vision.expected_pushes
+
+    @pytest.mark.parametrize("change", ["binding", "game"])
+    def test_changed_source_inside_live_turn_lock_cannot_submit(self, change):
+        from unittest.mock import MagicMock
+        from katrain.vision.config_service import VisionServiceConfig
+        from katrain.vision.service import VisionService
+
+        session = FakeSession()
+        session.katrain.game = object()
+        vision = VisionService(VisionServiceConfig())
+        vision._worker = MagicMock()
+        vision.bind_session("s1", session=session)
+        vision.get_board_observation = lambda: (None, 0)
+        entered = []
+
+        class ChangingLock:
+            def __enter__(self):
+                entered.append(True)
+                if change == "binding":
+                    vision.bind_session("other", session=FakeSession())
+                else:
+                    session.katrain.game = object()
+
+            def __exit__(self, *_args):
+                return False
+
+        session.katrain.ai_ladder_commit_lock = ChangingLock()
+        delay = asyncio.run(
+            _handle_confirmed_move(_app(FakeSessionManager({"s1": session})), vision, "s1", _move(), log)
+        )
+
+        assert entered
+        assert delay == 0.0
+        assert session.katrain.plays == []
+
+    def test_central_pvp_precheck_uses_mirror_instead_of_placeholder_turn(self):
+        session = FakeSession(player_to_move="W")
+        session.game_type = "pvp_lobby"
+        session.katrain.live_player_to_move = "B"  # irrelevant local placeholder
+        room = SimpleNamespace(my_color="B")
+        forwarded = []
+
+        async def forward(*args, **kwargs):
+            forwarded.append((args, kwargs))
+            return {"state": session.last_state}
+
+        app = _app(FakeSessionManager({"s1": session}))
+        app.state.pvp_box_bridge = SimpleNamespace(
+            rooms=SimpleNamespace(for_local=lambda *_args: room), forward_move=forward
+        )
+        app.state.box_sso = SimpleNamespace(active_generation=1)
+        vision = FakeVision()
+        vision.bound_session_id = "s1"
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(), log))
+
+        assert delay == 0.5
+        assert forwarded == []
+        assert session.katrain.plays == []
+
 
 class TestCountedReasonsThreshold:
     def test_engine_error_below_threshold_rearms_with_throttle(self):
@@ -717,6 +836,7 @@ def test_every_handler_exit_releases_its_exact_token(exit_path):
             session.session_id = "s1"
         elif exit_path == "wrong_turn":
             session.last_state["player_to_move"] = "W"
+            session.katrain.live_player_to_move = "W"
         elif exit_path == "vanished":
             vision.get_board_observation = lambda: ([[0] * 19 for _ in range(19)], 9)
         elif exit_path == "exception":
@@ -865,3 +985,157 @@ def test_game_replacement_while_waiting_for_commit_lock_cannot_receive_old_move(
         await orch.shutdown()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("interleave", ["none", "ai", "source", "parent"])
+def test_local_reference_receipt_uses_actual_commit_before_later_publish_and_release(interleave):
+    from unittest.mock import MagicMock
+    from katrain.core.constants import PLAYER_HUMAN
+    from katrain.core.sgf_parser import Move
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+    from katrain.vision.service import VisionService
+    from katrain.web.interface import WebKaTrain
+
+    w = WebKaTrain(force_package_config=True, enable_engine=False)
+    w.save_config = lambda *args, **kwargs: None
+    w.message_callback = lambda *args, **kwargs: None
+    w.start()
+    for player in w.players_info.values():
+        player.update(player_type=PLAYER_HUMAN)
+    session = FakeSession()
+    session.katrain = w
+    manager = FakeSessionManager({"s1": session})
+    app = _app(manager)
+    vision = VisionService(VisionServiceConfig())
+    vision._worker = MagicMock()
+    vision.bind_session("s1", session=session)
+    source = vision.capture_binding_source("s1", session)
+    parent = w.game.current_node
+    vision.publish_expected_from_stones(source, [], expected_node_id=id(parent))
+    vision.get_board_observation = lambda: (None, 0)
+    move = ConfirmedMove(3, 3, 1, 8, vision.binding_epoch, vision.expected_revision)
+    if interleave == "parent":
+        # Authority changed twice without a state broadcast; live turn alone is insufficient.
+        w.game.play(Move((10, 10), player="B"))
+        w.game.play(Move((11, 11), player="W"))
+    published = []
+
+    def callback(*_):
+        if published:
+            return
+        published.append(True)
+        if interleave == "ai":
+            w.game.play(Move((4, 14), player="W"))
+            vision.publish_expected_from_stones(
+                source, w.get_state()["stones"], expected_node_id=id(w.game.current_node)
+            )
+        elif interleave == "source":
+            vision.bind_session("replacement", session=FakeSession())
+
+    w.update_state_callback = callback
+    vision._worker.send_command.reset_mock()
+    delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", move, log))
+    assert delay == 0.0
+    commands = [c.args[0] for c in vision._worker.send_command.call_args_list]
+    accepts = [c for c in commands if c.action == CommandType.ACCEPT_REFERENCE_CANDIDATE]
+    if interleave == "parent":
+        assert accepts == []
+        return
+    assert len(accepts) == 1
+    receipt = accepts[0]
+    index = commands.index(receipt)
+    assert commands[index - 1].action == CommandType.SET_EXPECTED_BOARD
+    assert receipt.data["accepted_parent_node_id"] == id(parent)
+    assert receipt.data["accepted_board"][3][3] == 1
+    assert receipt.data["accepted_board"][4][4] == 0
+    assert receipt.data["accepted_target"].expected_node_id == commands[index - 1].data["expected_node_id"]
+    if interleave != "source":
+        assert commands[-1].action == CommandType.RELEASE_CONFIRMED_MOVE
+    if interleave == "ai":
+        assert commands[-2].data["expected_node_id"] == id(w.game.current_node)
+        assert commands[-2].data["board"][4][4] == 2
+
+
+@pytest.mark.parametrize("outcome", ["accepted", "late_after_ai", "rejected"])
+def test_real_local_game_commit_hands_qualified_photo_to_real_worker(outcome):
+    """Exercise game→service FIFO→worker adoption with only hardware/model fakes."""
+    import numpy as np
+    from katrain.core.constants import PLAYER_HUMAN
+    from katrain.core.sgf_parser import Move
+    from katrain.vision.config_service import VisionServiceConfig
+    from katrain.vision.ipc import CommandType
+    from katrain.vision.service import VisionService
+    from katrain.web.interface import WebKaTrain
+    from katrain.web.api.v1.endpoints.vision import reference_candidate_enabled_for_session
+    from tests.test_vision.test_reference_frame import _lifecycle_worker, _source, _board_frame, _det
+
+    w = WebKaTrain(force_package_config=True, enable_engine=False)
+    w.save_config = lambda *args, **kwargs: None
+    w.message_callback = lambda *args, **kwargs: None
+    w.start()
+    for player in w.players_info.values():
+        player.update(player_type=PLAYER_HUMAN)
+    session = FakeSession()
+    session.katrain = w
+    app = _app(FakeSessionManager({"s1": session}))
+    worker, _, _ = _lifecycle_worker()
+    vision = VisionService(VisionServiceConfig())
+    vision._worker = worker
+    vision.bind_session(
+        "s1",
+        session=session,
+        reference_candidate_enabled=reference_candidate_enabled_for_session(app, "s1", session),
+    )
+    source = vision.capture_binding_source("s1", session)
+    parent = w.game.current_node
+    vision.publish_expected_from_stones(source, [], expected_node_id=id(parent))
+    worker._drain_commands()
+    baseline = worker._reference_target
+    accepted = np.zeros((19, 19), dtype=int)
+    accepted[3, 3] = 1
+    image = _board_frame([(3, 3, 1)])
+    worker._detector.detect.return_value = [_det(3, 3, 0)]
+    _source(worker, 1, raw=image)
+    gray = _source(worker, 2, raw=image)
+    move = ConfirmedMove(3, 3, 1, 8, vision.binding_epoch, vision.expected_revision)
+    worker._stage_reference_candidate(move, accepted, accepted, gray)
+    frozen = worker._reference_candidate
+    assert frozen is not None and frozen.baseline == baseline
+    vision.get_board_observation = lambda: (None, 0)
+    if outcome == "rejected":
+        w.game.play(Move((10, 10), player="B"))
+        w.game.play(Move((11, 11), player="W"))
+    elif outcome == "late_after_ai":
+
+        def ai_callback(*_):
+            if w.game.current_node.depth != 1:
+                return
+            w.game.play(Move((4, 14), player="W"))
+            vision.publish_expected_from_stones(
+                source, w.get_state()["stones"], expected_node_id=id(w.game.current_node)
+            )
+
+        w.update_state_callback = ai_callback
+    asyncio.run(_handle_confirmed_move(app, vision, "s1", move, log))
+    queued = []
+    while not worker._cmd_queue.empty():
+        queued.append(worker._cmd_queue.get_nowait())
+    if outcome == "late_after_ai":
+        receipts = [cmd for cmd in queued if cmd.action == CommandType.ACCEPT_REFERENCE_CANDIDATE]
+        queued = [
+            cmd
+            for cmd in queued
+            if cmd.action not in (CommandType.ACCEPT_REFERENCE_CANDIDATE, CommandType.RELEASE_CONFIRMED_MOVE)
+        ] + receipts
+    for cmd in queued:
+        worker.send_command(cmd)
+    before_inferences = worker._detector.detect.call_count
+    worker._drain_commands()
+    if outcome == "accepted":
+        assert worker._reference is frozen.reference
+        assert worker._reference_position == worker._reference_target
+        assert worker._reference.board[3, 3] == 1
+    else:
+        assert worker._reference is None
+    assert worker._detector.detect.call_count == before_inferences

@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../../features/auth/accountDisplay';
 import { interpolate } from '../../utils/interpolate';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useState, type ReactNode } from 'react';
@@ -61,12 +62,13 @@ export default function LobbyGamePanel({ gameState: gs, playerRanks, setupLine, 
     </header>
     <div className="lobby-game__seats kiosk-player-pair">
       {(['W', 'B'] as const).map((color, index) => {
+        const name = displayPlayerName(gs.players_info[color], t('auth:account_label', '账号'));
         const rank = presentPlayerRank(playerRanks?.[color] ?? UNKNOWN_RANK, t);
         const turn = active && gs.player_to_move === color;
         return <section className="lobby-game__seat kiosk-player-card" data-testid="lobby-player" data-turn={turn} key={color} aria-label={interpolate(t("{value1}方玩家", "{value1}方玩家"), { value1: color === 'B' ? t('Black', '黑') : t('White', '白') })}>
           <PlayerCardSurface left={index === 0} />
           <div className="lobby-game__name"><span className={`lobby-game__stone lobby-game__stone--${color}`} />
-            <strong title={gs.players_info[color].name} aria-label={interpolate(t("{name}{value2}", "{name}{value2}"), { name: gs.players_info[color].name, value2: color === myColor ? t('（你）', '（你）') : '' })}>{gs.players_info[color].name}</strong><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></div>
+            <strong title={name} aria-label={interpolate(t("{name}{value2}", "{name}{value2}"), { name, value2: color === myColor ? t('（你）', '（你）') : '' })}>{name}</strong><span className="kiosk-player-rank" title={rank.title} aria-label={rank.title}>{rank.label}</span></div>
           <div className="lobby-game__move">{turn ? <>{t("第", "第")} <b>{gs.current_node_index + 1}</b> {t("手", "手")}</> : t("不限时", "不限时")}</div>
           <div className="lobby-game__seat-foot"><span>{!connected ? t("等待重连", "等待重连") : isGameOver ? t("已结束", "已结束")
             : stopped || blocked || counting ? t("等待确认", "等待确认") : turn ? color === myColor ? t("轮到你", "轮到你") : t("对方回合", "对方回合") : t("等待中", "等待中")}</span>

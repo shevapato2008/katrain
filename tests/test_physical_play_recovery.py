@@ -170,3 +170,280 @@ def test_resync_without_bound_state_is_safe():
     orch._latest_state = None
     orch.resync()  # 不崩，退化为 vision.reset_sync
     assert vision.reset_calls == 1
+
+
+# Scoped recovery trusts the live game, without adopting an already-present next move.
+import asyncio
+import threading
+from collections import deque
+from types import SimpleNamespace
+
+from fastapi import HTTPException
+from katrain.vision.config_service import VisionServiceConfig
+from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerStatus
+from katrain.vision.service import VisionService
+
+
+class RecoveryWorker:
+    def __init__(self):
+        self.commands = []
+        self.events = deque()
+        self.on_send = None
+
+    def send_command(self, command):
+        self.commands.append(command)
+        if self.on_send:
+            self.on_send(command)
+
+    def get_event(self):
+        return self.events.popleft() if self.events else None
+
+    def get_status(self):
+        return WorkerStatus()
+
+
+def recovery_rig():
+    live = {
+        "game_id": "game",
+        "game_type": "human_ai",
+        "current_node_id": 16,
+        "board_size": [19, 19],
+        "stones": [["W", [4, 17], None, 16]],
+    }
+    canonical = []
+    runtime = SimpleNamespace(
+        game=object(),
+        ai_ladder_commit_lock=threading.RLock(),
+        get_state=lambda: dict(live),
+        update_state_callback=canonical.append,
+    )
+    session = SimpleNamespace(katrain=runtime, last_state={**live, "current_node_id": 15})
+    svc = VisionService(VisionServiceConfig())
+    worker = svc._worker = RecoveryWorker()
+    svc.bind_session("s", session=session)
+    orch = PhysicalPlayOrchestrator(
+        config=PhysicalPlayConfig(),
+        led=None,
+        vision=svc,
+        session_manager=SimpleNamespace(get_session=lambda _: session),
+    )
+    orch.on_bind("s", session)
+    orch._task.cancel()
+    orch._latest_state = session.last_state
+    worker.commands.clear()
+    return orch, svc, worker, session, live, canonical
+
+
+def recovery_ack(command, **changes):
+    return {
+        "type": "synced",
+        "binding_epoch": command.data["binding_epoch"],
+        "expected_revision": command.data["expected_revision"],
+        "data": {"expected_node_id": command.data["expected_node_id"], "recovery_id": command.data["recovery_id"]},
+        **changes,
+    }
+
+
+def test_scoped_recovery_refreshes_live16_and_waits_for_exact_ack_without_play():
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+        protected = {"hint", "game_over", "engine_error", "remote_disconnected"}
+        orch._pause_reasons = protected | {"lag"}
+        revision = svc.expected_revision
+        task = asyncio.create_task(orch.restore_scoped("s", "game", timeout=0.2))
+        await asyncio.sleep(0)
+        command = next(c for c in reversed(worker.commands) if c.action == CommandType.SET_EXPECTED_BOARD)
+        assert command.action == CommandType.SET_EXPECTED_BOARD
+        assert command.data["expected_node_id"] == 16
+        assert command.data["force_rearm"] is True
+        assert svc.expected_revision == revision  # unchanged target cannot invalidate B17's token
+        assert canonical[-1]["current_node_id"] == 16
+        assert orch._latest_state["current_node_id"] == 16
+        assert orch._pause_reasons == protected
+        # A bare synced event and a stale tagged event must remain ordinary pump events.
+        bare = {"type": "synced", "data": {}}
+        stale = recovery_ack(command, expected_revision=revision - 1)
+        wrong_id = recovery_ack(command, data={"expected_node_id": 16, "recovery_id": "older"})
+        placement = recovery_ack(command, type="placement_pending")
+        worker.events.extend([bare, stale, wrong_id, placement])
+        assert svc.poll_events() == [bare, stale, wrong_id, placement]
+        await asyncio.sleep(0)
+        assert not task.done()
+        assert not session.katrain.ai_ladder_commit_lock._is_owned()
+        worker.events.append(recovery_ack(command))
+        assert svc.poll_events() == [recovery_ack(command)]
+        result = await task
+        assert result == {
+            "ok": True,
+            "recovery_id": command.data["recovery_id"],
+            "session_id": "s",
+            "game_id": "game",
+            "current_node_id": 16,
+        }
+        assert svc._expected_recovery is None
+        assert all(c.action != CommandType.RESET_SYNC for c in worker.commands)
+        assert session.katrain.game is not None  # no play entry point exists on the runtime
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_scoped_recovery_follows_newer_same_game_ack_already_in_drain():
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+        task = asyncio.create_task(orch.restore_scoped("s", "game", timeout=0.2))
+        await asyncio.sleep(0)
+        first = worker.commands[-1]
+        # The ordinary move path commits B17 and publishes normally during recovery.
+        live.update(current_node_id=17, stones=live["stones"] + [["B", [5, 17], None, 17]])
+        session.katrain.update_state_callback(dict(live))
+        next_command = worker.commands[-1]
+        assert next_command.data["recovery_id"] == first.data["recovery_id"]
+        worker.events.extend([recovery_ack(first), recovery_ack(next_command)])
+        svc.poll_events()
+        result = await task
+        assert result["current_node_id"] == 17
+        assert canonical[-1]["current_node_id"] == 17
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "failure,status",
+    [
+        ("timeout", 504),
+        ("worker", 503),
+        ("stopped_worker", 503),
+        ("session", 409),
+        ("game", 409),
+        ("rebind", 409),
+        ("replacement", 409),
+        ("duplicate", 409),
+    ],
+)
+def test_scoped_recovery_rejects_invalid_operation_and_cleans_waiter(failure, status):
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+        if failure == "worker":
+            svc._worker = None
+        session_id, game_id = ("wrong" if failure == "session" else "s"), ("wrong" if failure == "game" else "game")
+        task = asyncio.create_task(orch.restore_scoped(session_id, game_id, timeout=0.02))
+        await asyncio.sleep(0)
+        if failure == "stopped_worker":
+            worker.stop = lambda: None
+            svc.stop()
+        elif failure == "rebind":
+            svc.bind_session("other", session=session)
+        elif failure == "replacement":
+            session.katrain.game = object()
+            svc.invalidate_replaced_game(orch.binding_source)
+        elif failure == "duplicate":
+            with pytest.raises(HTTPException) as error:
+                await orch.restore_scoped("s", "game", timeout=0.02)
+            assert error.value.status_code == 409
+        with pytest.raises(HTTPException) as error:
+            await task
+        assert error.value.status_code == (504 if failure == "duplicate" else status)
+        assert svc._expected_recovery is None
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_scoped_recovery_callback_exception_cleans_snapshot_scope_and_waiter():
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+
+        def fail(_):
+            raise RuntimeError("callback failed")
+
+        session.katrain.update_state_callback = fail
+        with pytest.raises(RuntimeError, match="callback failed"):
+            await orch.restore_scoped("s", "game", timeout=0.02)
+        assert svc._expected_recovery is None
+        assert orch._scoped_restore_state is None
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_scoped_recovery_ack_from_worker_thread_signals_captured_event_loop():
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+        task = asyncio.create_task(orch.restore_scoped("s", "game", timeout=0.2))
+        await asyncio.sleep(0)
+        command = worker.commands[-1]
+
+        def drain():
+            worker.events.append(recovery_ack(command))
+            svc.poll_events()
+
+        thread = threading.Thread(target=drain)
+        thread.start()
+        thread.join()
+        assert (await task)["current_node_id"] == 16
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_scoped_recovery_new_target_does_not_extend_original_deadline(monkeypatch):
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+        waits = []
+        wait_for = asyncio.wait_for
+
+        async def recorded_wait(awaitable, remaining):
+            waits.append(remaining)
+            return await wait_for(awaitable, remaining)
+
+        monkeypatch.setattr(asyncio, "wait_for", recorded_wait)
+        task = asyncio.create_task(orch.restore_scoped("s", "game", timeout=0.04))
+        await asyncio.sleep(0.025)
+        live.update(current_node_id=17, stones=live["stones"] + [["B", [5, 17], None, 17]])
+        session.katrain.update_state_callback(dict(live))
+        with pytest.raises(HTTPException) as error:
+            await task
+        assert error.value.status_code == 504
+        assert len(waits) >= 2 and waits[-1] < waits[0] / 2
+        assert svc._expected_recovery is None
+        await orch.shutdown()
+
+    asyncio.run(run())
+
+
+def test_recovery_signal_tolerates_captured_loop_closing_concurrently():
+    from unittest.mock import Mock
+
+    loop = SimpleNamespace(
+        is_closed=lambda: False, call_soon_threadsafe=Mock(side_effect=RuntimeError("Event loop is closed"))
+    )
+    VisionService._wake_expected_recovery(SimpleNamespace(loop=loop, wake=SimpleNamespace(set=lambda: None)))
+
+
+def test_scoped_recovery_uses_central_room_mirror_instead_of_local_runtime():
+    async def run():
+        orch, svc, worker, session, live, canonical = recovery_rig()
+        orch.on_unbind()
+        session.game_type = "pvp_lobby"
+        session.last_state = {**live, "game_type": "pvp_lobby"}
+
+        def forbidden():
+            raise AssertionError("Room authority must come from its central mirror")
+
+        session.katrain.get_state = forbidden
+        svc.bind_session("s", session=session)
+        orch.on_bind("s", session)
+        orch._latest_state = {**live, "current_node_id": 15}
+        task = asyncio.create_task(orch.restore_scoped("s", "game", timeout=0.2))
+        await asyncio.sleep(0)
+        command = worker.commands[-1]
+        assert command.data["expected_node_id"] == 16
+        worker.events.append(recovery_ack(command))
+        svc.poll_events()
+        assert (await task)["current_node_id"] == 16
+        assert canonical[-1] is session.last_state
+        await orch.shutdown()
+
+    asyncio.run(run())

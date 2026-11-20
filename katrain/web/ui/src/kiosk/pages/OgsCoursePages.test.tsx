@@ -1,16 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { OgsCourseIndex, OgsStep } from '../../types/ogsCourse';
 import type { PhysicalTsumegoOptions } from '../hooks/usePhysicalTsumego';
 import OgsCourseHomePage from './OgsCourseHomePage';
 import OgsCourseChapterPage from './OgsCourseChapterPage';
+import OgsCourseVideoPage from './OgsCourseVideoPage';
 import OgsCourseExercisePage from './OgsCourseExercisePage';
 import TutorialCategoriesPage from './TutorialCategoriesPage';
 import derivedMultiCapture from '../tutorial/__fixtures__/kiosk19-ogs-capture.json';
 
 const mocks = vi.hoisted(() => ({
-  getCourse: vi.fn(), getStep: vi.fn(), getCategories: vi.fn(),
+  getCourse: vi.fn(),
+  getVideos: vi.fn(), getStep: vi.fn(), getCategories: vi.fn(),
   vision: { enabled: false, recognitionReady: false },
   geometry: null as null | { status: { phase: string; session_calibrated: boolean; capabilities: { geometry_ready: boolean } } },
   physicalOptions: null as PhysicalTsumegoOptions | null,
@@ -20,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../../api/tutorialApi', () => ({ TutorialReadAPI: {
   getOgsCourse: (...args: unknown[]) => mocks.getCourse(...args),
+  getOgsVideoManifest: (...args: unknown[]) => mocks.getVideos(...args),
   getOgsStep: (...args: unknown[]) => mocks.getStep(...args),
   getCategories: (...args: unknown[]) => mocks.getCategories(...args),
 } }));
@@ -54,12 +57,14 @@ const steps: OgsStep[] = [base,
 function renderAt(path: string) { return render(<MemoryRouter initialEntries={[path]}><Routes>
   <Route path="/kiosk/tutorial" element={<OgsCourseHomePage />} />
   <Route path="/kiosk/tutorial/chapter/:chapterId" element={<OgsCourseChapterPage />} />
+  <Route path="/kiosk/tutorial/lesson/:lessonId/videos" element={<OgsCourseVideoPage />} />
   <Route path="/kiosk/tutorial/lesson/:lessonId" element={<OgsCourseExercisePage />} />
   <Route path="/kiosk/tutorial/library" element={<TutorialCategoriesPage />} />
 </Routes></MemoryRouter>); }
 
 beforeEach(() => {
   mocks.getCourse.mockReset().mockResolvedValue(course);
+  mocks.getVideos.mockReset().mockResolvedValue({ schema_version: 1, clips: [], playlists: {} });
   mocks.getStep.mockReset().mockImplementation((page: number) => Promise.resolve(steps[page - 1]));
   mocks.getCategories.mockReset().mockResolvedValue([]);
   mocks.vision.enabled = false; mocks.vision.recognitionReady = false;
@@ -343,4 +348,76 @@ it('refreshes Japanese presentation without resetting a solved physical-board at
   expect(mocks.physicalOptions?.problemKey).toBe(problemKey);
   await act(async () => { await i18n.loadTranslations('cn'); });
   vi.restoreAllMocks();
+});
+
+
+const videoManifest = {
+  schema_version: 1, release_id: 'ogs-intro-20261115', language: 'zh-cn',
+  playlists: { 'bl4-opening-4': [4278, 4289] },
+  clips: [4278, 4289].map((id, i) => ({ id, title: i ? '一起数气' : '一颗棋子的四口气',
+    book: '入门篇·上卷', page: i ? 19 : 13, duration: 30,
+    poster_url: `https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/posters/${id}.jpg`,
+    profiles: { 'kiosk-7-v1': { url: `https://modelstella.com/media/tutorial_demos/ogs-intro-20261115/clips/${id}/kiosk-7-v1.mp4`, width: 1024, height: 600 } },
+  })),
+};
+
+describe('OGS lesson video journey', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  });
+  afterEach(() => { vi.restoreAllMocks(); });
+  it('opens a mapped lesson as a kiosk video playlist, advances on end, and continues to the original exercise', async () => {
+    mocks.getVideos.mockResolvedValue(videoManifest);
+    renderAt('/kiosk/tutorial/chapter/fundamentals');
+    fireEvent.click(await screen.findByRole('button', { name: /视频讲解.*2/ }));
+    const video = await screen.findByTestId('ogs-lesson-video');
+    expect(video).toHaveAttribute('src', videoManifest.clips[0].profiles['kiosk-7-v1'].url);
+    expect(video).toHaveAttribute('preload', 'metadata');
+    expect(screen.getByText(/PDF.*13/)).toBeInTheDocument();
+    fireEvent.ended(video);
+    await waitFor(() => expect(screen.getByTestId('ogs-lesson-video')).toHaveAttribute('src', videoManifest.clips[1].profiles['kiosk-7-v1'].url));
+    fireEvent.ended(screen.getByTestId('ogs-lesson-video'));
+    expect(await screen.findByText('讲解已播放完，可以开始练习')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '进入练习' }));
+    expect(await screen.findByText('白先，点 A 位。')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('ogs-point-2-3'));
+    expect(screen.getByText('回答正确')).toBeInTheDocument();
+  });
+
+  it('keeps fullscreen available when the embedded browser lacks the native API', async () => {
+    mocks.getVideos.mockResolvedValue(videoManifest);
+    renderAt('/kiosk/tutorial/lesson/bl4-opening-4/videos');
+    await screen.findByTestId('ogs-lesson-video');
+    fireEvent.click(screen.getByRole('button', { name: '全屏播放' }));
+    expect(screen.getByTestId('ogs-lesson-video').parentElement).toHaveClass('is-expanded');
+    fireEvent.click(screen.getByRole('button', { name: '退出全屏' }));
+    expect(screen.getByTestId('ogs-lesson-video').parentElement).not.toHaveClass('is-expanded');
+  });
+
+  it('keeps an unmapped lesson going directly to its original exercise', async () => {
+    renderAt('/kiosk/tutorial/chapter/fundamentals');
+    fireEvent.click(await screen.findByRole('button', { name: /布局基础/ }));
+    expect(await screen.findByText('白先，点 A 位。')).toBeInTheDocument();
+    expect(screen.queryByTestId('ogs-lesson-video')).not.toBeInTheDocument();
+  });
+
+  it('allows exercise access during a manifest failure and retries the video directory', async () => {
+    mocks.getVideos.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(videoManifest);
+    renderAt('/kiosk/tutorial/chapter/fundamentals');
+    expect(await screen.findByText('视频目录暂不可用，仍可进入练习')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重试视频目录' }));
+    expect(await screen.findByRole('button', { name: /视频讲解.*2/ })).toBeInTheDocument();
+  });
+
+  it('shows playback recovery while keeping the original exercise accessible', async () => {
+    mocks.getVideos.mockResolvedValue(videoManifest);
+    renderAt('/kiosk/tutorial/lesson/bl4-opening-4/videos');
+    fireEvent.error(await screen.findByTestId('ogs-lesson-video'));
+    expect(await screen.findByText('视频暂时无法播放，请重试或先做练习')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重试播放' }));
+    expect(screen.queryByText('视频暂时无法播放，请重试或先做练习')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '进入练习' }));
+    expect(await screen.findByText('白先，点 A 位。')).toBeInTheDocument();
+  });
 });

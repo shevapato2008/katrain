@@ -7,6 +7,8 @@ export interface PlayerInfo {
   player_type: string;
   player_subtype: string;
   name: string;
+  user_id?: number | string | null;
+  public_username?: string | null;
   calculated_rank: string | null;  // pre-existing quirk: typed string|null though backend emits int|None; NOT changed here
   rank_display?: string | null;    // NEW: ladder 段位 (optional to avoid breaking existing PlayerInfo literals)
   periods_used: number;
@@ -48,6 +50,8 @@ export interface LocalConfirmRequest {
 
 export interface GameState {
   game_id: string;
+  /** Opaque full-path fingerprint captured in the same frame as this board. */
+  expected_position_key?: string | null;
   board_size: [number, number];
   komi: number;
   handicap: number;
@@ -143,12 +147,9 @@ export interface GameState {
   local_confirmation?: LocalConfirmationState;
   analysis_allowed?: boolean;
   /**
-   * 服务端这一局**交付不交付**分析结果。与 `analysis_allowed` 是两件事，别合并：
-   *   analysis_allowed  = 这一局允不允许分析（升降级反作弊；服务端连算都不算）
-   *   analysis_delivered = 算了，但交不交给你（无人认领的会话 —— 未登录游客建的那种 ——
-   *                        拿不到胜率/候选点/领地，AI 走子照常）
-   * 为 false 时 UI 要把三个分析键置灰并说明「登录后可用」，而不是留着一个点了没反应的键。
-   * 老服务端不带这个字段 ⇒ undefined ⇒ 一切照旧。
+   * Whether shared state delivers analysis. False also covers membership mode,
+   * where an eligible authenticated player obtains a private paid receipt.
+   * This flag alone does not establish login or session participation.
    */
   analysis_delivered?: boolean;
   // True once an ai:ladder player refused to move because the engine cannot serve the
@@ -397,6 +398,8 @@ export interface PlatformClockState {
   paused?: boolean;
 }
 
+export type VisionReferenceStatus = 'current' | 'pending' | 'limited' | 'unavailable';
+
 export interface VisionStatusResponse {
   enabled: boolean;
   camera_connected: boolean;
@@ -405,6 +408,12 @@ export interface VisionStatusResponse {
   bound_session_id: string | null;
   recognition_ready?: boolean;
   led_connected?: boolean | null;
+  reference_status?: VisionReferenceStatus;
+  reference_reason?: string | null;
+  reference_target_node_id?: number | null;
+  reference_target_revision?: number | null;
+  reference_source_node_id?: number | null;
+  reference_source_revision?: number | null;
 }
 
 // Task 9: physical engine-move (Golaxy 隧道) error recovery. `col`/`row` are GTP/board
@@ -457,6 +466,61 @@ export class ApiError extends Error {
     this.status = status;
     this.detail = detail;
   }
+}
+
+export interface AuthToken {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
+}
+export interface PhoneChallengeRequest { phone: string; purpose: 'login'; flow_id: string; }
+export interface PhoneChallenge { challenge_id: string; retry_after: number; expires_in: number; delivery: 'sent' | 'unknown'; }
+export interface PhoneLoginRequest { challenge_id: string; code: string; flow_id: string; }
+export interface PhoneRegisterRequest extends PhoneLoginRequest { public_username: string; password: string; }
+export interface PhoneContinueRequest extends PhoneLoginRequest { public_username: string; current_password?: string | null; }
+export interface PhonePasswordRequest extends PhoneLoginRequest { new_password: string; }
+export interface PhoneRegisterToken extends AuthToken { signup_grant_credits: 0 | 5000; }
+export interface PhoneBindChallengeRequest { phone: string; purpose: 'bind'; flow_id: string; }
+export interface PhoneBindRequest extends PhoneLoginRequest { current_password: string; }
+export type PhoneBindingStatus = { bound: false } | { bound: true; masked_phone: string };
+export type PhoneBindingResult = { bound: true; masked_phone: string; signup_grant_credits?: 0 | 5000 };
+export type PhoneAuthErrorCode = 'invalid_phone' | 'invalid_code' | 'challenge_invalid' | 'challenge_expired' |
+  'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required' |
+  'authentication_required' | 'bind_not_allowed' | 'phone_in_use' | 'bind_reauth_failed' | 'bind_reauth_locked' |
+  'profile_required' | 'account_password_required' | 'invalid_public_username' | 'reserved_public_username' | 'public_username_taken' | 'invalid_password';
+export interface PhoneAuthErrorDetail { code: PhoneAuthErrorCode; retry_after?: number; mode?: 'register' | 'complete'; }
+
+// Auth errors carry only structured classifications, never raw upstream bodies
+// (which may contain private request data).
+async function phoneAuthPost<T>(path: string, payload: PhoneChallengeRequest | PhoneLoginRequest | PhoneRegisterRequest | PhoneContinueRequest, signal?: AbortSignal): Promise<T> {
+  if (isStrictBoxKiosk) throw new ApiError(403, 'Direct login disabled', { code: 'identity_changed' });
+  const response = await fetch(`/api/v1/auth/phone/${path}`, {
+    method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal,
+  });
+  if (!response.ok) {
+    let detail: unknown;
+    try { detail = (await response.json()).detail; } catch { /* safe generic error below */ }
+    throw new ApiError(response.status, 'Phone authentication failed', detail);
+  }
+  return response.json();
+}
+
+// Private operations use the caller's captured credential, with no mutable
+// localStorage fallback. Cookie-only sessions retain same-origin credentials.
+async function privatePhoneRequest<T>(path: string, token: string | null, signal?: AbortSignal, payload?: PhoneBindChallengeRequest | PhoneBindRequest | PhoneChallengeRequest | PhonePasswordRequest): Promise<T> {
+  if (isStrictBoxKiosk) throw new ApiError(403, 'Use launcher account', { code: 'bind_not_allowed' });
+  const response = await fetch(`/api/v1/auth/phone/${path}`, {
+    method: payload ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store', signal,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(payload ? { 'Content-Type': 'application/json' } : {}) },
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
+  });
+  if (!response.ok) {
+    let detail: unknown;
+    try { detail = (await response.json()).detail; } catch { /* safe classification only */ }
+    throw new ApiError(response.status, 'Phone binding failed', detail);
+  }
+  if (response.status === 204) return undefined as T;
+  return response.json();
 }
 
 /* 严格盒端 SSO（kiosk 构建 + VITE_BOX_SSO_STRICT）那一档故意不持有 token，
@@ -517,7 +581,26 @@ export async function apiPost(path: string, payload: any, token?: string | null)
   return response.json();
 }
 
+export interface VisionRecoveryIdentity {
+  ok: true;
+  recovery_id: string;
+  session_id: string;
+  game_id: string;
+  current_node_id: number;
+}
+
+export type RecoveryRefreshResult = 'applied' | 'already-current' | 'superseded';
+
 export const API = {
+  createPhoneChallenge: (payload: PhoneChallengeRequest, signal?: AbortSignal): Promise<PhoneChallenge> => phoneAuthPost('challenges', payload, signal),
+  phoneLogin: (payload: PhoneLoginRequest, signal?: AbortSignal): Promise<AuthToken> => phoneAuthPost('login', payload, signal),
+  phoneContinue: (payload: PhoneContinueRequest, signal?: AbortSignal): Promise<PhoneRegisterToken> => phoneAuthPost('continue', payload, signal),
+  phonePassword: (payload: PhonePasswordRequest, token: string | null, signal?: AbortSignal): Promise<void> => privatePhoneRequest('password', token, signal, payload),
+  createPhonePasswordChallenge: (payload: PhoneChallengeRequest, token: string | null, signal?: AbortSignal): Promise<PhoneChallenge> => privatePhoneRequest('challenges', token, signal, payload),
+  phoneRegister: (payload: PhoneRegisterRequest, signal?: AbortSignal): Promise<PhoneRegisterToken> => phoneAuthPost('register', payload, signal),
+  phoneStatus: (token: string | null, signal?: AbortSignal): Promise<PhoneBindingStatus> => privatePhoneRequest('status', token, signal),
+  createPhoneBindChallenge: (payload: PhoneBindChallengeRequest, token: string | null, signal?: AbortSignal): Promise<PhoneChallenge> => privatePhoneRequest('challenges', token, signal, payload),
+  phoneBind: (payload: PhoneBindRequest, token: string | null, signal?: AbortSignal): Promise<PhoneBindingResult> => privatePhoneRequest('bind', token, signal, payload),
   engineHealth: async (): Promise<EngineHealthResponse> => {
     const response = await fetch('/api/v1/health');
     if (!response.ok) throw new Error(`Failed to get engine health (${response.status})`);
@@ -752,6 +835,34 @@ export const API = {
   // the ignored stone isn't re-detected.
   visionResetSync: (adopt: 'digital' | 'physical' = 'digital'): Promise<void> =>
     apiPost("/api/v1/vision/sync/reset", { adopt }),
+  // Scoped digital recovery waits for the worker's exact-frame acknowledgement.
+  // Bound the entire response (including JSON), since a lost response must stay retryable.
+  visionVerifySync: async (sessionId: string, gameId: string): Promise<VisionRecoveryIdentity> => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        (async () => {
+          const response = await fetch('/api/v1/vision/sync/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({ adopt: 'digital', session_id: sessionId, game_id: gameId }),
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new ApiError(response.status, 'Vision recovery failed');
+          return await response.json() as VisionRecoveryIdentity;
+        })(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error('盘面核对超时，请重试'));
+            controller.abort();
+          }, 10_000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  },
   // 「不是落子」:用户否认了疑似落子弹窗指的那一格。存下那一格此刻的像素,只要它还长成
   // 那样就不再被识别成子;像素一变标签自动失效。与 visionResetSync('physical') 相反 ——
   // 那条路是把假阳性收进基线当成现实。

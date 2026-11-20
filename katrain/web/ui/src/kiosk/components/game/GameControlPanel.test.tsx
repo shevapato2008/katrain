@@ -454,3 +454,15 @@ describe('GameControlPanel', () => {
     expect(screen.queryByText(/数子要下满/)).toBeNull();
   });
 });
+
+test('shows account public names in kiosk player cards and keeps external seats unchanged', () => {
+  const props = { onAction: vi.fn(), onNavigate: vi.fn(), analysisToggles: {}, onToggleAnalysis: vi.fn() };
+  const state = { ...mockGameState, game_type: 'free' as const, players_info: {
+    ...mockGameState.players_info, B: { ...mockGameState.players_info.B, name: 'u_0123456789abcdefabcd', user_id: 7, public_username: '公开棋手' },
+  } };
+  const { rerender } = render(<GameControlPanel {...props} gameState={state} />);
+  expect(within(screen.getByTestId('player-card-B')).getByText('公开棋手')).toBeInTheDocument();
+  expect(document.body).not.toHaveTextContent('u_0123456789abcdefabcd');
+  rerender(<GameControlPanel {...props} gameState={{ ...state, game_type: 'pvp_online' }} />);
+  expect(within(screen.getByTestId('player-card-B')).getByText('公开棋手')).toBeInTheDocument();
+});

@@ -201,23 +201,23 @@ def test_throttled_broadcast_drops_sound_if_navigation_happens_before_real_state
     wkt = _web_katrain()
     _seat(wkt, ai_colors={"B"})
     committed = _install_deterministic_ai(monkeypatch)
-    entered_snapshot = threading.Event()
-    release_snapshot = threading.Event()
+    entered_publication = threading.Event()
+    release_publication = threading.Event()
     broadcasted = threading.Event()
     broadcasts = []
     sounds = []
-    real_get_state = wkt.get_state
+    real_broadcast = wkt._broadcast_current_state
 
-    def blocked_get_state():
-        entered_snapshot.set()
-        assert release_snapshot.wait(2), "test bug: trailing state snapshot was never released"
-        return real_get_state()
+    def blocked_broadcast(callbacks):
+        entered_publication.set()
+        assert release_publication.wait(2), "test bug: trailing publication was never released"
+        return real_broadcast(callbacks)
 
     def record_broadcast(state):
         broadcasts.append(state)
         broadcasted.set()
 
-    monkeypatch.setattr(wkt, "get_state", blocked_get_state)
+    monkeypatch.setattr(wkt, "_broadcast_current_state", blocked_broadcast)
     monkeypatch.setattr(wkt, "_do_update_state", lambda: None)
     wkt.update_state_callback = record_broadcast
     wkt.message_callback = lambda kind, payload: sounds.append(payload) if kind == "sound" else None
@@ -228,9 +228,9 @@ def test_throttled_broadcast_drops_sound_if_navigation_happens_before_real_state
 
     node = committed["node"]
     assert sounds == []
-    assert entered_snapshot.wait(1), "trailing state broadcast never reached its snapshot"
+    assert entered_publication.wait(1), "trailing state broadcast never reached publication"
     wkt.game.undo(1)
-    release_snapshot.set()
+    release_publication.set()
     assert broadcasted.wait(1), "trailing state broadcast did not run"
     assert len(broadcasts) == 1
     assert broadcasts[0]["current_node_id"] == id(node.parent)
@@ -279,28 +279,28 @@ def test_navigation_after_wrapper_validation_but_before_broadcast_drops_stale_so
     wkt = _web_katrain()
     _seat(wkt, ai_colors={"B"})
     committed = _install_deterministic_ai(monkeypatch)
-    entered_snapshot = threading.Event()
-    release_snapshot = threading.Event()
+    entered_publication = threading.Event()
+    release_publication = threading.Event()
     broadcasts = []
     sounds = []
-    real_get_state = wkt.get_state
+    real_broadcast = wkt._broadcast_current_state
 
-    def blocked_get_state():
-        entered_snapshot.set()
-        assert release_snapshot.wait(2), "test bug: state snapshot was never released"
-        return real_get_state()
+    def blocked_broadcast(callbacks):
+        entered_publication.set()
+        assert release_publication.wait(2), "test bug: state publication was never released"
+        return real_broadcast(callbacks)
 
-    monkeypatch.setattr(wkt, "get_state", blocked_get_state)
+    monkeypatch.setattr(wkt, "_broadcast_current_state", blocked_broadcast)
     monkeypatch.setattr(wkt, "_do_update_state", lambda: None)
     wkt.update_state_callback = broadcasts.append
     wkt.message_callback = lambda kind, payload: sounds.append(payload) if kind == "sound" else None
 
     worker = threading.Thread(target=wkt._do_ai_move_and_broadcast, args=(wkt.game.current_node,))
     worker.start()
-    assert entered_snapshot.wait(2), "AI wrapper never reached the state snapshot"
+    assert entered_publication.wait(2), "AI wrapper never reached the state publication"
     node = committed["node"]
     wkt.game.undo(1)
-    release_snapshot.set()
+    release_publication.set()
     worker.join(2)
 
     assert not worker.is_alive()
@@ -313,29 +313,29 @@ def test_game_replacement_after_wrapper_validation_but_before_broadcast_drops_ol
     replacement = _web_katrain()
     _seat(wkt, ai_colors={"B"})
     committed = _install_deterministic_ai(monkeypatch)
-    entered_snapshot = threading.Event()
-    release_snapshot = threading.Event()
+    entered_publication = threading.Event()
+    release_publication = threading.Event()
     broadcasts = []
     sounds = []
-    real_get_state = wkt.get_state
+    real_broadcast = wkt._broadcast_current_state
 
-    def blocked_get_state():
-        entered_snapshot.set()
-        assert release_snapshot.wait(2), "test bug: state snapshot was never released"
-        return real_get_state()
+    def blocked_broadcast(callbacks):
+        entered_publication.set()
+        assert release_publication.wait(2), "test bug: state publication was never released"
+        return real_broadcast(callbacks)
 
-    monkeypatch.setattr(wkt, "get_state", blocked_get_state)
+    monkeypatch.setattr(wkt, "_broadcast_current_state", blocked_broadcast)
     monkeypatch.setattr(wkt, "_do_update_state", lambda: None)
     wkt.update_state_callback = broadcasts.append
     wkt.message_callback = lambda kind, payload: sounds.append(payload) if kind == "sound" else None
 
     worker = threading.Thread(target=wkt._do_ai_move_and_broadcast, args=(wkt.game.current_node,))
     worker.start()
-    assert entered_snapshot.wait(2), "AI wrapper never reached the state snapshot"
+    assert entered_publication.wait(2), "AI wrapper never reached the state publication"
     old_node = committed["node"]
     with wkt.ai_ladder_commit_lock:
         wkt.game = replacement.game
-    release_snapshot.set()
+    release_publication.set()
     worker.join(2)
 
     assert not worker.is_alive()

@@ -62,6 +62,8 @@ interface RightSidebarPanelProps {
      * 禁用之外还要**说出原因**：一个不解释的灰键和一个坏掉的键在用户那里是同一个东西。
      */
     analysisRequiresLogin?: boolean;
+    /** Session eligibility or a missing current-position key, separate from authentication. */
+    analysisUnavailable?: boolean;
     /**
      * 观战者。今天这四个键（悔棋 / 停一手 / 认输 / 数子）对观战者仍然可按，
      * 但 `onAction` 被调用方换成了空函数 —— 点了没有任何反应，是账本意义上的空按钮。
@@ -96,6 +98,7 @@ const RightSidebarPanel = ({
     isRated = false,
     analysisLocked,
     analysisRequiresLogin = false,
+    analysisUnavailable = false,
     isSpectator = false,
     onTimeout,
     onPauseTimer,
@@ -151,7 +154,7 @@ const RightSidebarPanel = ({
     const isGameOver = !!gameState.end_result;
     /* 不传 analysisLocked 时退回旧口径（升降级对局中锁分析），人机对局页因此不用改。 */
     const locked = (analysisLocked ?? isRated) && !isGameOver;
-    const canShowAnalysis = !locked && !analysisRequiresLogin;
+    const canShowAnalysis = !locked && !analysisRequiresLogin && !analysisUnavailable;
     /* 传了才显示 —— `ToolGridButton` 的 `tooltip` 是**连 disabled 一起显示**的那一支，
        正是给「为什么这个键是灰的」准备的。不传时它对灰键什么都不显示。 */
     const analysisTooltip = analysisRequiresLogin

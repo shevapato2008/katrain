@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../features/auth/accountDisplay';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Alert, Chip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
@@ -331,7 +332,7 @@ const GameRoomPage = () => {
                 modulePlate={(
                     <ModulePlate
                         title={t('game_room:title', '对局室')}
-                        subtitle={`${gameState.players_info.B.name} vs ${gameState.players_info.W.name} · ${t('game_room:board_size', '{n} 路').replace(/\{n\}/g, String(gameState.board_size[0]))}`}
+                        subtitle={`${displayPlayerName(gameState.players_info.B, t('auth:account_label', '账号'))} vs ${displayPlayerName(gameState.players_info.W, t('auth:account_label', '账号'))} · ${t('game_room:board_size', '{n} 路').replace(/\{n\}/g, String(gameState.board_size[0]))}`}
                         /* 棋盘上方那条横栏取消了。「轮到你了 / 对方回合 / 观战中」升到这里成为状态徽章 ——
                            它是这一屏此刻的状态，模块牌右侧正是放状态的地方。 */
                         status={

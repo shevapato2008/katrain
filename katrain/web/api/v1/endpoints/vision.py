@@ -47,9 +47,26 @@ class ResetSyncRequest(BaseModel):
     # (ambiguous-stone 忽略): keep the ignored stone in the detector baseline so it doesn't
     # re-fire.
     adopt: str = "digital"
+    session_id: str | None = None
+    game_id: str | None = None
 
 
 # -- Helpers -----------------------------------------------------------------
+
+
+def reference_candidate_enabled_for_session(app, session_id: str, session) -> bool:
+    """Only the ordinary local free route publishes accepted-reference receipts."""
+    from katrain.web.platforms.gateway import is_platform_engine_session
+
+    if (
+        is_ai_ladder_ranked_session(session)
+        or getattr(session, "game_type", "free") != "free"
+        or getattr(session.katrain, "game_type", "free") != "free"
+        or is_platform_engine_session(session)
+    ):
+        return False
+    gateway = getattr(app.state, "platform_gateway", None)
+    return not (gateway and gateway.is_platform_game(session_id))
 
 
 def _get_vision(request: Request):
@@ -117,8 +134,17 @@ async def vision_status(request: Request):
     vision = getattr(request.app.state, "vision", None)
     led = getattr(request.app.state, "led", None)
     led_connected = led.is_board_connected() if led is not None else None
+    reference = {
+        "reference_status": "unavailable",
+        "reference_reason": None,
+        "reference_target_node_id": None,
+        "reference_target_revision": None,
+        "reference_source_node_id": None,
+        "reference_source_revision": None,
+    }
     if vision is None:
         return {
+            **reference,
             "enabled": False,
             "camera_connected": False,
             "pose_locked": False,
@@ -132,7 +158,9 @@ async def vision_status(request: Request):
         }
 
     vision.refresh_status()
+    reference = {key: getattr(vision._latest_status, key, default) for key, default in reference.items()}
     return {
+        **reference,
         "enabled": vision.enabled,
         "camera_connected": vision.camera_status == "connected",
         "pose_locked": vision.pose_lock_status == "locked",
@@ -270,7 +298,11 @@ async def bind_session(
             )
 
     if isinstance(vision, VisionService):
-        vision.bind_session(body.session_id, session=session)
+        vision.bind_session(
+            body.session_id,
+            session=session,
+            reference_candidate_enabled=reference_candidate_enabled_for_session(request.app, body.session_id, session),
+        )
     else:
         vision.bind_session(body.session_id)
     request.app.state.ranked_vision_binding = ranked_binding
@@ -306,6 +338,11 @@ async def bind_session(
             # This bind is an explicit retry after the player corrected the setup.
             vision.set_local_confirmation_mode(False, session_id=body.session_id, game_id=game_state["game_id"])
         vision.set_local_confirmation_mode(True, session_id=body.session_id, game_id=game_state["game_id"])
+        # A true mode transition retires the previous source target. Bootstrap
+        # must receive current authority under the new identity before waiting.
+        publish_current_expected(
+            vision, body.session_id, session, capture_vision_source(vision, body.session_id, session)
+        )
         deadline = asyncio.get_running_loop().time() + 8.5
         while not vision.local_confirmation_ready:
             if (
@@ -388,15 +425,27 @@ async def unbind_session(request: Request):
 
 @router.post("/sync/reset")
 async def reset_sync(request: Request, body: ResetSyncRequest | None = None):
-    """Reset vision sync. adopt='digital' (default; kiosk 重置识别 / escalation '已按指示恢复')
-    delegates to the physical-play orchestrator — re-baseline to the DIGITAL game, discard
-    camera phantoms, and release any stuck removal/pause so play continues. adopt='physical'
-    (ambiguous-stone 忽略) accepts the current camera board as baseline so the ignored stone
-    doesn't re-fire. Falls back to a plain physical-adopt reset with no orchestrator
-    (research mode)."""
-    vision = _get_vision(request)
+    """Recover vision sync using scoped authority or the legacy reset behavior.
+
+    With session_id and game_id, adopt='digital' republishes the current bound game's
+    fresh authority and waits for an exact physical-board acknowledgement. It reconciles
+    planner removal/lag state while preserving unrelated pause reasons.
+
+    Without identity fields, digital recovery delegates to the orchestrator's legacy
+    digital reset. adopt='physical', or no orchestrator, uses the legacy physical-adopt
+    reset so an ignored camera stone remains in the detector baseline.
+    """
     orchestrator = getattr(request.app.state, "physical_play", None)
     adopt = body.adopt if body else "digital"
+    if body is not None and {"session_id", "game_id"}.intersection(body.model_fields_set):
+        if not body.session_id or not body.game_id or adopt != "digital":
+            raise HTTPException(status_code=422, detail="Scoped digital recovery requires session_id and game_id")
+        if getattr(request.app.state, "vision", None) is None:
+            raise HTTPException(status_code=503, detail="Vision worker is unavailable")
+        if orchestrator is None:
+            raise HTTPException(status_code=409, detail="No bound physical game")
+        return await orchestrator.restore_scoped(body.session_id, body.game_id)
+    vision = _get_vision(request)
     if orchestrator is not None and adopt != "physical":
         orchestrator.resync()
     else:

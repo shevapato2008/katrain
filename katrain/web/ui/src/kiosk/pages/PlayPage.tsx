@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
+import { displayAccountName } from '../../features/auth/accountDisplay';
 import { readActiveSession } from '../utils/activeSession';
 import { API, type PlatformInfo } from '../../api';
 import { PLATFORM_META, defaultPlatforms, mergePlatformStatus } from '../constants/platforms';
@@ -121,7 +122,7 @@ const PlayPage = () => {
       <div className="kiosk-greet">
         <b>
           {t(greetKey, greetZh)}
-          {user?.username && <>，<i>{user.username}</i></>}
+          {user?.username && <>，<i>{user.username === 'guest' ? t('Guest', '访客') : displayAccountName(user, t('auth:account_label', '账号'))}</i></>}
         </b>
         <span>{t('Choose how to play', '选择对弈方式')}</span>
       </div>

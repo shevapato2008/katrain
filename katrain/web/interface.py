@@ -204,6 +204,9 @@ class WebKaTrain(KaTrainBase):
         self.enable_engine = enable_engine
         self.user_id = user_id
         self.account_user_id = None
+        self.account_public_profiles = {}
+        self.native_account_player_ids = {}
+        self._account_name_game_eligible = False
         self._rank_owner_session_eligible = False
         self._rank_owner_game_eligible = False
         self.ai_lock = threading.Lock()
@@ -566,6 +569,28 @@ class WebKaTrain(KaTrainBase):
             return {"user_id": account_id, "color": humans[0]}
         return None
 
+    def _account_player_display(self):
+        """Presentation metadata follows native seat IDs, never an SGF/platform nickname."""
+        if (
+            not self._account_name_game_eligible
+            or self.game_type not in ("free", "ranked", "rated", "ai_ladder_ranked", "pvp_lobby")
+            or any(
+                getattr(self, marker, None) is not None
+                for marker in ("platform_engine_color", "platform_my_color", "platform_phase")
+            )
+            or self.platform_player_ranks
+        ):
+            return {}
+        seats = dict(self.native_account_player_ids)
+        owner = self._rank_owner()
+        if owner:
+            seats[owner["color"]] = owner["user_id"]
+        return {
+            color: {"user_id": user_id, "public_username": self.account_public_profiles.get(user_id)}
+            for color, user_id in seats.items()
+            if type(user_id) is int and user_id > 0
+        }
+
     def get_state(self):
         """Returns a JSON-serializable representation of the current game state.
 
@@ -581,7 +606,10 @@ class WebKaTrain(KaTrainBase):
         **分析照常在服务端跑**（AI 走子要用：PolicyStrategy 一族靠 `wait_for_analysis`
         等的就是节点上这份分析，关掉生成会让 AI 永远不落子），只是不交付给调用方。
         """
+        with self.ai_ladder_commit_lock:
+            return self._get_state_locked()
 
+    def _get_state_locked(self):
         if not self.game:
             return {"error": "No game active"}
 
@@ -730,6 +758,7 @@ class WebKaTrain(KaTrainBase):
                     "player_type": p.player_type,
                     "player_subtype": p.player_subtype,
                     "name": p.name,
+                    **self._account_player_display().get(bw, {}),
                     "calculated_rank": p.calculated_rank,
                     "rank_display": self._ladder_rank_display(p),
                     "periods_used": p.periods_used,
@@ -807,7 +836,17 @@ class WebKaTrain(KaTrainBase):
             state["end_result"] = remote_result
             state["terminal_result"] = remote_result
             state["awaiting_count"] = False
-        from katrain.web.core.paid_analysis import legacy_analysis_allowed, strip_private_analysis
+        from katrain.web.core.billing_input import canonical_analysis_input
+        from katrain.web.core.paid_analysis import current_position_sgf, legacy_analysis_allowed, strip_private_analysis
+
+        # The opaque key and visible board come from this same AI-commit snapshot.
+        # Unsupported/overlong positions still have a usable game state.
+        try:
+            state["expected_position_key"] = canonical_analysis_input(current_position_sgf(self), "position", "normal")[
+                "fingerprint"
+            ]
+        except ValueError:
+            state["expected_position_key"] = None
 
         if not legacy_analysis_allowed(runtime=self):
             return strip_private_analysis(state)
@@ -853,6 +892,7 @@ class WebKaTrain(KaTrainBase):
             # a casual game against a hand-picked weak AI would be stored as a rated one
             # and settled into the promotion ledger.
             self.game_type = game_type if game_type is not None else "free"
+            self._account_name_game_eligible = move_tree is None and not sgf_filename
             self._rank_owner_game_eligible = (
                 self._rank_owner_session_eligible and move_tree is None and not sgf_filename
             )
@@ -1008,8 +1048,12 @@ class WebKaTrain(KaTrainBase):
         callback = self.update_state_callback
         if callback is None:
             return
-        state = self.get_state()
-        callback(state)
+        # Snapshot and synchronous cache/enqueue publication share the commit
+        # boundary. Otherwise an older snapshot can publish after a newer move.
+        # The callback schedules socket work; it must not wait for session.lock.
+        with self.ai_ladder_commit_lock:
+            state = self.get_state()
+            callback(state)
         self._run_post_broadcast(post_broadcast, state)
 
     def update_state(self, **_kwargs):
@@ -1587,7 +1631,7 @@ class WebKaTrain(KaTrainBase):
         node = game.current_node if game is not None else None
         return node.next_player if node is not None else None
 
-    def _do_play(self, coords, guard=False, expected_player=None):
+    def _do_play(self, coords, guard=False, expected_player=None, _reference_committed=None):
         """落一手。
 
         `guard=True` 是**本地对局路径**(`/api/move` 的非研究会话、视觉的两支):这一手所在的局面线已经结束过、
@@ -1637,6 +1681,17 @@ class WebKaTrain(KaTrainBase):
                     sound_name = self._stone_sound_name(game, node)
                     if guard:
                         self.game.record_two_pass_end(node)
+                    if _reference_committed is not None:
+                        try:
+                            from katrain.vision.sync import game_state_stones_to_board
+
+                            board = game_state_stones_to_board(
+                                [[stone.player, stone.coords] for stone in game.stones], game.board_size[0]
+                            )
+                            snapshot = tuple(tuple(int(cell) for cell in row) for row in board)
+                            _reference_committed(game, current_node, node, snapshot)
+                        except Exception:
+                            logger.exception("Accepted-position reference collector failed")
                 except IllegalMoveException as e:
                     # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
                     # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳

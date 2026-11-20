@@ -8,14 +8,19 @@ import type {
   BoardPayload,
 } from '../types/tutorial';
 import type { OgsCourseIndex, OgsStep } from '../types/ogsCourse';
+import { OGS_TEST_API_BASE, OGS_VIDEO_MANIFEST_URL, parseOgsVideoManifest } from '../types/ogsVideo';
 
 // kiosk/board builds talk to the board-mode read-only proxy (/board/tutorials/*,
 // which forwards to the remote catalog + 302s assets to the public media gateway);
 // the full/galaxy build hits the tutorial service directly. Mirrors live.ts:17.
 const BASE = __KIOSK_2D_ONLY__ ? '/api/v1/board/tutorials' : '/api/v1/tutorials';
+// The isolated TEST preview uses the direct read router. Keep writes on BASE.
+const READ_BASE = OGS_TEST_API_BASE ?? BASE;
 
 async function apiGet<T>(path: string): Promise<T> {
-  const resp = await fetch(`${BASE}${path}`);
+  const resp = OGS_TEST_API_BASE
+    ? await fetch(`${READ_BASE}${path}`, { credentials: 'omit', referrerPolicy: 'no-referrer' })
+    : await fetch(`${READ_BASE}${path}`);
   if (!resp.ok) throw new Error(`Tutorial API ${resp.status}: ${await resp.text()}`);
   return resp.json() as Promise<T>;
 }
@@ -87,7 +92,7 @@ export const TutorialAPI = {
     apiPut(`/figures/${figureId}/verify`, {}, token),
 
   // Assets
-  assetUrl: (relativePath: string): string => `${BASE}/assets/${relativePath}`,
+  assetUrl: (relativePath: string): string => `${READ_BASE}/assets/${relativePath}`,
 };
 
 // Read-only view of the tutorial API.
@@ -96,6 +101,11 @@ export const TutorialAPI = {
 // generateFigureAudio / verifyFigure), which remain galaxy-admin only.
 // Enforced by src/api/__tests__/tutorialReadonly.guard.test.ts.
 export const TutorialReadAPI = {
+  getOgsVideoManifest: async (signal?: AbortSignal) => {
+    const response = await fetch(OGS_VIDEO_MANIFEST_URL, { signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+    if (!response.ok) throw new Error(`OGS video manifest ${response.status}`);
+    return parseOgsVideoManifest(await response.json());
+  },
   getOgsCourse: TutorialAPI.getOgsCourse,
   getOgsStep: (page: number, lang = 'zh-cn', boardVariant?: 'kiosk19'): Promise<OgsStep> =>
     apiGet(`/ogs-course/steps/${page}?lang=${encodeURIComponent(lang)}${boardVariant ? `&board_variant=${boardVariant}` : ''}`),

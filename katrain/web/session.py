@@ -36,7 +36,9 @@ class WebSession:
     session_id: str
     katrain: WebKaTrain
     user_id: Optional[int] = None  # Primary user (usually for AI play)
-    owner_user_id: Optional[int] = None  # Transient management owner (guest OR real); independent of user_id persistence key
+    owner_user_id: Optional[int] = (
+        None  # Transient management owner (guest OR real); independent of user_id persistence key
+    )
     player_b_id: Optional[int] = None  # For HvH
     player_w_id: Optional[int] = None  # For HvH
     mode: str = "play"  # "play" or "research"
@@ -45,6 +47,7 @@ class WebSession:
     # N22:终局收尾(先补分、再落账)的会话级串行锁。人发出的双停第二手和 AI 线程触发的收尾可能同时到,
     # 不串行的话先落账的那一方会把「终局」写进账,补出来的分数就再也进不去了(`_recorded` 已置)。
     end_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
+    broadcast_send_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     sockets: Set[WebSocket] = field(default_factory=set)
     spectator_presence: PvpSpectatorPresence = field(default_factory=PvpSpectatorPresence, repr=False)
     last_access: float = field(default_factory=time.time)
@@ -71,6 +74,7 @@ class SessionManager:
         self.on_game_ended: Optional[Callable[[WebSession, GameEnd], Awaitable[None]]] = None
         self.on_session_removed: Optional[Callable[[WebSession], None]] = None
         self.on_session_state: Optional[Callable[[str], None]] = None
+        self.public_account_resolver: Optional[Callable[[int], Optional[Dict]]] = None
 
     def attach_loop(self, loop):
         self._loop = loop
@@ -84,6 +88,8 @@ class SessionManager:
         skip_initial_analysis: bool = False,
         _rank_owner_eligible: bool = True,
     ) -> WebSession:
+        # Resolve display data before entering any runtime/manager lock.
+        public_profiles = self._public_profiles((user_id,)) if _rank_owner_eligible else {}
         evicted: List[WebSession] = []
         with self._lock:
             if len(self._sessions) >= self.max_sessions:
@@ -101,6 +107,7 @@ class SessionManager:
             # Engine UUID and authenticated account identity are unrelated. Set
             # eligibility before start() can publish its very first state.
             katrain.account_user_id = user_id
+            katrain.account_public_profiles = public_profiles
             katrain.membership_guard_active = getattr(self, "membership_guard_active", False)
             katrain._rank_owner_session_eligible = _rank_owner_eligible and initial_game_type in (
                 "free",
@@ -118,7 +125,9 @@ class SessionManager:
 
         try:
             session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
-            session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
+            session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(
+                sid, msg_type, data
+            )
             session.katrain.game_ended_callback = lambda end, sid=session_id: self._on_game_ended(sid, end)
             katrain.start(game_type=initial_game_type, skip_initial_analysis=skip_initial_analysis)
             session.last_state = katrain.get_state()
@@ -126,6 +135,15 @@ class SessionManager:
             self.remove_session(session_id)
             raise
         return session
+
+    def _public_profiles(self, user_ids):
+        profiles = {}
+        for user_id in user_ids:
+            if type(user_id) is not int or user_id <= 0:
+                continue
+            row = self.public_account_resolver(user_id) if self.public_account_resolver else None
+            profiles[user_id] = row.get("public_username") if row and row.get("id") == user_id else None
+        return profiles
 
     def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
         session = self.create_session(katago_uuid=katago_uuid, user_id=user_id, _rank_owner_eligible=False)
@@ -142,6 +160,7 @@ class SessionManager:
         skip_initial_analysis: bool = False,
         initial_game_type: str = "free",
     ) -> WebSession:
+        public_profiles = self._public_profiles((player_b_id, player_w_id)) if initial_game_type != "pvp_online" else {}
         primary_user_id = player_b_id if player_b_id >= 0 else player_w_id if player_w_id >= 0 else None
         session = self.create_session(
             user_id=primary_user_id,
@@ -150,6 +169,10 @@ class SessionManager:
             _rank_owner_eligible=False,
         )
         try:
+            session.katrain.account_public_profiles = public_profiles
+            session.katrain.native_account_player_ids = (
+                {"B": player_b_id, "W": player_w_id} if initial_game_type != "pvp_online" else {}
+            )
             session.player_b_id = player_b_id
             session.player_w_id = player_w_id
             session.game_type = initial_game_type
@@ -458,28 +481,37 @@ class SessionManager:
         if not self._loop or not self._loop.is_running():
             return
 
-        if threading.get_ident() == self._loop_thread_id:
-            self._loop.create_task(self._broadcast_payload(session, payload))
-        else:
-            future = asyncio.run_coroutine_threadsafe(self._broadcast_payload(session, payload), self._loop)
-            future.add_done_callback(
-                lambda f: f.exception() and print(f"Error in broadcast task: {f.exception()}", flush=True)
-            )
+        def _log_failure(task):
+            if task.cancelled():
+                return
+            exc = task.exception()
+            if exc is not None:
+                logging.getLogger("katrain_web").error("broadcast task failed for %s: %s", session.session_id, exc)
+
+        def _start_broadcast():
+            self._loop.create_task(self._broadcast_payload(session, payload)).add_done_callback(_log_failure)
+
+        # Both callers enter the same FIFO. A direct on-loop create_task can
+        # otherwise overtake an already queued background-thread publication.
+        self._loop.call_soon_threadsafe(_start_broadcast)
 
     async def _broadcast_payload(self, session: WebSession, payload: Dict):
-        if not session.sockets:
-            return
-        stale = []
-        for ws in list(session.sockets):
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                stale.append(ws)
-        for ws in stale:
-            session.sockets.discard(ws)
-            session.spectator_presence.leave_socket(ws)
-        if stale and not strict_box_sso_enabled():
-            self.broadcast_spectator_count(session, force=True)
+        # Keep each whole multi-socket publication ahead of the next one even
+        # when a socket yields. No synchronous game/session lock spans this I/O.
+        async with session.broadcast_send_lock:
+            if not session.sockets:
+                return
+            stale = []
+            for ws in list(session.sockets):
+                try:
+                    await ws.send_json(payload)
+                except Exception:
+                    stale.append(ws)
+            for ws in stale:
+                session.sockets.discard(ws)
+                session.spectator_presence.leave_socket(ws)
+            if stale and not strict_box_sso_enabled():
+                self.broadcast_spectator_count(session, force=True)
 
     def _schedule_socket_close(self, session: WebSession, close):
         """Close a session's game sockets, on the loop.
@@ -562,7 +594,9 @@ class Matchmaker:
         self._active_users: Dict[int, str] = {}
         self._lock = threading.Lock()
 
-    def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket, *, rung: int | None = None) -> Optional[Match]:
+    def add_to_queue(
+        self, user_id: int, game_type: str, websocket: WebSocket, *, rung: int | None = None
+    ) -> Optional[Match]:
         import logging
 
         logger = logging.getLogger("katrain_web")

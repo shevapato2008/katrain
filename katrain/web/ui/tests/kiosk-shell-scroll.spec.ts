@@ -476,12 +476,11 @@ test('课程:分类多到装不下时右栏自己滚,最后一块(一课长什�
  * 屏 27 设置(L1-B,形态 1 整栏滚)。
  *
  * **高亮跟着真正在看的那一组走** —— 写死在某一项上而右边滚到了别处,**是在谎报你在哪儿**。
- * 所以这条不量「点了导航之后高亮对不对」(那是同一次点击自己设的),
- * 而是**用滚轮把右栏滚下去**,再看导航跟没跟上。
+ * 会员与用量独立跳转。分组高亮通过**滚轮滚动右栏**验证。
  */
 test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', async ({ page }) => {
   await boot(page, '/kiosk/settings');
-  await page.waitForSelector('[data-testid="settings-nav"] button');
+  await page.waitForSelector('[data-testid="settings-nav"] button[aria-current]');
 
   const shape = await page.evaluate(() => {
     const rail = document.querySelector('.kiosk-console') as HTMLElement;
@@ -490,7 +489,7 @@ test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', 
     return {
       railW: Math.round(rail.getBoundingClientRect().width),
       sideW: Math.round(side.getBoundingClientRect().width),
-      navCount: document.querySelectorAll('[data-testid="settings-nav"] button').length,
+      navCount: document.querySelectorAll('[data-testid="settings-nav"] button[aria-current]').length,
       groupCount: document.querySelectorAll('[data-group]').length,
       overflow: scroll.scrollHeight - scroll.clientHeight,
       at: side.getAttribute('data-at'),
@@ -499,7 +498,7 @@ test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', 
   // 规范 §12:左栏宽度和 L1-A 的镜像栏一样 —— 从对弈切到设置那条纵向接缝不动。
   expect(shape.railW, '左栏不是 296 —— 从对弈切过来那条纵向接缝会跳').toBe(296);
   expect(shape.sideW, '右栏不是 680').toBe(680);
-  expect(shape.navCount, '导航项数和分组数对不上').toBe(shape.groupCount);
+  expect(shape.navCount, '分组锚点数和分组数对不上').toBe(shape.groupCount);
   expect(shape.overflow, '没造出「装不下」—— 下面那条断言是空的').toBeGreaterThan(80);
   expect(shape.at, '一开始就该报 top').toBe('top');
 

@@ -3,10 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { OgsCourseIndex } from '../../types/ogsCourse';
 import { useOgsLocale } from '../tutorial/useOgsLocale';
+import { useOgsVideos } from '../tutorial/useOgsVideos';
+import { videosForLesson } from '../../types/ogsVideo';
 import '../tutorial/ogs-course.css';
 
 export default function OgsCourseChapterPage() {
   const navigate = useNavigate();
+  const videos = useOgsVideos();
   const { language, text } = useOgsLocale();
   const { chapterId } = useParams<{ chapterId: string }>();
   const [course, setCourse] = useState<OgsCourseIndex | null>(null);
@@ -23,8 +26,9 @@ export default function OgsCourseChapterPage() {
   const lessons = course.lessons.filter((item) => item.chapter_id === chapter.id).sort((a, b) => a.order - b.order);
   return <main className="u-ogs ogs-lesson-layout" data-testid="ogs-chapter-page">
     <aside className="ogs-card ogs-chapter-rail"><div className="ogs-rail-head">{text('chapterPath', { count: course.chapters.length })}</div><div className="ogs-chapter-tabs">{course.chapters.map((item) => <button key={item.id} className={`ogs-chapter-tab ${item.id === chapterId ? 'is-current' : ''}`} aria-current={item.id === chapterId ? 'page' : undefined} onClick={() => navigate(`/kiosk/tutorial/chapter/${encodeURIComponent(item.id)}`)}><strong>{String(item.number).padStart(2, '0')}</strong>{item.title}</button>)}</div></aside>
-    <section className="ogs-lesson-main"><div className="ogs-lesson-head"><button className="ogs-key" onClick={() => navigate('/kiosk/tutorial')}>‹ {text('course')}</button><h2>{chapter.title}</h2><span className="ogs-meta">{text('chapterProgress', { chapter: chapter.number, count: course.chapters.length })}</span></div><div className="ogs-lesson-sub"><span>{text('chapterNote')}</span><span>{text('lessonSteps', { lessons: chapter.lesson_count, steps: chapter.step_count })}</span></div>
+    <section className="ogs-lesson-main"><div className="ogs-lesson-head"><button className="ogs-key" onClick={() => navigate('/kiosk/tutorial')}>‹ {text('course')}</button><h2>{chapter.title}</h2><span className="ogs-meta">{text('chapterProgress', { chapter: chapter.number, count: course.chapters.length })}</span></div><div className="ogs-lesson-sub"><span role={videos.loading ? 'status' : undefined}>{text(videos.loading ? 'videoLoading' : 'chapterNote')}</span><span>{text('lessonSteps', { lessons: chapter.lesson_count, steps: chapter.step_count })}</span></div>
       {error && <p role="alert">{text('courseError')} <button className="ogs-key" onClick={retry}>{text('retry')}</button></p>}
-      <div className="ogs-lesson-list">{lessons.map((lesson) => <button key={lesson.id} className="ogs-lesson" onClick={() => navigate(`/kiosk/tutorial/lesson/${encodeURIComponent(lesson.id)}`)}><span className="ogs-lesson-number">{String(lesson.order).padStart(2, '0')}</span><span className="ogs-lesson-copy"><strong>{lesson.title}</strong><span>{lesson.subtext || text('practiceSteps', { count: lesson.step_count })}</span></span><span className="ogs-lesson-next" aria-hidden="true">›</span></button>)}</div></section>
+      {videos.error && <div className="ogs-video-catalog-error" role="alert"><span>{text('videoCatalogError')}</span><button className="ogs-key" onClick={videos.retry}>{text('videoCatalogRetry')}</button></div>}
+      <div className="ogs-lesson-list">{lessons.map((lesson) => <button key={lesson.id} className="ogs-lesson" onClick={() => navigate(`/kiosk/tutorial/lesson/${encodeURIComponent(lesson.id)}${videosForLesson(videos.manifest, lesson.id).length ? '/videos' : ''}`)}><span className="ogs-lesson-number">{String(lesson.order).padStart(2, '0')}</span><span className="ogs-lesson-copy"><strong>{lesson.title}</strong><span className={videosForLesson(videos.manifest, lesson.id).length ? 'ogs-video-badge' : undefined}>{videosForLesson(videos.manifest, lesson.id).length ? text('videoCount', { count: videosForLesson(videos.manifest, lesson.id).length }) : lesson.subtext || text('practiceSteps', { count: lesson.step_count })}</span></span><span className="ogs-lesson-next" aria-hidden="true">›</span></button>)}</div></section>
   </main>;
 }

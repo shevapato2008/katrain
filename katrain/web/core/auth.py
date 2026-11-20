@@ -52,14 +52,22 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
 from sqlalchemy.orm import Session
 from katrain.web.core import models_db
 
+_UNSET_PUBLIC_USERNAME = object()
+
 
 class UserRepository(ABC):
     @abstractmethod
-    def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
+    def create_user(
+        self, username: str, hashed_password: str, *, public_username=_UNSET_PUBLIC_USERNAME
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
     def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def get_user_by_login_name(self, login_name: str) -> Optional[Dict[str, Any]]:
         pass
 
     @abstractmethod
@@ -129,9 +137,14 @@ class SQLAlchemyUserRepository(UserRepository):
         fresh_database = not inspect(engine).get_table_names()
         rank_tables = migrations.KIFU_RANK_TABLES
         startup_tables = [
-            table for table in models_db.Base.metadata.sorted_tables
-            if table.name not in (
-                migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES | rank_tables
+            table
+            for table in models_db.Base.metadata.sorted_tables
+            if table.name
+            not in (
+                migrations.KIFU_NAME_TABLES
+                | migrations.KIFU_EVENT_SELECTION_TABLES
+                | rank_tables
+                | migrations.PHONE_AUTH_TABLES
             )
         ]
         if fresh_database:
@@ -142,7 +155,11 @@ class SQLAlchemyUserRepository(UserRepository):
                 # Rank tables are explicit-only even for a new application database.
                 models_db.Base.metadata.create_all(
                     bind=conn,
-                    tables=[table for table in models_db.Base.metadata.sorted_tables if table.name not in rank_tables],
+                    tables=[
+                        table
+                        for table in models_db.Base.metadata.sorted_tables
+                        if table.name not in rank_tables | migrations.PHONE_AUTH_TABLES
+                    ],
                 )
                 migrations.install_kifu_name_change_immutability(conn)
         else:
@@ -157,6 +174,11 @@ class SQLAlchemyUserRepository(UserRepository):
             migrations.verify_kifu_event_selection_schema(engine)
             migrations.verify_kifu_name_change_immutability(engine)
             migrations.verify_kifu_name_indexes(engine)
+
+        # Verify the five private authentication tables before generic additive
+        # migrations can hide partial schema drift. Users already exists here.
+        migrations.migrate_phone_auth_schema(engine)
+        migrations.migrate_public_username_schema(engine, mode=settings.KATRAIN_MODE)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
         # to update game_id FK from games.id (Integer) to user_games.id (String)
@@ -229,11 +251,19 @@ class SQLAlchemyUserRepository(UserRepository):
                 session.commit()
         ledger_immutability.install(engine)
 
-    def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
+    def create_user(
+        self, username: str, hashed_password: str, *, public_username=_UNSET_PUBLIC_USERNAME
+    ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
+            if public_username is _UNSET_PUBLIC_USERNAME:
+                # Legacy server writers reserve their exact human name. Shadow
+                # callers explicitly supply the trusted cloud value, including None.
+                public_username = username if settings.KATRAIN_MODE == "server" else None
             # Defaults are handled by SQLAlchemy model
-            db_user = models_db.User(username=username, hashed_password=hashed_password)
+            db_user = models_db.User(
+                username=username, public_username=public_username, hashed_password=hashed_password
+            )
             session.add(db_user)
             session.commit()
             session.refresh(db_user)
@@ -257,6 +287,31 @@ class SQLAlchemyUserRepository(UserRepository):
             return None
         finally:
             session.close()
+
+    def get_user_by_login_name(self, login_name: str) -> Optional[Dict[str, Any]]:
+        """Password-only authority lookup. Tokens always use canonical lookup."""
+        if settings.KATRAIN_MODE != "server":
+            return None
+        from sqlalchemy import or_
+
+        with self.session_factory() as session:
+            users = (
+                session.query(models_db.User)
+                .filter(or_(models_db.User.username == login_name, models_db.User.public_username == login_name))
+                .limit(2)
+                .all()
+            )
+            return self._to_dict(users[0]) if len(users) == 1 else None
+
+    def set_public_username(self, user_id: int, public_username: Optional[str]) -> Dict[str, Any]:
+        """Synchronize a trusted cloud display value without changing identity."""
+        with self.session_factory() as session:
+            user = session.get(models_db.User, user_id)
+            if user is None:
+                raise ValueError("User not found")
+            user.public_username = public_username
+            session.commit()
+            return self._to_dict(user)
 
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
@@ -367,6 +422,7 @@ class SQLAlchemyUserRepository(UserRepository):
             "id": user_obj.id,
             "uuid": user_obj.uuid,
             "username": user_obj.username,
+            "public_username": user_obj.public_username,
             "hashed_password": user_obj.hashed_password,
             "rank": user_obj.rank,
             "credits": user_obj.credits,

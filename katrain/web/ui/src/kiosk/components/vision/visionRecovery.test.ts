@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { API } from '../../../api';
 
 import type { VisionSyncEvent } from '../../hooks/useVisionSync';
 import {
@@ -230,14 +231,14 @@ describe('reduceRecoveryState', () => {
     },
   );
 
-  it('synced clears all recovery while passive events leave it intact', () => {
+  it('synced retains mismatch recovery while passive events leave it intact', () => {
     const mismatch = transition(initialRecoveryState, 'illegal_change', {
       positions: [[2, 2, 1]],
       missing: [],
     });
     expect(transition(mismatch, 'degraded')).toEqual(mismatch);
     expect(transition(mismatch, 'board_reacquired')).toEqual(mismatch);
-    expect(transition(mismatch, 'synced')).toEqual(initialRecoveryState);
+    expect(transition(mismatch, 'synced')).toEqual(mismatch);
   });
 });
 
@@ -251,5 +252,31 @@ it.each(['vision', 'platform'] as const)('shows actionable anomalies despite %s 
   });
   expect(next.blocking).toEqual({ kind: 'mismatch', positions: [[4, 5, 2]], missing: [] });
   expect(reduceRecoveryState(next, { kind: 'node_advanced' }).blocking).toEqual(next.blocking);
-  expect(transition(next, 'synced').blocking).toBeNull();
+  expect(transition(next, 'synced').blocking).toEqual(next.blocking);
+});
+
+
+describe('scoped vision recovery request', () => {
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+  it('sends session and game scope while retaining legacy resets', async () => {
+    const verified = { ok: true, recovery_id: 'r1', session_id: 's1', game_id: 'g1', current_node_id: 16 };
+    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => verified });
+    vi.stubGlobal('fetch', fetch);
+    await expect(API.visionVerifySync('s1', 'g1')).resolves.toEqual(verified);
+    expect(fetch).toHaveBeenCalledWith('/api/v1/vision/sync/reset', expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ adopt: 'digital', session_id: 's1', game_id: 'g1' }),
+    }));
+    await API.visionResetSync('physical');
+    expect(fetch).toHaveBeenLastCalledWith('/api/v1/vision/sync/reset', expect.objectContaining({ body: JSON.stringify({ adopt: 'physical' }) }));
+  });
+  it('times out a lost POST response and aborts its request', async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal('fetch', fetch);
+    const request = API.visionVerifySync('s1', 'g1');
+    const failure = expect(request).rejects.toThrow(/超时/);
+    await vi.advanceTimersByTimeAsync(10_000);
+    await failure;
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+  });
 });

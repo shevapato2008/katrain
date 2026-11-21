@@ -221,14 +221,18 @@ def publish(engine, value, **options):
 
 
 def deep_analysis_manifest(
-    engine, source_id="123", *, size="SZ[19]", parameters="RU[Japanese]KM[6.5]", extra="", moves=";B[bb];W[cc]"
+    engine, source_id="123", *, size="SZ[19]", parameters="RU[Japanese]KM[6.5]", extra="", moves=";B[bb];W[cc]",
+    game_type="GM[1]",
 ):
     from katrain.kifu_ingest.preparation import derive_metadata
     from katrain.kifu_ingest.ranks import FORMAT_V2, freeze_historical_game_ranks
 
     value = manifest(source_id)
     game = value["games"][0]
-    sgf = f"(;FF[4]GM[1]{size}PB[Black Alias]PW[White Alias]EV[Summer Cup]DT[2026-02-01]{parameters}{extra}{moves})"
+    sgf = (
+        f"(;FF[4]{game_type}{size}PB[Black Alias]PW[White Alias]EV[Summer Cup]DT[2026-02-01]"
+        f"{parameters}{extra}{moves})"
+    )
     digest = sha256(sgf.encode()).hexdigest()
     game.update(
         origin_path=f"data/kifu-album/19x19/{source_id}.sgf",
@@ -275,6 +279,8 @@ def test_deep_analysis_pending_publication_replay_and_reuse(engine, size):
         ({"size": "SZ[19:13]", "moves": ";B[aa]"}, "unsupported_board_size"),
         ({"extra": "AB[aa:bb]"}, "invalid_sgf"),
         ({"moves": ";B[zz]"}, "invalid_sgf"),
+        ({"moves": ";B[tT];W[cc]"}, "invalid_sgf: Invalid move coordinate"),
+        ({"game_type": "GM[2]"}, "invalid_sgf: Professional analysis requires a Go game"),
         ({"moves": ""}, "invalid_sgf"),
         ({"moves": ";B[aa][bb]"}, "invalid_sgf"),
         ({"moves": ";B[bb];PL[B];B[cc]"}, "invalid_sgf: Non-root PL"),

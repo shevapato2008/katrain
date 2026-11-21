@@ -18,6 +18,13 @@ def parse_professional_replay(
     if not nodes:
         raise ParameterError("invalid_sgf", "SGF contains no main line")
     root, *subsequent = nodes
+    game_type = root.get("GM", ["1"])
+    if (
+        len(game_type) != 1
+        or not re.fullmatch(r"\+?0*1", game_type[0].strip())
+        or any("GM" in node for node in subsequent)
+    ):
+        raise ParameterError("invalid_sgf", "Professional analysis requires a Go game (GM[1])")
     sizes = root.get("SZ", ["19"])
     size = _BOARD_SIZE.fullmatch(sizes[0].strip()) if len(sizes) == 1 else None
     width = int(size[1]) if size else 0
@@ -50,6 +57,8 @@ def parse_professional_replay(
         moves = [point for prop in ("B", "W") for point in node.get(prop, ())]
         if len(moves) > 1:
             raise ParameterError("invalid_sgf", "Multiple moves in one node cannot be replayed faithfully")
+        if moves and width <= 19 and moves[0] != "tt" and moves[0].lower() == "tt":
+            raise ParameterError("invalid_sgf", "Invalid move coordinate, legacy pass must use lowercase tt")
         setup = [point for prop in ("AB", "AW", "AE") for point in node.get(prop, ())]
         if any(sgf_to_gtp(point, width) in (None, "pass") for point in setup):
             raise ParameterError("invalid_sgf", "Compressed or invalid setup points cannot be replayed faithfully")

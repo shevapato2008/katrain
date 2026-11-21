@@ -20,16 +20,18 @@
 - [ ] 先添加/调整行为用例并观察红：新注册/continue/旧号绑定均新赠2000；同账号或手机号重试/并发只一次；历史5000领取者不补赠，不降低其余额；非法bool/字符串赠额继续拒绝。
 - [ ] 最小实现 `_SIGNUP_CREDITS = 2000`；所有跨进程响应validator/types明确接受0/2000/5000，保持strict int；不能将领取去重条件改成“delta==2000”。
 - [ ] 停止现代 `can_claim_free_report` 新资格，usage兼容free字段但返回eligible=false/remaining=0/limit=0；报价新来源只有member/wallet/owned。已签free报价在未产生操作时拒绝并要求重报价，不静默钱包扣费；相同幂等操作及旧任务授权保留。
+- [ ] 取消资格后，非会员/可信验证为false/积分不足的新报告报价应返回既有`402 insufficient_credits`，不得继续返回`403 verification_required`诱导核验；真实身份/登录错误照旧。用既有`test_membership_journeys.py`余额不足场景覆盖。
 - [ ] 默认FREE_WEEKLY_REPORTS=0；legacy reports新建路径删除免费周授权，legacy billing/quota返回allowance0。保留旧free任务settlement/refund及通用quota工具，不清理历史数据库。
 - [ ] 运行局部Python/API测试；真实PG验证赠额锁、收据与并发：专用loopback `membership_validation*` 随机schema，安全读取既有测试凭据、不打印URL；不得连接生产DB。测试发送器为fake，不发真实短信。若本机缺专用PG，优先使用已有本地测试实例或隔离临时实例，不能以SQLite声称并发验收完成。
 
 ### Task 2: Galaxy/Kiosk简洁展示和11语（一个implementer独占UI及i18n文件）
 
-**Files:** `katrain/web/ui/src/api.ts`, `context/AuthContext.tsx`, `features/auth/PhoneOtpForm.tsx`, `features/auth/PhoneBindDialog.tsx`, `galaxy/pages/membership/MembershipPage.tsx`, `kiosk/pages/membership/MembershipPage.tsx`, 必要的对应测试与样式；`scripts/phone_otp_translations.json`, `scripts/membership_translations.json`或既有批量翻译源；`katrain/i18n/locales/{en,cn,tw,jp,ko,de,es,fr,ru,tr,ua}/LC_MESSAGES/katrain.po`。
+**Files:** `katrain/web/ui/src/api.ts`, `context/AuthContext.tsx`, `features/auth/PhoneOtpForm.tsx`, `features/auth/PhoneBindDialog.tsx`, `galaxy/pages/membership/MembershipPage.tsx`, `kiosk/pages/membership/MembershipPage.tsx`, `kiosk/components/report/ReportAccessDialog.tsx`, `features/membership/ConsumptionQuoteDialog.tsx`, 必要的对应测试与样式（含`ReportsPage`既有测试）；`scripts/phone_otp_translations.json`, `scripts/membership_translations.json`或既有批量翻译源；`katrain/i18n/locales/{en,cn,tw,jp,ko,de,es,fr,ru,tr,ua}/LC_MESSAGES/katrain.po`。
 
 - [ ] 先测试：两种会员页面都不再出现每周免费资格/剩余次数/免费倒计时/资格待确认；非会员仍可看到积分余额并充值/开会员；会员本期/本周用量保留。
 - [ ] 赠额类型接受0/2000/5000，成功信息按真实numeric grant/100插值；0不报赠额，5000历史响应显示50，2000显示20。首验证提示20且一次，不再长段解释。
 - [ ] 删除上述免费展示块、非会员侧栏免费说明和帮助中的相关句子，必要时以“未开通会员”“使用API积分分析”等短文案替代；不删未知/错误/重试和购买确认，不改价格、会员周规则、页面宽度或导航。
+- [ ] 两端共用报价确认窗收到陈旧`free_report`时只提示“报价已更新，请重新发起分析”并提供关闭/重试路径，不能继续调用onConfirm，也不能伪装owned/wallet；正常member/wallet/owned确认保持。Kiosk报告错误窗的旧403改中性账户提示，删除“免费资格”引导，保留真实账户错误语义。添加这两个状态和正常付费确认的聚焦组件测试。
 - [ ] 使用 `katrain-i18n-expert`，全部新/改key在现有翻译源及11语同步，保持占位符一致；不要通过全量同步工具产生大范围无关PO变更。
 - [ ] 运行受影响Vitest；build和strict2d build；Galaxy代表viewport及Kiosk1024×600各一张真实预览，核对长译文不溢出、关键余额/按钮可见。纯文案/局部删除按用户比例原则，不做全状态重拍。
 

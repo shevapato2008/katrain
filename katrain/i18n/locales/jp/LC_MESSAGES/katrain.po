@@ -7633,8 +7633,7 @@ msgid "membership:kiosk_quota_result_help"
 msgstr "同じ結果に地の評価と候補手が含まれ、再閲覧で追加料金はかかりません。高度解析は標準解析の{multiplier}倍の枠を消費します。"
 
 msgid "membership:kiosk_quota_savings_help"
-msgstr ""
-"割引はAPIの標準解析と比較し、今期の枠を全て使う場合の計算です。使い切らない場合、実際のお得さは使用量によって変わります。Freeには無料の標準レポート利用資格のみが付き、汎用の解析枠は付きません。"
+msgstr "割引率は期間内の枠を使い切った場合の目安です。実際の割引率は使用量に応じて変わります。"
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "クラウドによる利用枠の確認待ち"
@@ -7939,8 +7938,7 @@ msgid "membership:renew_plan"
 msgstr "{plan}を更新"
 
 msgid "membership:renewal_rule"
-msgstr ""
-"更新分は現在の会員期間の終了後に適用され、現在の使用済み・予約済みの使用量はリセットしません。支払い前の日付は予定であり、最終的な有効期間は支払い後のサーバー発行の確認情報で確定します。有料会員にFreeの標準レポート利用資格は追加されません。"
+msgstr "更新分は現在の会員期間終了後に始まります。使用済み・予約済みの枠はそのままです。開始日は支払い明細をご確認ください。"
 
 msgid "membership:report_estimate_limit"
 msgstr "300手の対局を基準にした目安で、今期の残り枠によって制限されます。"
@@ -13785,3 +13783,30 @@ msgstr "電話番号を連携し、50ポイントを付与しました。"
 
 msgid "auth:bind_gift_hint"
 msgstr "電話番号の初回認証で50ポイント。受取済みの場合は再付与されません。"
+
+msgid "auth:phone_first_gift_hint"
+msgstr "携帯番号の初回認証で20ポイント（1回限り）"
+
+msgid "auth:signup_grant_points"
+msgstr "{points}ポイントを獲得しました"
+
+msgid "auth:bind_success_points"
+msgstr "電話番号を連携し、{points}ポイントを付与しました"
+
+msgid "membership:no_membership"
+msgstr "会員未登録"
+
+msgid "membership:analyze_with_api_points"
+msgstr "APIポイントで分析"
+
+msgid "membership:quote_changed"
+msgstr "見積もりが更新されました。分析をやり直してください。"
+
+msgid "membership:report_access_title"
+msgstr "レポートを作成できません"
+
+msgid "membership:report_access_body"
+msgstr "レポートの作成は開始されていません。アカウントを確認してから再試行してください。"
+
+msgid "membership:report_access_account"
+msgstr "アカウントを確認"

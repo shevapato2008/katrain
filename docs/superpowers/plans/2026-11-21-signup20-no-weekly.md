@@ -57,3 +57,7 @@
 - [ ] TEST/PROD按server-deploy：fresh完整Docker Config/Env/网络/挂载私密beforeimage，候选delta独立审核后切换；仅source/image/revision/buildSHA，支付、短信、身份socket、DB/GPU/MinIO保持。核实是否需Cron升级（原则上历史settlement逻辑未变，不应为UI/phone发放重启Cron）。服务器现有FREE_WEEKLY_REPORTS已为0，保持。
 - [ ] 发布验证：运行源文件与已发布SHA相符、网站Galaxy/kiosk页面200及新bundle/11语、RK真实DOM不出现免费周文案和错误50赠额提示。需本人手机号的真实短信验收仍由用户亲自收取并输入，不自动发送短信/创建付费订单。
 - [ ] 最终报告三个部署目标版本、子模块对应关系、测试结果、用户需验收入口及任何真实限制；不能把HTTP或健康检查说成已做真实付款/手机号赠额全链路。
+
+## Implementation checkpoint
+
+Plan review completed in two rounds (Approved); independent final spec and quality review Approved. Tasks 1–3 implemented and focused tests/previews completed. Final review also paired launcher script cache versioning with new receipt templates and separated new-register hints from grant-zero profile completion. Deployment build/integration/acceptance remain pending at this commit; see ignored output receipts for subsequent release evidence.

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from '@mui/material';
-import { API, ApiError, type PhoneAuthErrorDetail, type PhoneBindingResult, type PhoneBindingStatus, type PhoneChallenge } from '../../api';
+import { API, ApiError, isPhoneSignupGift, type PhoneAuthErrorDetail, type PhoneBindingResult, type PhoneBindingStatus, type PhoneChallenge } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -63,7 +63,7 @@ function BindForm({ onClose, onBound, kiosk }: Pick<Props, 'onClose' | 'onBound'
   const [challenge, setChallenge] = useState<PhoneChallenge | null>(null);
   const [sending, setSending] = useState(false); const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(''); const [success, setSuccess] = useState(false);
-  const [giftGranted, setGiftGranted] = useState(false);
+  const [giftPoints, setGiftPoints] = useState(0);
   const [retryAt, setRetryAt] = useState(0); const [lockAt, setLockAt] = useState(0); const [expiresAt, setExpiresAt] = useState(0);
   const [now, setNow] = useState(Date.now());
   const flow = useRef(''); if (!flow.current) flow.current = newFlow();
@@ -125,7 +125,9 @@ function BindForm({ onClose, onBound, kiosk }: Pick<Props, 'onClose' | 'onBound'
       const result = await API.phoneBind({ challenge_id: challenge.challenge_id, code, flow_id: flow.current, current_password: password }, token, request.signal);
       if (!current()) return;
       setPassword(''); setPhone(''); setCode(''); setChallenge(null); flow.current = newFlow();
-      setStatus(result); setSuccess(true); setGiftGranted(result.signup_grant_credits === 5000); onBound?.(result);
+      setStatus(result); setSuccess(true);
+      setGiftPoints(isPhoneSignupGift(result.signup_grant_credits) ? result.signup_grant_credits / 100 : 0);
+      onBound?.(result);
     } catch (failure) { if (current()) handleError(failure); }
     finally { if (current()) setSubmitting(false); }
   };
@@ -137,7 +139,7 @@ function BindForm({ onClose, onBound, kiosk }: Pick<Props, 'onClose' | 'onBound'
       {statusError ? <Alert severity="error" action={<Button onClick={loadStatus}>{t('auth:bind_retry', '重试')}</Button>}>{t('auth:bind_load_error', '暂时无法读取手机号绑定状态')}</Alert>
         : !status ? <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', py: 2 }}><CircularProgress size={20} /><Typography>{t('auth:bind_loading', '正在核对绑定状态…')}</Typography></Box>
         : bound ? <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {success && <Alert severity="success">{giftGranted ? t('auth:bind_success_gift', '手机号绑定成功，已赠送50积分') : t('auth:bind_success', '手机号绑定成功')}</Alert>}
+          {success && <Alert severity="success">{giftPoints > 0 ? t('auth:bind_success_points', '手机号绑定成功，已赠送{points}积分').replace('{points}', String(giftPoints)) : t('auth:bind_success', '手机号绑定成功')}</Alert>}
           <Typography color="text.secondary">{t('auth:bind_bound_label', '已绑定手机号')}</Typography><Typography>{status.masked_phone}</Typography>
           <Typography variant="body2" color="text.secondary">{t('auth:bind_policy', '绑定后可用短信验证码登录，原有余额和会员保留。')}</Typography>
         </Box> : <Box component="form" id={id} onSubmit={submit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: kiosk ? 1.5 : 2, pt: 1 }}>
@@ -156,7 +158,7 @@ function BindForm({ onClose, onBound, kiosk }: Pick<Props, 'onClose' | 'onBound'
           {challenge && !error && <Alert severity={expired || challenge.delivery === 'unknown' ? 'warning' : 'info'}>
             {expired ? t('auth:otp_challenge_expired', '验证码已过期，请重新获取') : challenge.delivery === 'unknown' ? t('auth:otp_unknown', '发送状态未确认；若收到验证码仍可验证。请等待冷却结束后再决定是否重发。') : t('auth:otp_requested', '验证码已请求，有效期5分钟，请查看短信。')}
           </Alert>}
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65 }}>{t('auth:bind_gift_hint', '首次验证手机号送50积分，已领取不再赠送。')}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65 }}>{t('auth:phone_first_gift_hint', '首次验证手机号送20积分，仅限一次')}</Typography>
         </Box>}
     </DialogContent>
     <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}><Button onClick={onClose} sx={{ minHeight: 44 }}>{bound ? t('auth:bind_done', '完成') : t('auth:cancel_btn', '取消')}</Button>

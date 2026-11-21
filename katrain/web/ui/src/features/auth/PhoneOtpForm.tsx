@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, CircleCheck } from 'lucide-react';
-import { API, ApiError, type PhoneChallenge, type PhoneAuthErrorDetail } from '../../api';
+import { API, ApiError, isPhoneSignupGift, type PhoneChallenge, type PhoneSignupGrantCredits, type PhoneAuthErrorDetail } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import AuthField from './AuthField';
@@ -40,6 +40,9 @@ interface Props {
 
 export default function PhoneOtpForm({ onSuccess, initialMode = 'login', onModeChange, onExistingLogin, onNotice = showAuthNotice }: Props) {
   const { t } = useTranslation();
+  const signupGiftMessage = (credits: PhoneSignupGrantCredits) => isPhoneSignupGift(credits)
+    ? t('auth:signup_grant_points', '获赠{points}积分').replace('{points}', String(credits / 100))
+    : null;
   const { loginPhone, continuePhone, registerPhone, identityKey } = useAuth();
   const [mode, setMode] = useState<PhoneFormMode>(initialMode);
   const [verifiedForProfile, setVerifiedForProfile] = useState(false);
@@ -153,13 +156,12 @@ export default function PhoneOtpForm({ onSuccess, initialMode = 'login', onModeC
       else if (completing) {
         const result = await continuePhone({ ...verified, public_username: username, ...(passwordRequired ? { current_password: password } : {}) }, request.signal);
         if (!current()) return;
-        if (result.signup_grant_credits === 5000) onNotice?.(t('auth:signup_grant_success', '注册成功，已赠送50积分'));
+        const gift = signupGiftMessage(result.signup_grant_credits);
+        if (gift) onNotice?.(gift);
       } else {
         const result = await registerPhone({ ...verified, public_username: username, password }, request.signal);
         if (!current()) return;
-        onNotice?.(result.signup_grant_credits === 5000
-          ? t('auth:signup_grant_success', '注册成功，已赠送50积分')
-          : completing ? t('auth:profile_success', '设置完成') : t('auth:signup_success', '注册成功'));
+        onNotice?.(signupGiftMessage(result.signup_grant_credits) ?? t('auth:signup_success', '注册成功'));
       }
       if (current()) onSuccess();
     } catch (err) {
@@ -198,6 +200,7 @@ export default function PhoneOtpForm({ onSuccess, initialMode = 'login', onModeC
             {sending ? t('auth:otp_sending', '发送中…') : remaining ? t('auth:otp_retry', '{seconds}秒后重发').replace('{seconds}', String(remaining)) : t('auth:otp_send', '获取验证码')}
           </button>} />}
       </div>
+      {(mode === 'register' || (mode === 'name' && !passwordRequired)) && <p className="named-auth-context">{t('auth:phone_first_gift_hint', '首次验证手机号送20积分，仅限一次')}</p>}
       {message && !isFieldError && <p className="named-auth-message" role="alert">{t(...message).replace('{seconds}', String(locked))}</p>}
       {expired && error !== 'challenge_expired' && <p className="named-auth-message" role="alert">{t('auth:otp_challenge_expired', '验证码已过期，请重新获取')}</p>}
       {challenge?.delivery === 'unknown' && !error && !expired && <p className="named-auth-context" role="status">{t('auth:otp_unknown', '发送状态未确认；若收到验证码仍可验证。请等待冷却结束后再决定是否重发。')}</p>}

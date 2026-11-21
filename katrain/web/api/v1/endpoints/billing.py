@@ -115,7 +115,7 @@ async def get_balance(current_user: User = Depends(get_current_user), db: Sessio
 
 @router.get("/quota")
 async def get_quota(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """余额、免费周额度、以及「这些钱大概够几份复盘」。
+    """余额、历史免费周用量、以及「这些钱大概够几份复盘」。
 
     **先跑一次本用户的结算再报数**：对账器是 60 秒周期跑的，直接读余额会让用户
     在复盘刚跑完的那段窗口里看到一个偏低的数（预扣还没退差），看起来像被多扣了。
@@ -130,10 +130,14 @@ async def get_quota(current_user: User = Depends(get_current_user), db: Session 
     from katrain.web.core.report_settlement import settle_finished_reports
 
     settle_finished_reports(db, user_id=current_user.id)
-    used, allowance = quota.peek(db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS)
+    used = (
+        db.query(models_db.QuotaBucket.used)
+        .filter_by(user_id=current_user.id, kind="free_report", period_key=quota.period_key("week"))
+        .scalar()
+    )
     return {
         "credits": billing.get_balance(db, current_user.id),
-        "free_weekly": {"used": used, "allowance": allowance},
+        "free_weekly": {"used": used or 0, "allowance": 0},
         "estimates": {
             "normal_250_moves": analysis_cost.report_cost(250, 500),
             "deep_250_moves": analysis_cost.report_cost(250, 2000),
@@ -173,10 +177,7 @@ async def redeem(
 
 
 async def get_trusted_free_eligibility() -> bool:
-    """No production P3 proof provider exists yet. Unknown is ineligible.
-
-    A test app may override this dependency only after validating its actual TEST DB.
-    """
+    """Compatibility dependency for callers predating weekly report retirement."""
     return False
 
 

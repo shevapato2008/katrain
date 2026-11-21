@@ -8063,10 +8063,8 @@ msgstr ""
 
 msgid "membership:kiosk_quota_savings_help"
 msgstr ""
-"Les économies par rapport à l’analyse standard API sont calculées pour une "
-"utilisation complète du quota de la période. Sinon, elles varient selon "
-"l’usage réel. Free donne uniquement droit à des rapports standard gratuits, "
-"sans quota général d’analyse."
+"L’économie affichée suppose d’utiliser tout le quota de la période. "
+"L’économie réelle dépend de l’utilisation."
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "Quota à vérifier dans le cloud"
@@ -8411,11 +8409,8 @@ msgstr "Renouveler {plan}"
 
 msgid "membership:renewal_rule"
 msgstr ""
-"Le renouvellement commence à l’expiration de l’abonnement actuel, sans "
-"réinitialiser l’utilisation ni les réservations en cours. Avant paiement, "
-"les dates sont estimatives ; la période indiquée sur le reçu du serveur "
-"après paiement fait foi. Les abonnements payants ne cumulent pas le droit "
-"aux rapports standard Free."
+"Le renouvellement commence à la fin de l’abonnement actuel. Les quotas "
+"utilisés et réservés sont conservés. La date de début figure sur le reçu."
 
 msgid "membership:report_estimate_limit"
 msgstr ""
@@ -8997,3 +8992,34 @@ msgstr "Téléphone associé. 50 points ajoutés."
 
 msgid "auth:bind_gift_hint"
 msgstr "Recevez 50 points à la première vérification de votre téléphone. Aucun nouveau cadeau si déjà reçu."
+
+msgid "auth:phone_first_gift_hint"
+msgstr ""
+"Recevez 20 points à la première vérification de votre numéro. Une seule "
+"fois."
+
+msgid "auth:signup_grant_points"
+msgstr "{points} points reçus"
+
+msgid "auth:bind_success_points"
+msgstr "Numéro associé. {points} points ajoutés"
+
+msgid "membership:no_membership"
+msgstr "Sans abonnement"
+
+msgid "membership:analyze_with_api_points"
+msgstr "Analyser avec des points API"
+
+msgid "membership:quote_changed"
+msgstr "Le devis a changé. Relancez l’analyse."
+
+msgid "membership:report_access_title"
+msgstr "Rapport indisponible"
+
+msgid "membership:report_access_body"
+msgstr ""
+"La création du rapport n’a pas démarré. Vérifiez votre compte, puis "
+"réessayez."
+
+msgid "membership:report_access_account"
+msgstr "Voir le compte"

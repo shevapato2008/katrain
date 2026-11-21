@@ -247,7 +247,7 @@ beforeEach(() => {
     status: "ready",
     error: null,
     refresh: vi.fn(),
-    countdowns: { term: 2505600, week: 561600, free: null },
+    countdowns: { term: 2505600, week: 561600 },
   };
   mocks.createOrder.mockResolvedValue(pendingOrder());
   mocks.getOrder.mockResolvedValue(pendingOrder());
@@ -338,16 +338,20 @@ describe("Galaxy membership", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not turn an unknown Free entitlement into zero eligibility", () => {
+  it("shows wallet and membership actions without the legacy report entitlement", () => {
     const usage = makeUsage();
     usage.plan.current = null;
     usage.term = null;
     usage.week = null;
-    usage.capabilities.can_claim_free_report = false;
+    usage.free = { eligible: true, remaining: 1, limit: 1, reset_at: usage.server_now, reason: null };
     mocks.membership.usage = usage;
     show();
-    expect(screen.getByText("Free 资格待确认")).toBeInTheDocument();
-    expect(screen.queryByText("本周剩余 0 份")).not.toBeInTheDocument();
+    expect(screen.getByText("未开通会员")).toBeInTheDocument();
+    expect(screen.getByText("使用API积分分析")).toBeInTheDocument();
+    expect(screen.getByText("API 积分余额")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看会员方案" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "API充值" })).toBeEnabled();
+    expect(screen.queryByText(/Free|本周剩余 1 份/)).not.toBeInTheDocument();
   });
 
   it("retains an explicitly stale snapshot while blocking new payment", () => {

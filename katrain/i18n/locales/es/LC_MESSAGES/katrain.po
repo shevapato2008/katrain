@@ -7893,9 +7893,8 @@ msgstr ""
 
 msgid "membership:kiosk_quota_savings_help"
 msgstr ""
-"El ahorro frente al análisis estándar API se calcula usando todo el cupo del"
-" período. Si no se agota, el ahorro real varía según el uso. Free solo da "
-"derecho a informes estándar gratuitos, sin cupo general de análisis."
+"El ahorro se calcula usando todo el cupo del período. El ahorro real depende"
+" del uso."
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "Cupo pendiente de verificar en la nube"
@@ -8238,10 +8237,8 @@ msgstr "Renovar {plan}"
 
 msgid "membership:renewal_rule"
 msgstr ""
-"La renovación comienza al vencer la membresía actual y no restablece el uso "
-"ni las reservas vigentes. Antes del pago, las fechas son estimadas; el "
-"período definitivo será el del recibo del servidor tras el pago. Las "
-"membresías de pago no acumulan el derecho a informes estándar de Free."
+"La renovación empieza al vencer la membresía actual. Se conservan los cupos "
+"usados y reservados. Consulta la fecha de inicio en el recibo de pago."
 
 msgid "membership:report_estimate_limit"
 msgstr ""
@@ -8818,3 +8815,32 @@ msgstr "Teléfono vinculado. Se han añadido 50 puntos."
 
 msgid "auth:bind_gift_hint"
 msgstr "Recibe 50 puntos al verificar tu teléfono por primera vez. El regalo no se repite."
+
+msgid "auth:phone_first_gift_hint"
+msgstr ""
+"Recibe 20 puntos al verificar tu número de teléfono por primera vez. Una "
+"sola vez."
+
+msgid "auth:signup_grant_points"
+msgstr "Has recibido {points} puntos"
+
+msgid "auth:bind_success_points"
+msgstr "Teléfono vinculado. Se han añadido {points} puntos"
+
+msgid "membership:no_membership"
+msgstr "Sin membresía"
+
+msgid "membership:analyze_with_api_points"
+msgstr "Analiza con puntos API"
+
+msgid "membership:quote_changed"
+msgstr "La cotización ha cambiado. Vuelve a iniciar el análisis."
+
+msgid "membership:report_access_title"
+msgstr "Informe no disponible"
+
+msgid "membership:report_access_body"
+msgstr "El informe no se ha iniciado. Revisa tu cuenta y vuelve a intentarlo."
+
+msgid "membership:report_access_account"
+msgstr "Ver cuenta"

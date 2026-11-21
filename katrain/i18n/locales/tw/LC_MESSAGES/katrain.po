@@ -7600,7 +7600,7 @@ msgid "membership:kiosk_quota_result_help"
 msgstr "同一結果包含領地與建議著手，重複查看不重複扣費。進階分析消耗標準分析 {multiplier} 倍的額度。"
 
 msgid "membership:kiosk_quota_savings_help"
-msgstr "優惠與 API 標準分析相比，以本期額度全部用完計算；未用完時，實際優惠隨用量變化。Free 僅有免費標準報告資格，不贈通用分析額度。"
+msgstr "優惠按本期額度用滿計算，實際優惠隨用量變化。"
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "額度待雲端核對"
@@ -7903,9 +7903,7 @@ msgid "membership:renew_plan"
 msgstr "續費 {plan}"
 
 msgid "membership:renewal_rule"
-msgstr ""
-"續費在現有會員到期後接續生效，不重置目前已用與預留用量；付款前日期僅為預估，最終生效期間以付款後的伺服器回執為準。付費會員不另加 Free "
-"標準報告資格。"
+msgstr "續費在現有會員到期後順延，不重設目前已用與預留額度。生效日期以付款收據為準。"
 
 msgid "membership:report_estimate_limit"
 msgstr "以每盤 300 手估算，受本期剩餘額度限制。"
@@ -13749,3 +13747,30 @@ msgstr "手機號碼綁定成功，已贈送50積分"
 
 msgid "auth:bind_gift_hint"
 msgstr "首次驗證手機號碼送50積分，已領取不再贈送。"
+
+msgid "auth:phone_first_gift_hint"
+msgstr "首次驗證手機號碼送20積分，僅限一次"
+
+msgid "auth:signup_grant_points"
+msgstr "獲贈{points}積分"
+
+msgid "auth:bind_success_points"
+msgstr "手機號碼綁定成功，已贈送{points}積分"
+
+msgid "membership:no_membership"
+msgstr "未開通會員"
+
+msgid "membership:analyze_with_api_points"
+msgstr "使用API積分分析"
+
+msgid "membership:quote_changed"
+msgstr "報價已更新，請重新發起分析"
+
+msgid "membership:report_access_title"
+msgstr "暫時無法產生報告"
+
+msgid "membership:report_access_body"
+msgstr "報告尚未開始，請查看帳戶狀態後重試。"
+
+msgid "membership:report_access_account"
+msgstr "查看帳戶"

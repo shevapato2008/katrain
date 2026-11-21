@@ -34,7 +34,11 @@ it('starts with phone and code, keeps Galaxy without a guest entry and Kiosk wit
 
 it.each(['register', 'complete'])('preserves the proof in the same window for profile_required %s without asking for a new password', async mode => {
   auth.loginPhone.mockRejectedValue(new ApiError(409, 'safe', { code: 'profile_required', mode }));
-  const done = vi.fn(); render(<LoginMethods onSuccess={done} />); await verify();
+  const done = vi.fn(); const notice = vi.fn();
+  render(<LoginMethods onSuccess={done} onNotice={notice} />); await verify();
+  const giftHint = screen.queryByText('首次验证手机号送20积分，仅限一次');
+  if (mode === 'register') expect(giftHint).toBeInTheDocument();
+  else expect(giftHint).not.toBeInTheDocument();
   expect(screen.queryByLabelText('验证码')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('手机号')).not.toBeInTheDocument();
   expect(screen.queryByLabelText(/密码/)).not.toBeInTheDocument();
@@ -45,6 +49,7 @@ it.each(['register', 'complete'])('preserves the proof in the same window for pr
   expect(auth.continuePhone.mock.calls[0][0]).toEqual({ ...auth.loginPhone.mock.calls[0][0], public_username: '棋手𠮷' });
   expect(API.createPhoneChallenge).toHaveBeenCalledTimes(1);
   expect(auth.registerPhone).not.toHaveBeenCalled();
+  expect(notice).not.toHaveBeenCalled();
 });
 
 it('reveals the original password only after the server requires it, retains the proof and clears the password when name changes', async () => {
@@ -101,12 +106,23 @@ it('preserves proof after a legacy name collision and accepts another name witho
   expect(auth.continuePhone.mock.calls[1][0].challenge_id).toBe(auth.continuePhone.mock.calls[0][0].challenge_id);
 });
 
-it.each([0, 5000])('only announces the authoritative nonzero grant (%s)', async grant => {
+it.each([
+  ['new account', 0], ['new account', 2000], ['new account', 5000], ['new account', '2000'],
+  ['existing account', 0], ['existing account', 2000],
+] as const)('announces only verified gift points for %s (%s)', async (account, grant) => {
   auth.continuePhone.mockResolvedValue({ signup_grant_credits: grant });
+  if (account === 'existing account') {
+    auth.continuePhone.mockRejectedValueOnce(new ApiError(409, 'safe', { code: 'account_password_required' }));
+  }
   const notice = vi.fn(); const done = vi.fn(); render(<LoginMethods onSuccess={done} onNotice={notice} />); await verify();
+  expect(screen.getByText('首次验证手机号送20积分，仅限一次')).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('用户名'), { target: { value: '围棋棋手' } }); next();
+  if (account === 'existing account') {
+    fireEvent.change(await screen.findByLabelText('Original password'), { target: { value: 'private old password' } }); next();
+  }
   await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
-  if (grant) expect(notice).toHaveBeenCalledWith('注册成功，已赠送50积分'); else expect(notice).not.toHaveBeenCalled();
+  if (typeof grant === 'number' && grant > 0) expect(notice).toHaveBeenCalledExactlyOnceWith(`获赠${grant / 100}积分`);
+  else expect(notice).not.toHaveBeenCalled();
 });
 
 it('retires local proof expiry, clears a revealed old password and ignores an aborted late continuation', async () => {

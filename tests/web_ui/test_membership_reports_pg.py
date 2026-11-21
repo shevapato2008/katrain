@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.orm import sessionmaker
 
-from tests.web_ui.membership_test_support import membership_pg_engine
+from tests.web_ui.membership_test_support import membership_pg_engine, seed_historical_free_operation
 from katrain.web.core import models_db as m, billing_operations as ops
 from katrain.web.core.billing_catalog import CATALOG_VERSION, MODEL_SHA256, report_units
 from katrain.web.core.billing_quotes import canonical_analysis_input
@@ -445,11 +445,12 @@ async def test_automatic_worker_retry_restarts_the_entire_generation(reports):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("source", ["membership", "free_report"])
 async def test_original_allowance_settles_once_and_deletion_keeps_used(reports, source):
-    from katrain.web.api.v1.endpoints.billing import get_trusted_free_eligibility
+    from katrain.web.api.v1.endpoints.reports import _bind_paid_attempt
     from katrain.web.core import membership
 
     r = reports
     now = datetime.now(timezone.utc)
+    canonical = canonical_analysis_input(SGF, "report", "normal")
     with r.Session.begin() as db:
         db.get(m.User, r.uid).credits = 0
         if source == "membership":
@@ -477,32 +478,30 @@ async def test_original_allowance_settles_once_and_deletion_keeps_used(reports, 
                     catalog_version=CATALOG_VERSION,
                 )
             )
-    # This fixture has already checked the actual private PG TEST identity.
-    r.app.dependency_overrides[get_trusted_free_eligibility] = lambda: source == "free_report"
-    canonical = canonical_analysis_input(SGF, "report", "normal")
-    with r.Session() as db:
-        q = ops.quote_operation(
-            db,
-            user_id=r.uid,
-            now=now,
-            kind="report",
-            fingerprint=canonical["fingerprint"],
-            profile="normal",
-            units=3,
-            environment="test",
-            secret=r.settings.SECRET_KEY,
-            trusted_free_eligible=True,
-        )
+        else:
+            op = seed_historical_free_operation(
+                db, user_id=r.uid, now=now, units=3, fingerprint=canonical["fingerprint"], key="allowance"
+            )
+            task = m.ReportTask(user_id=r.uid, user_game_id=r.gid, report_type="normal", requested_visits=500)
+            db.add(task)
+            _bind_paid_attempt(db, task, op, db.get(m.UserGame, r.gid), canonical)
+    payload = (
+        acceptance(r, key="allowance")
+        if source == "membership"
+        else {"user_game_id": r.gid, "quote_token": "expired", "idempotency_key": "allowance"}
+    )
     async with AsyncClient(transport=ASGITransport(app=r.app), base_url="http://test") as client:
-        response = await client.post(
-            "/reports/", json={"user_game_id": r.gid, "quote_token": q["token"], "idempotency_key": "allowance"}
-        )
+        response = await client.post("/reports/", json=payload)
         assert response.status_code == 200, response.text
         result = response.json()
         assert result["source"] == source and result["wallet_credits"] == 0
         completed(r, result["id"])
         assert (await client.get(f"/reports/{result['id']}/moves")).status_code == 200
         assert (await client.get(f"/reports/{result['id']}/moves")).status_code == 200
+        if source == "free_report":
+            owned = await client.post("/reports/", json=acceptance(r, key="reuse-historical-free"))
+            assert owned.status_code == 200, owned.text
+            assert owned.json()["source"] == "owned" and owned.json()["id"] == result["id"]
         assert (await client.delete(f"/games/{r.gid}")).status_code == 200
     with r.Session() as db:
         bucket = db.query(m.QuotaBucket).filter_by(kind=membership.WEEK_KIND).one()

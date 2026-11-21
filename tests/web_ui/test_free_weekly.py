@@ -85,8 +85,8 @@ def test_allowance_zero_disables_the_free_report(db_user):
     assert quota.try_consume(db, u.id, "free_report:week", allowance=0) is False
 
 
-def test_default_allowance_is_one_per_week():
-    """裁决 D2：每周免费送一次复盘。"""
-    from katrain.web.core.config import settings
+def test_default_weekly_report_allowance_is_zero(monkeypatch):
+    from katrain.web.core.config import Settings
 
-    assert settings.FREE_WEEKLY_REPORTS == 1
+    monkeypatch.delenv("FREE_WEEKLY_REPORTS", raising=False)
+    assert Settings().FREE_WEEKLY_REPORTS == 0

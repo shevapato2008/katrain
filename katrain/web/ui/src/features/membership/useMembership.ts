@@ -113,18 +113,18 @@ export function useMembership({ environment, enabled = true, visible = true }: U
   const current = enabled && authenticated && snapshot?.scope === scope ? snapshot : null;
   const usage = current?.usage ?? null;
   const seconds = (at?: string | null) => current?.clock ? remainingSeconds(at, current.clock, monotonicNow) : null;
-  const countdowns = { term: seconds(usage?.term?.reset_at), week: seconds(usage?.week?.reset_at), free: seconds(usage?.free?.reset_at) };
+  const countdowns = { term: seconds(usage?.term?.reset_at), week: seconds(usage?.week?.reset_at) };
 
   useEffect(() => {
     if (!visible || document.visibilityState !== 'visible' || !usage || current?.status !== 'ready') return;
-    for (const [name, at] of [['term', usage.term?.reset_at], ['week', usage.week?.reset_at], ['free', usage.free?.reset_at]] as const) {
+    for (const [name, at] of [['term', usage.term?.reset_at], ['week', usage.week?.reset_at]] as const) {
       if (!at || countdowns[name] !== 0) continue;
       const key = `${name}:${at}`;
       if (crossedBoundaries.current.has(key)) continue;
       crossedBoundaries.current.add(key);
       void refresh();
     }
-  }, [countdowns.term, countdowns.week, countdowns.free, current?.status, refresh, usage, visible]);
+  }, [countdowns.term, countdowns.week, current?.status, refresh, usage, visible]);
 
   return { catalog: current?.catalog ?? null, usage, status: !enabled || !authenticated ? 'unauthenticated' as const : current?.status ?? 'loading' as const,
     error: current?.error ?? null, countdowns, refresh };

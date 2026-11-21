@@ -84,11 +84,9 @@
 .km-sync.is-stale { color: var(--warn); }
 .kiosk .km-page .km-account-actions { display: grid; grid-auto-flow: row; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
 .kiosk .km-page .km-account-actions button { flex-direction: row; gap: 5px; padding: 0 4px; font-size: 22px; }
-.km-empty, .km-free { display: flex; flex: 1; flex-direction: column; gap: 18px; padding: 20px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
+.km-empty { display: flex; flex: 1; flex-direction: column; gap: 18px; padding: 20px; border: 1px solid var(--km-line); border-radius: 12px; background: var(--panel); }
 .km-empty { align-items: flex-start; justify-content: center; }
-.km-empty p, .km-free p { font-size: 18px; color: var(--km-sub); }
-.km-free .km-free-count { font-size: 28px; color: var(--km-green); }
-.km-free > .km-footnote { margin-top: auto; }
+.km-empty p { font-size: 18px; color: var(--km-sub); }
 .km-plans { display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
 /* Longer translations grow the cards and the existing scroll zone, rather than overflowing a fixed row. */
 .km-plan-grid { display: grid; flex: 1; min-height: min-content; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(min-content, 1fr); gap: 12px; }

@@ -77,26 +77,7 @@ def legacy_free_facts(db, *, user_id, now):
 
 
 def can_claim_free_report(db, *, user_id, now, trusted_free_eligible=False):
-    if trusted_free_eligible is not True:
-        return False, "verification_required"
-    if current_term(db, user_id=user_id, now=now):
-        return False, "paid_membership"
-    key, start, end = week_window(now)
-    if legacy_free_facts(db, user_id=user_id, now=now)[0]:
-        return False, "weekly_report_used"
-    used = (
-        db.query(m.BillingOperation.id)
-        .filter(
-            m.BillingOperation.user_id == user_id,
-            m.BillingOperation.kind == "report",
-            m.BillingOperation.source.in_(("membership", "free_report")),
-            m.BillingOperation.status.in_((*ACTIVE_OPERATION, "committed")),
-            m.BillingOperation.created_at >= start,
-            m.BillingOperation.created_at < end,
-        )
-        .first()
-    )
-    return (False, "weekly_report_used") if used else (True, None)
+    return False, "weekly_report_retired"
 
 
 def ensure_week_bucket_in_transaction(db, *, user_id, now, allowance):
@@ -256,7 +237,7 @@ def usage_snapshot(
             "quotes": enabled,
             "positions": enabled,
             "orders": enabled and payments_mode != "disabled",
-            "can_claim_free_report": enabled and eligible,
+            "can_claim_free_report": False,
             **({"reason": f"membership_{membership_mode}"} if not enabled else {}),
         },
         "payments_mode": payments_mode,
@@ -270,8 +251,8 @@ def usage_snapshot(
         "wallet": {"credits": int(user.credits or 0), "display_points": wallet_display_points(int(user.credits or 0))},
         "free": {
             "eligible": eligible,
-            "remaining": 1 if eligible else 0,
-            "limit": 1,
+            "remaining": 0,
+            "limit": 0,
             "reset_at": week_end.isoformat(),
             "reason": reason,
         },

@@ -8015,10 +8015,8 @@ msgstr ""
 
 msgid "membership:kiosk_quota_savings_help"
 msgstr ""
-"Tasarruf, API standart analiziyle karşılaştırılarak dönem kotasının "
-"tamamının kullanıldığı varsayımıyla hesaplanır. Kota tamamen kullanılmazsa "
-"gerçek tasarruf kullanıma göre değişir. Free yalnızca ücretsiz standart "
-"rapor hakkı verir; genel analiz kotası vermez."
+"Tasarruf hesabı dönem kotasının tamamının kullanılmasına dayanır. Gerçek "
+"tasarruf kullanıma bağlıdır."
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "Kota bulut doğrulamasını bekliyor"
@@ -8358,10 +8356,8 @@ msgstr "{plan} yenile"
 
 msgid "membership:renewal_rule"
 msgstr ""
-"Yeni dönem mevcut üyelik bittikten sonra başlar; kullanılan ve ayrılan "
-"miktarlar sıfırlanmaz. Ödeme beklenirken tarihler tahminidir; kesin "
-"geçerlilik dönemi ödeme sonrası sunucu makbuzuna göre belirlenir. Ücretli "
-"üyeliğe ek Free standart rapor hakkı verilmez."
+"Yenileme mevcut üyelik sona erdiğinde başlar. Kullanılan ve ayrılan kota "
+"korunur. Başlangıç tarihi ödeme makbuzunda yer alır."
 
 msgid "membership:report_estimate_limit"
 msgstr ""
@@ -8932,3 +8928,30 @@ msgstr "Telefon bağlandı. 50 puan eklendi."
 
 msgid "auth:bind_gift_hint"
 msgstr "Telefon numaranızı ilk kez doğruladığınızda 50 puan kazanın. Hediye tekrar verilmez."
+
+msgid "auth:phone_first_gift_hint"
+msgstr "İlk telefon doğrulamasına 20 puan. Yalnızca bir kez."
+
+msgid "auth:signup_grant_points"
+msgstr "{points} puan eklendi"
+
+msgid "auth:bind_success_points"
+msgstr "Telefon bağlandı. {points} puan eklendi"
+
+msgid "membership:no_membership"
+msgstr "Üyelik yok"
+
+msgid "membership:analyze_with_api_points"
+msgstr "API puanıyla analiz"
+
+msgid "membership:quote_changed"
+msgstr "Fiyat teklifi güncellendi. Analizi yeniden başlatın."
+
+msgid "membership:report_access_title"
+msgstr "Rapor kullanılamıyor"
+
+msgid "membership:report_access_body"
+msgstr "Rapor başlatılmadı. Hesabınızı kontrol edip yeniden deneyin."
+
+msgid "membership:report_access_account"
+msgstr "Hesabı görüntüle"

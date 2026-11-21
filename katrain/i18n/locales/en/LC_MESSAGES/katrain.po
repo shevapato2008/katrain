@@ -8036,10 +8036,8 @@ msgstr ""
 
 msgid "membership:kiosk_quota_savings_help"
 msgstr ""
-"Savings are compared with standard API analysis and assume full use of this "
-"period's allowance. If you use less, actual savings vary with usage. Free "
-"provides only free standard report eligibility, not a general analysis "
-"allowance."
+"Savings assume full use of the term allowance. Actual savings depend on "
+"usage."
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "Allowance awaiting cloud verification"
@@ -8379,10 +8377,8 @@ msgstr "Renew {plan}"
 
 msgid "membership:renewal_rule"
 msgstr ""
-"Renewal starts after your existing membership expires and does not reset "
-"current used or reserved usage. Dates shown before payment are estimates; "
-"the final effective period is confirmed by the server receipt after payment."
-" Paid membership does not add Free standard report eligibility."
+"Renewal begins when your existing membership ends. Used and reserved "
+"allowance carry on as before. See the payment receipt for the start date."
 
 msgid "membership:report_estimate_limit"
 msgstr ""
@@ -14462,3 +14458,30 @@ msgstr "Phone bound successfully. 50 credits added."
 
 msgid "auth:bind_gift_hint"
 msgstr "Verify your phone for the first time to get 50 credits. No repeat gifts."
+
+msgid "auth:phone_first_gift_hint"
+msgstr "Get 20 points for your first phone verification. One time only."
+
+msgid "auth:signup_grant_points"
+msgstr "Received {points} points"
+
+msgid "auth:bind_success_points"
+msgstr "Phone linked. {points} points added"
+
+msgid "membership:no_membership"
+msgstr "No active membership"
+
+msgid "membership:analyze_with_api_points"
+msgstr "Analyze with API points"
+
+msgid "membership:quote_changed"
+msgstr "The quote has changed. Start the analysis again."
+
+msgid "membership:report_access_title"
+msgstr "Report unavailable"
+
+msgid "membership:report_access_body"
+msgstr "The report did not start. Check your account and try again."
+
+msgid "membership:report_access_account"
+msgstr "View account"

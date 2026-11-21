@@ -947,5 +947,44 @@
     "ru": "Пароль слишком длинный. Сократите его",
     "tr": "Parola çok uzun. Kısaltın",
     "ua": "Пароль задовгий. Скоротіть його"
+  },
+  "auth:phone_first_gift_hint": {
+    "en": "Get 20 points for your first phone verification. One time only.",
+    "cn": "首次验证手机号送20积分，仅限一次",
+    "tw": "首次驗證手機號碼送20積分，僅限一次",
+    "jp": "携帯番号の初回認証で20ポイント（1回限り）",
+    "ko": "휴대전화 번호 최초 인증 시 20포인트를 드립니다 (1회 한정).",
+    "de": "20 Punkte für die erste Bestätigung Ihrer Telefonnummer. Nur einmal.",
+    "es": "Recibe 20 puntos al verificar tu número de teléfono por primera vez. Una sola vez.",
+    "fr": "Recevez 20 points à la première vérification de votre numéro. Une seule fois.",
+    "ru": "20 баллов за первое подтверждение номера телефона. Только один раз.",
+    "tr": "İlk telefon doğrulamasına 20 puan. Yalnızca bir kez.",
+    "ua": "20 балів за перше підтвердження номера телефону. Лише один раз."
+  },
+  "auth:signup_grant_points": {
+    "en": "Received {points} points",
+    "cn": "获赠{points}积分",
+    "tw": "獲贈{points}積分",
+    "jp": "{points}ポイントを獲得しました",
+    "ko": "{points}포인트를 받았습니다",
+    "de": "{points} Punkte gutgeschrieben",
+    "es": "Has recibido {points} puntos",
+    "fr": "{points} points reçus",
+    "ru": "Начислено {points} баллов",
+    "tr": "{points} puan eklendi",
+    "ua": "Нараховано {points} балів"
+  },
+  "auth:bind_success_points": {
+    "en": "Phone linked. {points} points added",
+    "cn": "手机号绑定成功，已赠送{points}积分",
+    "tw": "手機號碼綁定成功，已贈送{points}積分",
+    "jp": "電話番号を連携し、{points}ポイントを付与しました",
+    "ko": "휴대전화 번호가 연결되어 {points}포인트가 지급되었습니다",
+    "de": "Telefonnummer verknüpft. {points} Punkte gutgeschrieben",
+    "es": "Teléfono vinculado. Se han añadido {points} puntos",
+    "fr": "Numéro associé. {points} points ajoutés",
+    "ru": "Номер привязан. Начислено {points} баллов",
+    "tr": "Telefon bağlandı. {points} puan eklendi",
+    "ua": "Номер прив’язано. Нараховано {points} балів"
   }
 }

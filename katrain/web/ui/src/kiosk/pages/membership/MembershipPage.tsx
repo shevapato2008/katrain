@@ -90,7 +90,7 @@ function OrderReceipt({ order }: { order: BillingOrder }) {
 }
 
 export default function MembershipPage() {
-  const { t, locale, date, countdown, money, number } = useMembershipI18n();
+  const { t, locale, date, money, number } = useMembershipI18n();
   const tabs = [['usage', t('membership:usage', '用量')], ['topup', t('membership:api_topup', 'API充值')], ['plans', t('membership:plans', '会员')]] as const;
   const points = (credits: number | null | undefined) => typeof credits === 'number' && Number.isSafeInteger(credits) && credits >= 0
     ? number(credits / 100, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
@@ -103,7 +103,7 @@ export default function MembershipPage() {
   const [info, setInfo] = useState<MembershipInfo | null>(null);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const ready = status === 'ready' && authStatus === 'authenticated' && identityKey !== null;
-  const boundaryPending = ready && [countdowns.term, countdowns.week, countdowns.free].includes(0);
+  const boundaryPending = ready && [countdowns.term, countdowns.week].includes(0);
   const usable = ready && !boundaryPending;
   const paymentReady = usable && catalog?.capabilities.orders === true && usage?.capabilities.orders === true
     && ((catalog.payments_mode === 'mock' && catalog.environment.toLowerCase() === 'test') || catalog.payments_mode === 'live') && catalog.payments_mode === usage.payments_mode;
@@ -142,7 +142,7 @@ export default function MembershipPage() {
     <p>{t('membership:kiosk_quota_report_help', '每周最多盘数按{moves}手普通报告估算，受本期剩余限制。本期普通报告参考：{references}。', { moves: number(300), references: new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(planReferences) })}</p>
     <p>{t('membership:kiosk_quota_reset_help', '会员按购买周期到期，每周在北京时间周一零点重置。本期与本周的剩余比例分别计算；分析中的用量已计入。')}</p>
     <p>{t('membership:kiosk_quota_fallback_help', '两项剩余都足够才使用会员，否则整次使用API积分，不拆分扣费。分析前确认来源与报价，积分不足时需手动充值或等待重置。')}</p>
-    <p>{t('membership:kiosk_quota_savings_help', '优惠与API普通分析相比，按本期额度全部用满计算；未用满时实际优惠随用量变化。Free仅有免费普通报告资格，不赠通用分析额度。')}</p>
+    <p>{t('membership:kiosk_quota_savings_help', '优惠按本期额度用满计算，实际优惠随用量变化。')}</p>
   </>;
   const pricingInfo = <>
     <p>{t('membership:kiosk_pricing_rates_help', '余额以{precision}积分精度显示。普通每局面{normal}积分，高级每局面{advanced}积分。', { precision: number(0.01), normal: points(catalog?.profiles.normal.credits_per_position), advanced: points(catalog?.profiles.advanced.credits_per_position) })}</p>
@@ -152,11 +152,11 @@ export default function MembershipPage() {
   </>;
 
   const account = <aside className="km-aside">
-    <div className="km-account"><strong>{usable ? activePlan?.name ?? 'Free' : t('membership:kiosk_sync_pending', '待同步')}</strong><span>{usable ? t('membership:kiosk_current_benefits', '当前权益') : t('membership:kiosk_unconfirmed', '尚未确认')}</span></div>
-    <p>{!usable ? t('membership:kiosk_benefits_after_sync', '账号权益确认后显示') : activePlan ? t('membership:kiosk_plan_valid_until', '有效至 {date} · 北京时间', { date: date(activePlan.ends_at, true) }) : t('membership:kiosk_free_cloud_verified', '免费报告资格以云端核验为准')}</p>
-    <div className="km-wallet"><span>{t('membership:kiosk_api_balance', 'API余额')}</span><strong>{t('membership:kiosk_points_amount', '{points} 积分', { points: points(wallet?.credits) })}</strong><span>{t('membership:kiosk_member_then_api', '会员优先，API积分接续')}</span></div>
+    <div className="km-account"><strong>{usable ? activePlan?.name ?? t('membership:no_membership', '未开通会员') : t('membership:kiosk_sync_pending', '待同步')}</strong>{(!usable || activePlan) && <span>{usable ? t('membership:kiosk_current_benefits', '当前权益') : t('membership:kiosk_unconfirmed', '尚未确认')}</span>}</div>
+    {activePlan && <p>{t('membership:kiosk_plan_valid_until', '有效至 {date} · 北京时间', { date: date(activePlan.ends_at, true) })}</p>}
+    <div className="km-wallet"><span>{t('membership:kiosk_api_balance', 'API余额')}</span><strong>{t('membership:kiosk_points_amount', '{points} 积分', { points: points(wallet?.credits) })}</strong>{activePlan && <span>{t('membership:kiosk_member_then_api', '会员优先，API积分接续')}</span>}</div>
     <div className={`km-sync${usable ? '' : ' is-stale'}`}><span>{usable ? t('membership:kiosk_synced', '已同步') : t('membership:kiosk_quota_not_confirmed', '额度尚未确认')}</span>{usable && usage && <time dateTime={usage.server_now} title={date(usage.server_now)}><Num>{new Intl.DateTimeFormat(locale, { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date(usage.server_now))}</Num></time>}</div>
-    {usable && usage?.plan.next ? <p>{t('membership:kiosk_next_plan', '下期 {plan} · {date}生效 · 北京时间', { plan: usage.plan.next.name, date: date(usage.plan.next.starts_at, true) })}</p> : <p>{t('membership:kiosk_confirm_source_quote', '分析前确认来源与报价')}</p>}
+    {usable && usage?.plan.next ? <p>{t('membership:kiosk_next_plan', '下期 {plan} · {date}生效 · 北京时间', { plan: usage.plan.next.name, date: date(usage.plan.next.starts_at, true) })}</p> : null}
     <PhoneBindingEntry kiosk />
     <KioskActions className="km-account-actions" ariaLabel={t('membership:kiosk_account_actions', '账户操作')} actions={[
       { key: 'topup', icon: 'squares-four', label: t('membership:api_topup', 'API充值'), onClick: () => setTab('topup') },
@@ -181,11 +181,11 @@ export default function MembershipPage() {
               <UsageWindow kind="term" period={usage?.term ?? null} seconds={countdowns.term} />
               <UsageWindow kind="week" period={usage?.week ?? null} seconds={countdowns.week} />
               <p className="km-footnote">{t('membership:kiosk_usage_fallback', '两项剩余须同时足够本次分析；不足时整次使用API积分。')}<br />{t('membership:kiosk_result_reuse', '一次结果含领地与支招，重复查看不重复扣费。')}</p>
-            </> : <section className="km-free"><KioskSecLabel zh={t('membership:kiosk_weekly_free_reports', '每周免费普通报告')} action={<InfoButton kind="quota" onOpen={setInfo} />} />
-              {usage?.free?.eligible ? <><p className="km-free-count">{t('membership:kiosk_free_reports_remaining', '剩余 {remaining} / {limit} 份', { remaining: number(usage.free.remaining), limit: number(usage.free.limit) })}</p><p>{t('membership:kiosk_free_report_only', '普通报告资格，不赠通用分析额度')}</p><p>{t('membership:kiosk_week_reset_beijing', '周一零点重置 · 北京时间')}</p><p><Num>{countdown(countdowns.free)}</Num></p></>
-                : <><h2>{t('membership:kiosk_free_pending', '免费报告资格待核验')}</h2><p>{t('membership:kiosk_free_verify_account', '请先完成账户验证，核验通过后显示本周资格。')}</p></>}
-              <p className="km-footnote">{t('membership:kiosk_owned_result_reuse', '已拥有结果可反复查看；领地与支招含在同一结果内。')}</p>
-            </section>}
+            </> : <div className="km-empty">
+              <h2>{t('membership:analyze_with_api_points', '使用API积分分析')}</h2>
+              <p>{t('membership:normal_position_cost', '普通约 {points} 积分/手', { points: points(catalog?.profiles.normal.credits_per_position) })}<br />
+                {t('membership:advanced_position_cost', '高级约 {points} 积分/手', { points: points(catalog?.profiles.advanced.credits_per_position) })}</p>
+            </div>}
         </section>{account}</div>}
         {tab === 'plans' && <section className="km-plans">
           <KioskSecLabel zh={t('membership:plans', '会员')} value={t('membership:kiosk_full_use_savings', '额度用满时，比API更省')} action={<InfoButton kind="quota" onOpen={setInfo} />} />

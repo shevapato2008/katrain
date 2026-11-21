@@ -48,9 +48,7 @@ def web_checks(s) -> list[dict]:
     def billing():
         if not s.BILLING_ENFORCED:
             return "ok", "计费闸关闭：复盘报告免费"
-        if int(s.FREE_WEEKLY_REPORTS) > 0:
-            return "bad", "计费闸已开但每周免费报告不为 0（手机绑定与限流未上线前必须为 0）"
-        return "ok", "计费闸已开，每周免费报告为 0"
+        return "ok", "计费闸已开，每周免费报告已停止发放"
 
     return _run(
         [

@@ -11,7 +11,7 @@ from sqlalchemy import text, or_
 
 from . import billing, membership as ms, models_db as m
 from .billing_catalog import CATALOG_VERSION, get_profile, wallet_display_points
-from .billing_quotes import FREE_ELIGIBILITY_POLICY, sign_quote, verify_quote, QuoteError
+from .billing_quotes import sign_quote, verify_quote, QuoteError
 
 
 class MembershipError(Exception):
@@ -50,7 +50,7 @@ def _user(db, user_id):
     return user
 
 
-def _source(db, *, user_id, now, kind, profile, units, trusted_free_eligible, lock=False):
+def _source(db, *, user_id, now, units, lock=False):
     term = ms.current_term(db, user_id=user_id, now=now, lock=lock)
     bucket = ms.week_bucket(db, user_id=user_id, now=now, lock=lock)
     used = int(bucket.used) if bucket else ms.legacy_free_facts(db, user_id=user_id, now=now)[1]
@@ -58,13 +58,6 @@ def _source(db, *, user_id, now, kind, profile, units, trusted_free_eligible, lo
     week_limit = ms.term_week_units(db, term) if term else 0
     if term and term.limit - term.used - term.reserved >= units and week_limit - used - reserved >= units:
         return "membership", term
-    if (
-        term is None
-        and kind == "report"
-        and profile == "normal"
-        and ms.can_claim_free_report(db, user_id=user_id, now=now, trusted_free_eligible=trusted_free_eligible)[0]
-    ):
-        return "free_report", None
     return "wallet", term
 
 
@@ -190,20 +183,10 @@ def quote_operation(
     if user is None:
         raise MembershipError("user_not_found", 404)
     owned = _owned(db, user_id=user_id, kind=kind, fingerprint=fingerprint, profile=profile, now=now)
-    source, _ = _source(
-        db,
-        user_id=user_id,
-        now=now,
-        kind=kind,
-        profile=profile,
-        units=units,
-        trusted_free_eligible=trusted_free_eligible,
-    )
+    source, _ = _source(db, user_id=user_id, now=now, units=units)
     if owned:
         source = "owned"
     if source == "wallet" and int(user.credits or 0) < units:
-        if kind == "report" and not trusted_free_eligible and ms.current_term(db, user_id=user_id, now=now) is None:
-            raise MembershipError("verification_required", 403)
         raise MembershipError("insufficient_credits", 402)
     expires = ms.utc(now) + timedelta(seconds=120)
     payload = {
@@ -217,7 +200,7 @@ def quote_operation(
         "catalog_version": CATALOG_VERSION,
         "source_policy": "membership_then_wallet",
         "source": source,
-        "free_eligibility_policy": FREE_ELIGIBILITY_POLICY if source == "free_report" else None,
+        "free_eligibility_policy": None,
         "expires_at": expires.isoformat(),
     }
     return {
@@ -324,12 +307,8 @@ def reserve_operation_in_transaction(
     if accepted.get("source") == "owned":
         raise MembershipError("owned_result_unavailable", 409)
     if accepted.get("source") == "free_report":
-        if accepted.get("free_eligibility_policy") != FREE_ELIGIBILITY_POLICY:
-            raise MembershipError("quote_mismatch", 409)
-        # Revoked/unknown verification is an authorization change, not depleted
-        # weekly capacity. It never authorizes a wallet fallback from a Free quote.
-        if trusted_free_eligible is not True:
-            raise MembershipError("verification_required", 403)
+        # Require fresh price acceptance before creating a paid authorization.
+        raise MembershipError("invalid_or_expired_quote", 409)
     # Legacy free grants remain authoritative until their old task reaches settlement.
     if (
         db.query(m.ReportTask.id)
@@ -356,16 +335,7 @@ def reserve_operation_in_transaction(
     _check_slots(
         db, user_id=user_id, kind=kind, report_queue_limit=report_queue_limit, position_queue_limit=position_queue_limit
     )
-    source, term = _source(
-        db,
-        user_id=user_id,
-        now=now,
-        kind=kind,
-        profile=profile,
-        units=units,
-        trusted_free_eligible=trusted_free_eligible,
-        lock=True,
-    )
+    source, term = _source(db, user_id=user_id, now=now, units=units, lock=True)
     if source == "wallet" and units > accepted["wallet_max_credits"]:
         raise MembershipError("wallet_cap_exceeded", 402)
     if source == "wallet" and int(user.credits or 0) < units:
@@ -391,13 +361,12 @@ def reserve_operation_in_transaction(
     )
     db.add(op)
     db.flush()
-    if source in ("membership", "free_report"):
-        if term:
-            term = db.query(m.MembershipTerm).filter_by(id=term.id).with_for_update().populate_existing().one()
-            op.term_id = term.id
-            term.reserved += units
+    if source == "membership":
+        term = db.query(m.MembershipTerm).filter_by(id=term.id).with_for_update().populate_existing().one()
+        op.term_id = term.id
+        term.reserved += units
         bucket = ms.ensure_week_bucket_in_transaction(
-            db, user_id=user_id, now=now, allowance=ms.term_week_units(db, term) if term else 0
+            db, user_id=user_id, now=now, allowance=ms.term_week_units(db, term)
         )
         bucket.reserved += units
         op.week_bucket_id = bucket.id

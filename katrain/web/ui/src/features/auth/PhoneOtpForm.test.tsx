@@ -4,7 +4,8 @@ import { API, ApiError } from '../../api';
 import PhoneOtpForm from './PhoneOtpForm';
 
 const loginPhone = vi.fn();
-const auth = { loginPhone, identityKey: null as string | null };
+const registerPhone = vi.fn();
+const auth = { loginPhone, registerPhone, identityKey: null as string | null };
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 const challenge = { challenge_id: 'opaque-challenge', retry_after: 60, expires_in: 300, delivery: 'sent' as const };
 beforeEach(() => { vi.restoreAllMocks(); loginPhone.mockReset().mockResolvedValue(undefined); auth.identityKey = null; });
@@ -12,6 +13,22 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 const fillPhone = () => fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800138000' } });
 
 describe('PhoneOtpForm', () => {
+  it.each([2000, 5000, 0])('shows the actual registration gift (%s)', async grant => {
+    vi.spyOn(API, 'createPhoneChallenge').mockResolvedValue(challenge);
+    registerPhone.mockResolvedValue({ signup_grant_credits: grant });
+    const notice = vi.fn();
+    render(<PhoneOtpForm initialMode="register" onSuccess={vi.fn()} onNotice={notice} />);
+    expect(screen.getByText('首次验证手机号送20积分，仅限一次')).toBeInTheDocument();
+    fillPhone();
+    fireEvent.change(screen.getByLabelText('用户名（昵称）'), { target: { value: '棋手示例' } });
+    fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /60/ })).toBeDisabled());
+    fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'a long password for testing' } });
+    fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: '注册并登录' }));
+    await waitFor(() => expect(notice).toHaveBeenCalledExactlyOnceWith(grant ? `获赠${grant / 100}积分` : '注册成功'));
+  });
+
   it('uses a private random flow and one six-digit input, then submits the challenge without the phone', async () => {
     const send = vi.spyOn(API, 'createPhoneChallenge').mockResolvedValue(challenge);
     const done = vi.fn();

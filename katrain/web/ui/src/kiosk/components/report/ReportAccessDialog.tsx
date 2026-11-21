@@ -13,13 +13,13 @@ export function ReportAccessDialog({ issue, onClose, onAccount }: Props) {
   const insufficient = issue === 'insufficient';
   const title = insufficient
     ? t('membership:report_insufficient_title', 'Report allowance insufficient')
-    : t('membership:report_verification_title', 'Free report unavailable');
+    : t('membership:report_access_title', 'Report unavailable');
   const body = insufficient
     ? t('membership:report_insufficient_body', 'There is not enough available allowance to start this report. You can review membership benefits or top up points.')
-    : t('membership:report_verification_body', 'Free report eligibility is unavailable, so this report has not started. You can check membership and points on your account page.');
+    : t('membership:report_access_body', 'The report did not start. Check your account and try again.');
   const action = insufficient
     ? t('membership:report_view_membership', 'Membership and top-up')
-    : t('membership:report_view_account', 'View account and allowance');
+    : t('membership:report_access_account', 'View account');
   return <div className="cdlg" role="dialog" aria-modal="true" aria-labelledby="report-access-title" aria-describedby="report-access-body">
     <div className="cdlg__box">
       <h3 id="report-access-title">{title}</h3>

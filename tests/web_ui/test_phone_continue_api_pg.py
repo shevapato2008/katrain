@@ -47,7 +47,7 @@ async def test_http_continue_then_optional_password_normal_login_keeps_same_acco
         values = await http_proof(client, sender)
         result = await client.post("/api/v1/auth/phone/continue", json={**values, "public_username": "新棋手"})
         assert result.status_code == 200, "new continuation endpoint must accept a name without a password"
-        assert result.json()["signup_grant_credits"] == 5000 and result.headers["cache-control"] == "no-store"
+        assert result.json()["signup_grant_credits"] == 2000 and result.headers["cache-control"] == "no-store"
         access = result.json()["access_token"]
         headers = {"Authorization": f"Bearer {access}"}
         me = await client.get("/api/v1/auth/me", headers=headers)
@@ -88,7 +88,7 @@ async def test_http_existing_name_conflicts_are_private_and_proof_is_reusable(ph
         wrong = await client.post("/api/v1/auth/phone/continue", json={**body, "current_password": "private-wrong"})
         assert wrong.status_code == 401 and wrong.json() == {"detail": {"code": "bind_reauth_failed"}}
         result = await client.post("/api/v1/auth/phone/continue", json={**body, "current_password": PASSWORD})
-        assert result.status_code == 200 and result.json()["signup_grant_credits"] == 5000
+        assert result.status_code == 200 and result.json()["signup_grant_credits"] == 2000
         assert all(response.headers["cache-control"] == "no-store" for response in (required, wrong, result))
         assert PHONE not in str(required.json()) and "mask" not in str(required.json())
     assert PASSWORD not in caplog.text and "private-wrong" not in caplog.text and values["code"] not in caplog.text
@@ -137,7 +137,7 @@ async def test_password_requires_authenticated_nonguest_actor(phone_app):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("outcome", ["password_required", "invalid_grant", "success"])
+@pytest.mark.parametrize("outcome", ["password_required", True, "2000", 0, 2000, 5000])
 async def test_board_continuation_uses_cloud_authority_and_validates_before_install(phone_app, outcome):
     app, _, sessions = phone_app
     seen = []
@@ -161,7 +161,7 @@ async def test_board_continuation_uses_cloud_authority_and_validates_before_inst
                 200,
                 json={
                     "access_token": "candidate",
-                    "signup_grant_credits": True if outcome == "invalid_grant" else 5000,
+                    "signup_grant_credits": outcome,
                 },
             )
         assert request.url.path == "/api/v1/auth/me" and request.headers["authorization"] == "Bearer candidate"
@@ -177,8 +177,8 @@ async def test_board_continuation_uses_cloud_authority_and_validates_before_inst
                 json={"challenge_id": "a" * 48, "flow_id": FLOW, "code": "123456", "public_username": "云端棋手"},
             )
         assert response.headers["cache-control"] == "no-store"
-        if outcome == "success":
-            assert response.status_code == 200 and response.json()["signup_grant_credits"] == 5000
+        if type(outcome) is int:
+            assert response.status_code == 200 and response.json()["signup_grant_credits"] == outcome
             with sessions() as db:
                 shadow = db.query(models_db.User).one()
                 assert shadow.public_username == "云端棋手" and shadow.hashed_password == "SHADOW_USER_NO_LOCAL_AUTH"

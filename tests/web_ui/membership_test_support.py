@@ -77,3 +77,30 @@ def membership_pg_engine():
     with _private_schema_engine() as engine:
         Base.metadata.create_all(engine)
         yield engine
+
+
+def seed_historical_free_operation(db, *, user_id, now, units, fingerprint, key):
+    """An authorization persisted before weekly free reports were retired."""
+    from katrain.web.core import membership, models_db as m
+    from katrain.web.core.billing_catalog import CATALOG_VERSION, MODEL_SHA256
+
+    bucket = membership.ensure_week_bucket_in_transaction(db, user_id=user_id, now=now, allowance=0)
+    bucket.reserved += units
+    op = m.BillingOperation(
+        user_id=user_id,
+        kind="report",
+        idempotency_key=key,
+        fingerprint=fingerprint,
+        source="free_report",
+        profile="normal",
+        model_sha256=MODEL_SHA256,
+        units=units,
+        status="reserved",
+        week_bucket_id=bucket.id,
+        catalog_version=CATALOG_VERSION,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(op)
+    db.flush()
+    return op

@@ -7591,9 +7591,7 @@ msgstr ""
 " 사용합니다."
 
 msgid "membership:kiosk_quota_savings_help"
-msgstr ""
-"절감액은 API 표준 분석 대비 이번 기간의 한도를 모두 사용하는 경우를 기준으로 합니다. 한도를 모두 쓰지 않으면 실제 절감액은 "
-"사용량에 따라 달라집니다. Free는 무료 표준 보고서 이용 자격만 제공하며 일반 분석 한도는 제공하지 않습니다."
+msgstr "할인율은 기간 한도를 모두 사용했을 때를 기준으로 하며, 실제 할인은 사용량에 따라 달라집니다."
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "클라우드 한도 확인 대기"
@@ -7903,9 +7901,7 @@ msgid "membership:renew_plan"
 msgstr "{plan} 갱신"
 
 msgid "membership:renewal_rule"
-msgstr ""
-"갱신분은 기존 멤버십이 만료된 후 적용되며 현재 사용량 및 예약 사용량은 초기화되지 않습니다. 결제 전 날짜는 예상 일정이며 최종 적용 "
-"기간은 결제 후 서버 확인 내역을 기준으로 합니다. 유료 멤버십에는 Free 표준 보고서 이용 자격이 추가되지 않습니다."
+msgstr "갱신은 기존 멤버십이 끝난 후 시작됩니다. 현재 사용분과 예약분은 유지됩니다. 시작일은 결제 영수증을 확인하세요."
 
 msgid "membership:report_estimate_limit"
 msgstr "300수 대국을 기준으로 추산하며 기간 잔여 한도에 따라 제한됩니다."
@@ -13785,3 +13781,30 @@ msgstr "휴대전화 번호가 연결되었으며 50포인트가 지급되었습
 
 msgid "auth:bind_gift_hint"
 msgstr "휴대전화 번호를 처음 인증하면 50포인트를 드립니다. 이미 받았다면 다시 지급되지 않습니다."
+
+msgid "auth:phone_first_gift_hint"
+msgstr "휴대전화 번호 최초 인증 시 20포인트를 드립니다 (1회 한정)."
+
+msgid "auth:signup_grant_points"
+msgstr "{points}포인트를 받았습니다"
+
+msgid "auth:bind_success_points"
+msgstr "휴대전화 번호가 연결되어 {points}포인트가 지급되었습니다"
+
+msgid "membership:no_membership"
+msgstr "멤버십 미가입"
+
+msgid "membership:analyze_with_api_points"
+msgstr "API 포인트로 분석"
+
+msgid "membership:quote_changed"
+msgstr "견적이 변경되었습니다. 분석을 다시 시작하세요."
+
+msgid "membership:report_access_title"
+msgstr "보고서를 생성할 수 없음"
+
+msgid "membership:report_access_body"
+msgstr "보고서 생성이 시작되지 않았습니다. 계정을 확인하고 다시 시도하세요."
+
+msgid "membership:report_access_account"
+msgstr "계정 확인"

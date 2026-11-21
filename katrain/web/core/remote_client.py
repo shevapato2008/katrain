@@ -525,7 +525,7 @@ class RemoteAPIClient:
             "POST", "/api/v1/auth/phone/bind", json=data, expected_user_id=expected_user_id
         )
         grant = result.get("signup_grant_credits", 0) if isinstance(result, dict) else None
-        if type(grant) is not int or grant not in {0, 5000}:
+        if type(grant) is not int or grant not in {0, 2000, 5000}:
             raise ValueError("Invalid cloud phone binding response")
         return result
 

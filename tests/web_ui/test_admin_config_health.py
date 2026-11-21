@@ -44,7 +44,7 @@ def test_healthy_web_config_is_all_ok_or_explained():
     "overrides, check, level",
     [
         ({"DATABASE_URL": "sqlite:///./db.sqlite3"}, "database", "bad"),
-        ({"BILLING_ENFORCED": True, "FREE_WEEKLY_REPORTS": 1}, "billing", "bad"),
+        ({"BILLING_ENFORCED": True, "FREE_WEEKLY_REPORTS": 1}, "billing", "ok"),
         ({"BILLING_ENFORCED": True, "FREE_WEEKLY_REPORTS": 0}, "billing", "ok"),
         ({"STORAGE_BACKEND": "local"}, "storage", "warn"),
         ({"DATABASE_URL": "postgresql://u:katrain_secure_password_CHANGE_ME@db/k"}, "credentials", "bad"),

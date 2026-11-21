@@ -147,15 +147,21 @@ if __name__ == "__main__":
 
 
 @pytest.mark.asyncio
-async def test_quota_endpoint_shape(app):
+async def test_quota_endpoint_shape(app, monkeypatch):
+    from katrain.web.core import models_db, quota
+
     await _make_user(app, "quotauser", credits=500)
+    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
+    with app.state._TestSessionLocal() as db:
+        user_id = db.query(models_db.User.id).filter_by(username="quotauser").scalar()
+        assert quota.try_consume(db, user_id, "free_report:week", allowance=1)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         h = await _login(ac, "quotauser")
         r = await ac.get("/api/v1/billing/quota", headers=h)
         assert r.status_code == 200, r.text
         b = r.json()
         assert b["credits"] == 500
-        assert b["free_weekly"] == {"used": 0, "allowance": 1}
+        assert b["free_weekly"] == {"used": 1, "allowance": 0}
         # 深度复盘是标准的 4 倍（2000 vs 500 visits）—— 估算之间的比例必须自洽
         assert b["estimates"]["deep_250_moves"] == 4 * b["estimates"]["normal_250_moves"]
         # 前端据此决定要不要显示价格；默认是关的

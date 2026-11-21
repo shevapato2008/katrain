@@ -479,11 +479,13 @@ export interface PhoneLoginRequest { challenge_id: string; code: string; flow_id
 export interface PhoneRegisterRequest extends PhoneLoginRequest { public_username: string; password: string; }
 export interface PhoneContinueRequest extends PhoneLoginRequest { public_username: string; current_password?: string | null; }
 export interface PhonePasswordRequest extends PhoneLoginRequest { new_password: string; }
-export interface PhoneRegisterToken extends AuthToken { signup_grant_credits: 0 | 5000; }
+export type PhoneSignupGrantCredits = 0 | 2000 | 5000;
+export const isPhoneSignupGift = (credits: unknown): credits is Exclude<PhoneSignupGrantCredits, 0> => credits === 2000 || credits === 5000;
+export interface PhoneRegisterToken extends AuthToken { signup_grant_credits: PhoneSignupGrantCredits; }
 export interface PhoneBindChallengeRequest { phone: string; purpose: 'bind'; flow_id: string; }
 export interface PhoneBindRequest extends PhoneLoginRequest { current_password: string; }
 export type PhoneBindingStatus = { bound: false } | { bound: true; masked_phone: string };
-export type PhoneBindingResult = { bound: true; masked_phone: string; signup_grant_credits?: 0 | 5000 };
+export type PhoneBindingResult = { bound: true; masked_phone: string; signup_grant_credits?: PhoneSignupGrantCredits };
 export type PhoneAuthErrorCode = 'invalid_phone' | 'invalid_code' | 'challenge_invalid' | 'challenge_expired' |
   'challenge_used' | 'sms_limited' | 'otp_locked' | 'sms_unavailable' | 'sms_rejected' | 'identity_changed' | 'phone_verification_required' |
   'authentication_required' | 'bind_not_allowed' | 'phone_in_use' | 'bind_reauth_failed' | 'bind_reauth_locked' |

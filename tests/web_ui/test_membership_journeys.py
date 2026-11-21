@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, FastAPI
 from sqlalchemy.orm import sessionmaker
 
 from tests.web_ui.membership_test_support import membership_pg_engine
@@ -350,50 +350,24 @@ async def test_engine_refund_and_signed_fallback_preserve_integer_wallet(journey
 
 
 @pytest.mark.asyncio
-async def test_test_qualified_free_report_is_not_position_credit_or_repeat_grant(journey):
-    from katrain.web.api.v1.endpoints.auth import get_current_user
+@pytest.mark.parametrize("actor", ["unverified", "qualified"])
+async def test_weekly_report_is_retired_for_nonmembers(journey, actor):
     from katrain.web.api.v1.endpoints.billing import get_trusted_free_eligibility
 
     j = journey
-    async with api_client(j, "unverified") as ordinary:
-        usage = ok(await ordinary.get("/api/v1/billing/usage"))
-        assert usage["free"]["eligible"] is False and usage["free"]["reason"] == "verification_required"
-        denied = await ordinary.post("/api/v1/billing/quotes", json={"kind": "report", "profile": "normal", "sgf": SGF})
-        assert denied.status_code == 403 and denied.json()["detail"]["code"] == "verification_required"
-
-    # The fixture already verified the actual DB + independent TEST marker.
-    # This controlled subject is evidence for eligibility consumption, not P3
-    # verification: the production dependency remains fail-closed by default.
-    async def qualified_test_subject(user=Depends(get_current_user)):
-        return user.id == j.ids["qualified"]
-
-    j.app.dependency_overrides[get_trusted_free_eligibility] = qualified_test_subject
-    async with api_client(j, "qualified") as client:
+    if actor == "qualified":
+        j.app.dependency_overrides[get_trusted_free_eligibility] = lambda: True
+    async with api_client(j, actor) as client:
         usage = ok(await client.get("/api/v1/billing/usage"))
-        assert usage["free"]["eligible"] and usage["free"]["remaining"] == 1
+        assert usage["capabilities"]["can_claim_free_report"] is False
+        assert usage["free"]["eligible"] is False
+        assert usage["free"]["limit"] == usage["free"]["remaining"] == 0
+        assert usage["free"]["reason"] == "weekly_report_retired"
         assert usage["wallet"]["credits"] == 0 and usage["term"] is None
-        position_denied = await client.post(
-            "/api/v1/billing/quotes", json={"kind": "position", "profile": "normal", "sgf": SGF}
-        )
-        assert position_denied.status_code == 402
-        gid = await save_game(client)
-        q = await quote(client, "report", game_id=gid)
-        assert q["source"] == "free_report" and q["units"] == 3
-        created = await report(client, q, gid, "free-report-confirm")
-        assert created["source"] == "free_report" and created["wallet_credits"] == 0
-        await run_report(j, created)
-        assert len(ok(await client.get(f"/api/v1/reports/{created['id']}/moves"))) == 3
-        assert ok(await client.delete("/api/v1/user-games/" + gid))["status"] == "deleted"
-        usage = ok(await client.get("/api/v1/billing/usage"))
-        assert usage["free"]["remaining"] == 0 and usage["free"]["reason"] == "weekly_report_used"
         denied = await client.post(
-            "/api/v1/billing/quotes", json={"kind": "report", "profile": "normal", "sgf": OTHER_SGF}
+            "/api/v1/billing/quotes", json={"kind": "report", "profile": "normal", "sgf": SGF}
         )
-        assert denied.status_code == 402
-    assert len(j.engine.calls) == 3
+        assert denied.status_code == 402 and denied.json()["detail"]["code"] == "insufficient_credits"
+    assert j.engine.calls == []
     with j.Session() as db:
-        receipt = db.get(m.BillingOperation, created["operation_id"])
-        assert receipt.source == "free_report" and receipt.status == "committed"
-        assert db.query(m.BillingOperation).filter_by(user_id=j.ids["qualified"]).count() == 1
-        assert db.get(m.User, j.ids["qualified"]).credits == 0
-        assert db.query(m.MembershipTerm).filter_by(user_id=j.ids["qualified"]).count() == 0
+        assert db.query(m.BillingOperation).filter_by(user_id=j.ids[actor]).count() == 0

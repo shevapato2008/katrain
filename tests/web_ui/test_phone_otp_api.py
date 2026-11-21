@@ -123,8 +123,25 @@ async def test_phone_status_requires_auth_and_returns_only_private_mask(app, mon
     service.status.assert_called_once_with(user_id=user["id"])
 
 
+@pytest.mark.parametrize("grant", [0, 2000, 5000, False, "2000", 2000.0, 10000])
+def test_phone_response_models_accept_only_strict_integer_grants(grant):
+    from pydantic import ValidationError
+    from katrain.web.api.v1.endpoints.phone_auth import PhoneBindResponse, PhoneRegisterResponse
+
+    for model, fields in [
+        (PhoneBindResponse, {"bound": True}),
+        (PhoneRegisterResponse, {"access_token": "access", "token_type": "bearer"}),
+    ]:
+        data = {**fields, "signup_grant_credits": grant}
+        if type(grant) is int and grant in {0, 2000, 5000}:
+            assert model.model_validate(data).signup_grant_credits == grant
+        else:
+            with pytest.raises(ValidationError, match="signup_grant_credits"):
+                model.model_validate(data)
+
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize("grant", ["missing", 0, 5000, False, "5000", 10000])
+@pytest.mark.parametrize("grant", ["missing", 0, 2000, 5000, False, "2000", 10000])
 async def test_board_bind_preserves_authoritative_additive_grant_result(app, grant):
     user = app.state.user_repo.create_user("binding-owner", "hidden-hash")
     cloud_result = {"bound": True, "masked_phone": "+86 138****8000"}
@@ -152,7 +169,7 @@ async def test_board_bind_preserves_authoritative_additive_grant_result(app, gra
                 },
                 headers={"Authorization": f"Bearer {create_access_token({'sub': 'binding-owner'})}"},
             )
-        if type(grant) is int and grant in {0, 5000} or grant == "missing":
+        if type(grant) is int and grant in {0, 2000, 5000} or grant == "missing":
             assert response.status_code == 200
             assert response.json() == {**cloud_result, "signup_grant_credits": 0 if grant == "missing" else grant}
         else:
@@ -222,8 +239,10 @@ async def test_database_error_is_contained_without_private_response_log_or_excep
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("operation", ["login", "register"])
-async def test_board_phone_login_keeps_candidate_private_until_canonical_confirmation(app, monkeypatch, operation):
+@pytest.mark.parametrize("operation,grant", [("login", 0), ("register", 0), ("register", 2000), ("register", 5000)])
+async def test_board_phone_login_keeps_candidate_private_until_canonical_confirmation(
+    app, monkeypatch, operation, grant
+):
     entered, release = asyncio.Event(), asyncio.Event()
     saved = []
     monkeypatch.setattr("katrain.web.core.credentials.save_refresh_token", lambda *args: saved.append(args))
@@ -231,7 +250,7 @@ async def test_board_phone_login_keeps_candidate_private_until_canonical_confirm
     async def handle(request):
         if request.url.path.endswith(f"/phone/{operation}"):
             return httpx.Response(
-                200, json={"access_token": "candidate-a", "refresh_token": "refresh-a", "signup_grant_credits": 5000}
+                200, json={"access_token": "candidate-a", "refresh_token": "refresh-a", "signup_grant_credits": grant}
             )
         assert request.url.path == "/api/v1/auth/me" and request.headers["authorization"] == "Bearer candidate-a"
         entered.set()
@@ -271,7 +290,7 @@ async def test_board_phone_login_keeps_candidate_private_until_canonical_confirm
         assert local["public_username"] == "远端棋手"
         assert remote.cloud_session_is(local["id"]) and len(saved) == 1
         if operation == "register":
-            assert response.json()["signup_grant_credits"] == 5000
+            assert response.json()["signup_grant_credits"] == grant
     finally:
         release.set()
         await remote.close()

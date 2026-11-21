@@ -956,10 +956,10 @@ describe('屏 19 · 用户主动生成的额度引导', () => {
   const copy = {
     'membership:report_insufficient_title': '报告额度不足',
     'membership:report_insufficient_body': '当前可用额度不足，报告尚未开始。你可以查看会员权益或充值积分。',
-    'membership:report_verification_title': '免费报告暂不可用',
-    'membership:report_verification_body': '免费报告资格暂不可用，报告尚未开始。你可以在账户页查看会员和积分状态。',
+    'membership:report_access_title': '暂时无法生成报告',
+    'membership:report_access_body': '报告尚未开始，请查看账户状态后重试。',
     'membership:report_view_membership': '会员与充值',
-    'membership:report_view_account': '查看账户与额度',
+    'membership:report_access_account': '查看账户',
   };
   beforeEach(() => {
     Object.assign(mocks.translations, copy);
@@ -974,7 +974,7 @@ describe('屏 19 · 用户主动生成的额度引导', () => {
 
   it.each([
     ['normal', 402, 'insufficient_credits', '报告额度不足'],
-    ['deep', 403, 'verification_required', '免费报告暂不可用'],
+    ['deep', 403, 'verification_required', '暂时无法生成报告'],
   ] as const)('%s 报告拒收后取消只关引导、清旧错误且不重复请求', async (tier, status, code, title) => {
     const request = deferred<never>();
     mocks.createReport.mockReturnValueOnce(request.promise);
@@ -1005,10 +1005,10 @@ describe('屏 19 · 用户主动生成的额度引导', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     renderPage();
     await selectReport(/重试普通报告/);
-    const dialog = await screen.findByRole('dialog', { name: '免费报告暂不可用' });
-    expect(dialog).toHaveTextContent(copy['membership:report_verification_body']);
+    const dialog = await screen.findByRole('dialog', { name: '暂时无法生成报告' });
+    expect(dialog).toHaveTextContent(copy['membership:report_access_body']);
     expect(dialog).not.toHaveTextContent('充值');
-    fireEvent.click(within(dialog).getByRole('button', { name: '查看账户与额度' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '查看账户' }));
     expect(mocks.navigate).toHaveBeenCalledExactlyOnceWith('/kiosk/membership');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(mocks.retryReport).toHaveBeenCalledExactlyOnceWith(41);

@@ -8,7 +8,7 @@ from threading import Barrier
 import pytest
 from sqlalchemy.orm import sessionmaker as sqlalchemy_sessionmaker
 
-from tests.web_ui.membership_test_support import membership_pg_engine
+from tests.web_ui.membership_test_support import membership_pg_engine, seed_historical_free_operation
 from katrain.web.core import models_db as m
 
 NOW = datetime(2026, 11, 2, 3, tzinfo=timezone.utc)
@@ -210,21 +210,20 @@ def test_crash_reconcile_refunds_once_and_fences_late_completion(membership_pg_e
             ops.commit_operation_in_transaction(db, user_id=uid, operation_id=ident, now=later, generation=0, result={})
 
 
-def test_free_requires_trusted_verification_and_usage_is_read_only(membership_pg_engine):
+def test_verified_nonmember_report_uses_wallet(membership_pg_engine):
     ops, membership = services()
-    uid = seed(membership_pg_engine)
+    uid = seed(membership_pg_engine, credits=2)
     Session = sessionmaker(bind=membership_pg_engine)
     with Session.begin() as db:
-        usage = membership.usage_snapshot(db, user_id=uid, now=NOW, environment="test", payments_mode="test")
-        assert usage["free"]["eligible"] is False
-        assert usage["free"]["reason"] == "verification_required"
+        assert membership.can_claim_free_report(db, user_id=uid, now=NOW, trusted_free_eligible=True) == (
+            False,
+            "weekly_report_retired",
+        )
         assert db.query(m.QuotaBucket).count() == 0
-        with pytest.raises(ops.MembershipError):
-            quote(db, uid, kind="report", units=2)
         q = quote(db, uid, kind="report", units=2, trusted_free_eligible=True)
         op = reserve(db, uid, q["token"], kind="report", units=2, trusted_free_eligible=True)
-        assert op.source == "free_report"
-        assert membership.can_claim_free_report(db, user_id=uid, now=NOW, trusted_free_eligible=True)[0] is False
+        assert q["source"] == op.source == "wallet"
+        assert db.get(m.User, uid).credits == 0
 
 
 def test_refund_returns_to_original_week_and_term(membership_pg_engine):
@@ -338,8 +337,8 @@ def test_new_wallet_ledger_is_not_refunded_by_legacy_ttl(membership_pg_engine):
         assert billing.transaction_status(db, ref) == "reserved"
 
 
-def test_legacy_deleted_free_fact_blocks_claim_without_inventing_units(membership_pg_engine):
-    ops, membership = services()
+def test_legacy_deleted_free_fact_does_not_invent_units(membership_pg_engine):
+    _, membership = services()
     uid = seed(membership_pg_engine)
     Session = sessionmaker(bind=membership_pg_engine)
     with Session.begin() as db:
@@ -347,7 +346,6 @@ def test_legacy_deleted_free_fact_blocks_claim_without_inventing_units(membershi
         db.add(m.QuotaBucket(user_id=uid, kind="free_report", period_key=key, allowance=1, used=1, reserved=0))
     with Session() as db:
         assert membership.legacy_free_facts(db, user_id=uid, now=NOW) == (True, 0)
-        assert membership.can_claim_free_report(db, user_id=uid, now=NOW, trusted_free_eligible=True)[0] is False
 
 
 def test_free_completed_units_carry_into_membership_week_but_not_new_term(membership_pg_engine):
@@ -355,8 +353,7 @@ def test_free_completed_units_carry_into_membership_week_but_not_new_term(member
     uid = seed(membership_pg_engine)
     Session = sessionmaker(bind=membership_pg_engine)
     with Session.begin() as db:
-        q = quote(db, uid, kind="report", units=2, trusted_free_eligible=True)
-        op = reserve(db, uid, q["token"], kind="report", units=2, trusted_free_eligible=True)
+        op = seed_historical_free_operation(db, user_id=uid, now=NOW, units=2, fingerprint="a" * 64, key="old")
         ops.commit_operation_in_transaction(db, user_id=uid, operation_id=op.id, now=NOW, result={"ok": True})
         order = m.RechargeOrder(
             user_id=uid,
@@ -496,35 +493,19 @@ def test_legacy_free_units_use_legal_sgf_and_survive_upgrade(membership_pg_engin
         assert bucket.used == 3 and term.used == 0
 
 
-def test_successful_member_reports_consume_free_eligibility_after_term_expires(membership_pg_engine):
-    ops, membership = services()
-    uid = seed(membership_pg_engine, member=True, remaining=10)
-    Session = sessionmaker(bind=membership_pg_engine)
-    with Session.begin() as db:
-        db.query(m.MembershipTerm).one().ends_at = NOW + timedelta(minutes=1)
-        db.flush()
-        op = reserve(db, uid, quote(db, uid, kind="report", units=2)["token"], kind="report", units=2)
-        ops.commit_operation_in_transaction(db, user_id=uid, operation_id=op.id, now=NOW)
-    with Session() as db:
-        eligible, reason = membership.can_claim_free_report(
-            db, user_id=uid, now=NOW + timedelta(hours=1), trusted_free_eligible=True
-        )
-        assert eligible is False and reason == "weekly_report_used"
-
-
-def test_failed_free_report_releases_original_week_without_granting_wallet(membership_pg_engine):
-    ops, membership = services()
+def test_failed_historical_free_report_releases_original_week_without_granting_wallet(membership_pg_engine):
+    ops, _ = services()
     uid = seed(membership_pg_engine)
     Session = sessionmaker(bind=membership_pg_engine)
     with Session.begin() as db:
-        q = quote(db, uid, kind="report", units=2, trusted_free_eligible=True)
-        op = reserve(db, uid, q["token"], kind="report", units=2, trusted_free_eligible=True)
+        op = seed_historical_free_operation(db, user_id=uid, now=NOW, units=2, fingerprint="a" * 64, key="old")
         ident, bucket = op.id, op.week_bucket_id
     with Session.begin() as db:
         ops.refund_operation_in_transaction(db, user_id=uid, operation_id=ident, now=NOW + timedelta(days=8))
+        assert db.get(m.BillingOperation, ident).status == "refunded"
         assert db.get(m.QuotaBucket, bucket).reserved == 0
-        assert membership.can_claim_free_report(db, user_id=uid, now=NOW, trusted_free_eligible=True)[0] is True
         assert db.get(m.User, uid).credits == 0
+        assert db.query(m.CreditTransaction).count() == 0
 
 
 def test_report_last_global_slot_counts_legacy_tasks(membership_pg_engine):
@@ -635,45 +616,44 @@ def test_owned_reuse_key_also_gets_durable_expiring_receipt(membership_pg_engine
         assert db.get(m.User, uid).credits == 2
 
 
-@pytest.mark.parametrize("trusted_at_execution", [False, None])
-def test_free_quote_losing_verification_cannot_fall_back_to_wallet(membership_pg_engine, trusted_at_execution):
-    from katrain.web.core.billing_quotes import verify_quote
+@pytest.mark.parametrize("trusted", [False, True])
+def test_old_free_quote_requires_requote_unless_operation_already_exists(membership_pg_engine, trusted):
+    from katrain.web.core.billing_catalog import CATALOG_VERSION
+    from katrain.web.core.billing_quotes import sign_quote
 
     ops, _ = services()
     uid = seed(membership_pg_engine, credits=10)
+    fingerprint = "a" * 64
+    token = sign_quote(
+        {
+            "owner": uid,
+            "environment": "test",
+            "kind": "report",
+            "fingerprint": fingerprint,
+            "profile": "normal",
+            "units": 2,
+            "wallet_max_credits": 2,
+            "catalog_version": CATALOG_VERSION,
+            "source_policy": "membership_then_wallet",
+            "source": "free_report",
+            "free_eligibility_policy": "trusted_identity_v1",
+            "expires_at": (NOW + timedelta(seconds=120)).isoformat(),
+        },
+        secret=SECRET,
+    )
     Session = sessionmaker(bind=membership_pg_engine)
-    with Session() as db:
-        accepted = quote(db, uid, kind="report", units=2, trusted_free_eligible=True)
-        payload = verify_quote(accepted["token"], secret=SECRET, now=NOW, user_id=uid, environment="test")
-        assert payload["free_eligibility_policy"] == "trusted_identity_v1"
     with Session.begin() as db:
-        with pytest.raises(ops.MembershipError, match="verification_required") as error:
-            reserve(db, uid, accepted["token"], kind="report", units=2, trusted_free_eligible=trusted_at_execution)
-        assert error.value.status_code == 403
+        with pytest.raises(ops.MembershipError, match="invalid_or_expired_quote") as error:
+            reserve(db, uid, token, key="new", kind="report", units=2, trusted_free_eligible=trusted)
+        assert error.value.status_code == 409
         assert db.get(m.User, uid).credits == 10
         assert db.query(m.BillingOperation).count() == db.query(m.CreditTransaction).count() == 0
-
-
-def test_verified_free_quote_can_fall_back_when_only_weekly_claim_was_used(membership_pg_engine):
-    ops, _ = services()
-    uid = seed(membership_pg_engine, credits=10)
-    Session = sessionmaker(bind=membership_pg_engine)
-    with Session.begin() as db:
-        accepted = quote(db, uid, kind="report", units=2, trusted_free_eligible=True)
-        other = quote(db, uid, kind="report", units=2, fingerprint="b" * 64, trusted_free_eligible=True)
-        free = reserve(
-            db,
-            uid,
-            other["token"],
-            kind="report",
-            units=2,
-            fingerprint="b" * 64,
-            key="first",
-            trusted_free_eligible=True,
-        )
-        ops.commit_operation_in_transaction(db, user_id=uid, operation_id=free.id, now=NOW)
-        paid = reserve(db, uid, accepted["token"], kind="report", units=2, key="second", trusted_free_eligible=True)
-        assert paid.source == "wallet" and db.get(m.User, uid).credits == 8
+        old = seed_historical_free_operation(db, user_id=uid, now=NOW, units=2, fingerprint=fingerprint, key="old")
+        replay = reserve(db, uid, token, key="old", kind="report", units=2, trusted_free_eligible=trusted)
+        assert replay.id == old.id and replay.source == "free_report"
+        assert db.get(m.User, uid).credits == 10
+        assert db.query(m.BillingOperation).count() == 1
+        assert db.query(m.CreditTransaction).count() == 0
 
 
 def test_stale_session_refreshes_term_and_week_before_reserving(membership_pg_engine):

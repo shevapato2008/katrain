@@ -8081,10 +8081,8 @@ msgstr ""
 
 msgid "membership:kiosk_quota_savings_help"
 msgstr ""
-"Die Ersparnis gegenüber der API-Standardanalyse setzt die vollständige "
-"Nutzung des Laufzeitkontingents voraus. Bei geringerer Nutzung variiert die "
-"tatsächliche Ersparnis. Free gewährt nur kostenlose Standardberichte, kein "
-"allgemeines Analysekontingent."
+"Die Ersparnis gilt bei voller Nutzung des Kontingents. Die tatsächliche "
+"Ersparnis hängt von der Nutzung ab."
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "Kontingent noch von der Cloud zu prüfen"
@@ -8426,11 +8424,9 @@ msgstr "{plan} verlängern"
 
 msgid "membership:renewal_rule"
 msgstr ""
-"Eine Verlängerung beginnt nach Ablauf der bestehenden Mitgliedschaft. "
-"Aktueller Verbrauch und Reservierungen werden nicht zurückgesetzt. Vor der "
-"Zahlung sind die Daten nur geschätzt; verbindlich ist der Zeitraum im "
-"Serverbeleg nach der Zahlung. Bezahlte Mitgliedschaften erhalten keinen "
-"zusätzlichen Free-Standardberichtsanspruch."
+"Die Verlängerung beginnt nach Ablauf der aktuellen Mitgliedschaft. Verbrauch"
+" und Reservierungen bleiben bestehen. Das Startdatum steht auf dem "
+"Zahlungsbeleg."
 
 msgid "membership:report_estimate_limit"
 msgstr ""
@@ -9012,3 +9008,32 @@ msgstr "Telefonnummer verknüpft. 50 Punkte gutgeschrieben."
 
 msgid "auth:bind_gift_hint"
 msgstr "Für die erste Telefonnummernbestätigung gibt es 50 Punkte. Kein erneutes Geschenk."
+
+msgid "auth:phone_first_gift_hint"
+msgstr "20 Punkte für die erste Bestätigung Ihrer Telefonnummer. Nur einmal."
+
+msgid "auth:signup_grant_points"
+msgstr "{points} Punkte gutgeschrieben"
+
+msgid "auth:bind_success_points"
+msgstr "Telefonnummer verknüpft. {points} Punkte gutgeschrieben"
+
+msgid "membership:no_membership"
+msgstr "Kein aktives Abo"
+
+msgid "membership:analyze_with_api_points"
+msgstr "Mit API-Punkten analysieren"
+
+msgid "membership:quote_changed"
+msgstr "Der Preis wurde aktualisiert. Starten Sie die Analyse erneut."
+
+msgid "membership:report_access_title"
+msgstr "Bericht nicht verfügbar"
+
+msgid "membership:report_access_body"
+msgstr ""
+"Der Bericht wurde nicht gestartet. Prüfen Sie Ihr Konto und versuchen Sie es"
+" erneut."
+
+msgid "membership:report_access_account"
+msgstr "Konto ansehen"

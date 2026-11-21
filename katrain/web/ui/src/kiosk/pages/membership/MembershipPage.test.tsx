@@ -165,12 +165,20 @@ describe('Kiosk membership', () => {
     expect(screen.queryByText(/标准单位|会员等值积分|每日次数/)).not.toBeInTheDocument();
   });
 
-  it('does not invent a free allowance before eligibility is verified', async () => {
-    api.getUsage.mockResolvedValue({ ...usage(), plan: { current: null, next: null }, term: null, week: null, free: null });
+  it('ignores an expired legacy report entitlement and keeps wallet and membership available', async () => {
+    const snapshot = usage();
+    api.getUsage.mockResolvedValue({
+      ...snapshot, plan: { current: null, next: null }, term: null, week: null,
+      free: { eligible: true, remaining: 1, limit: 1, reset_at: snapshot.server_now, reason: null },
+    });
     mount();
     await flush();
-    expect(screen.getByText('免费报告资格待核验')).toBeInTheDocument();
-    expect(screen.queryByText(/剩余\s*0\s*\//)).not.toBeInTheDocument();
+    expect(screen.getByText('未开通会员')).toBeInTheDocument();
+    expect(screen.getByText('使用API积分分析')).toBeInTheDocument();
+    expect(screen.getByText('10.00 积分')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看会员' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'API充值' })).toBeEnabled();
+    expect(screen.queryByText(/免费|周一零点重置|周期额度待核对/)).not.toBeInTheDocument();
   });
 
   it('honors disabled payments even when Max is sale-enabled, without creating an order', async () => {

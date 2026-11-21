@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { API, ApiError, type AuthToken, type PhoneLoginRequest, type PhoneRegisterRequest, type PhoneContinueRequest } from '../api';
+import { API, ApiError, type AuthToken, type PhoneLoginRequest, type PhoneRegisterRequest, type PhoneContinueRequest, type PhoneRegisterToken } from '../api';
 import { setKioskIdentity } from '../kiosk/storage/kioskActivityStorage';
 
 // Define User type matching backend response
@@ -30,8 +30,8 @@ interface AuthContextType {
     isLoading: boolean;
     login: (username: string, password: string, signal?: AbortSignal) => Promise<void>;
     loginPhone: (request: PhoneLoginRequest, signal?: AbortSignal) => Promise<void>;
-    continuePhone: (request: PhoneContinueRequest, signal?: AbortSignal) => Promise<{ signup_grant_credits: 0 | 5000 }>;
-    registerPhone: (request: PhoneRegisterRequest, signal?: AbortSignal) => Promise<{ signup_grant_credits: 0 | 5000 }>;
+    continuePhone: (request: PhoneContinueRequest, signal?: AbortSignal) => Promise<Pick<PhoneRegisterToken, 'signup_grant_credits'>>;
+    registerPhone: (request: PhoneRegisterRequest, signal?: AbortSignal) => Promise<Pick<PhoneRegisterToken, 'signup_grant_credits'>>;
     logout: () => Promise<void>;
     token: string | null;
     // True for the shared zero-persistence `guest` account (box-SSO guest mode).

@@ -56,7 +56,7 @@ def test_signup_gives_once_and_subsequent_login_keeps_canonical_user(membership_
     service, sender, sessions = make_service(membership_pg_engine)
     challenge = issue(service)
     user = register(service, sender, challenge)
-    assert user["credits"] == user["signup_grant_credits"] == 5000
+    assert user["credits"] == user["signup_grant_credits"] == 2000
     assert user["public_username"] == "棋手一"
     assert user["username"].startswith("u_") and len(user["username"]) == 22
     assert PHONE not in str(user) and "hashed_password" not in user
@@ -71,14 +71,14 @@ def test_signup_gives_once_and_subsequent_login_keeps_canonical_user(membership_
         user["id"],
         user["uuid"],
         user["username"],
-        5000,
+        2000,
     )
     with sessions() as db:
         assert db.query(models_db.User).count() == 1
         assert db.query(models_db.PhoneIdentity).count() == 1
         assert db.query(models_db.PhoneSignupClaim).count() == 1
         tx = db.query(models_db.CreditTransaction).one()
-        assert (tx.delta, tx.reason, tx.status, tx.balance_after) == (5000, "signup_grant", "committed", 5000)
+        assert (tx.delta, tx.reason, tx.status, tx.balance_after) == (2000, "signup_grant", "committed", 2000)
         assert PHONE not in tx.ref_id and "13800000011" not in tx.ref_id
         stored = db.get(models_db.User, user["id"])
         assert stored.hashed_password.startswith("$2")
@@ -101,12 +101,12 @@ def test_same_challenge_concurrent_registration_has_one_account_and_grant(member
 
     with ThreadPoolExecutor(max_workers=2) as workers:
         results = list(workers.map(attempt, range(2)))
-    assert sum(isinstance(result, dict) for result in results) == 1
+    assert [result["signup_grant_credits"] for result in results if isinstance(result, dict)] == [2000]
     with sessions() as db:
         assert db.query(models_db.User).count() == 1
         assert db.query(models_db.PhoneIdentity).count() == 1
         assert db.query(models_db.PhoneSignupClaim).count() == 1
-        assert db.query(models_db.CreditTransaction).count() == 1
+        assert db.query(models_db.CreditTransaction).one().delta == 2000
 
 
 def test_same_phone_different_challenges_only_active_can_create_user(membership_pg_engine):
@@ -206,7 +206,7 @@ def test_ledger_failure_rolls_back_user_identity_claim_and_consumption(membershi
         assert db.get(models_db.SmsChallenge, challenge["challenge_id"]).state == "sent"
         assert db.get(models_db.SmsPhoneState, PHONE).error_count == 2
     monkeypatch.setattr(billing, "apply_adjustment", apply)
-    assert register(service, sender, challenge)["credits"] == 5000
+    assert register(service, sender, challenge)["credits"] == 2000
 
 
 @pytest.mark.parametrize("claim_type", ["signup_grant", "bound_existing"])
@@ -221,7 +221,7 @@ def test_permanent_claim_without_identity_checks_actual_gift_and_preserves_attri
         db.commit()
         old_id = old.id
     result = register(service, sender, issue(service))
-    expected = 5000 if claim_type == "bound_existing" else 0
+    expected = 2000 if claim_type == "bound_existing" else 0
     assert result["signup_grant_credits"] == expected
     assert result["credits"] == expected and result["id"] != old_id
     with sessions() as db:
@@ -263,7 +263,7 @@ def test_unknown_delivery_correct_code_can_be_consumed(membership_pg_engine):
     service, sender, _ = make_service(membership_pg_engine, FakeSender(SmsUnknown()))
     challenge = issue(service)
     assert challenge["delivery"] == "unknown"
-    assert register(service, sender, challenge)["credits"] == 5000
+    assert register(service, sender, challenge)["credits"] == 2000
 
 
 def test_public_name_conflict_keeps_proof_for_retry(membership_pg_engine):
@@ -280,7 +280,7 @@ def test_public_name_conflict_keeps_proof_for_retry(membership_pg_engine):
         assert db.query(models_db.User).count() == 1
         assert db.query(models_db.PhoneIdentity).count() == db.query(models_db.PhoneSignupClaim).count() == 0
         assert db.get(models_db.SmsChallenge, challenge["challenge_id"]).state == "sent"
-    assert register(service, sender, challenge, name="棋手二")["signup_grant_credits"] == 5000
+    assert register(service, sender, challenge, name="棋手二")["signup_grant_credits"] == 2000
 
 
 def test_two_phones_claiming_one_name_only_one_grant(membership_pg_engine):
@@ -373,7 +373,7 @@ def test_new_password_validation_keeps_valid_proof(membership_pg_engine, passwor
     with pytest.raises(PhoneOtpError) as caught:
         register(service, sender, challenge, password=password)
     assert caught.value.code == "invalid_password"
-    assert register(service, sender, challenge, password="字" * 24)["signup_grant_credits"] == 5000
+    assert register(service, sender, challenge, password="字" * 24)["signup_grant_credits"] == 2000
 
 
 @pytest.mark.parametrize(

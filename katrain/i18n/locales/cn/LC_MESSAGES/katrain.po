@@ -7525,7 +7525,7 @@ msgid "membership:kiosk_quota_result_help"
 msgstr "同一结果包含领地与支招，重复查看不重复扣费。高级分析消耗普通分析的{multiplier}倍额度。"
 
 msgid "membership:kiosk_quota_savings_help"
-msgstr "优惠与API普通分析相比，按本期额度全部用满计算；未用满时实际优惠随用量变化。Free仅有免费普通报告资格，不赠通用分析额度。"
+msgstr "优惠按本期额度用满计算，实际优惠随用量变化。"
 
 msgid "membership:kiosk_quota_unconfirmed"
 msgstr "额度待云端核对"
@@ -7828,8 +7828,7 @@ msgid "membership:renew_plan"
 msgstr "续费 {plan}"
 
 msgid "membership:renewal_rule"
-msgstr ""
-"续费在已有会员到期后顺延，不重置当前已用与预留；待付款日期仅为预计，最终生效区间以付款后的服务端回执为准。付费会员不叠加 Free 普通报告资格。"
+msgstr "续费在已有会员到期后顺延，不重置当前已用与预留。生效日期以付款回执为准。"
 
 msgid "membership:report_estimate_limit"
 msgstr "按每盘 300 手估算，受本期剩余限制。"
@@ -13642,3 +13641,30 @@ msgstr "手机号绑定成功，已赠送50积分"
 
 msgid "auth:bind_gift_hint"
 msgstr "首次验证手机号送50积分，已领取不再赠送。"
+
+msgid "auth:phone_first_gift_hint"
+msgstr "首次验证手机号送20积分，仅限一次"
+
+msgid "auth:signup_grant_points"
+msgstr "获赠{points}积分"
+
+msgid "auth:bind_success_points"
+msgstr "手机号绑定成功，已赠送{points}积分"
+
+msgid "membership:no_membership"
+msgstr "未开通会员"
+
+msgid "membership:analyze_with_api_points"
+msgstr "使用API积分分析"
+
+msgid "membership:quote_changed"
+msgstr "报价已更新，请重新发起分析"
+
+msgid "membership:report_access_title"
+msgstr "暂时无法生成报告"
+
+msgid "membership:report_access_body"
+msgstr "报告尚未开始，请查看账户状态后重试。"
+
+msgid "membership:report_access_account"
+msgstr "查看账户"

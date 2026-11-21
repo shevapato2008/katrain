@@ -1,13 +1,13 @@
 """Private mainland-phone authentication, using the cloud as sole account authority."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
 from katrain.web.api.v1.endpoints.auth import (
@@ -92,8 +92,18 @@ class PhoneRegisterRequest(PhoneLoginRequest):
     password: str = Field(strict=True, max_length=1024)
 
 
+def _require_integer_grant(value):
+    if type(value) is not int:
+        raise ValueError("Phone signup grant must be an integer")
+    return value
+
+
+# Accept historical 5000-credit responses during rolling upgrades.
+SignupGrantCredits = Annotated[Literal[0, 2000, 5000], BeforeValidator(_require_integer_grant)]
+
+
 class PhoneRegisterResponse(Token):
-    signup_grant_credits: Literal[0, 5000]
+    signup_grant_credits: SignupGrantCredits
 
 
 class PhoneContinueRequest(PhoneLoginRequest):
@@ -125,7 +135,7 @@ class PhoneStatusResponse(BaseModel):
 
 class PhoneBindResponse(PhoneStatusResponse):
     # Older cloud versions do not report this additive outcome.
-    signup_grant_credits: Literal[0, 5000] = 0
+    signup_grant_credits: SignupGrantCredits = 0
 
 
 def get_phone_otp_service(request: Request):
@@ -276,7 +286,7 @@ async def phone_register(request: Request, response: Response, body: PhoneRegist
             _raise_remote_error(error)
         grant = candidate.tokens.get("signup_grant_credits")
         # Validate the authoritative outcome before changing local identity.
-        if type(grant) is not int or grant not in {0, 5000}:
+        if type(grant) is not int or grant not in {0, 2000, 5000}:
             raise HTTPException(status_code=503, detail={"code": "sms_unavailable"})
         return {**_install_board_login(request, response, candidate), "signup_grant_credits": grant}
     try:
@@ -323,7 +333,7 @@ async def phone_continue(request: Request, response: Response, body: PhoneContin
         except (httpx.HTTPError, ValueError) as error:
             _raise_remote_error(error)
         grant = candidate.tokens.get("signup_grant_credits")
-        if type(grant) is not int or grant not in {0, 5000}:
+        if type(grant) is not int or grant not in {0, 2000, 5000}:
             raise HTTPException(status_code=503, detail={"code": "sms_unavailable"})
         return {**_install_board_login(request, response, candidate), "signup_grant_credits": grant}
     try:

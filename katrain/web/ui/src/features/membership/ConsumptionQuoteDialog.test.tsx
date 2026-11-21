@@ -19,12 +19,27 @@ describe('ConsumptionQuoteDialog', () => {
     expect(confirm).toHaveBeenCalledOnce();
   });
 
-  it.each(['membership', 'free_report', 'owned'] as const)('retains the accurate %s source without claiming a wallet charge', source => {
-    render(<ConsumptionQuoteDialog quote={{ kind: 'report', source, wallet_max_display_points: '3.01' } as BillingQuote} onConfirm={vi.fn()} onCancel={vi.fn()} />);
-    const sourceCopy = { membership: '当前预计使用会员额度', free_report: '当前预计使用每周免费报告资格', owned: '本次结果已拥有' };
+  it.each(['membership', 'owned'] as const)('retains the accurate %s source without claiming a wallet charge', source => {
+    const confirm = vi.fn();
+    render(<ConsumptionQuoteDialog quote={{ kind: 'report', source, wallet_max_display_points: '3.01' } as BillingQuote} onConfirm={confirm} onCancel={vi.fn()} />);
+    const sourceCopy = { membership: '当前预计使用会员额度', owned: '本次结果已拥有' };
     expect(screen.getByRole('dialog')).toHaveTextContent(sourceCopy[source]);
-    expect(screen.getByRole('button', { name: '确认并开始', exact: true })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '确认并开始', exact: true }));
+    expect(confirm).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: /使用API积分/ })).not.toBeInTheDocument();
+  });
+
+  it.each([false, true])('requires a new analysis request after a retired quote (kiosk=%s)', kiosk => {
+    const confirm = vi.fn();
+    const cancel = vi.fn();
+    const quote = { kind: 'report', source: 'free_report', wallet_max_display_points: '3.01' } as BillingQuote;
+    render(<ConsumptionQuoteDialog kiosk={kiosk} quote={quote} onConfirm={confirm} onCancel={cancel} />);
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('报价已更新，请重新发起分析');
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   it('keeps kiosk confirmation inside its canvas and uses the server maximum', () => {

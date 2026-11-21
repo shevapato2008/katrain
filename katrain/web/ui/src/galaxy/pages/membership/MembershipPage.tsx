@@ -213,7 +213,7 @@ function Rules({ catalog }: { catalog: MembershipCatalog | null }) {
             {' '}{t("membership:galaxy_report_reset_rule", "每周一 00:00（北京时间）恢复本周额度；本期剩余到期结束。")}
           </Typography>
           <Typography variant="body2">
-            {t("membership:renewal_rule", "续费在已有会员到期后顺延，不重置当前已用与预留；待付款日期仅为预计，最终生效区间以付款后的服务端回执为准。付费会员不叠加 Free 普通报告资格。")}
+            {t("membership:renewal_rule", "续费在已有会员到期后顺延，不重置当前已用与预留。生效日期以付款回执为准。")}
           </Typography>
         </Stack>
       </AccordionDetails>
@@ -351,7 +351,7 @@ function PlanCards({
 }
 
 export default function MembershipPage() {
-  const { t, money, date, countdown, number } = useMembershipI18n();
+  const { t, money, date, number } = useMembershipI18n();
   const auth = useAuth();
   const { catalog, usage, status, refresh, countdowns } = useMembership();
   const [params, setParams] = useSearchParams();
@@ -483,6 +483,11 @@ export default function MembershipPage() {
   const normal = catalog?.profiles.normal,
     advanced = catalog?.profiles.advanced;
   const rate = catalog?.profiles[profile];
+  const positionPrices = <>
+    {t("membership:normal_position_cost", "普通约 {points} 积分/手", { points: normal ? points(normal.credits_per_position, number) : "—" })}
+    <br />
+    {t("membership:advanced_position_cost", "高级约 {points} 积分/手", { points: advanced ? points(advanced.credits_per_position, number) : "—" })}
+  </>;
   const currentHistory = history?.scope === scope ? history : null;
   let body: ReactNode;
 
@@ -495,9 +500,6 @@ export default function MembershipPage() {
             : auth.status === "unavailable"
               ? t("membership:account_unconfirmed", "账户状态暂未确认")
               : t("membership:login_to_view", "登录后查看会员与用量")}
-        </Typography>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          {t("membership:account_identity_help", "确认账户身份后，显示会员权益、Free 资格与 API 积分余额。")}
         </Typography>
         {auth.status === "checking" ? (
           <CircularProgress size={24} aria-label={t("membership:account_checking", "正在确认账户")} />
@@ -589,49 +591,17 @@ export default function MembershipPage() {
                 {t("membership:entitlement_pending", "账户权益待确认")}
               </Typography>
               <Typography color="text.secondary">
-                {t("membership:membership_free_pending_help", "会员与 Free 资格尚未确认，请重新载入后查看。")}
+                {t("membership:unconfirmed_help", "账户权益与余额尚未确认，请稍后重试。")}
               </Typography>
             </>
           ) : (
             <>
-              <Typography component="h2" variant="h5" sx={{ mb: 2 }}>
-                {t("membership:free_weekly_title", "Free · 本周普通报告资格")}
+              <Typography component="h2" variant="h5">
+                {t("membership:analyze_with_api_points", "使用API积分分析")}
               </Typography>
-              {verifiedUsage &&
-              usage.capabilities.can_claim_free_report &&
-              usage.free?.eligible ? (
-                <>
-                  <Typography variant="h4" sx={{ mb: 2 }}>
-                    {t("membership:free_remaining", "本周剩余 {count} 份", { count: number(usage.free.remaining) })}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    {t("membership:free_eligibility_rule", "每自然周 {count} 份普通报告的独立领取资格；需满足身份验证条件，不作为通用分析额度。", { count: number(usage.free.limit) })}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 2 }}
-                  >
-                    {countdowns.free === null || countdowns.free === 0
-                      ? countdown(countdowns.free)
-                      : t("membership:free_reset_countdown", "{time}后恢复 · {date}（北京时间）", { time: countdown(countdowns.free), date: date(usage.free.reset_at, true) })}
-                  </Typography>
-                </>
-              ) : (
-                <>
-                  <Typography variant="h6" sx={{ mb: 1 }}>
-                    {verifiedUsage && usage.free && !usage.free.eligible
-                      ? t("membership:free_unavailable", "Free 资格当前不可用")
-                      : t("membership:free_pending", "Free 资格待确认")}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    {t("membership:free_unavailable_rule", "Free 普通报告需先满足可信身份条件。当前不提供可领取数量，付费会员不叠加 Free 报告资格。")}
-                  </Typography>
-                </>
-              )}
-              <Button sx={{ mt: 2 }} onClick={() => setTab("plans")}>
-                {t("membership:compare_membership_api", "比较会员与 API")}
-              </Button>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {positionPrices}
+              </Typography>
             </>
           )}
         </Paper>
@@ -641,15 +611,13 @@ export default function MembershipPage() {
               {t("membership:current_plan", "当前会员")}
             </Typography>
             <Typography variant="h4" sx={{ mt: 1, mb: 1.5 }}>
-              {verifiedUsage ? (currentPlan?.name ?? "Free") : t("membership:date_pending", "待确认")}
+              {verifiedUsage ? (currentPlan?.name ?? t("membership:no_membership", "未开通会员")) : t("membership:date_pending", "待确认")}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {currentPlan
-                ? t("membership:valid_until", "有效期至 {date}（北京时间）", { date: date(currentPlan.ends_at, true) })
-                : verifiedUsage
-                  ? t("membership:free_weekly_eligibility", "每自然周的独立普通报告资格")
-                  : t("membership:plan_pending", "会员权益待确认")}
-            </Typography>
+            {currentPlan && (
+              <Typography variant="body2" color="text.secondary">
+                {t("membership:valid_until", "有效期至 {date}（北京时间）", { date: date(currentPlan.ends_at, true) })}
+              </Typography>
+            )}
             {verifiedUsage && usage.plan.next && (
               <Typography variant="body2" sx={{ mt: 1 }}>
                 {t("membership:next_membership", "已购 {plan} · {date} 生效", { plan: usage.plan.next.name, date: date(usage.plan.next.starts_at, true) })}
@@ -681,11 +649,9 @@ export default function MembershipPage() {
             <Typography color="text.secondary" variant="body2">
               {t("membership:points_exchange_rate", "1 元 = 1 积分")}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t("membership:normal_position_cost", "普通约 {points} 积分/手", { points: normal ? points(normal.credits_per_position, number) : "—" })}
-              <br />
-              {t("membership:advanced_position_cost", "高级约 {points} 积分/手", { points: advanced ? points(advanced.credits_per_position, number) : "—" })}
-            </Typography>
+            {(currentPlan || !verifiedUsage) && (
+              <Typography variant="body2" color="text.secondary">{positionPrices}</Typography>
+            )}
             <Button
               fullWidth
               variant="outlined"

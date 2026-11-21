@@ -126,17 +126,11 @@ class Settings(BaseModel):
     BILLING_RESERVATION_TTL_SEC: int = 120  # stale 'reserved' refund threshold
     REDEEM_RATE_LIMIT: int = 5  # max failed redeem attempts / user / minute
 
-    # 计费总闸。默认关 —— 打开的前置见 superpowers/tracks/galaxy-payment/plan.md 的
-    # Global Constraints（P3 手机绑定+注册限流 / P5 合规页脚 / U4 经营资质定性）。
-    # 关着时 POST /api/v1/reports/ 的行为必须与今天逐字节一致：不扣费、不消费额度、不返 402。
-    #
-    # ⚠️ 「P3 手机绑定 + 注册限流」是**硬前置**，不是"尽量"：
-    # 免费复盘桶的键是 user_id（不是手机号），而 /auth/register 至今无验证码无限流
-    # ⇒ 注册 N 个用户名 = 每周 N 份免费复盘 = N × 约 125 credits 的 GPU。
-    # 若 P3 未落地就要开这个闸，必须同时把 FREE_WEEKLY_REPORTS 配成 0。
+    # 计费总闸默认关闭，legacy 复盘不走积分计费。
+    # 开启前置见 superpowers/tracks/galaxy-payment/plan.md 的 Global Constraints。
     BILLING_ENFORCED: bool = False
-    # 每周免费复盘次数（裁决 D2）。不滚存 —— 见 katrain/web/core/quota.py。
-    FREE_WEEKLY_REPORTS: int = 1
+    # 保留旧配置字段供滚动部署使用。每周免费复盘已停止发放。
+    FREE_WEEKLY_REPORTS: int = 0
     # failed 任务的重试宽限期：宽限期内 /retry 复用原预扣，不重新授权。
     # 过了宽限期，结算器会把这笔预扣按 analyzed_moves 结掉 —— 之后再 /retry
     # 就必须重新预扣剩余手数（见 report_settlement.py / reports.py:/retry）。
@@ -163,7 +157,7 @@ class Settings(BaseModel):
             data.setdefault(name, os.getenv(name, ""))
         data.setdefault("MEMBERSHIP_MODE", os.getenv("MEMBERSHIP_MODE", "legacy"))
         data.setdefault("BILLING_ENFORCED", os.getenv("BILLING_ENFORCED", "false").lower() in ("1", "true", "yes"))
-        data.setdefault("FREE_WEEKLY_REPORTS", int(os.getenv("FREE_WEEKLY_REPORTS", "1")))
+        data.setdefault("FREE_WEEKLY_REPORTS", int(os.getenv("FREE_WEEKLY_REPORTS", "0")))
         for key, default in (
             ("MEMBERSHIP_REPORT_QUEUE_LIMIT", 8),
             ("MEMBERSHIP_POSITION_QUEUE_LIMIT", 4),

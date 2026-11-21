@@ -4,10 +4,6 @@
 会不会扣费、会不会返 402、会不会留下未计费的任务。见
 superpowers/tracks/galaxy-payment/plan.md 的 Task 5。
 
-除了「BILLING_ENFORCED=False 行为不变」和「任何 pending 任务都已计费」两条，
-其余聚焦积分扣费路径的用例都把 FREE_WEEKLY_REPORTS monkeypatch 成 0 ——
-免费周额度的消费/不滚存行为由 quota.py 自己的单测（Task 7/8）覆盖，这里
-再让它参与会把「按手数扣积分」和「免费额度抵扣」这两件事的断言混在一起。
 """
 import os
 import uuid
@@ -181,7 +177,6 @@ async def test_charges_by_parsed_move_count(app_with_game, monkeypatch):
     from katrain.web.core import analysis_cost
 
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
-    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 0)  # 只测积分路径
     before = _balance(user)
     r = await client.post(
         "/api/v1/reports/",
@@ -198,7 +193,6 @@ async def test_lying_move_count_does_not_reduce_the_charge(app, monkeypatch):
     """回归白嫖路：客户端声明 move_count=0，仍按 SGF 真实手数扣。"""
     client, token, user = app
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
-    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 0)
     sgf = "(;GM[1]FF[4]SZ[19]" + "".join(f";B[aa];W[bb]" for _ in range(50)) + ")"
     g = await client.post(
         "/api/v1/user-games/",
@@ -223,7 +217,7 @@ async def test_insufficient_credits_returns_402_and_leaves_no_task(app_with_game
     from katrain.web.core import models_db
 
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
-    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 0)
+    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
     _set_balance(user, 0)
     r = await client.post(
         "/api/v1/reports/",
@@ -249,7 +243,7 @@ async def test_no_task_is_left_claimable_without_a_charge(app_with_game, monkeyp
     )
     assert r.status_code == 200, r.text
     for t in db.query(models_db.ReportTask).filter_by(status="pending").all():
-        assert t.charge_ref is not None or t.free_grant_period is not None
+        assert t.charge_ref is not None
 
 
 if __name__ == "__main__":
@@ -257,57 +251,23 @@ if __name__ == "__main__":
 
 
 @pytest.mark.asyncio
-async def test_first_report_of_the_week_is_free_second_is_charged(app_with_game, monkeypatch):
-    """端到端：本周第一份复盘走免费额度，第二份扣积分（裁决 D2）。
+async def test_legacy_weekly_setting_cannot_make_a_new_report_free(app_with_game, monkeypatch, db):
+    from katrain.web.core import analysis_cost, models_db
 
-    这条是免费额度唯一一条穿过真实端点的断言。本文件其它几条专测积分路径的用例
-    刻意把 FREE_WEEKLY_REPORTS 调到 0 隔离掉免费分支 —— 那样谁都没有真的验证过
-    「免费那一份从端点走得通」。这条补上。
-    """
     client, token, game_id, user = app_with_game
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
     monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
-    _set_balance(user, 10_000)
     before = _balance(user)
 
-    r1 = await client.post(
+    response = await client.post(
         "/api/v1/reports/",
-        json={"user_game_id": game_id, "force": True},
+        json={"user_game_id": game_id},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r1.status_code == 200, r1.text
-    assert _balance(user) == before, "本周第一份应该走免费额度，不扣积分"
-
-    r2 = await client.post(
-        "/api/v1/reports/",
-        json={"user_game_id": game_id, "force": True},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r2.status_code == 200, r2.text
-    assert _balance(user) < before, "本周第二份免费额度已用尽，必须扣积分"
-
-
-@pytest.mark.asyncio
-async def test_free_report_records_its_period_not_a_charge_ref(app_with_game, monkeypatch, db):
-    """走免费额度的任务必须留下 free_grant_period，且不留 charge_ref。
-
-    这两个字段是回收器认路的凭据：崩在半路时它要靠 free_grant_period 知道
-    该把额度还给**哪一周**的桶（不能重算当前周，那会减错桶）。
-    """
-    from katrain.web.core import models_db, quota
-
-    client, token, game_id, user = app_with_game
-    monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
-    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
-    _set_balance(user, 10_000)
-
-    r = await client.post(
-        "/api/v1/reports/",
-        json={"user_game_id": game_id, "force": True},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r.status_code == 200, r.text
-    task = db.query(models_db.ReportTask).filter_by(id=r.json()["id"]).one()
-    assert task.free_grant_period == quota.period_key("week")
-    assert task.charge_ref is None
-    assert task.status == "pending", "计费落定后才放给 cron"
+    assert response.status_code == 200, response.text
+    assert before - _balance(user) == analysis_cost.report_cost(3, 500)
+    task = db.get(models_db.ReportTask, response.json()["id"])
+    assert task.free_grant_period is None
+    assert task.charge_ref == f"report:{task.id}"
+    assert task.status == "pending"
+    assert db.query(models_db.QuotaBucket).count() == 0

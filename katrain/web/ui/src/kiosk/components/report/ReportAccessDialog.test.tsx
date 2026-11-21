@@ -14,7 +14,7 @@ describe('ReportAccessDialog', () => {
 
   it.each([
     ['insufficient', 'Report allowance insufficient', 'Membership and top-up', 'There is not enough available allowance to start this report. You can review membership benefits or top up points.'],
-    ['verification_required', 'Free report unavailable', 'View account and allowance', 'Free report eligibility is unavailable, so this report has not started. You can check membership and points on your account page.'],
+    ['verification_required', 'Report unavailable', 'View account', 'The report did not start. Check your account and try again.'],
   ] as const)('explains %s and delegates only the selected action', (issue, title, action, body) => {
     const onClose = vi.fn();
     const onAccount = vi.fn();

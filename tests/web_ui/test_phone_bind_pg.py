@@ -179,19 +179,19 @@ def test_bind_grants_once_and_keeps_old_identity_and_assets(binding):
     service, sender, sessions, user_id, user_uuid = binding
     challenge_id, code = bind_challenge(binding)
     result = submit(binding, challenge_id, code)
-    assert result == {"bound": True, "masked_phone": "+86 138****0011", "signup_grant_credits": 5000}
+    assert result == {"bound": True, "masked_phone": "+86 138****0011", "signup_grant_credits": 2000}
     assert submit(binding, challenge_id, code) == {**result, "signup_grant_credits": 0}
     with sessions() as db:
         assert db.query(models_db.PhoneIdentity).count() == 1
         claim = db.query(models_db.PhoneSignupClaim).one()
         ledger = db.query(models_db.CreditTransaction).one()
         assert (claim.claim_type, claim.user_id, claim.grant_ref) == ("bound_existing", user_id, ledger.ref_id)
-        assert (ledger.delta, ledger.reason, ledger.status) == (5000, "signup_grant", "committed")
+        assert (ledger.delta, ledger.reason, ledger.status) == (2000, "signup_grant", "committed")
         old = db.get(models_db.User, user_id)
         assert (old.uuid, old.username, old.credits, old.rank, old.membership_revision) == (
             user_uuid,
             "old-canonical-owner",
-            128456,
+            125456,
             "5d",
             7,
         )
@@ -205,7 +205,7 @@ def test_bind_grants_once_and_keeps_old_identity_and_assets(binding):
         user_id,
         user_uuid,
         "old-canonical-owner",
-        128456,
+        125456,
     )
     with sessions() as db:
         db.delete(db.query(models_db.PhoneIdentity).one())
@@ -242,7 +242,7 @@ def test_generated_legacy_account_binding_does_not_require_new_profile(binding, 
         if continuation
         else submit(binding, challenge_id, code)
     )
-    assert result["signup_grant_credits"] == 5000
+    assert result["signup_grant_credits"] == 2000
     with sessions() as db, db.begin():
         db.get(models_db.SmsPhoneState, PHONE).last_send_at -= timedelta(seconds=61)
     challenge = issue(service)
@@ -454,12 +454,12 @@ def test_one_user_two_phones_concurrent_submissions_bind_only_once(binding):
 
     with ThreadPoolExecutor(max_workers=2) as workers:
         results = list(workers.map(attempt, [first, second]))
-    assert sum(isinstance(result, dict) for result in results) == 1
+    assert [result["signup_grant_credits"] for result in results if isinstance(result, dict)] == [2000]
     assert "phone_in_use" in results
     with sessions() as db:
         assert db.query(models_db.PhoneIdentity).count() == 1
         assert db.query(models_db.PhoneSignupClaim).count() == 1
-        assert db.query(models_db.CreditTransaction).count() == 1
+        assert db.query(models_db.CreditTransaction).one().delta == 2000
     assert reauth_count(sessions, user_id) == 2
 
 
@@ -502,12 +502,12 @@ def test_one_phone_two_users_only_active_actor_challenge_can_bind(binding, passw
         ("signup", 100, "committed", 0),
         ("signup_grant", 5000, "committed", 0),
         ("opening_balance", 10000, "committed", 0),
-        ("signup", 0, "committed", 5000),
-        ("signup", 5000, "refunded", 5000),
-        ("signup", 5000, "reserved", 5000),
-        ("opening_balance", -100, "committed", 5000),
-        ("order", 10000, "committed", 5000),
-        ("admin_grant", 10000, "committed", 5000),
+        ("signup", 0, "committed", 2000),
+        ("signup", 5000, "refunded", 2000),
+        ("signup", 5000, "reserved", 2000),
+        ("opening_balance", -100, "committed", 2000),
+        ("order", 10000, "committed", 2000),
+        ("admin_grant", 10000, "committed", 2000),
     ],
 )
 def test_binding_eligibility_uses_committed_gift_history_not_balance(
@@ -592,7 +592,7 @@ def test_fresh_binding_with_historical_zero_claim_keeps_attribution_and_grants_o
         if continuation
         else submit(binding, challenge_id, code)
     )
-    assert result["signup_grant_credits"] == 5000
+    assert result["signup_grant_credits"] == 2000
     with sessions() as db:
         claim = db.get(models_db.PhoneSignupClaim, PHONE)
         ledger = db.query(models_db.CreditTransaction).one()

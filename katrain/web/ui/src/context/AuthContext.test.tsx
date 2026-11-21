@@ -76,13 +76,13 @@ describe('AuthContext', () => {
   });
   nonStrictIt('confirms a registration token through canonical /me and keeps its public name out of identityKey', async () => {
     mockFetch.mockImplementation((input, init) => String(input).endsWith('/phone/register')
-      ? okJson({ access_token: 'register-token', token_type: 'bearer', signup_grant_credits: 5000 })
+      ? okJson({ access_token: 'register-token', token_type: 'bearer', signup_grant_credits: 2000 })
       : hasAuthHeader(init) ? okJson({ ...meResponse, username: 'u_0123456789abcdefabcd', public_username: '公开棋手' }) : notOk());
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     let grant: unknown;
     await act(async () => { grant = await result.current.registerPhone({ challenge_id: 'challenge', code: '123456', flow_id: 'a'.repeat(32), public_username: '公开棋手', password: 'fifteen characters' }); });
-    expect(grant).toEqual({ signup_grant_credits: 5000 });
+    expect(grant).toEqual({ signup_grant_credits: 2000 });
     expect(result.current.user?.username).toBe('u_0123456789abcdefabcd');
     expect(result.current.user?.public_username).toBe('公开棋手');
     expect(result.current.identityKey).toBe(meResponse.uuid);

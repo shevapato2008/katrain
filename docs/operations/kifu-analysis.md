@@ -2,7 +2,19 @@
 
 Professional SGFs remain in `kifu_albums`. Analysis jobs and position snapshots are in `kifu_analysis_jobs` and `kifu_analysis_moves`; personal `report_tasks` and `report_task_moves` are not used. A duplicate album with identical SGF bytes reads its canonical album's job. A changed SGF or model SHA makes the old job invisible to the read API.
 
-The system is intentionally closed to automatic corpus admission. `CRON_KIFU_ANALYZE_ENABLED=false` is the default. The only admission command requires 1–20 explicit album IDs and defaults to a dry run:
+## Hourly admission
+
+Both `CRON_KIFU_AUTO_ANALYSIS_ENABLED` (admission) and `CRON_KIFU_ANALYZE_ENABLED` (consumption) default to false. TEST's hourly collector requests admission in its native publication transaction. PROD's fixed receiver uses the marked TEST receipt and its own newly inserted canonical album. Run the existing consumer on each database whose reports should be available. The Web service hosting the PROD receiver and both cron services need the pinned model configuration used by the professional report API. Keep the existing single TEST collector and fixed PROD receiver roles.
+
+Pause TEST intake before switching both environments over. Preserve its stage and full role-specific Compose configuration. Verify both databases have the professional analysis tables and the KataGo analysis engine reports the expected model. Check disk headroom and worker readiness, deploy the receiver and consumers, enable admission in both publishing roles, then resume intake. Existing reports remain readable. Previously applied receipts retain their original admission decision.
+
+For the first fresh batch, save the two native receipts and local album IDs. Verify tasks appear in both environments and one ordinary new game completes in each using the public `/api/v1/kifu/albums/{id}/analysis` endpoint. Confirm contiguous `0..total_moves` results, at least 2,000 root visits in every position, `has_analysis: true`, and the Galaxy report plus server Kiosk route. Compare the inputs and output to a known historical report. Check failed admission/analysis counts, age of the oldest queued game, remaining positions, fresh intake and completion rates, and disk free space. Pause `kifu_analyze` via cron controls if capacity or interactive latency needs attention. Resuming preserves the completed prefix and queued games.
+
+Invalid replay or unresolved rules/komi require review of the recorded reason and original SGF/evidence before using the explicit repair path. An engine outage that the consumer classifies as transient leaves the work pending and retries after a cooldown. Keep analysis tables and the queue through code rollback. Previously imported games can still be selected explicitly using the existing manual command.
+
+## Explicit admission and historical pilots
+
+Manual admission accepts 1–20 explicit album IDs and defaults to a dry run:
 
 ```sh
 KATAGO_EXPECTED_MODEL_SHA256=93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871 \

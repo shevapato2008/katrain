@@ -1,7 +1,9 @@
 import hashlib
+from datetime import timedelta
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine
@@ -91,8 +93,8 @@ async def test_board_mode_cloud_failure_is_unavailable():
     assert error.value.status_code == 503
 
 
-@pytest.mark.asyncio
-async def test_kifu_worker_commits_only_depth_verified_positions():
+@pytest.fixture
+def kifu_worker(monkeypatch):
     from katrain.cron.db import Base as CronBase
     from katrain.cron.models import (
         KifuAlbumDB, KifuAnalysisJobDB, KifuAnalysisMoveDB, ReportTaskDB, LiveMatchDB, LiveAnalysisDB,
@@ -121,28 +123,140 @@ async def test_kifu_worker_commits_only_depth_verified_positions():
         )
         db.commit()
 
-    def response(request_id, turn, visits):
-        return {
-            "id": request_id, "turnNumber": turn, "isDuringSearch": False,
-            "_wrapper": {"model_sha256": KIFU_MODEL_SHA256, "model_sha256_verified": True, "selected_model": "transformer"},
-            "rootInfo": {"visits": visits, "winrate": 0.51, "scoreLead": 0.3},
-            "moveInfos": [{"move": "Q16", "visits": visits, "winrate": 0.51, "scoreLead": 0.3, "prior": 0.2}],
-            "ownership": [0.0] * 361,
-        }
+    monkeypatch.setattr(kifu_analyze, "SessionLocal", sessions)
+    monkeypatch.setattr(kifu_analyze.config, "KATAGO_EXPECTED_MODEL_SHA256", KIFU_MODEL_SHA256)
+    return kifu_analyze.KifuAnalyzeJob(), sessions
 
-    outcomes = [1999, 2003, 2003]
+
+def _depth_response(request_id, turn, visits=2003):
+    return {
+        "id": request_id,
+        "turnNumber": turn,
+        "isDuringSearch": False,
+        "_wrapper": {"model_sha256": KIFU_MODEL_SHA256, "model_sha256_verified": True, "selected_model": "transformer"},
+        "rootInfo": {"visits": visits, "winrate": 0.51, "scoreLead": 0.3},
+        "moveInfos": [{"move": "Q16", "visits": visits, "winrate": 0.51, "scoreLead": 0.3, "prior": 0.2}],
+        "ownership": [0.0] * 361,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("visits", "status"), [((1999, 2003, 2003), "completed"), ((1999,) * 3, "failed")])
+async def test_kifu_worker_commits_only_depth_verified_positions(kifu_worker, visits, status):
+    from katrain.cron.models import KifuAnalysisJobDB, KifuAnalysisMoveDB
+
+    worker, sessions = kifu_worker
+    outcomes = iter(visits)
+
     async def analyze(**kwargs):
-        return response(kwargs["request_id"], kwargs["analyze_turns"][0], outcomes.pop(0))
+        return _depth_response(kwargs["request_id"], kwargs["analyze_turns"][0], next(outcomes))
 
-    with patch.object(kifu_analyze, "SessionLocal", sessions), \
-         patch.object(kifu_analyze.config, "KATAGO_EXPECTED_MODEL_SHA256", KIFU_MODEL_SHA256):
-        worker = kifu_analyze.KifuAnalyzeJob()
-        worker.client.analyze = AsyncMock(side_effect=analyze)
-        for _ in range(3):
-            await worker.run()
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    for _ in visits:
+        await worker.run()
+    with sessions() as db:
+        job = db.query(KifuAnalysisJobDB).one()
+        rows = db.query(KifuAnalysisMoveDB).order_by(KifuAnalysisMoveDB.move_number).all()
+        assert job.status == status
+        assert [row.move_number for row in rows] == ([0, 1] if status == "completed" else [])
+        assert all(row.root_visits >= 2000 for row in rows)
+
+
+@pytest.mark.asyncio
+async def test_kifu_worker_resumes_after_repeated_transient_engine_failures(kifu_worker, monkeypatch):
+    from katrain.cron.jobs import kifu_analyze
+    from katrain.cron.models import KifuAnalysisJobDB, KifuAnalysisMoveDB
+
+    worker, sessions = kifu_worker
+    now = 1000
+    monkeypatch.setattr(kifu_analyze, "monotonic", lambda: now)
+    request = httpx.Request("POST", "http://engine/analyze")
+    failures = [
+        httpx.ConnectError("offline", request=request),
+        httpx.ReadTimeout("timed out", request=request),
+        httpx.HTTPStatusError("rate limited", request=request, response=httpx.Response(429)),
+        httpx.HTTPStatusError("unavailable", request=request, response=httpx.Response(503)),
+    ]
+    outcomes = iter([None, *failures, None])
+
+    async def analyze(**kwargs):
+        failure = next(outcomes)
+        if failure:
+            raise failure
+        return _depth_response(kwargs["request_id"], kwargs["analyze_turns"][0])
+
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    await worker.run()
+    with sessions() as db:
+        initial_position_id = db.query(KifuAnalysisMoveDB).one().id
+
+    for _ in failures:
+        now += 61
+        await worker.run()
+    with sessions() as db:
+        job = db.query(KifuAnalysisJobDB).one()
+        assert (job.status, job.retry_count) == ("pending", 0)
+        assert "HTTPStatusError" in job.error_message
+        assert db.query(KifuAnalysisMoveDB).one().id == initial_position_id
+
+    await worker.run()
+    assert worker.client.analyze.await_count == 5
+    now += 61
+    await worker.run()
+
+    with sessions() as db:
+        job = db.query(KifuAnalysisJobDB).one()
+        assert (job.status, job.analyzed_moves, job.error_message) == ("completed", 1, None)
+        rows = db.query(KifuAnalysisMoveDB).order_by(KifuAnalysisMoveDB.move_number).all()
+        assert [row.move_number for row in rows] == [0, 1]
+        assert rows[0].id == initial_position_id
+    calls = worker.client.analyze.await_args_list
+    assert [call.kwargs["analyze_turns"] for call in calls] == [[0], [1], [1], [1], [1], [1]]
+    assert len({call.kwargs["request_id"] for call in calls}) == len(calls)
+
+
+@pytest.mark.asyncio
+async def test_kifu_worker_discards_error_from_reset_job(kifu_worker):
+    from katrain.cron.models import KifuAnalysisJobDB
+
+    worker, sessions = kifu_worker
+
+    async def analyze(**kwargs):
         with sessions() as db:
+            # A reset and fresh run may keep the same SGF, parameters and position.
             job = db.query(KifuAnalysisJobDB).one()
-            rows = db.query(KifuAnalysisMoveDB).order_by(KifuAnalysisMoveDB.move_number).all()
-            assert job.status == "completed"
-            assert [row.move_number for row in rows] == [0, 1]
-            assert all(row.root_visits >= 2000 for row in rows)
+            job.started_at += timedelta(seconds=1)
+            db.commit()
+        request = httpx.Request("POST", "http://engine/analyze")
+        raise httpx.HTTPStatusError("bad request", request=request, response=httpx.Response(400))
+
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    await worker.run()
+    with sessions() as db:
+        job = db.query(KifuAnalysisJobDB).one()
+        assert (job.status, job.retry_count, job.error_message) == ("running", 0, None)
+
+
+@pytest.mark.asyncio
+async def test_kifu_worker_rejects_empty_game(kifu_worker):
+    from katrain.cron.models import KifuAlbumDB, KifuAnalysisJobDB
+
+    worker, sessions = kifu_worker
+    empty_sgf = "(;GM[1]SZ[19]RU[Chinese]KM[7.5])"
+    with sessions() as db:
+        db.query(KifuAlbumDB).one().sgf_content = empty_sgf
+        job = db.query(KifuAnalysisJobDB).one()
+        job.sgf_sha256 = hashlib.sha256(empty_sgf.encode()).hexdigest()
+        job.analysis_parameters = resolve_parameters(empty_sgf)
+        job.total_moves = 0
+        db.commit()
+
+    async def analyze(request_id, analyze_turns, **kwargs):
+        return _depth_response(request_id, analyze_turns[0])
+
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    await worker.run()
+    worker.client.analyze.assert_not_awaited()
+    with sessions() as db:
+        job = db.query(KifuAnalysisJobDB).one()
+        assert (job.status, job.error_message) == ("failed", "SGF cannot be replayed faithfully")

@@ -3,7 +3,10 @@
 import hashlib
 import logging
 from datetime import datetime, timezone
+from time import monotonic
 from uuid import uuid4
+
+import httpx
 
 from katrain.cron import config
 from katrain.cron.clients.katago import KataGoClient
@@ -20,6 +23,13 @@ from katrain.cron.kifu_parameters import ParameterError, validate_parameters
 logger = logging.getLogger("katrain_cron.kifu_analyze")
 
 
+def _is_transient_engine_error(exc: Exception) -> bool:
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        return status == 429 or 500 <= status < 600
+    return isinstance(exc, (httpx.NetworkError, httpx.TimeoutException, httpx.RemoteProtocolError))
+
+
 class KifuAnalyzeJob(BaseJob):
     name = "kifu_analyze"
     interval_seconds = 10
@@ -27,11 +37,15 @@ class KifuAnalyzeJob(BaseJob):
     def __init__(self):
         super().__init__()
         self.client = KataGoClient(timeout=config.KIFU_ANALYSIS_TIMEOUT)
+        self._retry_delay = 0
+        self._retry_at = 0.0
 
     async def run(self) -> None:
         # Admission is explicit. Yield before every position to interactive work.
         if not config.KATAGO_EXPECTED_MODEL_SHA256:
             raise RuntimeError("Kifu analysis requires a pinned KataGo model SHA")
+        if monotonic() < self._retry_at:
+            return
         with SessionLocal() as db:
             if db.query(ReportTaskDB.id).filter(ReportTaskDB.status.in_(("pending", "running"))).first():
                 return
@@ -51,13 +65,14 @@ class KifuAnalyzeJob(BaseJob):
             job_id = job.id
             album_id = job.album_id
             model_sha256 = job.model_sha256
+            sgf_sha256 = job.sgf_sha256
             album = db.query(KifuAlbumDB).filter(KifuAlbumDB.id == job.album_id).first()
             if album is None or album.duplicate_of_id is not None:
                 self._fail(job, "Canonical professional SGF not found")
                 db.commit()
                 return
             sgf = album.sgf_content
-            if hashlib.sha256(sgf.encode("utf-8")).hexdigest() != job.sgf_sha256:
+            if hashlib.sha256(sgf.encode("utf-8")).hexdigest() != sgf_sha256:
                 self._fail(job, "Professional SGF changed after admission")
                 db.commit()
                 return
@@ -74,7 +89,12 @@ class KifuAnalyzeJob(BaseJob):
                 return
             parameter_sha256 = parameters["parameter_sha256"]
             parsed.rules, parsed.komi = parameters["rules"], parameters["komi"]
-            if parsed.dropped_midgame_setup or parsed.invalid_moves or len(parsed.moves) != job.total_moves:
+            if (
+                not parsed.moves
+                or parsed.dropped_midgame_setup
+                or parsed.invalid_moves
+                or len(parsed.moves) != job.total_moves
+            ):
                 self._fail(job, "SGF cannot be replayed faithfully")
                 db.commit()
                 return
@@ -102,7 +122,8 @@ class KifuAnalyzeJob(BaseJob):
                 db.commit()
                 return
             job.status = "running"
-            job.started_at = job.started_at or datetime.now(timezone.utc)
+            started_at = job.started_at or datetime.now(timezone.utc)
+            job.started_at = started_at
             job.error_message = None
             db.commit()
 
@@ -110,6 +131,7 @@ class KifuAnalyzeJob(BaseJob):
         # The wrapper routes by ID, so each attempt needs its own identity even
         # when job/position are reused. validate_result checks the echoed ID.
         request_id = f"kifu_{job_id}_{move_number}_{uuid4().hex}"
+        analysis_error = None
         try:
             response = await self.client.analyze(
                 request_id=request_id,
@@ -121,37 +143,42 @@ class KifuAnalyzeJob(BaseJob):
             )
             KataGoClient.validate_result(response, request_id, move_number, parsed.board_size, model_sha256, 2000)
         except Exception as exc:
-            logger.warning("Professional job %s position %s failed: %s", job_id, move_number, exc)
-            with SessionLocal() as db:
-                job = db.query(KifuAnalysisJobDB).filter(KifuAnalysisJobDB.id == job_id).first()
-                if job and job.analysis_parameters == parameters and job.status == "running":
-                    job.retry_count = (job.retry_count or 0) + 1
-                    job.status = "failed" if job.retry_count >= 3 else "pending"
-                    job.error_message = f"Position {move_number}: {type(exc).__name__}: {exc}"
-                    db.commit()
-            return
+            analysis_error = exc
+
+        transient = analysis_error is not None and _is_transient_engine_error(analysis_error)
+        if transient:
+            # The scheduler keeps one worker instance. Cool down its engine
+            # requests without consuming the job's durable validation retries.
+            self._retry_delay = min(60, max(self.interval_seconds, self._retry_delay * 2))
+            self._retry_at = monotonic() + self._retry_delay
+        else:
+            self._retry_delay = 0
+            self._retry_at = 0.0
+        if analysis_error is not None:
+            logger.warning("Professional job %s position %s failed: %s", job_id, move_number, analysis_error)
 
         with SessionLocal() as db:
             # Same lock order as admission/import; keep the album stable through
             # the position commit without holding locks during engine search.
             album = db.query(KifuAlbumDB).filter_by(id=album_id).with_for_update().first()
-            job = db.query(KifuAnalysisJobDB).filter(KifuAnalysisJobDB.id == job_id).with_for_update().first()
-            if job is None or album is None or hashlib.sha256(album.sgf_content.encode("utf-8")).hexdigest() != job.sgf_sha256:
-                if job:
-                    self._fail(job, "Professional SGF changed during analysis")
-                    db.commit()
-                return
-            # A result belongs to the exact admitted engine request, including
-            # parameters. Discard in-flight work after reset/import/metadata edits.
+            job = db.query(KifuAnalysisJobDB).filter_by(id=job_id, started_at=started_at).with_for_update().first()
+            # Discard stale results and errors after reset or import.
             if (
-                job.status != "running"
+                job is None
+                or job.status != "running"
                 or job.analysis_parameters != parameters
+                or job.sgf_sha256 != sgf_sha256
                 or job.model_sha256 != model_sha256
                 or job.requested_visits != 2000
                 or job.album_id != album_id
                 or job.total_moves != len(parsed.moves)
-                or album.duplicate_of_id is not None
             ):
+                return
+            if album is None or hashlib.sha256(album.sgf_content.encode("utf-8")).hexdigest() != sgf_sha256:
+                self._fail(job, "Professional SGF changed during analysis")
+                db.commit()
+                return
+            if album.duplicate_of_id is not None:
                 return
             try:
                 validate_parameters(album.sgf_content, job.analysis_parameters)
@@ -177,6 +204,13 @@ class KifuAnalyzeJob(BaseJob):
                 return
             if len(stored) != move_number:
                 return  # Another worker committed or a reset removed the prefix.
+            if analysis_error is not None:
+                if not transient:
+                    job.retry_count = (job.retry_count or 0) + 1
+                job.status = "failed" if not transient and job.retry_count >= 3 else "pending"
+                job.error_message = f"Position {move_number}: {type(analysis_error).__name__}: {analysis_error}"
+                db.commit()
+                return
             previous = db.query(KifuAnalysisMoveDB).filter(
                 KifuAnalysisMoveDB.job_id == job_id, KifuAnalysisMoveDB.move_number == move_number - 1,
             ).first() if move_number else None

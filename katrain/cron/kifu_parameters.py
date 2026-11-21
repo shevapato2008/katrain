@@ -16,6 +16,16 @@ from urllib.parse import urlparse
 from katrain.cron.sgf import _main_line_nodes
 
 
+KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
+KIFU_VISITS = 2000
+MODEL_PIN_ERROR = "KATAGO_EXPECTED_MODEL_SHA256 must match the professional report model for hourly analysis"
+
+
+def validate_model_pin(model_sha256):
+    if model_sha256 != KIFU_MODEL_SHA256:
+        raise ValueError(MODEL_PIN_ERROR)
+
+
 # Conservative exact presets already supported by the application's KataGo wire
 # contract. Do not infer a preset from players, country or event names.
 SUPPORTED_RULES = frozenset({"chinese", "japanese", "korean", "aga", "aga-button", "new zealand", "tromp-taylor"})

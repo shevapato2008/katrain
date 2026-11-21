@@ -13,7 +13,13 @@ from sqlalchemy import case, false, func, or_
 from sqlalchemy.orm import Session, defer, load_only
 from starlette.concurrency import run_in_threadpool
 from katrain.core.sgf_parser import SGF
-from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
+from katrain.cron.kifu_parameters import (
+    KIFU_MODEL_SHA256,
+    KIFU_VISITS,
+    ParameterError,
+    resolve_parameters,
+    validate_parameters,
+)
 from katrain.kifu_ingest.ranks import display_rank_for_game_slot
 
 from katrain.web.core.db import SessionLocal, get_db
@@ -59,8 +65,6 @@ from katrain.web.kifu.search_es import MAX_RESULT_WINDOW, SearchUnavailable
 from katrain.web.kifu.search_terms import compile_query, merge_classifications
 
 router = APIRouter()
-KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
-KIFU_VISITS = 2000
 
 _HISTORICAL_PLAYER_ALIASES = HISTORICAL_PLAYER_ALIASES
 
@@ -243,12 +247,12 @@ async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depen
     parameters = None
     parameter_error = None
     try:
+        if job is None or (job.status == "failed" and job.analysis_parameters is None):
+            # Preserve the metadata diagnostic when admission couldn't create
+            # an engine-input snapshot. Only stored snapshots establish proof.
+            resolve_parameters(canonical.sgf_content)
         if job is not None:
             parameters = validate_parameters(canonical.sgf_content, job.analysis_parameters)
-        else:
-            # Can explain missing metadata before admission, but only a stored
-            # engine-input snapshot may be presented as report parameters.
-            resolve_parameters(canonical.sgf_content)
     except ParameterError as exc:
         parameter_error = exc.as_dict()
     moves = (

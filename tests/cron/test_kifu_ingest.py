@@ -109,11 +109,73 @@ def test_incremental_job_defaults_to_disabled_and_hourly(monkeypatch):
     monkeypatch.delenv("CRON_KIFU_INGEST_ENABLED", raising=False)
     monkeypatch.delenv("CRON_KIFU_INGEST_LLM_ENABLED", raising=False)
     monkeypatch.delenv("CRON_KIFU_INGEST_MAX_TOKENS", raising=False)
+    monkeypatch.delenv("CRON_KIFU_AUTO_ANALYSIS_ENABLED", raising=False)
     reloaded = importlib.reload(config)
     assert reloaded.KIFU_INGEST_ENABLED is False
     assert reloaded.KIFU_INGEST_LLM_ENABLED is False
     assert reloaded.KIFU_INGEST_MAX_TOKENS == 0
     assert reloaded.KIFU_INGEST_INTERVAL == 3600
+    assert reloaded.KIFU_AUTO_ANALYSIS_ENABLED is False
+
+
+@pytest.mark.parametrize("pin", ["", "a" * 64])
+def test_hourly_deep_analysis_preflight_requires_report_model_pin(monkeypatch, pin):
+    from katrain.cron.jobs import kifu_ingest
+
+    monkeypatch.setattr(kifu_ingest.config, "KIFU_INGEST_ENABLED", True)
+    monkeypatch.setattr(kifu_ingest.config, "KIFU_AUTO_ANALYSIS_ENABLED", True, raising=False)
+    monkeypatch.setattr(kifu_ingest.config, "KATAGO_EXPECTED_MODEL_SHA256", pin)
+    with pytest.raises(ValueError, match="KATAGO_EXPECTED_MODEL_SHA256"):
+        kifu_ingest._publication_preflight()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("enabled", [False, True])
+async def test_hourly_deep_analysis_publisher_opts_in_for_first_native_receipt(tmp_path, monkeypatch, enabled):
+    from sqlalchemy import select
+
+    from katrain.cron.jobs import kifu_ingest
+    from katrain.kifu_ingest.state import StateStore, metadata
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+    from katrain.web.core.models_db import KifuAnalysisJob
+    from tests.web_ui.test_kifu_incremental_catalog import deep_analysis_manifest, make_engine
+
+    engine = make_engine(tmp_path / "hourly.db")
+    metadata.create_all(engine)
+    value = deep_analysis_manifest(engine)
+    StateStore(engine).remember_item("19x19", value["games"][0]["source_item_id"])
+    stage = tmp_path / "stage"
+    packages = stage / "packages"
+    packages.mkdir(parents=True)
+    (packages / "game.json").write_text(json.dumps(value), encoding="utf-8")
+    monkeypatch.setattr(kifu_ingest, "engine", engine)
+    monkeypatch.setattr(kifu_ingest.config, "KIFU_INGEST_STAGING_DIR", str(stage))
+    monkeypatch.setattr(kifu_ingest.config, "KIFU_AUTO_ANALYSIS_ENABLED", enabled)
+    monkeypatch.setattr(kifu_ingest.config, "KATAGO_EXPECTED_MODEL_SHA256", KIFU_MODEL_SHA256)
+    monkeypatch.setattr(kifu_ingest, "_publication_preflight", lambda: None)
+    monkeypatch.setattr(kifu_ingest, "_frozen_scope", lambda *_: "recent")
+
+    async def discover(*args, **kwargs):
+        return {
+            **dict.fromkeys(("candidate_ids", "checked_ids", "quarantined_ids", "eligible_ids", "items", "errors"), ()),
+            "head": {"window_start": "", "window_end": ""},
+            "coverage": {},
+            "status": "complete",
+        }
+
+    async def publish_then_pause(store, manifest, digest, *, test_publish, **kwargs):
+        receipt = await asyncio.to_thread(test_publish, manifest, digest)
+        assert receipt.get("hourly_deep_analysis", False) is enabled
+        return store.advance_batch(
+            manifest["publication_key"], "test_published", expected_status="names_ready", receipt=receipt
+        )
+
+    monkeypatch.setattr(kifu_ingest, "discover_recent", discover)
+    monkeypatch.setattr(kifu_ingest, "resume_batch", publish_then_pause)
+    await kifu_ingest.KifuIngestJob()._run_locked()
+    with engine.connect() as conn:
+        assert conn.scalars(select(KifuAnalysisJob.status)).all() == (["pending"] if enabled else [])
+    engine.dispose()
 
 
 def test_staged_grouping_only_batches_when_review_budget_is_enabled():
@@ -398,6 +460,28 @@ def test_identity_precheck_unavailability_is_controlled_and_never_returns_test_f
         (
             2,
             json.dumps(
+                {
+                    "status": "error",
+                    "error": "CRON_KIFU_AUTO_ANALYSIS_ENABLED must be enabled for a marked hourly publication",
+                }
+            ),
+            "receiver exited with status 2: "
+            "CRON_KIFU_AUTO_ANALYSIS_ENABLED must be enabled for a marked hourly publication",
+        ),
+        (
+            2,
+            json.dumps(
+                {
+                    "status": "error",
+                    "error": "KATAGO_EXPECTED_MODEL_SHA256 must match the professional report model for hourly analysis",
+                }
+            ),
+            "receiver exited with status 2: "
+            "KATAGO_EXPECTED_MODEL_SHA256 must match the professional report model for hourly analysis",
+        ),
+        (
+            2,
+            json.dumps(
                 {"status": "error", "error": "first-pass normalized name collision: jp:" + "private-name" * 1000}
             ),
             "receiver exited with status 2: first-pass normalized name collision: jp (name omitted)",
@@ -425,6 +509,8 @@ def test_identity_precheck_unavailability_is_controlled_and_never_returns_test_f
     ids=[
         "research",
         "qualified-name",
+        "auto-analysis-disabled",
+        "analysis-model-pin",
         "bounded-collision",
         "dsn",
         "unknown-research",

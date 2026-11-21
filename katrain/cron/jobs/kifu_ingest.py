@@ -26,6 +26,7 @@ from sqlalchemy.exc import NoResultFound
 from katrain.cron import config
 from katrain.cron.db import engine
 from katrain.cron.jobs.base import BaseJob
+from katrain.cron.kifu_parameters import validate_model_pin
 from katrain.kifu_ingest import catalog as rank_catalog, sync as rank_transport
 from katrain.kifu_ingest.catalog import (
     lookup_qualified_identities,
@@ -591,6 +592,8 @@ def _publication_preflight():
     """Configured hourly admission must have both native and search writers."""
     if not config.KIFU_INGEST_ENABLED:
         return
+    if config.KIFU_AUTO_ANALYSIS_ENABLED:
+        validate_model_pin(config.KATAGO_EXPECTED_MODEL_SHA256)
     from katrain.web.kifu.search_sync import sync_mode
     from katrain.web.kifu.search_es import SearchSettings
 
@@ -671,7 +674,15 @@ class KifuIngestJob(BaseJob):
             sgf_cache = {}
 
             def publish(manifest, digest):
-                return publish_manifest(engine, manifest, expected_manifest_sha256=digest, sgf_cache=sgf_cache)
+                auto_analysis = config.KIFU_AUTO_ANALYSIS_ENABLED
+                return publish_manifest(
+                    engine,
+                    manifest,
+                    expected_manifest_sha256=digest,
+                    sgf_cache=sgf_cache,
+                    deep_analysis_model=config.KATAGO_EXPECTED_MODEL_SHA256 if auto_analysis else None,
+                    mark_hourly_deep_analysis=auto_analysis,
+                )
 
             def sync(manifest, digest, verification):
                 return send_verified_manifest(

@@ -74,6 +74,126 @@ def test_actual_receiver_publication_and_replay_keep_public_api_coverage(tmp_pat
         engine.dispose()
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("producer", ["hourly", "manual", "top-level", "nonboolean", "changed-hash", "disabled", "mixed"])
+async def test_receiver_deep_analysis_requires_original_hourly_receipt(tmp_path, monkeypatch, capsys, producer):
+    from io import StringIO
+    from urllib.parse import urlsplit
+
+    import httpx
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+
+    from katrain.cron import config
+    from katrain.kifu_ingest import orchestration
+    from katrain.kifu_ingest.ranks import freeze_game_ranks
+    from katrain.kifu_ingest.sync import verify_album_api
+    from katrain.web.api.v1.endpoints import kifu
+    from katrain.web.core.models_db import KifuAlbum, KifuAnalysisJob
+    from tests.web_ui.test_kifu_incremental_catalog import deep_analysis_manifest, make_engine, publish
+    from tests.web_ui.test_kifu_rank_snapshots_api import request
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    monkeypatch.setattr(kifu.settings, "KIFU_SEARCH_BACKEND", "legacy")
+    monkeypatch.setattr(config, "KIFU_AUTO_ANALYSIS_ENABLED", producer != "disabled", raising=False)
+    monkeypatch.setattr(config, "KATAGO_EXPECTED_MODEL_SHA256", kifu.KIFU_MODEL_SHA256)
+    test_db = make_engine(tmp_path / "test.db")
+    prod_db = make_engine(tmp_path / "prod.db")
+    with prod_db.begin() as conn:
+        conn.execute(
+            KifuAlbum.__table__.insert().values(
+                id=100,
+                player_black="Unused",
+                player_white="Unused",
+                sgf_content="(;PB[Unused]PW[Unused];B[oo])",
+                source_path="unused-100.sgf",
+            )
+        )
+
+    value = deep_analysis_manifest(test_db)
+    if producer == "mixed":
+        legacy = deep_analysis_manifest(test_db, "124", moves=";B[oo];W[op]")["games"][0]
+        frozen = freeze_game_ranks(legacy)
+        legacy.update({key: frozen[key] for key in ("rank_snapshots", "rank_observations")})
+        value["games"].append(legacy)
+        value["rank_facts"].update(frozen["rank_facts"])
+    marked = producer in {"hourly", "disabled", "mixed"}
+    if producer == "manual":
+        path = tmp_path / "manual.json"
+        path.write_text(json.dumps(value), encoding="utf-8")
+        monkeypatch.setattr(orchestration, "_engine", lambda: test_db)
+        assert orchestration.main(["run-once", "--manifest", str(path), "--apply"]) == 0
+        test_receipt = json.loads(capsys.readouterr().out)["receipt"]
+        assert "hourly_deep_analysis" not in test_receipt
+        with test_db.connect() as conn:
+            assert conn.scalars(select(KifuAnalysisJob.id)).all() == []
+    elif marked:
+        test_receipt = publish(test_db, value, deep_analysis_model=kifu.KIFU_MODEL_SHA256, mark_hourly_deep_analysis=True)
+    else:
+        test_receipt = publish(test_db, value)
+    digest = canonical_sha256(value)
+
+    async def serve(req):
+        lang = req.url.params["lang"]
+        path = urlsplit(str(req.url)).path
+        with Session(test_db) as db:
+            if path == "/api/v1/kifu/albums":
+                payload = kifu.read_album_page(db, q=None, page=1, page_size=100, lang=lang)
+            else:
+                album_id = int(path.rpartition("/")[2])
+                payload = await kifu.get_kifu_album(request(), album_id, lang=lang, db=db)
+            return httpx.Response(200, json=payload.model_dump(mode="json"))
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(serve)) as client:
+        verification = await verify_album_api(client, "https://test.example", value, test_receipt)
+    verification["manifest_sha256"] = digest
+    envelope = {"manifest": value, "manifest_sha256": digest, "test_verification": verification}
+    if producer == "top-level":
+        envelope["hourly_deep_analysis"] = verification["hourly_deep_analysis"] = True
+    elif producer in {"nonboolean", "changed-hash"}:
+        verification["publication_receipt"]["hourly_deep_analysis"] = 1 if producer == "nonboolean" else True
+        if producer == "nonboolean":
+            verification["receipt_sha256"] = canonical_sha256(verification["publication_receipt"])
+
+    monkeypatch.setattr(orchestration, "_engine", lambda: prod_db)
+
+    def receive(expected=0):
+        monkeypatch.setattr(orchestration.sys, "stdin", StringIO(json.dumps(envelope)))
+        assert orchestration.main(["receive"]) == expected
+        return json.loads(capsys.readouterr().out)
+
+    if producer == "changed-hash":
+        assert receive(2)["error"] == "test rank outcome publication receipt changed"
+        return
+    if producer == "hourly":
+        monkeypatch.setattr(config, "KATAGO_EXPECTED_MODEL_SHA256", "")
+        assert "KATAGO_EXPECTED_MODEL_SHA256" in receive(2)["error"]
+        monkeypatch.setattr(config, "KATAGO_EXPECTED_MODEL_SHA256", kifu.KIFU_MODEL_SHA256)
+    if producer == "disabled":
+        assert "CRON_KIFU_AUTO_ANALYSIS_ENABLED" in receive(2)["error"]
+        monkeypatch.setattr(config, "KIFU_AUTO_ANALYSIS_ENABLED", True)
+    received = receive()
+    assert "hourly_deep_analysis" not in received["receipt"]
+    local_ids = [game["album_id"] for game in received["receipt"]["games"]]
+    assert not set(local_ids).intersection(game["album_id"] for game in test_receipt["games"])
+    monkeypatch.setattr(config, "KIFU_AUTO_ANALYSIS_ENABLED", True, raising=False)
+    monkeypatch.setattr(config, "KATAGO_EXPECTED_MODEL_SHA256", "a" * 64)
+    assert receive() == received
+    if marked:
+        monkeypatch.setattr(config, "KIFU_AUTO_ANALYSIS_ENABLED", False)
+        assert receive() == received
+    with prod_db.connect() as conn:
+        jobs = conn.execute(
+            select(KifuAnalysisJob.album_id, KifuAnalysisJob.sgf_sha256, KifuAnalysisJob.status).order_by(
+                KifuAnalysisJob.album_id
+            )
+        ).all()
+        expected = [(album_id, game["sgf_sha256"], "pending") for album_id, game in zip(local_ids, value["games"])]
+        assert jobs == (expected if marked else [])
+    test_db.dispose()
+    prod_db.dispose()
+
+
 def _manifest():
     sgf = "(;FF[4]SZ[19]PB[Black]PW[White]EV[Match]DT[2026-02-01];B[aa])"
     return {

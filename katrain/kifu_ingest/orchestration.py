@@ -18,6 +18,7 @@ import sys
 from sqlalchemy import create_engine
 
 from katrain.core.sgf_parser import SGF
+from katrain.kifu_ingest.analysis_admission import HOURLY_ANALYSIS_MARKER, supports_hourly_analysis
 from katrain.kifu_ingest.catalog import (
     FORMAT,
     _validate_manifest,
@@ -595,11 +596,19 @@ def main(argv=None):
                 raise ValueError("manifest hash mismatch")
             verification = payload.get("test_verification")
             validate_test_verification(manifest, digest, verification)
-            test_receipt = verification.get("publication_receipt") or {}
-            rank_expectation = (
+            # Only the native rank report validates its nested original receipt
+            # and includes the producer's marker in the verified receipt hash.
+            test_receipt = (verification.get("publication_receipt") or {}) if manifest["format"] == FORMAT_V2 else {}
+            publication_options = (
                 {"expected_rank_outcomes": test_receipt["rank_outcomes"]} if "rank_outcomes" in test_receipt else {}
             )
-            receipt = publish_manifest(_engine(), manifest, expected_manifest_sha256=digest, **rank_expectation)
+            if test_receipt.get(HOURLY_ANALYSIS_MARKER) is True and supports_hourly_analysis(manifest):
+                from katrain.cron import config
+
+                publication_options["require_deep_analysis"] = True
+                if config.KIFU_AUTO_ANALYSIS_ENABLED:
+                    publication_options["deep_analysis_model"] = config.KATAGO_EXPECTED_MODEL_SHA256
+            receipt = publish_manifest(_engine(), manifest, expected_manifest_sha256=digest, **publication_options)
             _output({"status": "applied", "manifest_sha256": digest, "receipt": receipt})
         else:
             _output({"status": "ok", **StateStore(_engine()).snapshot_status()})

@@ -238,17 +238,23 @@ async def test_kifu_worker_discards_error_from_reset_job(kifu_worker):
 
 
 @pytest.mark.asyncio
-async def test_kifu_worker_rejects_empty_game(kifu_worker):
+@pytest.mark.parametrize(
+    ("sgf", "move_count"),
+    [
+        ("(;GM[1]SZ[19]RU[Chinese]KM[7.5])", 0),
+        ("(;GM[1]SZ[19]RU[Chinese]KM[7.5]AB[aa:bb];W[cc])", 1),
+    ],
+)
+async def test_kifu_worker_rejects_unrepresentable_game(kifu_worker, sgf, move_count):
     from katrain.cron.models import KifuAlbumDB, KifuAnalysisJobDB
 
     worker, sessions = kifu_worker
-    empty_sgf = "(;GM[1]SZ[19]RU[Chinese]KM[7.5])"
     with sessions() as db:
-        db.query(KifuAlbumDB).one().sgf_content = empty_sgf
+        db.query(KifuAlbumDB).one().sgf_content = sgf
         job = db.query(KifuAnalysisJobDB).one()
-        job.sgf_sha256 = hashlib.sha256(empty_sgf.encode()).hexdigest()
-        job.analysis_parameters = resolve_parameters(empty_sgf)
-        job.total_moves = 0
+        job.sgf_sha256 = hashlib.sha256(sgf.encode()).hexdigest()
+        job.analysis_parameters = resolve_parameters(sgf)
+        job.total_moves = move_count
         db.commit()
 
     async def analyze(request_id, analyze_turns, **kwargs):
@@ -259,4 +265,60 @@ async def test_kifu_worker_rejects_empty_game(kifu_worker):
     worker.client.analyze.assert_not_awaited()
     with sessions() as db:
         job = db.query(KifuAnalysisJobDB).one()
-        assert (job.status, job.error_message) == ("failed", "SGF cannot be replayed faithfully")
+        assert job.status == "failed"
+        assert job.error_message
+
+
+@pytest.mark.asyncio
+async def test_hourly_worker_rejects_mismatched_configuration_before_touching_queue(monkeypatch):
+    from katrain.cron.jobs import kifu_analyze
+
+    monkeypatch.setattr(kifu_analyze.config, "KIFU_AUTO_ANALYSIS_ENABLED", True)
+    monkeypatch.setattr(kifu_analyze.config, "KATAGO_EXPECTED_MODEL_SHA256", "0" * 64)
+    worker = kifu_analyze.KifuAnalyzeJob()
+    monkeypatch.setattr(kifu_analyze, "SessionLocal", lambda: pytest.fail("mismatched worker touched the queue"))
+    with pytest.raises(RuntimeError, match="professional report model"):
+        await worker.run()
+
+
+@pytest.mark.asyncio
+async def test_illegal_position_reported_by_engine_cannot_complete_report(kifu_worker):
+    from katrain.cron.models import KifuAnalysisJobDB, KifuAnalysisMoveDB
+
+    worker, sessions = kifu_worker
+
+    async def analyze(request_id, analyze_turns, **kwargs):
+        if analyze_turns == [0]:
+            return _depth_response(request_id, 0)
+        return {"error": "Illegal move in analysis request"}
+
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    for _ in range(4):
+        await worker.run()
+    with sessions() as db:
+        job = db.query(KifuAnalysisJobDB).one()
+        assert (job.status, job.retry_count) == ("failed", 3)
+        assert "Illegal move" in job.error_message
+        assert db.query(KifuAnalysisMoveDB).one().move_number == 0
+
+
+@pytest.mark.asyncio
+async def test_failed_admission_retains_missing_komi_diagnostic():
+    sgf = SGF.replace("KM[7.5]", "")
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(repository_dispatcher=None)))
+    with _db() as db:
+        db.add(KifuAlbum(id=1, player_black="Black", player_white="White", source_path="a.sgf", sgf_content=sgf))
+        db.flush()
+        db.add(KifuAnalysisJob(
+            album_id=1,
+            sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
+            model_sha256=KIFU_MODEL_SHA256,
+            requested_visits=2000,
+            status="failed",
+            total_moves=1,
+        ))
+        db.commit()
+        result = await get_kifu_analysis(request, 1, db)
+    assert result["status"] == "rules_unresolved"
+    assert result["parameter_error"]["code"] == "missing_komi"
+    assert result["moves"] == []

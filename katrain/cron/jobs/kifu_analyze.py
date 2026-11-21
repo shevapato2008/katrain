@@ -17,8 +17,8 @@ from katrain.cron.models import (
     PRIORITY_LIVE_BACKFILL,
 )
 from katrain.cron.report_position import position_snapshot
-from katrain.cron.sgf import parse_game
-from katrain.cron.kifu_parameters import ParameterError, validate_parameters
+from katrain.cron.kifu_replay import parse_professional_replay
+from katrain.cron.kifu_parameters import KIFU_MODEL_SHA256, KIFU_VISITS, ParameterError, validate_parameters
 
 logger = logging.getLogger("katrain_cron.kifu_analyze")
 
@@ -42,7 +42,10 @@ class KifuAnalyzeJob(BaseJob):
 
     async def run(self) -> None:
         # Admission is explicit. Yield before every position to interactive work.
-        if not config.KATAGO_EXPECTED_MODEL_SHA256:
+        expected_model = config.KATAGO_EXPECTED_MODEL_SHA256
+        if config.KIFU_AUTO_ANALYSIS_ENABLED and expected_model != KIFU_MODEL_SHA256:
+            raise RuntimeError("The hourly analysis worker requires the pinned professional report model")
+        if not expected_model:
             raise RuntimeError("Kifu analysis requires a pinned KataGo model SHA")
         if monotonic() < self._retry_at:
             return
@@ -76,12 +79,12 @@ class KifuAnalyzeJob(BaseJob):
                 self._fail(job, "Professional SGF changed after admission")
                 db.commit()
                 return
-            if job.model_sha256 != config.KATAGO_EXPECTED_MODEL_SHA256 or job.requested_visits != 2000:
+            if job.model_sha256 != expected_model or job.requested_visits != KIFU_VISITS:
                 self._fail(job, "Pinned model or visits changed")
                 db.commit()
                 return
-            parsed = parse_game(sgf)
             try:
+                parsed = parse_professional_replay(sgf, expected_moves=job.total_moves)
                 parameters = validate_parameters(sgf, job.analysis_parameters)
             except ParameterError as exc:
                 self._fail(job, str(exc))
@@ -109,7 +112,7 @@ class KifuAnalyzeJob(BaseJob):
                 db.commit()
                 return
             if len(rows) > job.total_moves + 1 or any(
-                row.move_number != position or row.root_visits < 2000 for position, row in enumerate(rows)
+                row.move_number != position or row.root_visits < KIFU_VISITS for position, row in enumerate(rows)
             ):
                 self._fail(job, "Stored analysis positions are not contiguous or deep enough")
                 db.commit()
@@ -137,11 +140,11 @@ class KifuAnalyzeJob(BaseJob):
                 request_id=request_id,
                 moves=[[color, coord] for color, coord in parsed.moves[:move_number]],
                 rules=parsed.rules, komi=parsed.komi, board_size=parsed.board_size,
-                max_visits=2000, analyze_turns=[move_number], include_ownership=True,
+                max_visits=KIFU_VISITS, analyze_turns=[move_number], include_ownership=True,
                 include_policy=False, initial_stones=parsed.initial_stones,
                 initial_player=parsed.initial_player, priority=1,
             )
-            KataGoClient.validate_result(response, request_id, move_number, parsed.board_size, model_sha256, 2000)
+            KataGoClient.validate_result(response, request_id, move_number, parsed.board_size, model_sha256, KIFU_VISITS)
         except Exception as exc:
             analysis_error = exc
 
@@ -169,7 +172,7 @@ class KifuAnalyzeJob(BaseJob):
                 or job.analysis_parameters != parameters
                 or job.sgf_sha256 != sgf_sha256
                 or job.model_sha256 != model_sha256
-                or job.requested_visits != 2000
+                or job.requested_visits != KIFU_VISITS
                 or job.album_id != album_id
                 or job.total_moves != len(parsed.moves)
             ):
@@ -198,7 +201,7 @@ class KifuAnalyzeJob(BaseJob):
                 self._fail(job, "parameter_mismatch: Stored positions changed during analysis")
                 db.commit()
                 return
-            if any(row.move_number != number or row.root_visits < 2000 for number, row in enumerate(stored)):
+            if any(row.move_number != number or row.root_visits < KIFU_VISITS for number, row in enumerate(stored)):
                 self._fail(job, "Stored analysis positions changed during analysis")
                 db.commit()
                 return

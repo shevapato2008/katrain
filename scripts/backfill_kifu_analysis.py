@@ -13,8 +13,8 @@ from sqlalchemy.exc import IntegrityError
 from katrain.cron.config import KATAGO_EXPECTED_MODEL_SHA256
 from katrain.cron.db import SessionLocal
 from katrain.cron.models import KifuAlbumDB, KifuAnalysisJobDB, KifuAnalysisMoveDB
-from katrain.cron.sgf import parse_game
-from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
+from katrain.cron.kifu_parameters import KIFU_VISITS, ParameterError, resolve_parameters, validate_parameters
+from katrain.cron.kifu_replay import parse_professional_replay
 
 
 def load_evidence(path):
@@ -40,11 +40,9 @@ def admit_album(db, album, model_sha256, *, evidence=None, reanalyze=False, appl
         album = db.query(KifuAlbumDB).filter_by(id=album.id).populate_existing().with_for_update().one()
     if album.duplicate_of_id is not None:
         raise ParameterError("invalid_album", "Admission requires a canonical album")
-    parsed = parse_game(album.sgf_content)
-    if parsed.dropped_midgame_setup or parsed.invalid_moves or not parsed.moves:
-        raise ParameterError("invalid_sgf", "SGF cannot be replayed faithfully")
+    parsed = parse_professional_replay(album.sgf_content)
     sha = hashlib.sha256(album.sgf_content.encode("utf-8")).hexdigest()
-    identity = dict(album_id=album.id, sgf_sha256=sha, model_sha256=model_sha256, requested_visits=2000)
+    identity = dict(album_id=album.id, sgf_sha256=sha, model_sha256=model_sha256, requested_visits=KIFU_VISITS)
     query = db.query(KifuAnalysisJobDB).filter_by(**identity)
     existing = (query.populate_existing().with_for_update() if apply else query).first()
     parameters = None
@@ -90,7 +88,7 @@ def admit_album(db, album, model_sha256, *, evidence=None, reanalyze=False, appl
                 )
             )
         db.commit()
-    return f"{action}: {len(parsed.moves)} moves, {parameters['rules']}, komi {parameters['komi']}, 2000 visits"
+    return f"{action}: {len(parsed.moves)} moves, {parameters['rules']}, komi {parameters['komi']}, {KIFU_VISITS} visits"
 
 
 def main() -> None:

@@ -23,6 +23,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, defer
 
 from katrain.core.sgf_parser import ParseError, SGF
+from katrain.cron.kifu_parameters import validate_model_pin
+from katrain.kifu_ingest.analysis_admission import (
+    AUTO_ANALYSIS_DISABLED_ERROR,
+    HOURLY_ANALYSIS_MARKER,
+    admit_new_albums,
+    supports_hourly_analysis,
+)
 from katrain.kifu_ingest.exclusions import assert_source_allowed
 from katrain.kifu_ingest.preparation import derive_metadata
 from katrain.kifu_ingest.ranks import (
@@ -41,6 +48,7 @@ from katrain.web.core.models_db import (
     KifuAlbum,
     KifuAlbumSource,
     KifuAlbumEventSelection,
+    KifuAnalysisJob,
     KifuEvent,
     KifuEventAlias,
     KifuNameBatch,
@@ -1874,6 +1882,13 @@ def undo_publication(engine, batch_id, *, lock_timeout_ms=15000):
                 for change in changes
                 if change["target_table"] == KifuAlbum.__tablename__ and change["before_image"] is None
             }
+            if deleted_albums:
+                # Serialize with manual admission's album row lock and FK inserts.
+                conn.execute(
+                    select(KifuAlbum.id).where(KifuAlbum.id.in_(deleted_albums)).order_by(KifuAlbum.id).with_for_update()
+                ).all()
+                dependent_job = select(KifuAnalysisJob.id).where(KifuAnalysisJob.album_id.in_(deleted_albums)).limit(1)
+                _require(conn.scalar(dependent_job) is None, "analysis job blocks publication compensation")
             child_batch_id = repairs["dedup"]["batch_id"] if repairs else None
             foreign_dedup = select(KifuDedupChange.id).where(
                 or_(
@@ -3470,7 +3485,16 @@ def _publish_rank_correction(engine, manifest, manifest_hash, lock_timeout_ms):
 
 
 def publish_manifest(
-    engine, manifest, *, expected_manifest_sha256, lock_timeout_ms=15000, sgf_cache=None, expected_rank_outcomes=None
+    engine,
+    manifest,
+    *,
+    expected_manifest_sha256,
+    lock_timeout_ms=15000,
+    sgf_cache=None,
+    expected_rank_outcomes=None,
+    deep_analysis_model=None,
+    require_deep_analysis=False,
+    mark_hourly_deep_analysis=False,
 ):
     """Publish all games or roll back all rows, evidence, scopes and receipt.
 
@@ -3489,6 +3513,9 @@ def publish_manifest(
     evidence, with local scope binding recorded separately from text approval.
     Frozen linked-literal/composition/selection profiles are never broadened;
     if their current proof cannot cover a new card the whole publication fails.
+    An opted-in hourly caller can admit reports in the same transaction. Only
+    the original TEST publisher requests a marker for the verified handoff.
+    The fixed receiver requires admission for that marker on first publication.
     """
     prepared = _validate_manifest(manifest, expected_manifest_sha256)
     with _publication_guard(engine):
@@ -3500,12 +3527,31 @@ def publish_manifest(
                     raise
                 raise PublicationError(str(exc)) from exc
         return _publish_prepared(
-            engine, manifest, expected_manifest_sha256, prepared, lock_timeout_ms, sgf_cache, expected_rank_outcomes
+            engine,
+            manifest,
+            expected_manifest_sha256,
+            prepared,
+            lock_timeout_ms,
+            sgf_cache,
+            expected_rank_outcomes,
+            deep_analysis_model=deep_analysis_model if supports_hourly_analysis(manifest) else None,
+            require_deep_analysis=require_deep_analysis,
+            mark_hourly_deep_analysis=mark_hourly_deep_analysis,
         )
 
 
 def _publish_prepared(
-    engine, manifest, expected_manifest_sha256, prepared, lock_timeout_ms, sgf_cache, expected_rank_outcomes=None
+    engine,
+    manifest,
+    expected_manifest_sha256,
+    prepared,
+    lock_timeout_ms,
+    sgf_cache,
+    expected_rank_outcomes=None,
+    *,
+    deep_analysis_model=None,
+    require_deep_analysis=False,
+    mark_hourly_deep_analysis=False,
 ):
     manifest_hash = expected_manifest_sha256
     resource = historical_ranks.EvidenceBudget()
@@ -3574,6 +3620,10 @@ def _publish_prepared(
                 )
                 _coverage(conn, requested_ids, resource=resource)
                 return deepcopy(artifact["receipt"])
+            if require_deep_analysis:
+                _require(deep_analysis_model is not None, AUTO_ANALYSIS_DISABLED_ERROR)
+            if deep_analysis_model is not None:
+                validate_model_pin(deep_analysis_model)
             conflict = conn.scalar(
                 select(KifuNameBatch.id).where(
                     KifuNameBatch.reviewed_artifact["publication_key"].as_string() == manifest["publication_key"]
@@ -3794,6 +3844,10 @@ def _publish_prepared(
                     == portable_rank_outcomes(expected_rank_outcomes),
                     "frozen TEST rank outcome final CAS changed",
                 )
+            if deep_analysis_model is not None:
+                admit_new_albums(conn, results, deep_analysis_model)
+                if mark_hourly_deep_analysis:
+                    receipt[HOURLY_ANALYSIS_MARKER] = True
             conn.execute(
                 KifuNameBatch.__table__.update()
                 .where(KifuNameBatch.id == batch_id)

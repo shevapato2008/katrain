@@ -5,7 +5,7 @@ from hashlib import sha256
 import importlib
 
 import pytest
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine, event, func, select
 from sqlalchemy.orm import Session
 
 from katrain.core.sgf_parser import SGF
@@ -13,6 +13,8 @@ from katrain.web.core.models_db import (
     Base,
     KifuAlbum,
     KifuAlbumSource,
+    KifuAnalysisJob,
+    KifuAnalysisMove,
     KifuNameBatch,
     KifuNameChange,
     KifuNameResearchEvidence,
@@ -214,8 +216,246 @@ def manifest(source_id="123", black="Black Alias", event="Summer Cup"):
     }
 
 
-def publish(engine, value):
-    return publisher().publish_manifest(engine, value, expected_manifest_sha256=canonical_sha256(value))
+def publish(engine, value, **options):
+    return publisher().publish_manifest(engine, value, expected_manifest_sha256=canonical_sha256(value), **options)
+
+
+def deep_analysis_manifest(
+    engine, source_id="123", *, size="SZ[19]", parameters="RU[Japanese]KM[6.5]", extra="", moves=";B[bb];W[cc]"
+):
+    from katrain.kifu_ingest.preparation import derive_metadata
+    from katrain.kifu_ingest.ranks import FORMAT_V2, freeze_historical_game_ranks
+
+    value = manifest(source_id)
+    game = value["games"][0]
+    sgf = f"(;FF[4]GM[1]{size}PB[Black Alias]PW[White Alias]EV[Summer Cup]DT[2026-02-01]{parameters}{extra}{moves})"
+    digest = sha256(sgf.encode()).hexdigest()
+    game.update(
+        origin_path=f"data/kifu-album/19x19/{source_id}.sgf",
+        sgf_content=sgf,
+        sgf_sha256=digest,
+        raw_sha256=digest,
+        metadata=derive_metadata(sgf),
+        identities={"black": {"canonical_name": "Black"}, "white": {"canonical_name": "White"}},
+    )
+    with engine.connect() as conn:
+        frozen = freeze_historical_game_ranks(conn, [game], matched_at="2026-11-03T00:00:00+00:00")[0]
+    game.update({k: frozen[k] for k in ("rank_snapshots", "rank_observations")})
+    return {**value, "format": FORMAT_V2, "rank_facts": frozen["rank_facts"]}
+
+
+@pytest.mark.parametrize("size", ["SZ[19]", "SZ[19:19]", ""])
+def test_deep_analysis_pending_publication_replay_and_reuse(engine, size):
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256, KIFU_VISITS
+
+    value = deep_analysis_manifest(engine, size=size, extra="RE[0]")
+    options = {"deep_analysis_model": KIFU_MODEL_SHA256, "mark_hourly_deep_analysis": True}
+    receipt = publish(engine, value, **options)
+    assert receipt["hourly_deep_analysis"] is True
+    assert publish(engine, value, **options) == receipt
+    reused = deep_analysis_manifest(engine, source_id="124", size=size, extra="RE[0]")
+    assert publish(engine, reused, **options)["games"][0]["action"] == "reused"
+    with engine.connect() as conn:
+        job = conn.execute(select(KifuAnalysisJob.__table__)).mappings().one()
+        assert (job["album_id"], job["sgf_sha256"], job["model_sha256"], job["requested_visits"]) == (
+            receipt["games"][0]["album_id"],
+            value["games"][0]["sgf_sha256"],
+            KIFU_MODEL_SHA256,
+            KIFU_VISITS,
+        )
+        assert (job["status"], job["total_moves"], job["analyzed_moves"]) == ("pending", 2, 0)
+        assert job["analysis_parameters"]["rules"] == "japanese"
+        assert conn.scalar(select(func.count()).select_from(KifuAnalysisMove)) == 0
+
+
+@pytest.mark.parametrize(
+    "sgf_options,reason",
+    [
+        ({"parameters": "RU[Japanese]"}, "missing_komi"),
+        ({"size": "SZ[19:13]", "moves": ";B[aa]"}, "unsupported_board_size"),
+        ({"extra": "AB[aa:bb]"}, "invalid_sgf"),
+        ({"moves": ";B[zz]"}, "invalid_sgf"),
+        ({"moves": ""}, "invalid_sgf"),
+        ({"moves": ";B[aa][bb]"}, "invalid_sgf"),
+        ({"moves": ";B[bb];PL[B];B[cc]"}, "invalid_sgf: Non-root PL"),
+        ({"extra": "PL[B][W]"}, "invalid_sgf: Root PL"),
+        ({"extra": "PL[X]"}, "invalid_sgf: Root PL"),
+        ({"extra": "PL[W]"}, "invalid_sgf: Root PL"),
+        ({"moves": ";B[bb];B[cc]"}, "invalid_sgf: Moves must alternate"),
+        ({"extra": "HA[2]"}, "invalid_sgf: Handicap setup"),
+        ({"extra": "HA[2]AB[aa]"}, "invalid_sgf: Handicap setup"),
+        ({"extra": "HA[2]AB[aa][dd]AW[ss]"}, "invalid_sgf: Handicap setup"),
+        ({"extra": "HA[2][3]AB[aa][dd]"}, "invalid_sgf: Root HA"),
+    ],
+)
+def test_deep_analysis_unreplayable_game_still_publishes_with_diagnostic(engine, sgf_options, reason):
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+
+    value = deep_analysis_manifest(engine, **sgf_options)
+    receipt = publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)
+    assert receipt["status"] == "applied"
+    with engine.connect() as conn:
+        job = conn.execute(select(KifuAnalysisJob.__table__)).mappings().one()
+        assert (job["status"], job["analyzed_moves"]) == ("failed", 0)
+        assert job["error_message"].startswith(reason if ": " in reason else f"{reason}: ")
+        assert conn.scalar(select(func.count()).select_from(KifuAnalysisMove)) == 0
+
+
+def test_deep_analysis_admits_explicit_handicap_setup(engine):
+    from katrain.cron.kifu_parameters import KIFU_MODEL_SHA256
+
+    value = deep_analysis_manifest(engine, extra="HA[2]AB[dd][pp]PL[W]", moves=";W[bb];B[cc]")
+    publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)
+    with engine.connect() as conn:
+        assert conn.scalars(select(KifuAnalysisJob.status)).all() == ["pending"]
+
+
+def test_manual_reanalysis_cannot_reset_invalid_automatic_admission(engine):
+    from katrain.cron.kifu_parameters import KIFU_MODEL_SHA256, ParameterError
+    from scripts.backfill_kifu_analysis import admit_album
+
+    value = deep_analysis_manifest(engine, extra="AB[aa:bb]")
+    receipt = publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, receipt["games"][0]["album_id"])
+        with pytest.raises(ParameterError, match="Compressed or invalid setup"):
+            admit_album(db, album, KIFU_MODEL_SHA256, reanalyze=True, apply=True)
+        db.rollback()
+        job = db.scalars(select(KifuAnalysisJob)).one()
+        assert job.status == "failed"
+        assert job.error_message.startswith("invalid_sgf: Compressed or invalid setup")
+
+
+def test_manual_admission_preserves_other_square_boards(engine):
+    from katrain.cron.kifu_parameters import KIFU_MODEL_SHA256
+    from scripts.backfill_kifu_analysis import admit_album
+
+    with Session(engine) as db:
+        album = KifuAlbum(
+            player_black="Black",
+            player_white="White",
+            source_path="manual-9x9.sgf",
+            sgf_content="(;SZ[9:9]PB[Black]PW[White]RU[Japanese]KM[6.5];B[aa])",
+            board_size=9,
+            move_count=1,
+        )
+        db.add(album)
+        db.commit()
+        admit_album(db, album, KIFU_MODEL_SHA256, apply=True)
+        job = db.scalars(select(KifuAnalysisJob)).one()
+        assert (job.status, job.total_moves) == ("pending", 1)
+
+
+def test_deep_analysis_disabled_first_publication_prevents_replay_backfill(engine):
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+
+    value = deep_analysis_manifest(engine)
+    original = publish(engine, value)
+    assert "hourly_deep_analysis" not in original
+    assert publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256, mark_hourly_deep_analysis=True) == original
+    with engine.connect() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuAnalysisJob)) == 0
+
+
+@pytest.mark.parametrize("all_new", [False, True])
+def test_deep_analysis_admits_only_new_canonical_games(engine, all_new):
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+
+    moves = "".join(f';{"B" if i % 2 == 0 else "W"}[{chr(97 + i % 19)}{chr(97 + i // 19)}]' for i in range(32))
+    first = deep_analysis_manifest(engine, extra="AB[ss]RE[B+R]C[first source]", moves=moves)
+    second = deep_analysis_manifest(engine, "124", extra="AB[ss]RE[B+R]C[other source]", moves=moves)
+    if all_new:
+        first["games"].extend(second["games"])
+        results = publish(engine, first, deep_analysis_model=KIFU_MODEL_SHA256)["games"]
+        canonical_id, result = results[0]["album_id"], results[1]
+    else:
+        canonical_id = publish(engine, first)["games"][0]["album_id"]
+        result = publish(engine, second, deep_analysis_model=KIFU_MODEL_SHA256)["games"][0]
+    assert result["action"] == "inserted"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == result["album_id"])) == canonical_id
+        assert conn.scalars(select(KifuAnalysisJob.album_id)).all() == ([canonical_id] if all_new else [])
+
+
+def test_deep_analysis_skips_new_canonical_of_historical_game(engine):
+    from katrain.cron.kifu_parameters import KIFU_MODEL_SHA256
+
+    moves = "".join(f';{"B" if i % 2 == 0 else "W"}[{chr(97 + i % 19)}{chr(97 + i // 19)}]' for i in range(32))
+    value = deep_analysis_manifest(engine, extra="AB[ss]RE[B+R]C[new StarPoint source]", moves=moves)
+    original = deep_analysis_manifest(engine, "124", extra="AB[ss]RE[B+R]C[historical GoKifu source]", moves=moves)
+    legacy = original["games"][0]
+    with engine.begin() as conn:
+        source_id = conn.execute(KifuSource.__table__.insert().values(source_key="gokifu")).inserted_primary_key[0]
+        conn.execute(
+            KifuAlbum.__table__.update()
+            .where(KifuAlbum.id == 11)
+            .values(**legacy["metadata"], sgf_content=legacy["sgf_content"])
+        )
+        conn.execute(
+            KifuAlbumSource.__table__.insert().values(
+                album_id=11, source_id=source_id, origin_path="legacy-11.sgf", match_method="source_path"
+            )
+        )
+    result = publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)["games"][0]
+    assert result["action"] == "inserted"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.duplicate_of_id).where(KifuAlbum.id == 11)) == result["album_id"]
+        assert conn.scalars(select(KifuAnalysisJob.id)).all() == []
+
+
+def test_deep_analysis_rank_only_publication_does_not_mark_or_admit(engine):
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+
+    value = deep_analysis_manifest(engine)
+    publish(engine, value)
+    correction = deepcopy(value)
+    correction.update(mode="rank_only", publication_key="rank-only")
+    correction["games"][0]["rank_correction"] = {
+        "original_manifest_sha256": canonical_sha256(value),
+        "expected_snapshots": {
+            side: snapshot["content_sha256"] for side, snapshot in value["games"][0]["rank_snapshots"].items()
+        },
+    }
+    receipt = publish(engine, correction, deep_analysis_model=KIFU_MODEL_SHA256, mark_hourly_deep_analysis=True)
+    assert "hourly_deep_analysis" not in receipt
+    with engine.connect() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuAnalysisJob)) == 0
+
+
+def test_deep_analysis_insert_failure_rolls_back_publication(engine):
+    from sqlalchemy.exc import OperationalError
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+
+    value = deep_analysis_manifest(engine)
+    before = state(engine)
+
+    def break_job_insert(conn, cursor, statement, parameters, context, executemany):
+        if "INSERT INTO kifu_analysis_jobs" in statement:
+            raise OperationalError(statement, parameters, RuntimeError("forced job insert failure"))
+
+    event.listen(engine, "before_cursor_execute", break_job_insert)
+    try:
+        with pytest.raises(OperationalError, match="forced job insert failure"):
+            publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)
+    finally:
+        event.remove(engine, "before_cursor_execute", break_job_insert)
+    assert state(engine) == before
+    assert publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)["status"] == "applied"
+
+
+def test_deep_analysis_blocks_publication_undo_without_partial_reversal(engine):
+    from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256
+
+    value = deep_analysis_manifest(engine)
+    receipt = publish(engine, value, deep_analysis_model=KIFU_MODEL_SHA256)
+    before = state(engine)
+    with pytest.raises(publisher().PublicationError, match="analysis job blocks publication compensation"):
+        publisher().undo_publication(engine, receipt["batch_id"])
+    assert state(engine) == before
+    with engine.begin() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuAnalysisJob)) == 1
+        conn.execute(KifuAnalysisJob.__table__.delete())
+    assert publisher().undo_publication(engine, receipt["batch_id"])["status"] == "undone"
 
 
 def assert_qualified(engine, ids):

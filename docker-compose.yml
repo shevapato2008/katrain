@@ -79,6 +79,8 @@ services:
       - CLOUD_KATAGO_URL=${CLOUD_KATAGO_URL:-http://host.docker.internal:8002}
       # Same analysis endpoint as cron below; never infer it from gameplay routing.
       - REPORT_ENGINE_HEALTH_URL=${REPORT_KATAGO_URL:-http://host.docker.internal:8002}/health
+      - KATAGO_EXPECTED_MODEL_SHA256=${KATAGO_EXPECTED_MODEL_SHA256:-}
+      - CRON_KIFU_AUTO_ANALYSIS_ENABLED=${CRON_KIFU_AUTO_ANALYSIS_ENABLED:-false}
       # Membership remains legacy/disabled until this deployment explicitly enables it.
       - KATRAIN_ENVIRONMENT=${KATRAIN_ENVIRONMENT:-production}
       - MEMBERSHIP_MODE=${MEMBERSHIP_MODE:-legacy}
@@ -167,6 +169,8 @@ services:
       - CRON_LOG_LEVEL=INFO
       - CRON_REPORT_ANALYZE_ENABLED=true
       - CRON_REPORT_CONCURRENCY=3
+      - CRON_KIFU_ANALYZE_ENABLED=${CRON_KIFU_ANALYZE_ENABLED:-false}
+      - CRON_KIFU_AUTO_ANALYSIS_ENABLED=${CRON_KIFU_AUTO_ANALYSIS_ENABLED:-false}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

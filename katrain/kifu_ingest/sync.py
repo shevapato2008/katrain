@@ -17,6 +17,8 @@ import subprocess
 import time
 
 from katrain.core.sgf_parser import SGF
+from katrain.cron.kifu_parameters import MODEL_PIN_ERROR
+from katrain.kifu_ingest.analysis_admission import AUTO_ANALYSIS_DISABLED_ERROR
 from katrain.kifu_ingest.catalog import validate_identity_check_request, validate_identity_check_response
 from katrain.kifu_ingest.exclusions import assert_source_allowed
 from katrain.kifu_ingest.ranks import (
@@ -41,6 +43,8 @@ _CONTEXT_VERSION = "kifu-rank-publication-context-v1"
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _SAFE_RECEIVER_ERRORS = frozenset(
     {
+        AUTO_ANALYSIS_DISABLED_ERROR,
+        MODEL_PIN_ERROR,
         "invalid research: incremental research differs from reviewed text or sources",
         "invalid research: retained original differs from output",
         "invalid research: incremental renewal must preserve a pinned prior display",

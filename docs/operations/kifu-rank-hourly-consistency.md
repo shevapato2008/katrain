@@ -20,14 +20,81 @@
 
 首次应用在已有写锁、表锁后复核 material cohort；已应用重放验证原 journal，不按今日资料重算。后续谱引用的原始依据会阻止其父发布被撤销。
 
-历史工具默认只读：
+## TEST 与 PROD 历史段位盘点
+
+先分别在 TEST 和 PROD 的实际主机上核对数据库身份、部署版本和受控连接。两边各用一个私有目录，在进程设置中读取 DSN。为两边使用同一个带时区的 UTC 记录时间 `freeze_utc`，保存实际运行时间与环境身份。PostgreSQL 在只读的可重复读事务中扫描当时可见的数据，回看截止日取每局原谱里可信的对局日期。
+
+在每个环境运行全库盘点，分别保留可审定修复的清单和已受保护的 v3 复核证据。
 
 ```bash
+umask 077
 python scripts/repair_historical_kifu_ranks.py \
-  --matched-at <固定UTC时间> --output <私有manifest路径>
+  --matched-at "$freeze_utc" --output "$private_dir/rank-repair.json" \
+  > "$private_dir/rank-prepare-summary.json"
+python scripts/repair_historical_kifu_ranks.py --audit-existing-v3 \
+  --matched-at "$freeze_utc" --output "$private_dir/rank-v3-audit.json" \
+  > "$private_dir/rank-v3-summary.json"
 ```
 
-DSN 来自进程内 settings，不放命令行。逐库冻结、审查 census/变更/拒绝原因，再使用显式 `--apply` 或 `--undo`、manifest 与 SHA。每个 part 最多 100 局/200 槽，独立事务；失败停止并记录已提交范围，不能宣称整个 envelope 原子回滚。保留私有前像与精确补偿凭据。
+可写清单的 `census` 覆盖全库。逐库核对身份、范围、来源、段位分类和拒绝原因，区分可靠补齐、真实原值及待核。用各库本地 album ID 抽查可补齐、保留原值和无法补齐的实际棋谱。核对 PROD 的 `179180` 原谱日期和双方来源。来源展示日期可能来自上传时间，缺少可信原谱日期时，按 `untrusted_target_date` 留待核。
+
+v3 私有证据逐槽记录本地 album ID、侧、冻结快照摘要、原发布引用及新判定。用以下字段解释各侧结果。
+
+| v3 审计结果 | 处理 |
+| --- | --- |
+| `consistent_slots` | 有依据且显示段位、数值与类别一致 |
+| `refused_slots` | 按所列原因保留当前冻结状态，等可靠证据 |
+| `supported_difference_slots` | 复核原快照、拟结果、实际原始依据、本地绑定和受影响发布 |
+| `resource_deferred_slots` | 缩小核对范围并复跑，记录尚未完成的槽位 |
+| `integrity_failure_slots` | 核查冻结快照、原谱、原发布、精确 journal 或本地绑定 |
+
+隐藏棋谱和重复棋谱的受保护槽位也参与复核。证据记录当前可见性，`excluded_from_repair_slots` 另外统计这些槽位。
+
+按 `evidence_omitted` 检查导出是否达到 128 MiB 限额。控制台仍有本次范围的总数。用汇总中的 `first_omitted_album_id` 作为 `--audit-from-album-id` 的包含性起点，写入另一个新私有文件。起点棋谱可能部分重叠，证据按环境、album ID 与侧对账。也可用 `--album-id` 聚焦一局或数局。补跑读取的是该次连接中可见的数据，保留每次输出，发生变化时重新核对。命令失败时保存现场并重跑到新的输出路径，使用完整 JSON 文件作为证据。
+
+现有写入入口仅能补当前无快照的槽位或更正允许替换的旧快照。v3 支持差异记录直接归属发布，并以 `retained_receipts_require_review` 标记仍需核对后续依赖。批准任何更正前，另行按环境、album ID、侧和冻结摘要分批定位保留该快照或原始依据的后续发布，核对其回执与重放。v3 支持差异保持验收未完成，直到独立审核的安全更正路径通过验证，能保留原生回执、重放和精确补偿。缺证据的槽位按实际拒绝原因登记。资源延后和校验失败分别跟踪至有结论。
+
+## 审定与分批写入
+
+每库单独审定实际数据库身份、批准范围、完整 `census`、拒绝原因和 `manifest_sha256`。每个 part 最多 100 局、200 槽。即使使用一个 `--part`，CLI 也会读取整个 JSON 清单，单文件读取上限为 128 MiB。写入前使用与 CLI 相同的读取及校验路径确认整份清单可重新读取，并核对准备命令返回的规范化 JSON 摘要。
+
+```bash
+python - "$private_dir" <<'PYCODE'
+import json
+import sys
+from pathlib import Path
+
+from scripts.repair_historical_kifu_ranks import _read
+from katrain.web.kifu.historical_rank_repair import manifest_sha256, validate_manifest
+
+root = Path(sys.argv[1])
+summary = json.loads((root / "rank-prepare-summary.json").read_text(encoding="utf-8"))
+manifest = validate_manifest(_read(root / "rank-repair.json"))
+if summary["status"] != "prepared" or manifest_sha256(manifest) != summary["manifest_sha256"]:
+    raise SystemExit("Rank manifest SHA verification failed")
+print(summary["manifest_sha256"])
+PYCODE
+```
+
+`--expected-sha256` 取上述 `manifest_sha256`。若全库清单超过上限，保留全库只读盘点，再按已审定的本地 album ID 用重复的 `--album-id` 分片冻结，分别复查完整清单、批准范围及各自 SHA。
+
+先在 TEST 的真实受控连接上按审定顺序执行，每部分独立提交。每次保存命令输出和私有回执。记录已改、未变化和拒绝的数量及原因，以及失败位置和恢复入口。
+
+```bash
+python scripts/repair_historical_kifu_ranks.py --apply \
+  --manifest "$private_dir/rank-repair.json" --expected-sha256 "$reviewed_manifest_sha256" \
+  --part "$part_number" --audit-output "$private_dir/apply-part-$part_number.json"
+```
+
+失败时核对 `completed_parts` 与 `commit_outcome_unknown_part`。对提交结果未知的部分，使用相同清单、SHA 和 part 重试，用持久化 CAS journal 确认结果。回执文件使用新路径。需要精确补偿时，对已提交部分按反序执行各自的 `--undo`，保存对应回执。
+
+```bash
+python scripts/repair_historical_kifu_ranks.py --undo \
+  --manifest "$private_dir/rank-repair.json" --expected-sha256 "$reviewed_manifest_sha256" \
+  --part "$part_number" --audit-output "$private_dir/undo-part-$part_number.json"
+```
+
+TEST 验收后才用 PROD 自己的清单、身份和 SHA 执行。两边均复查代表性修复，验证真实小时新谱的双方段位、来源、待核原因以及 TEST→PROD 的 rank 对账和原发布重放。私有清单和证据记录留在受控存储。
 
 ## 单一采集者与发布配置
 

@@ -840,3 +840,182 @@ def test_disposable_postgresql_readonly_prepare_cas_rollback_and_source_lock():
         with control.begin() as admin:
             admin.execute(text(f"DROP SCHEMA {schema} CASCADE"))
         control.dispose()
+
+
+def test_cli_audits_existing_v3_as_of_without_replacing_native_receipts(tmp_path, capsys, monkeypatch):
+    from katrain.kifu_ingest.preparation import derive_metadata
+    from tests.web_ui.test_kifu_historical_rank_native import prepared, seed_prior
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, publish
+
+    engine = make_engine(tmp_path / "v3-audit.db")
+    seed_prior(engine)
+    known = prepared(engine, item="99101")
+    known_receipt = publish(engine, known)
+    undated = prepared(engine, item="99102", day="")
+    undated_game = undated["games"][0]
+    undated_game["source_metadata"] = {"playTime": {"date": {"year": 2026, "month": 2, "day": 1}}}
+    undated_game["metadata"] = derive_metadata(undated_game["sgf_content"], undated_game["source_metadata"])
+    undated_receipt = publish(engine, undated)
+    prod = make_engine(tmp_path / "v3-audit-prod.db")
+    seed_prior(prod)
+    seed_prior(prod, day="2026-03-01", ident=113)
+    prod_receipt = publish(prod, undated)
+    assert prod_receipt["games"][0]["album_id"] != undated_receipt["games"][0]["album_id"]
+    assert publish(prod, undated) == prod_receipt
+    with prod.connect() as conn:
+        snapshot = conn.scalar(
+            select(m.KifuAlbumRankSnapshot.snapshot).where(
+                m.KifuAlbumRankSnapshot.album_id == prod_receipt["games"][0]["album_id"],
+                m.KifuAlbumRankSnapshot.side == "black",
+            )
+        )
+        assert snapshot == undated_game["rank_snapshots"]["black"]
+        assert snapshot["refusal_reason"] == "untrusted_target_date"
+    native_batch = deepcopy(known_receipt)
+    seed_prior(engine, raw="8p", day="2026-01-15", ident=991)
+    # An originally discovered newer game must still be ignored for the target.
+    seed_prior(engine, raw="9p", day="2026-03-01", ident=992)
+    older = prepared(engine, item="99103", day="2026-01-03")
+    older_receipt = publish(engine, older)
+    with engine.begin() as conn:
+        conn.execute(
+            update(m.KifuAlbum)
+            .where(m.KifuAlbum.id == older_receipt["games"][0]["album_id"])
+            .values(list_hidden_reason="excluded")
+        )
+
+    path = Path(__file__).resolve().parents[2] / "scripts" / "repair_historical_kifu_ranks.py"
+    spec = importlib.util.spec_from_file_location("audit_historical_cli", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    output = tmp_path / "private-v3-audit.json"
+    assert module.main(["--audit-existing-v3", "--matched-at", MATCHED, "--output", str(output)], engine=engine) == 0
+    summary = json.loads(capsys.readouterr().out)
+    audit = json.loads(output.read_text())
+    assert summary["status"] == "audited"
+    assert "slots" not in summary and "99101" not in json.dumps(summary)
+    assert output.stat().st_mode & 0o777 == 0o600
+    assert audit["census"] == {
+        "albums": 3,
+        "v3_slots": 6,
+        "consistent_slots": 1,
+        "refused_slots": 4,
+        "supported_difference_slots": 1,
+        "resource_deferred_slots": 0,
+        "integrity_failure_slots": 0,
+        "excluded_from_repair_slots": 2,
+    }
+    slots = {(row["album_id"], row["side"]): row for row in audit["slots"]}
+    different = slots[native_batch["games"][0]["album_id"], "black"]
+    assert different["stored"]["snapshot_sha256"] == known["games"][0]["rank_snapshots"]["black"]["content_sha256"]
+    assert different["stored"]["display_rank"] == "7p"
+    assert different["publication"]["native_batch_id"] == native_batch["batch_id"]
+    assert different["proposed"]["display_rank"] == "8p"
+    assert different["proposed"]["basis_binding"]["basis"][0]["album_id"] == 991
+    assert different["retained_receipts_require_review"] is True
+    assert slots[undated_receipt["games"][0]["album_id"], "black"]["reason"] == "untrusted_target_date"
+    hidden = slots[older_receipt["games"][0]["album_id"], "black"]
+    assert hidden["status"] == "consistent"
+    assert hidden["album_visibility"]["list_hidden_reason"] == "excluded"
+    assert "sgf_content" not in output.read_text()
+
+    monkeypatch.setattr(module, "MAX_EXPORT_BYTES", 1024 * 1024 + 1)
+    capped = tmp_path / "private-v3-capped.json"
+    assert module.main(["--audit-existing-v3", "--matched-at", MATCHED, "--output", str(capped)], engine=engine) == 0
+    capped_summary = json.loads(capsys.readouterr().out)
+    assert capped_summary["census"] == audit["census"]
+    assert capped_summary["evidence_omitted"] == audit["census"]["v3_slots"]
+    assert capped_summary["first_omitted_album_id"] == min(album_id for album_id, _ in slots)
+    assert module._read(capped)["slots"] == []
+
+    with engine.begin() as conn:
+        conn.execute(
+            update(m.KifuAlbum)
+            .where(m.KifuAlbum.id == older_receipt["games"][0]["album_id"])
+            .values(list_hidden_reason=None)
+        )
+    assert publish(engine, known) == native_batch
+
+
+def test_v3_audit_separates_resource_limit_and_protected_journal_failure(engine, monkeypatch):
+    from katrain.web.kifu import historical_ranks as ranks
+
+    with engine.begin() as conn:
+        manifest = prepare(conn)
+        apply(conn, manifest)
+        # Valid late original evidence changes one frozen standalone slot.
+        game(conn, 6, "1965-01-01", "9p")
+        native_before = conn.execute(select(m.KifuAlbumRankSnapshot.__table__)).mappings().all()
+        change = (
+            conn.execute(
+                select(m.KifuNameChange.__table__).where(m.KifuNameChange.target_row_id == native_before[1]["id"])
+            )
+            .mappings()
+            .one()
+        )
+        conn.execute(update(m.KifuNameChange).where(m.KifuNameChange.id == change["id"]).values(after_image={}))
+        from katrain.web.kifu.historical_rank_audit import audit_existing_v3
+
+        evidence = []
+        result = audit_existing_v3(conn, matched_at=MATCHED, emit=evidence.append)
+        assert result["census"]["supported_difference_slots"] == 1
+        assert result["census"]["integrity_failure_slots"] == 1
+        assert evidence[1]["reason"] == "invalid_frozen_authority"
+        assert conn.execute(select(m.KifuAlbumRankSnapshot.__table__)).mappings().all() == native_before
+
+        monkeypatch.setattr(ranks, "MAX_SGF_BYTES", 1)
+        result = audit_existing_v3(conn, matched_at=MATCHED)
+        assert result["census"]["resource_deferred_slots"] == 2
+        assert result["census"]["supported_difference_slots"] == 0
+
+
+@pytest.mark.parametrize(
+    "damage,replay_message",
+    [
+        ("missing", "source membership changed"),
+        ("rehashed_wrong_body", "source SHA binding mismatch"),
+        ("wrong_disposition_guard", "disposition artifact changed"),
+        ("rehashed_wrong_canonical_sgf", "rank outcome canonical SGF mismatch"),
+    ],
+)
+def test_v3_audit_rejects_changed_native_source_authority(tmp_path, damage, replay_message):
+    from katrain.web.kifu.historical_rank_audit import audit_existing_v3
+    from katrain.web.kifu.source_rank_normalization import digest
+    from tests.web_ui.test_kifu_historical_rank_native import prepared, seed_prior
+    from tests.web_ui.test_kifu_incremental_catalog import make_engine, publish
+
+    engine = make_engine(tmp_path / "source-authority.db")
+    seed_prior(engine)
+    value = prepared(engine)
+    receipt = publish(engine, value)
+    with engine.begin() as conn:
+        artifact = conn.scalar(
+            select(m.KifuNameBatch.reviewed_artifact).where(m.KifuNameBatch.id == receipt["batch_id"])
+        )
+        if damage == "missing":
+            artifact["sources"] = []
+        elif damage == "rehashed_wrong_body":
+            artifact["sources"][0]["album_sgf_sha256"] = "0" * 64
+            artifact["undo_guard"]["sources_sha256"] = digest(artifact["sources"])
+        elif damage == "wrong_disposition_guard":
+            artifact["undo_guard"]["rank_dispositions_sha256"] = "0" * 64
+        else:
+            artifact["rank_dispositions"][0]["outcome"]["original_canonical_sgf_sha256"] = "0" * 64
+            artifact["receipt"]["rank_outcomes"][0]["original_canonical_sgf_sha256"] = "0" * 64
+            artifact["undo_guard"].update(
+                receipt_sha256=digest(artifact["receipt"]),
+                rank_dispositions_sha256=digest(artifact["rank_dispositions"]),
+            )
+        conn.execute(
+            update(m.KifuNameBatch).where(m.KifuNameBatch.id == receipt["batch_id"]).values(reviewed_artifact=artifact)
+        )
+        evidence = []
+        result = audit_existing_v3(conn, matched_at=MATCHED, emit=evidence.append)
+        failed = [row for row in evidence if row["status"] == "integrity_failure"]
+        expected_sides = {"black"} if damage == "rehashed_wrong_canonical_sgf" else {"black", "white"}
+        assert {row["side"] for row in failed} == expected_sides
+        assert result["census"]["integrity_failure_slots"] == len(expected_sides)
+        assert {row["reason"] for row in failed} == {"invalid_frozen_authority"}
+        assert all("proposed" not in row for row in failed)
+    with pytest.raises(ValueError, match=replay_message):
+        publish(engine, value)

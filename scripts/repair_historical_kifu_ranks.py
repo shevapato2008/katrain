@@ -3,6 +3,7 @@
 DSN comes from KATRAIN_DATABASE_URL or the normal in-memory settings loader.
 Examples (no database URL in argv):
   python scripts/repair_historical_kifu_ranks.py --matched-at ISO --output private.json
+  python scripts/repair_historical_kifu_ranks.py --audit-existing-v3 --matched-at ISO --output v3-audit.json
   python scripts/repair_historical_kifu_ranks.py --apply --manifest private.json --expected-sha256 SHA --part 1
 
 Each part commits independently. On failure the audit identifies every completed
@@ -53,7 +54,8 @@ def _read(path):
 
 
 def _open_private(path):
-    return os.fdopen(os.open(_path(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600), "w")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    return os.fdopen(os.open(_path(path), flags, 0o600), "w", encoding="utf-8")
 
 
 def _write_handle(handle, value):
@@ -63,6 +65,56 @@ def _write_handle(handle, value):
     handle.truncate()
     handle.flush()
     os.fsync(handle.fileno())
+
+
+def _audit_v3(conn, *, matched_at, album_ids, from_album_id, output):
+    from katrain.web.kifu.historical_rank_audit import audit_existing_v3
+
+    # Reserve room for aggregate counts so a capped file still documents
+    # the full scanned scope and the inclusive cursor for omitted evidence.
+    evidence_limit = MAX_EXPORT_BYTES - 1024 * 1024
+    prefix = '{"slots":['
+    written = len(prefix)
+    evidence_count = 0
+    first_omitted_album_id = None
+    with _open_private(output) as handle:
+        handle.write(prefix)
+
+        def emit(row):
+            nonlocal written, evidence_count, first_omitted_album_id
+            if first_omitted_album_id is not None:
+                return
+            content = json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+            size = len(content.encode("utf-8")) + bool(evidence_count)
+            if written + size > evidence_limit:
+                first_omitted_album_id = row["album_id"]
+                return
+            if evidence_count:
+                handle.write(",")
+            handle.write(content)
+            evidence_count += 1
+            written += size
+
+        summary = audit_existing_v3(
+            conn, matched_at=matched_at, album_ids=album_ids, from_album_id=from_album_id, emit=emit
+        )
+        summary.update(
+            evidence_count=evidence_count,
+            evidence_omitted=summary["census"]["v3_slots"] - evidence_count,
+            first_omitted_album_id=first_omitted_album_id,
+        )
+        footer = json.dumps(
+            summary,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        require(written + len(footer.encode("utf-8")) + 2 <= MAX_EXPORT_BYTES, "v3 audit output limit")
+        handle.write("]," + footer[1:] + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    return {"status": "audited", **summary}
 
 
 def _engine():
@@ -77,11 +129,16 @@ def main(argv=None, *, engine=None):
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--apply", action="store_true")
     action.add_argument("--undo", action="store_true")
+    action.add_argument("--audit-existing-v3", action="store_true", help="read-only audit of protected v3 slots")
+    parser.add_argument("--audit-from-album-id", type=int, help="inclusive cursor for a v3 audit evidence continuation")
     parser.add_argument("--matched-at", help="shared ISO freeze timestamp for TEST/PROD comparison")
     parser.add_argument(
-        "--album-id", action="append", type=int, help="limit write candidates; census still covers every album"
+        "--album-id",
+        action="append",
+        type=int,
+        help="limit prepare write candidates or target specific v3 audit albums",
     )
-    parser.add_argument("--output", help="new private 0600 manifest export (prepare only)")
+    parser.add_argument("--output", help="new private 0600 prepare manifest or v3 audit export")
     parser.add_argument("--manifest", help="previously reviewed private manifest")
     parser.add_argument("--expected-sha256", help="exact full reviewed manifest SHA")
     parser.add_argument(
@@ -104,7 +161,8 @@ def main(argv=None, *, engine=None):
                 and args.expected_sha256
                 and not args.output
                 and not args.album_id
-                and not args.matched_at,
+                and not args.matched_at
+                and args.audit_from_album_id is None,
                 "apply/undo requires --manifest and --expected-sha256 only, with optional --part/--audit-output",
             )
             manifest = repair.validate_manifest(_read(args.manifest))
@@ -146,8 +204,14 @@ def main(argv=None, *, engine=None):
         else:
             require(
                 not args.manifest and not args.expected_sha256 and not args.part and not args.audit_output,
-                "prepare does not accept apply/undo options",
+                "read-only commands do not accept apply/undo options",
             )
+            require(
+                args.audit_existing_v3 or args.audit_from_album_id is None,
+                "v3 audit cursor requires --audit-existing-v3",
+            )
+            require(not args.audit_existing_v3 or args.output, "v3 audit requires a new private --output")
+            matched_at = args.matched_at or datetime.now(timezone.utc).isoformat()
             engine = engine or _engine()
             with engine.connect() as conn:
                 if engine.dialect.name == "postgresql":
@@ -155,11 +219,19 @@ def main(argv=None, *, engine=None):
                 with conn.begin():
                     if engine.dialect.name == "postgresql":
                         conn.exec_driver_sql("SET TRANSACTION READ ONLY")
-                    manifest = repair.prepare_manifest(
-                        conn,
-                        matched_at=args.matched_at or datetime.now(timezone.utc).isoformat(),
-                        album_ids=args.album_id,
-                    )
+                    if args.audit_existing_v3:
+                        result = _audit_v3(
+                            conn,
+                            matched_at=matched_at,
+                            album_ids=args.album_id,
+                            from_album_id=args.audit_from_album_id,
+                            output=args.output,
+                        )
+                    else:
+                        manifest = repair.prepare_manifest(conn, matched_at=matched_at, album_ids=args.album_id)
+            if args.audit_existing_v3:
+                print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+                return 0
             if args.output:
                 with _open_private(args.output) as handle:
                     _write_handle(handle, manifest)

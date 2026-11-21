@@ -143,6 +143,7 @@ def _frozen_authority(proof, row, record, sgf_content, canonical_hashes):
     if artifact_format == repair.FORMAT:
         if batch_id not in proof.parts:
             part = repair._validate_part(artifact["part"])
+            require(part["database_identity"] == proof.database_identity, "historical rank database identity changed")
             require(digest(part) == batch_sha and repair._artifact(part) == artifact, "historical repair part changed")
             proof.parts[batch_id] = part
         part = proof.parts[batch_id]
@@ -231,9 +232,10 @@ def _failure(record, exc, reason):
     return _status(record, "integrity_failure", reason)
 
 
-def _audit_group(conn, albums, heads, matched_at):
+def _audit_group(conn, albums, heads, matched_at, database_identity):
     resource = ranks.EvidenceBudget()
     proof = _RankPublicationProof(conn, resource, lock=False)
+    proof.database_identity = database_identity
     rows, pending = [], []
     canonical_hashes = {}
     link_error = None
@@ -356,7 +358,7 @@ def audit_existing_v3(conn, *, matched_at, album_ids=None, from_album_id=None, e
     last_id = None
 
     def audit(group):
-        for row in _audit_group(conn, group, heads, matched_at):
+        for row in _audit_group(conn, group, heads, matched_at, identity):
             counts["v3_slots"] += 1
             counts[row["status"] + "_slots"] += 1
             visibility = row.get("album_visibility")

@@ -1019,3 +1019,28 @@ def test_v3_audit_rejects_changed_native_source_authority(tmp_path, damage, repl
         assert all("proposed" not in row for row in failed)
     with pytest.raises(ValueError, match=replay_message):
         publish(engine, value)
+
+
+def test_v3_audit_rejects_standalone_repair_copied_to_another_database(engine, tmp_path):
+    import sqlite3
+    from contextlib import closing
+
+    from katrain.web.kifu.historical_rank_audit import audit_existing_v3
+
+    with engine.begin() as conn:
+        manifest = prepare(conn)
+        assert apply(conn, manifest)["status"] == "applied"
+
+    copy_path = tmp_path / "copied.db"
+    with closing(engine.raw_connection()) as source, closing(sqlite3.connect(copy_path)) as destination:
+        source.driver_connection.backup(destination)
+    copied = create_engine(f"sqlite:///{copy_path}")
+    try:
+        with copied.connect() as conn:
+            audit = audit_existing_v3(conn, matched_at=MATCHED)
+            assert audit["census"]["v3_slots"] == 2
+            assert audit["census"]["integrity_failure_slots"] == 2
+            with pytest.raises(ValueError, match="historical rank database identity changed"):
+                apply(conn, manifest)
+    finally:
+        copied.dispose()

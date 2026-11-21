@@ -1,106 +1,109 @@
-"""`katrain/cron` 的部署边界。
-
-`Dockerfile.cron` 只 `COPY katrain/cron/`，然后 `RUN touch katrain/__init__.py`
-——**镜像里除了 `katrain.cron` 没有别的 katrain**，第三方也只有
-`requirements-cron.txt` 里那几个。
-
-这条闸守的是一类**只在容器里炸、在本仓永远绿**的错：本仓跑测试时整棵树都在、
-开发机的 venv 里什么都装着，`from katrain.core.sgf_parser import SGF` 一路顺畅；
-上了盒子/服务器才 `ModuleNotFoundError`，而 cron 是后台进程，它的崩溃在屏上
-就是「报告一直排队」。写 `katrain/cron/sgf.py` 那次差点就这么写了 ——
-`katrain/core/sgf_parser.py` 现成、正确，可它顶层还 `import chardet`，
-两条都不在镜像里。
-
-变异记录（2026-08-25）：
- · 在 `katrain/cron/sgf.py` 顶部加 `from katrain.core.sgf_parser import SGF`
-   ⇒ `test_cron_只用镜像里有的东西` 红，报出 `katrain.core.sgf_parser`。
- · 同处加 `import chardet` ⇒ 同一条红，报出 `chardet`。
- · 两条都不加（当前树）⇒ 绿。
-"""
+"""Check cron imports against the source and dependencies copied into its image."""
 
 import ast
-import pathlib
+from pathlib import Path, PurePosixPath
+import shlex
 import sys
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 CRON_ROOT = REPO_ROOT / "katrain" / "cron"
-
-# 模块名 → `requirements-cron.txt` 里的包名。下面那条断言逼着这两份一起改。
 IMAGE_THIRD_PARTY = {
     "apscheduler": "apscheduler",
     "bs4": "beautifulsoup4",
+    "chardet": "chardet",
     "httpx": "httpx",
     "sqlalchemy": "sqlalchemy",
     "lxml": "lxml",
     "psycopg2": "psycopg2-binary",
+    "pydantic": "pydantic",
+    "pypinyin": "pypinyin",
 }
 
 
-def _import_roots() -> dict[str, set[str]]:
-    """{顶层模块名: {用到它的文件…}}，含函数体里的延迟 import。"""
-    roots: dict[str, set[str]] = {}
+def _cron_imports():
     for path in sorted(CRON_ROOT.rglob("*.py")):
-        rel = str(path.relative_to(REPO_ROOT))
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Import):
-                names = [alias.name for alias in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                if node.level:  # 相对 import 一定在包内
-                    continue
-                names = [node.module] if node.module else []
+                yield from ((alias.name, (), path) for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and not node.level and node.module:
+                yield node.module, tuple(alias.name for alias in node.names), path
+
+
+def _image_modules():
+    modules = {"katrain"}  # Dockerfile.cron creates katrain/__init__.py.
+    for line in (REPO_ROOT / "Dockerfile.cron").read_text().splitlines():
+        if not line.startswith("COPY "):
+            continue
+        _, *sources, destination = shlex.split(line)
+        for source in sources:
+            path = REPO_ROOT / source
+            target = PurePosixPath(destination)
+            if path.is_dir():
+                files = (target / child.relative_to(path) for child in path.rglob("*.py"))
+            elif path.suffix == ".py":
+                files = (target / path.name if destination.endswith("/") else target,)
             else:
                 continue
-            for name in names:
-                roots.setdefault(name, set()).add(rel)
-    return roots
+            for file in files:
+                parts = file.parent.parts if file.name == "__init__.py" else file.with_suffix("").parts
+                modules.add(".".join(parts))
+                modules.update(".".join(parts[:i]) for i in range(1, len(parts)))
+    return modules
 
 
-def test_cron_不引用_katrain_cron_以外的_katrain():
+def _local_imports(module, names):
+    yield module
+    # A from-import can name a child module rather than a value on the package.
+    package = REPO_ROOT.joinpath(*module.split("."))
+    if package.is_dir():
+        for name in names:
+            child = package / name
+            if child.is_dir() or child.with_suffix(".py").is_file():
+                yield f"{module}.{name}"
+
+
+def test_local_cron_imports_are_copied_into_image():
+    available = _image_modules()
     offenders = {
-        name: sorted(files)
-        for name, files in _import_roots().items()
-        if name.split(".")[0] == "katrain" and not name.startswith("katrain.cron")
+        (name, str(path.relative_to(REPO_ROOT)))
+        for module, names, path in _cron_imports()
+        if module.split(".")[0] == "katrain"
+        for name in _local_imports(module, names)
+        if name not in available
     }
-    assert not offenders, (
-        "Dockerfile.cron 只 COPY katrain/cron/ —— 这些 import 在镜像里是 ModuleNotFoundError："
-        f"{offenders}。需要的东西复制一份进 katrain/cron/，别跨过去拿。"
-    )
+    assert not offenders, f"Local cron imports missing from Dockerfile.cron COPY: {sorted(offenders)}"
 
 
-def test_cron_只用镜像里有的东西():
+def test_third_party_cron_imports_are_installed_in_image():
     offenders = {
-        name: sorted(files)
-        for name, files in _import_roots().items()
-        if (root := name.split(".")[0]) != "katrain"
+        (module, str(path.relative_to(REPO_ROOT)))
+        for module, _, path in _cron_imports()
+        if (root := module.split(".")[0]) != "katrain"
         and root not in sys.stdlib_module_names
         and root not in IMAGE_THIRD_PARTY
     }
-    assert not offenders, (
-        f"这些第三方包不在 requirements-cron.txt 里，镜像里没有：{offenders}。"
-        "要么别用，要么同时加进 requirements-cron.txt 和本文件的 IMAGE_THIRD_PARTY。"
-    )
+    assert not offenders, f"Third-party cron imports missing from requirements-cron.txt: {sorted(offenders)}"
 
 
-def test_允许清单跟_requirements_cron_对得上():
-    """允许清单是手写的映射；这条防它跟需求文件走散。"""
-    declared = set()
-    for line in (REPO_ROOT / "requirements-cron.txt").read_text().splitlines():
-        line = line.split("#")[0].strip()
-        if line:
-            declared.add(line.split("==")[0].split(">=")[0].split("[")[0].strip().lower())
-    assert set(IMAGE_THIRD_PARTY.values()) == declared, (
-        "IMAGE_THIRD_PARTY 的包名要和 requirements-cron.txt 一字不差 —— "
-        f"清单里有而需求里没有：{set(IMAGE_THIRD_PARTY.values()) - declared}；"
-        f"需求里有而清单里没有：{declared - set(IMAGE_THIRD_PARTY.values())}"
-    )
+def _requirements():
+    return [
+        Requirement(line)
+        for raw in (REPO_ROOT / "requirements-cron.txt").read_text().splitlines()
+        if (line := raw.partition("#")[0].strip())
+    ]
+
+
+def test_cron_module_mapping_matches_requirements():
+    declared = {canonicalize_name(requirement.name) for requirement in _requirements()}
+    mapped = set(IMAGE_THIRD_PARTY.values())
+    assert mapped == declared, f"Missing in mapping: {declared - mapped}; missing in requirements: {mapped - declared}"
 
 
 def test_cron_sqlalchemy_keeps_psycopg2_as_default_postgresql_driver():
-    """The cron image installs psycopg2, not SQLAlchemy 2.1's psycopg default."""
-    lines = (REPO_ROOT / "requirements-cron.txt").read_text().splitlines()
-    sqlalchemy = next(Requirement(line) for line in lines if line.startswith("sqlalchemy"))
+    """The cron image installs psycopg2, alongside SQLAlchemy 2.0."""
+    sqlalchemy = next(requirement for requirement in _requirements() if requirement.name == "sqlalchemy")
     assert "2.0.0" in sqlalchemy.specifier
     assert "2.1.0" not in sqlalchemy.specifier

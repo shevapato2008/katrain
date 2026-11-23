@@ -371,8 +371,9 @@ describe('OGS lesson video journey', () => {
     mocks.getVideos.mockResolvedValue(videoManifest);
     renderAt('/kiosk/tutorial/chapter/fundamentals');
     fireEvent.click(await screen.findByRole('button', { name: /视频讲解.*2/ }));
-    const video = await screen.findByTestId('ogs-lesson-video');
+    const video = await screen.findByTestId('ogs-lesson-video') as HTMLVideoElement;
     expect(video).toHaveAttribute('src', videoManifest.clips[0].profiles['kiosk-7-v1'].url);
+    expect(video.volume).toBe(0.5);
     expect(video).toHaveAttribute('preload', 'metadata');
     expect(screen.getByText(/PDF.*13/)).toBeInTheDocument();
     fireEvent.ended(video);

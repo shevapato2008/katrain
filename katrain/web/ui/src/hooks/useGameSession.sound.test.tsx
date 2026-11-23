@@ -27,11 +27,14 @@ class MockWebSocket {
 }
 
 const played: string[] = [];
+const playedVolumes: number[] = [];
 class MockAudio {
   currentTime = 0;
+  volume = 1;
   constructor(readonly src: string) {}
   play = vi.fn(() => {
     played.push(this.src.split('/').at(-1) ?? this.src);
+    playedVolumes.push(this.volume);
     return Promise.resolve();
   });
 }
@@ -82,6 +85,7 @@ describe('useGameSession sound synchronization', () => {
     vi.clearAllMocks();
     sockets.length = 0;
     played.length = 0;
+    playedVolumes.length = 0;
     nextRafId = 1;
     rafCallbacks = new Map();
     localStorage.removeItem('kiosk_audio_sfx');
@@ -110,6 +114,7 @@ describe('useGameSession sound synchronization', () => {
     expect(requestAnimationFrameMock).toHaveBeenCalledTimes(2);
     runNextRaf();
     expect(played).toEqual(['stone1.wav']);
+    expect(playedVolumes).toEqual([0.5]);
   });
 
   it('uses the same two-frame delay when the matching state arrives before the sound', async () => {
@@ -141,6 +146,7 @@ describe('useGameSession sound synchronization', () => {
     expect(played).toEqual([]);
     runNextRaf();
     expect(played).toEqual(['stone1.wav']);
+    expect(playedVolumes).toEqual([0.5]);
   });
 
   it('in strict mode accepts a matching board paint before the sound arrives', async () => {
@@ -169,6 +175,7 @@ describe('useGameSession sound synchronization', () => {
     expect(played).toEqual([]);
     runNextRaf();
     expect(played).toEqual(['stone1.wav']);
+    expect(playedVolumes).toEqual([0.5]);
   });
 
   it('in strict mode drops scheduled stale audio when a newer painted node arrives', async () => {

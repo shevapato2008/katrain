@@ -23,6 +23,7 @@ export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPla
     const audio = audioRef.current;
     if (!audio) return;
     audio.pause();
+    audio.volume = 0.5;
     audio.load();
     setPlaying(false);
     setError(false);
@@ -38,6 +39,7 @@ export default function AudioPlayer({ src, autoPlay = false, onEnded }: AudioPla
       audio.pause();
       setPlaying(false);
     } else {
+      audio.volume = 0.5;
       audio.play().then(() => setPlaying(true)).catch(() => { setError(true); });
     }
   };

@@ -21,12 +21,13 @@ class MockWebSocket {
   constructor(readonly url: string) { sockets.push(this); }
 }
 
-const played: string[] = [];
+const played: Array<{ file: string; volume: number }> = [];
 class MockAudio {
   currentTime = 0;
+  volume = 1;
   constructor(readonly src: string) {}
   play = vi.fn(() => {
-    played.push(this.src.split('/').at(-1) ?? this.src);
+    played.push({ file: this.src.split('/').at(-1) ?? this.src, volume: this.volume });
     return Promise.resolve();
   });
 }
@@ -65,7 +66,7 @@ describe('useSessionBase 的落子声认「落子音效」开关', () => {
 
   it('从没设置过(缺键)时照响 —— 出厂是开的,galaxy 从不写这把键', async () => {
     sendStone(await connect());
-    expect(played).toEqual(['stone.wav']);
+    expect(played).toEqual([{ file: 'stone.wav', volume: 0.5 }]);
   });
 });
 

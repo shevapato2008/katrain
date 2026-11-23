@@ -11,12 +11,14 @@ const createOscillator = vi.fn(() => ({
   onended: null,
 }));
 
+const setValueAtTime = vi.fn();
+const exponentialRampToValueAtTime = vi.fn();
 class MockAudioContext {
   currentTime = 0;
   destination = {};
   createOscillator = createOscillator;
   createGain = () => ({
-    gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    gain: { setValueAtTime, exponentialRampToValueAtTime },
     connect: () => ({ connect: () => undefined }),
   });
   close = vi.fn();
@@ -26,6 +28,8 @@ describe('摆谱快门声认「落子音效」开关', () => {
   beforeEach(() => {
     localStorage.removeItem('kiosk_audio_sfx');
     createOscillator.mockClear();
+    setValueAtTime.mockClear();
+    exponentialRampToValueAtTime.mockClear();
     vi.stubGlobal('AudioContext', MockAudioContext);
   });
   afterEach(() => {
@@ -39,8 +43,9 @@ describe('摆谱快门声认「落子音效」开关', () => {
     expect(createOscillator).not.toHaveBeenCalled();
   });
 
-  it('开着(缺键即出厂)时发声', () => {
+  it('开着(缺键即出厂)时发声并限制增益峰值至 0.08', () => {
     playShutter();
     expect(createOscillator).toHaveBeenCalledTimes(1);
+    expect(exponentialRampToValueAtTime).toHaveBeenNthCalledWith(1, 0.08, 0.005);
   });
 });

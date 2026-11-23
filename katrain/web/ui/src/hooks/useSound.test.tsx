@@ -9,7 +9,7 @@ const deferred = () => {
 };
 class FakeAudio {
   static instances: FakeAudio[] = [];
-  volume = 0.5;
+  volume = 1;
   currentTime = 0;
   preload = '';
   constructor(public src = '') { FakeAudio.instances.push(this); }
@@ -53,6 +53,7 @@ describe('useSound actual media attempts', () => {
     await result.current.play('capture');
     expect(FakeAudio.instances.filter(a => a.src.endsWith('stone1.wav'))).toHaveLength(3);
     expect(FakeAudio.instances.filter(a => a.src.endsWith('capturing.wav'))).toHaveLength(2);
+    expect(FakeAudio.instances.every(a => a.volume === 0.5)).toBe(true);
   });
   it('does not play or prime when the existing global preference is muted', async () => {
     const { result } = renderHook(useSound);

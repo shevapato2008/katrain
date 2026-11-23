@@ -133,8 +133,10 @@ describe('播放那一侧真的读它 —— 判据不落在键名上', () => {
 
     act(() => result.current.speak('clear_board'));
     const first = audioInstances[0];
+    expect(first.volume).toBe(0.5);
     act(() => result.current.speak('place_black'));
     const second = audioInstances[1];
+    expect(second.volume).toBe(0.5);
 
     expect(first.pause).toHaveBeenCalledOnce();
     expect(first.pause.mock.invocationCallOrder[0]).toBeLessThan(second.play.mock.invocationCallOrder[0]);

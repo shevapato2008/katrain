@@ -155,6 +155,10 @@ const TutorialSectionPage = () => {
     audioEl.current?.pause();
   }, [onAudio, index]);
 
+  useEffect(() => {
+    if (audioEl.current) audioEl.current.volume = 0.5;
+  }, [current?.audio_asset]);
+
   const backToToc = useCallback(() => {
     if (!nav?.category || !nav.bookId) { navigate('/kiosk/tutorial/library'); return; }
     const ch = nav.chapterId ? `&ch=${nav.chapterId}` : '';
@@ -220,7 +224,12 @@ const TutorialSectionPage = () => {
       if (onAudio) { audioEl.current?.pause(); setAudioFor(null); return; }
       setAudioFor(current.id);
       // 播放要等 `<audio>` 的 src 挂上 —— 这一帧它才刚被渲出来。
-      requestAnimationFrame(() => { void audioEl.current?.play().catch(() => setAudioFor(null)); });
+      requestAnimationFrame(() => {
+        const el = audioEl.current;
+        if (!el) return;
+        el.volume = 0.5;
+        void el.play().catch(() => setAudioFor(null));
+      });
     }
   };
   const teachLabel = teach === 'video'

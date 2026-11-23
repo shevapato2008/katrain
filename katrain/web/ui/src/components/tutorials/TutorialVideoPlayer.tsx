@@ -1,5 +1,5 @@
 import { useTranslation } from '../../hooks/useTranslation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
 
 interface Props {
@@ -27,11 +27,13 @@ interface Props {
 export default function TutorialVideoPlayer({ src, poster, onError, fill = false, maxHeight = '60vh' }: Props) {
   const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Reset the failed state when the source changes (e.g. stepping to another figure),
   // so a previously-broken video doesn't keep the placeholder for a new, valid one.
   useEffect(() => {
     setFailed(false);
+    if (videoRef.current) videoRef.current.volume = 0.5;
   }, [src]);
 
   if (failed) {
@@ -58,6 +60,7 @@ export default function TutorialVideoPlayer({ src, poster, onError, fill = false
 
   return (
     <video
+      ref={videoRef}
       key={src}
       src={src}
       poster={poster}

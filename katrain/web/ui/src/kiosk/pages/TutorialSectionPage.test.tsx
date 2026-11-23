@@ -152,6 +152,7 @@ describe('屏 25 课程 · 小节讲解', () => {
     await userEvent.click(screen.getByRole('button', { name: '看视频讲解' }));
     const video = document.querySelector('video')!;
     expect(video.getAttribute('src')).toBe('/api/v1/tutorials/assets/device.mp4');
+    expect(video.volume).toBe(0.5);
     expect(video).not.toHaveAttribute('poster');
     expect(screen.getByTestId('tutorial-figure-video')).toHaveStyle({ position: 'fixed', inset: '0' });
     expect(video).toHaveStyle({ width: '100%', height: '100%' });
@@ -190,9 +191,11 @@ describe('屏 25 课程 · 小节讲解', () => {
     const play = screen.getByRole('button', { name: '播放语音讲解' });
     expect(play).toBeEnabled();
     await userEvent.click(play);
-    expect(screen.getByTestId('tutorial-figure-audio')).toHaveAttribute(
+    const audioEl = screen.getByTestId('tutorial-figure-audio') as HTMLAudioElement;
+    expect(audioEl).toHaveAttribute(
       'src', '/api/v1/tutorials/assets/tutorial_assets/b/audio/fig_2.mp3',
     );
+    expect(audioEl.volume).toBe(0.5);
     expect(document.querySelector('video')).toBeNull();
     expect(screen.getByRole('button', { name: '停下' })).toBeInTheDocument();
   });

@@ -63,6 +63,7 @@ function LessonVideos({ lessonId }: { lessonId?: string }) {
   }, [language, courseRevision]);
   useEffect(() => {
     const element = videoRef.current;
+    if (element) element.volume = 0.5;
     return () => { element?.pause(); };
   }, [clip?.id, playerRevision, lesson?.id]);
   if (!lesson) return <main className="u-ogs ogs-state">

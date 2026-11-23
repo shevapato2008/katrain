@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -29,6 +29,11 @@ export default function TutorialBookDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [videoDialogUrl, setVideoDialogUrl] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.volume = 0.5;
+  }, [videoDialogUrl]);
 
   const load = () => {
     if (!bookId) return;
@@ -128,6 +133,7 @@ export default function TutorialBookDetailPage() {
         <DialogContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 0 }}>
           {videoDialogUrl && (
             <video
+              ref={videoRef}
               controls
               autoPlay
               preload="none"

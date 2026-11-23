@@ -21,6 +21,10 @@ class HintRequest(BaseModel):
     top_n: Optional[int] = Field(default=None, ge=1, le=10)
 
 
+class HintShowRequest(BaseModel):
+    points: list[tuple[int, int]] = Field(default_factory=list, max_length=10)
+
+
 def _build_payload_from_game(game, max_visits: int) -> dict:
     """KataGo analysis payload for the current position — mirrors KaTrain's own
     query builder (BaseEngine.request_analysis, katrain/core/engine.py:123-190,
@@ -118,6 +122,14 @@ async def request_hint(request: Request, body: HintRequest, current_user: User =
     except Exception as e:
         gate.settle(decision.charge_ref, success=False)
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/show")
+async def show_hint_lamps(request: Request, body: HintShowRequest):
+    orchestrator = getattr(request.app.state, "physical_play", None)
+    if orchestrator is not None and body.points:
+        orchestrator.show_hint([(int(r), int(c)) for r, c in body.points])
+    return {"ok": True}
 
 
 @router.post("/dismiss")

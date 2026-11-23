@@ -784,10 +784,19 @@ class PhysicalPlayOrchestrator:
 
     # -- hint (Task 8 wires the endpoint) ----------------------------------------
 
+    # Top-3 AI hint candidate LED colors (synchronized with digital board & HintPanel):
+    # 1st choice (首选): Red, 2nd choice (次选): Yellow, 3rd choice (三选): Green.
+    HINT_CANDIDATE_RGBS: Tuple[Tuple[int, int, int], ...] = (
+        (255, 48, 48),
+        (255, 200, 0),
+        (40, 220, 100),
+    )
+
     def show_hint(self, points: List[Tuple[int, int]]) -> None:
-        """Blink white lamps on the top-N points. Suspends reconciliation AND move
-        detection while lit; board motion dismisses the lamps so a hinted stone
-        can be recognized normally, without waiting for the timeout."""
+        """Blink Red/Yellow/Green lamps on the top-N points (1st=Red, 2nd=Yellow,
+        3rd=Green; fallback white). Suspends reconciliation AND move detection while
+        lit; board motion dismisses the lamps so a hinted stone can be recognized
+        normally, without waiting for the timeout."""
         self.dismiss_attention()
         self.dismiss_hint()
         logger.info("hint started: %d candidates, timeout=%.1fs", len(points), self.config.hint_timeout_s)
@@ -896,7 +905,17 @@ class PhysicalPlayOrchestrator:
                     break
                 if self._led is not None:
                     if on:
-                        self._led.set_rgb_points([{"row": r, "col": c, "rgb": rgb} for r, c in points], strict=False)
+                        if kind == "hint":
+                            point_rgbs = [
+                                self.HINT_CANDIDATE_RGBS[i] if i < len(self.HINT_CANDIDATE_RGBS) else rgb
+                                for i in range(len(points))
+                            ]
+                        else:
+                            point_rgbs = [rgb] * len(points)
+                        self._led.set_rgb_points(
+                            [{"row": r, "col": c, "rgb": pt_rgb} for (r, c), pt_rgb in zip(points, point_rgbs)],
+                            strict=False,
+                        )
                     else:
                         self._led.clear(strict=False)
                     self._touch()

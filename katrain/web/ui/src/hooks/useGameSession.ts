@@ -119,9 +119,12 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         lastSoundRef.current = { name: sound, time: now };
 
         if (!audioCache.current[sound]) {
-            audioCache.current[sound] = new Audio(`/assets/sounds/${sound}.wav`);
+            const cached = new Audio(`/assets/sounds/${sound}.wav`);
+            cached.volume = 0.5;
+            audioCache.current[sound] = cached;
         }
         const audio = audioCache.current[sound];
+        audio.volume = 0.5;
         audio.currentTime = 0;
         audio.play().catch(e => console.warn("Failed to play sound", e));
     }, []);

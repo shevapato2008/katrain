@@ -151,7 +151,7 @@ const renderPage = () => render(pageTree());
 
 // Import after mocks
 import GamePage from '../pages/GamePage';
-import { ApiError } from '../../api';
+import { API, ApiError } from '../../api';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -271,6 +271,37 @@ describe('GamePage', () => {
       expect(screen.getByRole('button', { name: /领地/ })).not.toBeDisabled();
       expect(document.querySelector('.gtoggles .ghint')).not.toHaveTextContent('登录后可用');
     });
+  });
+
+  it('free play 支招 passes top-3 hintMoves to Board and HintPanel and clears on position change', async () => {
+    const sampleMoves = [
+      { gtp: 'Q16', coords: [15, 15] as [number, number], vision_rc: [3, 15] as [number, number], winrate: 0.61, score_lead: 2.3, visits: 100 },
+      { gtp: 'D4', coords: [3, 3] as [number, number], vision_rc: [15, 3] as [number, number], winrate: 0.58, score_lead: 1.9, visits: 80 },
+      { gtp: 'C3', coords: [2, 2] as [number, number], vision_rc: [16, 2] as [number, number], winrate: 0.55, score_lead: 1.0, visits: 60 },
+    ];
+    const hintSpy = vi.spyOn(API, 'hint').mockResolvedValueOnce({
+      moves: sampleMoves,
+      engine: 'local',
+      timeout_s: 30,
+    });
+    const dismissSpy = vi.spyOn(API, 'hintDismiss').mockResolvedValue({ ok: true });
+    sessionOverrides.gameState = { ...mockGameState, game_type: 'free', current_node_id: 42 };
+    const { rerender } = renderPage();
+
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
+    await waitFor(() => expect(hintSpy).toHaveBeenCalledWith('test-session'));
+    await waitFor(() => expect(boardProps.at(-1)?.hintMoves).toEqual(sampleMoves));
+    expect(screen.getByTestId('hint-rank-badge-1')).toHaveTextContent('红 · 首选');
+    expect(screen.getByTestId('hint-rank-badge-2')).toHaveTextContent('黄 · 次选');
+    expect(screen.getByTestId('hint-rank-badge-3')).toHaveTextContent('绿 · 三选');
+
+    // Advancing the board position clears hintMoves and HintPanel immediately
+    sessionOverrides.gameState = { ...mockGameState, game_type: 'free', current_node_id: 43 };
+    rerender(pageTree());
+    await waitFor(() => expect(boardProps.at(-1)?.hintMoves).toBeNull());
+    expect(screen.queryByTestId('hint-rank-badge-1')).toBeNull();
+    hintSpy.mockRestore();
+    dismissSpy.mockRestore();
   });
 });
 

@@ -1,9 +1,35 @@
 import { drawStoneSprite, loadBoardImages, stoneImage } from './board/boardUtils';
 import { getBoardStylePalette, useBoardAppearance } from './board/stoneAppearance';
 import React, { useEffect, useRef, useState } from 'react';
-import { type GameState } from '../api';
+import { type GameState, type HintMove } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { resolveBoardIntersectionAction } from './boardInteraction';
+
+// Top-3 AI hint candidate palette — synchronized with physical board LEDs & HintPanel:
+// 1st choice (首选): Red, 2nd choice (次选): Yellow, 3rd choice (三选): Green.
+export const HINT_CANDIDATE_PALETTE = [
+  {
+    fill0: 'rgba(255, 92, 92, 0.96)',
+    fill1: 'rgba(235, 52, 52, 0.94)',
+    stroke: 'rgba(255, 255, 255, 0.92)',
+    textMain: 'rgba(255, 255, 255, 0.98)',
+    textSub: 'rgba(255, 255, 255, 0.90)',
+  },
+  {
+    fill0: 'rgba(255, 224, 71, 0.96)',
+    fill1: 'rgba(234, 179, 8, 0.94)',
+    stroke: 'rgba(255, 255, 255, 0.90)',
+    textMain: 'rgba(16, 20, 18, 0.96)',
+    textSub: 'rgba(16, 20, 18, 0.86)',
+  },
+  {
+    fill0: 'rgba(74, 222, 128, 0.96)',
+    fill1: 'rgba(34, 197, 94, 0.94)',
+    stroke: 'rgba(255, 255, 255, 0.90)',
+    textMain: 'rgba(12, 19, 15, 0.96)',
+    textSub: 'rgba(12, 19, 15, 0.86)',
+  },
+] as const;
 
 // Golaxy-engine analysis overlay (kiosk engineMode: 领地/支招/变化图). Optional and
 // additive — when absent, rendering is byte-for-byte identical to before this prop existed.
@@ -22,6 +48,8 @@ export interface BoardProps {
   analysisToggles: Record<string, boolean>;
   playerColor?: 'B' | 'W' | null;
   engineOverlay?: EngineOverlay | null;
+  /** Top-N AI hint candidates (free play 支招), synchronized with physical Red/Yellow/Green LEDs. */
+  hintMoves?: HintMove[] | null;
   /**
    * 「刻度带在外面」模式 —— kiosk 布局 A 的 `.kiosk-board` 自己有四条 28px 刻度带,
    * 盘只负责 460×460 的落子区。默认 `false`,galaxy / ZenMode / 复盘一个字节都不变。
@@ -74,6 +102,7 @@ const EVAL_COLORS = [
 
 const Board: React.FC<BoardProps> = ({
   gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null,
+  hintMoves = null,
   externalRulers = false, suppressEndResultOverlay = false, onPaintedNode,
   previewMove = null, interactionDisabled = false,
 }) => {
@@ -158,12 +187,12 @@ const Board: React.FC<BoardProps> = ({
     renderBoard();
 
     // Only run animation when pulsing hints are visible (~10fps is enough for pulse)
-    const needsAnimation = analysisToggles.hints && gameState?.analysis?.moves?.length > 0;
+    const needsAnimation = (hintMoves && hintMoves.length > 0) || (analysisToggles.hints && gameState?.analysis?.moves?.length > 0);
     if (needsAnimation) {
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay, imagesReady, assetsVersion, boardStyle, stoneStyle, previewMove, interactionDisabled]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay, hintMoves, externalRulers, suppressEndResultOverlay, imagesReady, assetsVersion, boardStyle, stoneStyle, previewMove, interactionDisabled]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
     const m = externalRulers ? 0.5 : 1.5;
@@ -287,28 +316,38 @@ const Board: React.FC<BoardProps> = ({
       }
     }
 
-    // Hints (Top Moves)
-    if (analysisToggles.hints && gameState.analysis?.moves) {
-      const moves = gameState.analysis.moves;
-      const maxMoves = gameState.trainer_settings?.max_top_moves_on_board || 3;
+    // Hints (Top Moves) — synchronized with physical Red (1st) / Yellow (2nd) / Green (3rd) LEDs
+    const explicitHintMoves = hintMoves && hintMoves.length > 0 ? hintMoves : null;
+    const toggleHintMoves = !explicitHintMoves && analysisToggles.hints && gameState.analysis?.moves
+      ? gameState.analysis.moves.slice(0, gameState.trainer_settings?.max_top_moves_on_board || 3)
+      : null;
+    const activeHintMoves = explicitHintMoves ?? toggleHintMoves;
+    if (activeHintMoves && activeHintMoves.length > 0) {
       const time = (Date.now() - startTimeRef.current) / 1000; // time in seconds
-      
-      moves.slice(0, maxMoves).forEach((move: any, index: number) => {
+
+      activeHintMoves.forEach((move: any, index: number) => {
         if (!move.coords) return;
         const pos = gridToCanvas(layout, move.coords[0], move.coords[1], boardSize);
-        const evalClass = getEvalClass(move.scoreLoss);
-        const color = EVAL_COLORS[evalClass];
         const radius = layout.gridSize * 0.42;
+        const rankPalette = HINT_CANDIDATE_PALETTE[index];
+        const evalClass = getEvalClass(move.scoreLoss ?? 0);
+        const fallbackColor = EVAL_COLORS[evalClass];
 
-        // Premium Radial Gradient for the stone
+        // Radial gradient using rank palette (Red 1st, Yellow 2nd, Green 3rd; fallback eval color)
         const grad = ctx.createRadialGradient(pos.x - radius * 0.3, pos.y - radius * 0.3, radius * 0.1, pos.x, pos.y, radius);
-        grad.addColorStop(0, color.replace("0.85", "0.95")); // Highlight spot
-        grad.addColorStop(1, color.replace("0.85", "1.0"));  // Base color
+        grad.addColorStop(0, rankPalette ? rankPalette.fill0 : fallbackColor.replace("0.85", "0.95"));
+        grad.addColorStop(1, rankPalette ? rankPalette.fill1 : fallbackColor.replace("0.85", "1.0"));
         ctx.fillStyle = grad;
-        
+
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
         ctx.fill();
+
+        if (rankPalette && index > 0) {
+          ctx.strokeStyle = rankPalette.stroke;
+          ctx.lineWidth = Math.max(1.5, layout.gridSize * 0.05);
+          ctx.stroke();
+        }
 
         // Best move highlight - Dynamic Pulsing Ring
         if (index === 0) {
@@ -340,25 +379,29 @@ const Board: React.FC<BoardProps> = ({
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        // Precise Contrast Logic
         const isDarkBg = evalClass <= 2 || evalClass === 5;
-        const mainTextColor = isDarkBg ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)";
-        const secondaryTextColor = isDarkBg ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.85)";
-        
+        const mainTextColor = rankPalette ? rankPalette.textMain : (isDarkBg ? "rgba(255, 255, 255, 0.95)" : "rgba(0, 0, 0, 0.95)");
+        const secondaryTextColor = rankPalette ? rankPalette.textSub : (isDarkBg ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.85)");
+
         // Consistent font size for balance
         const fontSize = Math.max(7, layout.gridSize * 0.28);
 
         // Top line: Winrate (Monospace for precision)
         ctx.font = `bold ${fontSize}px 'IBM Plex Mono', monospace`;
         ctx.fillStyle = mainTextColor;
-        const winrateText = (move.winrate * 100).toFixed(1);
+        const winrateText = typeof move.winrate === 'number' ? (move.winrate * 100).toFixed(1) : `${index + 1}`;
         ctx.fillText(winrateText, pos.x, pos.y - layout.gridSize * 0.12);
 
-        // Bottom line: Visits (Sans-serif for reference)
+        // Bottom line: Visits or Score Lead (Sans-serif for reference)
         ctx.font = `600 ${fontSize}px 'Manrope', sans-serif`;
         ctx.fillStyle = secondaryTextColor;
-        const visitsText = move.visits >= 1000 ? `${(move.visits / 1000).toFixed(1)}k` : move.visits.toString();
-        ctx.fillText(visitsText, pos.x, pos.y + layout.gridSize * 0.18);
+        const rawScoreLead = move.score_lead ?? move.scoreLead;
+        const subText = typeof move.visits === 'number'
+          ? (move.visits >= 1000 ? `${(move.visits / 1000).toFixed(1)}k` : move.visits.toString())
+          : typeof rawScoreLead === 'number'
+            ? `${rawScoreLead >= 0 ? '+' : ''}${rawScoreLead.toFixed(1)}`
+            : '';
+        ctx.fillText(subText, pos.x, pos.y + layout.gridSize * 0.18);
       });
     }
 
@@ -413,17 +456,17 @@ const Board: React.FC<BoardProps> = ({
       engineOverlay.candidates.forEach((c, index) => {
         const pos = gridToCanvas(layout, c.col, c.row, boardSize);
         const radius = layout.gridSize * 0.42;
-        const isBest = index === 0;
+        const rankPalette = HINT_CANDIDATE_PALETTE[index];
 
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = isBest ? "rgba(88,181,122,0.92)" : "rgba(16,24,21,0.78)";
+        ctx.fillStyle = rankPalette ? rankPalette.fill1 : "rgba(16,24,21,0.78)";
         ctx.fill();
         ctx.lineWidth = Math.max(1.5, layout.gridSize * 0.05);
-        ctx.strokeStyle = isBest ? "rgba(255,255,255,0.9)" : "rgba(88,181,122,0.75)";
+        ctx.strokeStyle = rankPalette ? rankPalette.stroke : "rgba(88,181,122,0.75)";
         ctx.stroke();
 
-        ctx.fillStyle = isBest ? "#0c130f" : "rgba(238,243,241,0.92)";
+        ctx.fillStyle = rankPalette ? rankPalette.textMain : "rgba(238,243,241,0.92)";
         ctx.font = `bold ${Math.max(9, layout.gridSize * 0.32)}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";

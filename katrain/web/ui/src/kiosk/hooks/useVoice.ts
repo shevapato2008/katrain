@@ -47,6 +47,7 @@ export function useVoice() {
     // 每次现读,不缓存进闭包。
     if (!readAudioPref('voice')) return;
     const audio = new Audio(`/assets/sounds/voice/${name}.mp3`);
+    audio.volume = 0.5;
     currentRef.current = audio;
     // HTMLMediaElement.play() returns a Promise in modern browsers, but the spec allows
     // undefined (older engines, jsdom) — guard before .catch so a missing Promise can't throw.

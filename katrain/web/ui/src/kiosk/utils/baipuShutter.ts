@@ -19,7 +19,7 @@ export function playShutter() {
     const gain = ctx.createGain();
     osc.frequency.value = 880;
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
     osc.connect(gain).connect(ctx.destination);
     osc.start();

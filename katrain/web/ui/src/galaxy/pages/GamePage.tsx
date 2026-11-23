@@ -192,9 +192,12 @@ const GamePage = () => {
         }
         if (!readAudioPref('sfx')) return;
         if (!audioCache.current[soundName]) {
-            audioCache.current[soundName] = new Audio(`/assets/sounds/${soundName}.wav`);
+            const cached = new Audio(`/assets/sounds/${soundName}.wav`);
+            cached.volume = 0.5;
+            audioCache.current[soundName] = cached;
         }
         const audio = audioCache.current[soundName];
+        audio.volume = 0.5;
         audio.currentTime = 0;
         audio.play().catch(err => console.warn('Sound playback failed:', err));
     }, []);

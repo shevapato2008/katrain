@@ -285,7 +285,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // frame before the effect below catches up, flashing over the escalation dialog it's
   // supposed to defer to (board-loss precedence: escalation > recalibration > board-lost).
   const [escalationOpen, setEscalationOpen] = useState(() => session.physicalReminder?.kind === 'escalation');
-  const [hint, setHint] = useState<HintResponse | null>(null);
+  const hintPositionKey = `${sessionId ?? ''}|${session.gameState?.game_id ?? ''}|${session.gameState?.current_node_id ?? ''}`;
+  const [hintState, setHintState] = useState<{ key: string; data: HintResponse } | null>(null);
+  const hint = hintState?.key === hintPositionKey ? hintState.data : null;
   const [hintFailure, setHintError] = useState<'ranked' | 'disabled' | 'insufficient' | 'failed' | null>(null);
   const hintError = hintFailure === 'ranked' ? t('Not available in ranked games', '升降级对局不可用')
     : hintFailure === 'disabled' ? t('Hint is not enabled', '支招功能未开放')
@@ -775,10 +777,48 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   });
 
   const closeHint = useCallback(() => {
-    setHint(null);
-    if (paid.active) { paid.hideHints(); return; }
+    setHintState(null);
+    if (paid.active) {
+      paid.hideHints();
+      if (physicalPlay) API.hintDismiss().catch(() => undefined);
+      return;
+    }
     API.hintDismiss().catch(() => undefined);
-  }, [paid.active, paid.hideHints]);
+  }, [paid.active, paid.hideHints, physicalPlay]);
+
+  // Clear stale free-play hint state and physical LEDs whenever the board position advances.
+  useEffect(() => {
+    if (hintState && hintState.key !== hintPositionKey) {
+      setHintState(null);
+      if (physicalPlay) {
+        API.hintDismiss().catch(() => undefined);
+      }
+    }
+  }, [hintState, hintPositionKey, physicalPlay]);
+
+  // Synchronize paid-mode free-play hints with physical board Red/Yellow/Green LEDs.
+  const paidHintLedActiveRef = useRef(false);
+  useEffect(() => {
+    if (!paid.active || !physicalPlay) return;
+    const bSize = session.gameState?.board_size?.[0] ?? 19;
+    const points = paid.showHints && paid.result
+      ? paid.result.moves
+          .filter((move) => move.move.toLowerCase() !== 'pass')
+          .slice(0, 3)
+          .map((move) => {
+            const col = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'.indexOf(move.move[0]);
+            const row = Number(move.move.slice(1)) - 1;
+            return [bSize - 1 - row, col] as [number, number];
+          })
+      : null;
+    if (points && points.length > 0) {
+      paidHintLedActiveRef.current = true;
+      API.hintShow(points).catch(() => undefined);
+    } else if (paidHintLedActiveRef.current) {
+      paidHintLedActiveRef.current = false;
+      API.hintDismiss().catch(() => undefined);
+    }
+  }, [paid.active, physicalPlay, paid.showHints, paid.result, session.gameState?.board_size]);
 
   // Remaining-道具 counts for the button badges. Account-level (not per-game),
   // so it's safe to fetch once on mount and re-fetch after each analysis settles
@@ -1253,8 +1293,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (paid.eligible) void paid.toggle('hints');
       return;
     }
+    const requestedKey = hintPositionKey;
     try {
-      setHint(await API.hint(sessionId));
+      const response = await API.hint(sessionId);
+      setHintState({ key: requestedKey, data: response });
     } catch (e) {
       const msg = String(e);
       setHintError(
@@ -1642,6 +1684,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               analysisToggles={boardAnalysisToggles}
               playerColor={humanColor}
               engineOverlay={lobbyGame ? lobbyTerritory.overlay : isRanked ? rankedTerritory.overlay : engineOverlay}
+              hintMoves={visibleHint?.moves ?? null}
               externalRulers
               suppressEndResultOverlay={!!timeoutLoserColor}
               onPaintedNode={session.acknowledgePaintedNode}
@@ -1983,7 +2026,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       )}
 
       {/* AI hint panel + error */}
-      {visibleHint && <HintPanel moves={visibleHint.moves} timeoutS={visibleHint.timeout_s} onClose={closeHint} physicalLamps={!paid.active && physicalPlay} />}
+      {visibleHint && <HintPanel moves={visibleHint.moves} timeoutS={visibleHint.timeout_s} onClose={closeHint} physicalLamps={physicalPlay} />}
       <ConsumptionQuoteDialog kiosk quote={paid.pendingQuote} busy={paid.busy} error={paid.error} onConfirm={() => void paid.confirm()} onCancel={paid.cancel} />
       <Snackbar className="kiosk-game-toast" open={!!paid.error && !paid.pendingQuote} anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={paid.error} />
       <Snackbar className="kiosk-game-toast" open={!!hintError} autoHideDuration={5000} onClose={() => setHintError(null)}

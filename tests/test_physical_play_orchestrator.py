@@ -270,14 +270,18 @@ class TestHint:
         orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=0.05)
 
         async def run():
-            orch.show_hint([(3, 3), (15, 15)])
+            orch.show_hint([(3, 3), (15, 15), (9, 9)])
             assert vision.paused is True
             await asyncio.sleep(0.15)  # 超时自然结束
 
         asyncio.run(run())
         assert vision.paused is False  # 检测恢复
         rgb_calls = [c for c in led.calls if c[0] == "set_rgb_points"]
-        assert rgb_calls and rgb_calls[0][1][0]["rgb"] == (255, 255, 255)
+        assert rgb_calls and [p["rgb"] for p in rgb_calls[0][1]] == [
+            (255, 48, 48),
+            (255, 200, 0),
+            (40, 220, 100),
+        ]
 
     def test_dismiss_hint_restores_immediately(self):
         orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=10.0)

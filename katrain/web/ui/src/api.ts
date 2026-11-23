@@ -895,6 +895,8 @@ export const API = {
   // AI Hint API (free games only)
   hint: (sessionId: string, topN?: number): Promise<HintResponse> =>
     apiPost("/api/v1/hint", { session_id: sessionId, top_n: topN ?? null }) as Promise<HintResponse>,
+  hintShow: (points: [number, number][]): Promise<{ ok: boolean }> =>
+    apiPost("/api/v1/hint/show", { points }) as Promise<{ ok: boolean }>,
   hintDismiss: (): Promise<{ ok: boolean }> =>
     apiPost("/api/v1/hint/dismiss", {}) as Promise<{ ok: boolean }>,
 

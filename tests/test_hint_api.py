@@ -1,5 +1,6 @@
 """Hint gating matrix (PRD D3) + endpoint behaviour with fake router/orchestrator."""
 
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -73,6 +74,11 @@ class FakeNode:
         self.ruleset = "chinese"
         self.initial_player = "B"
         self.nodes_from_root = [self]
+        self.properties = {"GM": ["1"], "FF": ["4"], "SZ": ["19"]}
+
+    @staticmethod
+    def _escape_value(v: str) -> str:
+        return v
 
 
 class FakeGame:
@@ -88,12 +94,14 @@ class FakeKatrain:
         self.game_type = game_type
         self.analysis_allowed = game_type not in ("rated", "ranked")
         self.game = FakeGame()
+        self.ai_ladder_commit_lock = nullcontext()
 
 
 class FakeSession:
     def __init__(self, game_type="free"):
         self.katrain = FakeKatrain(game_type)
         self.user_id = 1
+        self.lock = nullcontext()
 
 
 class FakeManager:
@@ -157,6 +165,11 @@ class TestHintEndpoint:
         c = _client(FakeSession("free"))
         assert c.post("/hint/dismiss").status_code == 200
         assert c.app.state.physical_play.dismissed is True
+
+    def test_show_lamps(self):
+        c = _client(FakeSession("free"))
+        assert c.post("/hint/show", json={"points": [[3, 15], [15, 3], [16, 2]]}).status_code == 200
+        assert c.app.state.physical_play.shown == [(3, 15), (15, 3), (16, 2)]
 
     def test_handicap_payload_includes_initial_stones_and_player(self):
         # 评审 Codex I2：payload 须镜像 engine.py 语义（placements + initialPlayer）

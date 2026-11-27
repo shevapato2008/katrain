@@ -60,12 +60,12 @@ describe('mid-game recalibration uses the shared screen', () => {
   });
   afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-  it('202 hands control to five steps; same revision never resets sync and a new revision resets once', async () => {
+  it('opens the four-step calibration screen and resets sync once for a new revision', async () => {
     renderFlow();
     await screen.findByText('对局内容');
     fireEvent.click(screen.getByRole('button', { name: '重新标定' }));
     await waitFor(() => expect(screen.queryByText('对局内容')).not.toBeInTheDocument());
-    expect(screen.getAllByTestId('calib-step')).toHaveLength(5);
+    expect(screen.getAllByTestId('calib-step')).toHaveLength(4);
     expect(screen.getAllByTestId('calib-step')[1]).toHaveAttribute('data-state', 'now');
     expect(GeometryAPI.calibrate).toHaveBeenCalledWith('manual');
     expect(API.visionResetSync).not.toHaveBeenCalled();

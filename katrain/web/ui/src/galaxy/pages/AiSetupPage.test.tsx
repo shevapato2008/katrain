@@ -747,11 +747,10 @@ describe('AiSetupPage — 未登录访客', () => {
     expect(screen.queryByRole('button', { name: '重试' })).not.toBeInTheDocument();
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: '登录并继续' }));
-    // 断言的是「能当场填凭据的那个框」,不是「有个框」——换成再弹一次「需要登录」的
-    // AuthRequiredDialog 也满足 findByRole('dialog'),而那样用户永远登不上去。
-    const dialog = await screen.findByRole('dialog', { name: '登录智星盒' });
-    expect(within(dialog).getAllByRole('textbox').length).toBeGreaterThan(0);
-    expect(dialog.querySelector('input[type="password"]')).not.toBeNull();
+    const dialog = await screen.findByRole('dialog', { name: '登录' });
+    expect(within(dialog).getByLabelText('手机号')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('tab', { name: '账号密码' }));
+    expect(within(dialog).getByLabelText('密码')).toHaveAttribute('type', 'password');
   });
 
   it('/me 探针还没回来时，既不说「需要登录」也不说「游客不保存」', async () => {
